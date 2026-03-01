@@ -22,7 +22,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 import { useAppStore, type Business } from "@/lib/store"
 import { HeaderWithMenu } from "@/components/header-with-menu"
@@ -182,11 +182,15 @@ export function BusinessesScreen({ onNavigate }: BusinessesScreenProps) {
                       <span>{business.location}</span>
                     </div>
                   </div>
-                  <Avatar className="h-10 w-10 flex-shrink-0 bg-muted">
-                    <AvatarFallback className="text-xs font-semibold bg-primary text-primary-foreground">
-                      {business.logo}
-                    </AvatarFallback>
-                  </Avatar>
+                  <Avatar className="h-10 w-10 flex-shrink-0 bg-muted border border-border shadow-sm">
+                  {/* Cargamos la imagen real del logo del negocio */}
+                  <AvatarImage src={business.logo} alt={business.name} className="object-cover" />
+                  
+                  {/* Fallback con iniciales si la imagen no carga */}
+                  <AvatarFallback className="text-xs font-semibold bg-primary text-primary-foreground uppercase">
+                    {business.name?.substring(0, 2)}
+                  </AvatarFallback>
+                </Avatar>
                 </div>
 
                 {/* Rating */}
