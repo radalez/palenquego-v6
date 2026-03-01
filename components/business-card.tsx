@@ -6,7 +6,7 @@ import { Card } from "./ui/card"
 import { Badge } from "./ui/badge"
 import { Button } from "./ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
-import { Star, Phone, MessageCircle, Share2, ExternalLink } from "lucide-react"
+import { Star, Phone, MessageCircle, Share2, ExternalLink, MapPin } from "lucide-react"
 
 interface BusinessCardProps {
   business: Business
@@ -47,30 +47,39 @@ export function BusinessCard({ business, onViewProfile }: BusinessCardProps) {
       onViewProfile?.(business)
       router.push(`/b/${business.id}`)
     }}>
-      {/* Cover Image */}
-      <div className="relative w-full h-48 overflow-hidden bg-muted">
+      {/* Cover Image Container */}
+      <div className="relative w-full h-40 overflow-hidden bg-muted border-b">
         <img
           src={business.coverImage}
           alt={business.name}
           className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
         />
-        <Badge className="absolute top-3 left-3 bg-white/90 text-foreground hover:bg-white">
+        <Badge className="absolute top-3 right-3 bg-white/90 text-foreground hover:bg-white z-10">
           {business.category}
         </Badge>
+        
+        {/* AVATAR SOBREPUESTO */}
+        <div className="absolute -bottom-6 left-4 z-20">
+          <Avatar className="w-16 h-16 border-4 border-background shadow-lg">
+            <AvatarImage src={business.logo} alt={business.name} className="object-cover" />
+            <AvatarFallback className="bg-primary text-primary-foreground font-bold text-xl">
+              {business.name?.charAt(0).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+        </div>
       </div>
 
-      {/* Content */}
-      <div className="p-4 space-y-4">
+      {/* Content - Ajustamos el padding superior (pt-8) para el avatar */}
+      <div className="p-4 pt-8 space-y-4">
         {/* Business Info */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-foreground truncate">{business.name}</h3>
-            <p className="text-sm text-muted-foreground truncate">{business.location}</p>
+            <h3 className="font-bold text-lg text-foreground truncate">{business.name}</h3>
+            <p className="text-sm text-muted-foreground truncate flex items-center gap-1">
+              <MapPin className="w-3 h-3" />
+              {business.location}
+            </p>
           </div>
-          <Avatar className="h-10 w-10 flex-shrink-0">
-            <AvatarImage src={`data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23e5e7eb' width='100' height='100'/%3E%3Ctext x='50' y='50' font-size='40' font-weight='bold' text-anchor='middle' dy='.3em' fill='%23374151'%3E${business.logo}%3C/text%3E%3C/svg%3E`} />
-            <AvatarFallback>{business.logo}</AvatarFallback>
-          </Avatar>
         </div>
 
         {/* Rating */}
