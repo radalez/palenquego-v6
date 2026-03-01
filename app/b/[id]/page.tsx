@@ -63,7 +63,7 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
   }
 
   return (
-    <main className="min-h-screen bg-background flex flex-col max-w-md mx-auto pb-32">
+    <main className="h-screen overflow-y-auto bg-background flex flex-col max-w-md mx-auto">
       {/* Header with Back Button - Fixed */}
       <div className="sticky top-0 z-20 bg-background border-b border-border px-4 py-3 flex items-center justify-between">
         <button
@@ -86,12 +86,12 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
       </div>
 
       {/* Content */}
-    <div className="flex-1 overflow-y-auto pb-32 relative z-10">
+    <div className="flex-1 pb-32 relative z-10 bg-background">
         {/* Business Info Card - Enhanced Design */}
         <div className="px-4 space-y-4">
           {/* Avatar and Basic Info */}
           {/* CAMBIO: Añadimos z-20 al DIV que envuelve todo el logo y el nombre */}
-          <div className="relative -mt-12 mb-4 flex items-end gap-4 z-20"> 
+          <div className="relative -mt-12 mb-4 flex items-end gap-4 z-20">
             <Avatar className="w-24 h-24 border-4 border-background shadow-lg">
               <AvatarImage src={business.logo} alt={business.name} className="object-cover" />
               <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground text-3xl font-bold">
