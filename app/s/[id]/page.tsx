@@ -11,9 +11,12 @@ import {
   MapPin,
   CheckCircle2,
   MessageCircle,
-  Phone,
+ Phone,
   Share2,
   Heart,
+  FileText,
+  Sparkles,
+  Gift,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -34,6 +37,10 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
   const [showBookingModal, setShowBookingModal] = useState(false)
 
   const service = services.find((s) => s.id === parseInt(resolvedParams.id))
+
+  // --- LOGS DE INVESTIGACIÓN DE DATOS ---
+  console.log("DEBUG: Datos del servicio actual:", service);
+  console.log("DEBUG: Contenido de extras:", service?.extras);
 
   // Render not found state after all hooks
   if (!service) {
@@ -102,7 +109,7 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
       <div className="relative h-64 bg-muted overflow-hidden">
         <img
           src={images[currentImageIndex] || "/placeholder.svg"}
-          alt={service.name as any}
+          alt={typeof service.name === 'object' ? (service as any).name?.nombre : service.name}
           className="w-full h-full object-cover"
         />
 
@@ -147,21 +154,21 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
                 {typeof service.name === 'object' ? (service as any).name?.nombre : service.name}
               </h1>
               <div className="flex items-center gap-1 text-muted-foreground mt-1">
-                <MapPin className="w-4 h-4" />
+                <MapPin className="w-4 h-4 text-primary" />
                 <span>{typeof service.location === 'object' ? (service as any).location?.nombre : service.location}</span>
               </div>
             </div>
           </div>
           <div className="flex items-center gap-2 mt-3">
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 bg-amber-50 px-2 py-1 rounded-lg border border-amber-100">
               <Star className="w-5 h-5 fill-amber-400 text-amber-400" />
-              <span className="font-semibold text-foreground">{service.rating}</span>
-              <span className="text-muted-foreground">({service.reviews} reseñas)</span>
+              <span className="font-bold text-amber-900">{service.rating}</span>
+              <span className="text-amber-700 text-sm">({service.reviews} reseñas)</span>
             </div>
           </div>
         </div>
 
-        {/* Business Card - Logo Fixed */}
+        {/* Business Card - Logo Cargando desde URL */}
         {service.businessName && (
           <button
             onClick={() => router.push(`/b/${service.businessId}`)}
@@ -169,14 +176,14 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3 flex-1">
-                <Avatar className="w-14 h-14 border-2 border-primary">
-                  {/* Ahora sí mostramos el logo real si businessAvatar es la URL */}
+                <Avatar className="w-14 h-14 border-2 border-primary shadow-sm">
                   <AvatarImage src={service.businessAvatar} alt={service.businessName} className="object-cover" />
                   <AvatarFallback className="bg-primary text-primary-foreground font-bold text-lg">
                     {service.businessAvatar?.substring(0, 2).toUpperCase() || "BZ"}
                   </AvatarFallback>
                 </Avatar>
                 <div className="text-left">
+                  <p className="text-[10px] text-primary font-bold uppercase tracking-wider mb-0.5">Ofrecido por</p>
                   <h3 className="font-bold text-foreground text-sm leading-tight">{service.businessName}</h3>
                   <div className="flex items-center gap-1 mt-1">
                     <div className="flex">
@@ -192,39 +199,43 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
                         />
                       ))}
                     </div>
-                    <span className="text-xs font-medium text-foreground">{service.businessRating}</span>
-                    <span className="text-xs text-muted-foreground">({service.businessReviews})</span>
+                    <span className="text-xs font-bold text-foreground">{service.businessRating}</span>
                   </div>
                 </div>
               </div>
-              <div className="text-primary font-bold text-2xl">→</div>
+              <ChevronRight className="text-primary w-6 h-6" />
             </div>
           </button>
         )}
 
-        {/* Description */}
+        {/* Description con Icono Lucide */}
         {service.description && (
           <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
-            <h2 className="font-semibold text-foreground mb-2">📝 Descripción</h2>
-            <p className="text-foreground text-sm leading-relaxed">
-              {typeof service.description === 'object' ? (service as any).description?.descripcion : service.description}
+            <div className="flex items-center gap-2 mb-2">
+              <FileText className="w-5 h-5 text-primary" />
+              <h2 className="font-bold text-foreground text-sm uppercase tracking-wider">Descripción</h2>
+            </div>
+            <p className="text-foreground text-sm leading-relaxed italic">
+              "{typeof service.description === 'object' ? (service as any).description?.descripcion : service.description}"
             </p>
           </div>
         )}
 
-        {/* Features - ANTI CRASH FIX */}
+        {/* Features con Icono Lucide */}
         {service.features && service.features.length > 0 && (
           <div>
-            <h2 className="font-semibold text-foreground mb-3 text-lg">✨ Características Incluidas</h2>
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles className="w-5 h-5 text-primary" />
+              <h2 className="font-bold text-foreground text-lg uppercase tracking-tight">Características Incluidas</h2>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               {service.features.map((feature, i) => (
                 <div
                   key={i}
-                  className="flex items-center gap-2 p-3 bg-primary/5 border border-primary/20 rounded-lg hover:bg-primary/10 transition-colors"
+                  className="flex items-center gap-2 p-3 bg-card border border-border rounded-xl hover:border-primary/40 transition-colors"
                 >
-                  <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />
-                  <span className="text-foreground text-sm font-medium">
-                    {/* Si el feature es un objeto con nombre, extraemos el texto */}
+                  <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
+                  <span className="text-foreground text-xs font-medium">
                     {typeof feature === 'object' ? (feature as any).nombre : feature}
                   </span>
                 </div>
@@ -233,67 +244,48 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
           </div>
         )}
 
-        {/* Extras */}
+        {/* Extras - Fix de Títulos y Precios con Icono Lucide */}
         {service.extras && service.extras.length > 0 && (
           <div>
-            <h2 className="font-semibold text-foreground mb-3 text-lg">🎁 Extras Disponibles</h2>
-            <div className="space-y-2">
-              {service.extras.map((extra) => (
-                <div
-                  key={extra.name}
-                  className="flex items-center justify-between p-4 bg-card rounded-lg border border-border hover:border-primary/50 transition-colors"
-                >
-                  <span className="text-foreground font-medium">{extra.name}</span>
-                  <span className="text-primary font-bold text-lg">+${extra.price}</span>
-                </div>
-              ))}
+            <div className="flex items-center gap-2 mb-3">
+              <Gift className="w-5 h-5 text-primary" />
+              <h2 className="font-bold text-foreground text-lg uppercase tracking-tight">Extras Disponibles</h2>
             </div>
-          </div>
-        )}
-
-        {/* Related Services */}
-        {service.relatedServices && service.relatedServices.length > 0 && (
-          <div>
-            <h2 className="font-semibold text-foreground mb-3 text-lg">🔗 Servicios Relacionados</h2>
             <div className="space-y-2">
-              {service.relatedServices.map((relId) => {
-                const relatedService = services.find((s) => s.id === relId)
-                return relatedService ? (
-                  <button
-                    key={relId}
-                    onClick={() => router.push(`/s/${relId}`)}
-                    className="w-full text-left p-4 bg-card rounded-lg border border-border hover:border-primary hover:shadow-md transition-all"
+              {service.extras.map((extra: any, idx: number) => {
+                const extraName = extra.nombre || extra.name || "Servicio Adicional";
+                const extraPrice = extra.precio || extra.price || 0;
+                
+                return (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between p-4 bg-card rounded-xl border border-border hover:border-primary/50 transition-all shadow-sm"
                   >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-semibold text-foreground">{relatedService.name}</p>
-                        <div className="flex items-center gap-1 mt-1">
-                          <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                          <p className="text-xs text-muted-foreground">{relatedService.rating} • {relatedService.location}</p>
-                        </div>
-                      </div>
-                      <span className="text-primary font-bold">${relatedService.price}</span>
-                    </div>
-                  </button>
-                ) : null
+                    <span className="text-foreground font-semibold text-sm">{extraName}</span>
+                    <span className="text-primary font-black text-lg">+${extraPrice}</span>
+                  </div>
+                );
               })}
             </div>
           </div>
         )}
 
-        {/* Social Links */}
+        {/* Social Links con Estilo Premium */}
         {service.socialLinks && (
-          <div>
-            <h2 className="font-semibold text-foreground mb-3 text-lg">📱 Síguenos</h2>
-            <div className="flex gap-2">
+          <div className="pt-4 border-t border-border">
+            <div className="flex items-center gap-2 mb-4">
+              <Share2 className="w-5 h-5 text-primary" />
+              <h2 className="font-bold text-foreground text-lg uppercase tracking-tight">Síguenos en Redes</h2>
+            </div>
+            <div className="flex gap-3">
               {service.socialLinks.instagram && (
                 <a
                   href={`https://instagram.com/${service.socialLinks.instagram.replace("@", "")}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-orange-400 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all font-semibold"
+                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-gradient-to-tr from-[#F58529] via-[#DD2A7B] to-[#8134AF] text-white rounded-xl hover:shadow-lg transition-all font-bold text-sm"
                 >
-                  📷 Instagram
+                  Instagram
                 </a>
               )}
               {service.socialLinks.facebook && (
@@ -301,9 +293,9 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
                   href={`https://facebook.com/${service.socialLinks.facebook}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-600 text-white rounded-lg hover:shadow-lg transition-all font-semibold"
+                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#1877F2] text-white rounded-xl hover:shadow-lg transition-all font-bold text-sm"
                 >
-                  f Facebook
+                  Facebook
                 </a>
               )}
             </div>
@@ -312,37 +304,35 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
       </div>
 
       {/* Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-gradient-to-t from-background from-80% to-transparent pt-8 pb-5 px-4 space-y-3 z-30 pointer-events-none">
-        <div className="pointer-events-auto space-y-3">
-          <div className="flex gap-2">
-            <button
-              onClick={handleWhatsApp}
-              className="flex-1 flex items-center justify-center gap-2 py-3 bg-green-600 hover:bg-green-700 text-white rounded-full font-semibold transition-colors shadow-lg"
-            >
-              <MessageCircle className="w-5 h-5" />
-              WhatsApp
-            </button>
-            <button
-              onClick={handleCall}
-              className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-semibold transition-colors shadow-lg"
-            >
-              <Phone className="w-5 h-5" />
-              Llamar
-            </button>
-            <button
-              onClick={handleShare}
-              className="w-14 h-14 flex items-center justify-center bg-card border border-border rounded-full hover:bg-muted transition-colors shadow-lg"
-            >
-              <Share2 className="w-5 h-5 text-foreground" />
-            </button>
-          </div>
-          <Button
-            className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full font-bold text-base shadow-lg"
-            onClick={() => setShowBookingModal(true)}
+      <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-gradient-to-t from-background from-80% to-transparent pt-8 pb-5 px-4 space-y-3 z-30 pointer-events-auto">
+        <div className="flex gap-2">
+          <button
+            onClick={handleWhatsApp}
+            className="flex-1 flex items-center justify-center gap-2 py-3 bg-green-600 hover:bg-green-700 text-white rounded-full font-bold shadow-lg transition-transform active:scale-95"
           >
-            Reservar Ahora
-          </Button>
+            <MessageCircle className="w-5 h-5" />
+            WhatsApp
+          </button>
+          <button
+            onClick={handleCall}
+            className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-bold shadow-lg transition-transform active:scale-95"
+          >
+            <Phone className="w-5 h-5" />
+            Llamar
+          </button>
+          <button
+            onClick={handleShare}
+            className="w-14 h-14 flex items-center justify-center bg-card border border-border rounded-full hover:bg-muted text-foreground shadow-lg transition-transform active:scale-95"
+          >
+            <Share2 className="w-5 h-5" />
+          </button>
         </div>
+        <Button
+          className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full font-black text-lg shadow-xl"
+          onClick={() => setShowBookingModal(true)}
+        >
+          RESERVAR AHORA
+        </Button>
       </div>
 
       {/* Booking Modal */}
