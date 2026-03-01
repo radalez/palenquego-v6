@@ -5,7 +5,7 @@ import { use } from "react"
 import { useRouter } from "next/navigation"
 import { ChevronLeft, MapPin, Star, MessageCircle, Phone, Share2, Heart, Grid } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 import { useAppStore, type Business } from "@/lib/store"
 import { BookingModal } from "@/components/booking-modal"
@@ -89,8 +89,12 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
           {/* Avatar and Basic Info */}
           <div className="relative -mt-12 mb-4 flex items-end gap-4">
             <Avatar className="w-24 h-24 border-4 border-background shadow-lg">
+              {/* Este es el que carga la imagen real usando el proxy */}
+              <AvatarImage src={business.logo} alt={business.name} className="object-cover" />
+              
+              {/* Este SOLO se muestra si la imagen de arriba falla */}
               <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground text-3xl font-bold">
-                {business.logo}
+                {business.name?.substring(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 pb-1">
