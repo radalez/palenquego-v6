@@ -20,6 +20,7 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
   const [guests, setGuests] = useState(1)
   const [selectedDate, setSelectedDate] = useState("")
   const [selectedTime, setSelectedTime] = useState("")
+  
   const [selectedExtras, setSelectedExtras] = useState<string[]>([])
   const [bookingResult, setBookingResult] = useState<{ qrCode: string } | null>(null)
   const [showPoolsModal, setShowPoolsModal] = useState(false)
@@ -47,9 +48,13 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
   const calculateTotal = () => {
     let total = service.price * guests
     if (service.extras) {
-      service.extras.forEach((extra) => {
-        if (selectedExtras.includes(extra.name)) {
-          total += extra.price * guests
+      service.extras.forEach((extra: any) => {
+        // Mapeo real: nombre y precio_adicional detectados en consola
+        const extraName = extra.nombre || extra.name
+        const extraPrice = parseFloat(extra.precio_adicional || extra.price || 0)
+        
+        if (selectedExtras.includes(extraName)) {
+          total += extraPrice * guests
         }
       })
     }
@@ -237,29 +242,35 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
             <p className="text-muted-foreground">Mejora tu experiencia con estos extras opcionales</p>
 
             <div className="space-y-3">
-              {service.extras?.map((extra) => (
-                <button
-                  key={extra.name}
-                  onClick={() => toggleExtra(extra.name)}
-                  className={cn(
-                    "w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all",
-                    selectedExtras.includes(extra.name) ? "border-primary bg-primary/5" : "border-border bg-card",
-                  )}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={cn(
-                        "w-6 h-6 rounded-full flex items-center justify-center",
-                        selectedExtras.includes(extra.name) ? "bg-primary" : "border-2 border-muted-foreground",
-                      )}
-                    >
-                      {selectedExtras.includes(extra.name) && <Check className="w-4 h-4 text-primary-foreground" />}
+              {service.extras?.map((extra: any) => {
+                const extraName = extra.nombre || extra.name
+                const extraPrice = parseFloat(extra.precio_adicional || extra.price || 0)
+                const isSelected = selectedExtras.includes(extraName)
+                
+                return (
+                  <button
+                    key={extraName}
+                    onClick={() => toggleExtra(extraName)}
+                    className={cn(
+                      "w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all",
+                      isSelected ? "border-primary bg-primary/5" : "border-border bg-card",
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={cn(
+                          "w-6 h-6 rounded-full flex items-center justify-center",
+                          isSelected ? "bg-primary" : "border-2 border-muted-foreground",
+                        )}
+                      >
+                        {isSelected && <Check className="w-4 h-4 text-primary-foreground" />}
+                      </div>
+                      <span className="font-medium text-foreground">{extraName}</span>
                     </div>
-                    <span className="font-medium text-foreground">{extra.name}</span>
-                  </div>
-                  <span className="text-primary font-semibold">+${extra.price}</span>
-                </button>
-              ))}
+                    <span className="text-primary font-semibold">+${extraPrice}</span>
+                  </button>
+                )
+              })}
             </div>
 
             <div className="flex gap-3">
