@@ -150,53 +150,64 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
           </div>
 
           {businessServices.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-4"> {/* Aumentamos espacio entre tarjetas */}
               {businessServices.map((service) => (
-                <button
+                <div
                   key={service.id}
-                  onClick={() => router.push(`/s/${service.id}`)}
-                  className="w-full bg-card border border-border rounded-2xl overflow-hidden hover:border-primary transition-colors"
+                  className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:border-primary/50 transition-all group"
                 >
-                  <div className="flex gap-3 h-28">
-                    {/* Image */}
-                    <div className="w-28 flex-shrink-0">
+                  <div className="flex h-full min-h-[140px]"> {/* Altura mínima flexible */}
+                    {/* Imagen con zoom al hacer hover */}
+                    <div className="w-32 flex-shrink-0 overflow-hidden relative">
                       <img
                         src={service.image || "/placeholder.svg"}
                         alt={service.name}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                       />
+                      {service.isRemate && (
+                        <div className="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                          OFERTA
+                        </div>
+                      )}
                     </div>
 
-                    {/* Content */}
-                    <div className="flex-1 p-3 flex flex-col justify-between">
-                      <div className="text-left">
-                        <h3 className="font-semibold text-foreground text-sm line-clamp-2">{service.name}</h3>
-                        <div className="flex items-center gap-1 mt-1">
-                          <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                          <span className="text-xs font-medium text-foreground">{service.rating}</span>
-                          <span className="text-xs text-muted-foreground">({service.reviews})</span>
+                    {/* Contenido con espacio para respirar */}
+                    <div className="flex-1 p-4 flex flex-col justify-between">
+                      <div>
+                        <div className="flex justify-between items-start gap-2">
+                          <h3 className="font-bold text-foreground text-sm line-clamp-2 leading-tight">
+                            {service.name}
+                          </h3>
+                          <span className="text-primary font-bold text-base">
+                            ${service.price}
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <div className="flex items-center gap-0.5">
+                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                            <span className="text-xs font-bold text-foreground">{service.rating || "5.0"}</span>
+                          </div>
+                          {service.reviews > 0 && (
+                            <span className="text-[10px] text-muted-foreground">({service.reviews} reseñas)</span>
+                          )}
                         </div>
                       </div>
-                      <div className="flex items-center justify-between pt-3 border-t border-border mt-3">
-                        <span className="text-primary font-bold">${service.price}</span>
-                      </div>
-                      <div className="flex gap-2 mt-3">
+
+                      {/* Botones con tamaño correcto y espaciado */}
+                      <div className="flex gap-2 mt-4 pt-3 border-t border-border/50">
                         <Button
                           variant="outline"
                           size="sm"
-                          className="flex-1 rounded-lg h-8 text-xs"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            router.push(`/s/${service.id}`)
-                          }}
+                          className="flex-1 rounded-xl h-9 text-xs font-semibold"
+                          onClick={() => router.push(`/s/${service.id}`)}
                         >
-                          Ver Detalles
+                          Detalles
                         </Button>
                         <Button
                           size="sm"
-                          className="flex-1 bg-primary hover:bg-primary/90 rounded-lg h-8 text-xs"
-                          onClick={(e) => {
-                            e.stopPropagation()
+                          className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl h-9 text-xs font-bold shadow-sm"
+                          onClick={() => {
                             setSelectedService(service)
                             setShowBookingModal(true)
                           }}
@@ -206,7 +217,7 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
                       </div>
                     </div>
                   </div>
-                </button>
+                </div>
               ))}
             </div>
           ) : (
