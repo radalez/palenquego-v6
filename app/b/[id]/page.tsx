@@ -172,18 +172,25 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
                     </div>
 
                     {/* Contenido con espacio para respirar */}
+                    {/* Contenido con Título y Descripción Corta */}
                     <div className="flex-1 p-4 flex flex-col justify-between">
                       <div>
                         <div className="flex justify-between items-start gap-2">
-                          <h3 className="font-bold text-foreground text-sm line-clamp-2 leading-tight">
-                            {service.name}
+                          {/* Título: Usamos nombre o name con recorte de 1 línea */}
+                          <h3 className="font-bold text-foreground text-sm line-clamp-1 flex-1 leading-tight">
+                            {service.nombre || service.name}
                           </h3>
                           <span className="text-primary font-bold text-base">
-                            ${service.price}
+                            ${service.price || service.precio_base}
                           </span>
                         </div>
+
+                        {/* Descripción Breve: Recorte automático a 2 líneas con '...' */}
+                        <p className="text-[11px] text-muted-foreground line-clamp-2 mt-1 leading-relaxed">
+                          {service.descripcion || service.description || "Sin descripción disponible"}
+                        </p>
                         
-                        <div className="flex items-center gap-2 mt-1.5">
+                        <div className="flex items-center gap-2 mt-2">
                           <div className="flex items-center gap-0.5">
                             <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                             <span className="text-xs font-bold text-foreground">{service.rating || "5.0"}</span>
@@ -194,19 +201,19 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
                         </div>
                       </div>
 
-                      {/* Botones con tamaño correcto y espaciado */}
-                      <div className="flex gap-2 mt-4 pt-3 border-t border-border/50">
+                      {/* Botones con espacio fijo para que no se escondan */}
+                      <div className="flex gap-2 mt-4">
                         <Button
                           variant="outline"
                           size="sm"
-                          className="flex-1 rounded-xl h-9 text-xs font-semibold"
+                          className="flex-1 rounded-xl h-8 text-[10px] font-bold uppercase tracking-wider"
                           onClick={() => router.push(`/s/${service.id}`)}
                         >
                           Detalles
                         </Button>
                         <Button
                           size="sm"
-                          className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl h-9 text-xs font-bold shadow-sm"
+                          className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl h-8 text-[10px] font-bold uppercase tracking-wider shadow-sm"
                           onClick={() => {
                             setSelectedService(service)
                             setShowBookingModal(true)
@@ -216,6 +223,7 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
                         </Button>
                       </div>
                     </div>
+                    
                   </div>
                 </div>
               ))}
