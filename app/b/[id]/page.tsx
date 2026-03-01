@@ -63,9 +63,9 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
   }
 
   return (
-    <main className="min-h-screen bg-background flex flex-col max-w-md mx-auto pb-32">
-      {/* Header with Back Button - Fixed */}
-      <div className="sticky top-0 z-20 bg-background border-b border-border px-4 py-3 flex items-center justify-between">
+    <main className="h-screen bg-background flex flex-col max-w-md mx-auto overflow-hidden">
+      {/* Header with Back Button - Fixed con z-index superior para evitar solapamientos */}
+      <div className="sticky top-0 z-40 bg-background border-b border-border px-4 py-3 flex items-center justify-between flex-shrink-0">
         <button
           onClick={() => router.back()}
           className="w-10 h-10 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
@@ -76,32 +76,30 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
         <div className="w-10" />
       </div>
 
-      {/* Cover Image */}
-      <div className="relative h-56 bg-gradient-to-br from-primary/20 to-primary/5 overflow-hidden border-b-2 border-primary/20 z-0">
-        <img
-          src={business.coverImage || "/placeholder.svg"}
-          alt={business.name}
-          className="w-full h-full object-cover"
-        />
-      </div>
+      {/* Contenedor de Scroll UNIFICADO: Metemos el banner aquí para que el Avatar comparta el mismo contexto */}
+      <div className="flex-1 overflow-y-auto pb-32 relative">
+        
+        {/* Cover Image: Movido dentro del scroll para que el margen negativo del logo funcione */}
+        <div className="relative h-56 bg-gradient-to-br from-primary/20 to-primary/5 overflow-hidden border-b-2 border-primary/20 z-0">
+          <img
+            src={business.coverImage || "/placeholder.svg"}
+            alt={business.name}
+            className="w-full h-full object-cover"
+          />
+        </div>
 
-      {/* Content */}
-    <div className="flex-1 overflow-y-auto pb-32 relative z-10">
-        {/* Business Info Card - Enhanced Design */}
-        <div className="px-4 space-y-4">
-          {/* Avatar and Basic Info */}
-          <div className="relative -mt-12 mb-4 flex items-end gap-4">
-            <Avatar className="w-24 h-24 border-4 border-background shadow-lg z-20">
-              {/* Este es el que carga la imagen real usando el proxy */}
+        {/* Content Section */}
+        <div className="px-4 space-y-4 relative z-10">
+          {/* Business Info Card - El logo ahora sí flota al frente por estar en el mismo div de scroll */}
+          <div className="relative -mt-12 mb-4 flex items-end gap-4 z-20"> 
+            <Avatar className="w-24 h-24 border-4 border-background shadow-lg">
               <AvatarImage src={business.logo} alt={business.name} className="object-cover" />
-              
-              {/* Este SOLO se muestra si la imagen de arriba falla */}
               <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground text-3xl font-bold">
                 {business.name?.substring(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 pb-1">
-              <h1 className="text-2xl font-bold text-foreground mb-1">{business.name}</h1>
+              <h1 className="text-2xl font-bold text-foreground mb-1 drop-shadow-sm">{business.name}</h1>
               <div className="flex items-center gap-1 text-muted-foreground">
                 <MapPin className="w-4 h-4" />
                 <span className="text-xs font-medium">{business.location}</span>
@@ -140,131 +138,120 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
             <h2 className="font-semibold text-foreground mb-2 text-sm">Sobre este negocio</h2>
             <p className="text-foreground leading-relaxed text-sm">{business.description}</p>
           </div>
-        </div>
 
-        {/* Services Grid */}
-        <div className="px-4 py-8 space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-1 h-6 bg-primary rounded-full" />
-            <h2 className="text-xl font-bold text-foreground">Servicios Disponibles</h2>
-          </div>
+          {/* Services Grid con espaciado consistente */}
+          <div className="py-8 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-1 h-6 bg-primary rounded-full" />
+              <h2 className="text-xl font-bold text-foreground">Servicios Disponibles</h2>
+            </div>
 
-          {businessServices.length > 0 ? (
-            <div className="space-y-4"> {/* Aumentamos espacio entre tarjetas */}
-              {businessServices.map((service) => (
-                <div
-                  key={service.id}
-                  className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:border-primary/50 transition-all group"
-                >
-                  <div className="flex h-full min-h-[140px]"> {/* Altura mínima flexible */}
-                    {/* Imagen con zoom al hacer hover */}
-                    <div className="w-32 flex-shrink-0 overflow-hidden relative">
-                      <img
-                        src={service.image || "/placeholder.svg"}
-                        alt={service.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                      />
-                      {service.isRemate && (
-                        <div className="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
-                          OFERTA
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Contenido con espacio para respirar */}
-                    {/* Contenido con Título y Descripción Corta */}
-                    <div className="flex-1 p-4 flex flex-col justify-between">
-                      <div>
-                        <div className="flex justify-between items-start gap-2">
-                          {/* Título: Usamos nombre o name con recorte de 1 línea */}
-                          <h3 className="font-bold text-foreground text-sm line-clamp-1 flex-1 leading-tight">
-                            {service.nombre || service.name}
-                          </h3>
-                          <span className="text-primary font-bold text-base">
-                            ${service.price || service.precio_base}
-                          </span>
-                        </div>
-
-                        {/* Descripción Breve: Recorte automático a 2 líneas con '...' */}
-                        <p className="text-[11px] text-muted-foreground line-clamp-2 mt-1 leading-relaxed">
-                          {service.descripcion || service.description || "Sin descripción disponible"}
-                        </p>
-                        
-                        <div className="flex items-center gap-2 mt-2">
-                          <div className="flex items-center gap-0.5">
-                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                            <span className="text-xs font-bold text-foreground">{service.rating || "5.0"}</span>
+            {businessServices.length > 0 ? (
+              <div className="space-y-4">
+                {businessServices.map((service) => (
+                  <div
+                    key={service.id}
+                    className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:border-primary/50 transition-all group"
+                  >
+                    <div className="flex h-full min-h-[140px]">
+                      <div className="w-32 flex-shrink-0 overflow-hidden relative">
+                        <img
+                          src={service.image || "/placeholder.svg"}
+                          alt={service.name}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                        />
+                        {service.isRemate && (
+                          <div className="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                            OFERTA
                           </div>
-                          {service.reviews > 0 && (
-                            <span className="text-[10px] text-muted-foreground">({service.reviews} reseñas)</span>
-                          )}
+                        )}
+                      </div>
+
+                      <div className="flex-1 p-4 flex flex-col justify-between">
+                        <div>
+                          <div className="flex justify-between items-start gap-2">
+                            <h3 className="font-bold text-foreground text-sm line-clamp-1 flex-1 leading-tight">
+                              {service.nombre || service.name}
+                            </h3>
+                            <span className="text-primary font-bold text-base">
+                              ${service.price || service.precio_base}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground line-clamp-2 mt-1 leading-relaxed">
+                            {service.descripcion || service.description || "Sin descripción disponible"}
+                          </p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <div className="flex items-center gap-0.5">
+                              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                              <span className="text-xs font-bold text-foreground">{service.rating || "5.0"}</span>
+                            </div>
+                            {service.reviews > 0 && (
+                              <span className="text-[10px] text-muted-foreground">({service.reviews} reseñas)</span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2 mt-4">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 rounded-xl h-8 text-[10px] font-bold uppercase tracking-wider"
+                            onClick={() => router.push(`/s/${service.id}`)}
+                          >
+                            Detalles
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl h-8 text-[10px] font-bold uppercase tracking-wider shadow-sm"
+                            onClick={() => {
+                              setSelectedService(service)
+                              setShowBookingModal(true)
+                            }}
+                          >
+                            Reservar
+                          </Button>
                         </div>
                       </div>
-
-                      {/* Botones con espacio fijo para que no se escondan */}
-                      <div className="flex gap-2 mt-4">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex-1 rounded-xl h-8 text-[10px] font-bold uppercase tracking-wider"
-                          onClick={() => router.push(`/s/${service.id}`)}
-                        >
-                          Detalles
-                        </Button>
-                        <Button
-                          size="sm"
-                          className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl h-8 text-[10px] font-bold uppercase tracking-wider shadow-sm"
-                          onClick={() => {
-                            setSelectedService(service)
-                            setShowBookingModal(true)
-                          }}
-                        >
-                          Reservar
-                        </Button>
-                      </div>
                     </div>
-                    
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">No hay servicios disponibles</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Bottom Action Bar - Fixed with proper gradient */}
-      <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-gradient-to-t from-background from-80% to-transparent pt-8 pb-5 px-4 space-y-3 z-30 pointer-events-none">
-        <div className="pointer-events-auto space-y-3">
-          <div className="flex gap-2">
-            <button
-              onClick={handleWhatsApp}
-              className="flex-1 flex items-center justify-center gap-2 py-3 bg-green-600 hover:bg-green-700 text-white rounded-full font-semibold transition-colors shadow-lg"
-            >
-              <MessageCircle className="w-5 h-5" />
-              WhatsApp
-            </button>
-            <button
-              onClick={handleCall}
-              className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-semibold transition-colors shadow-lg"
-            >
-              <Phone className="w-5 h-5" />
-              Llamar
-            </button>
-            <button
-              onClick={handleShare}
-              className="w-14 h-14 flex items-center justify-center bg-card border border-border rounded-full hover:bg-muted transition-colors shadow-lg"
-            >
-              <Share2 className="w-5 h-5 text-foreground" />
-            </button>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">No hay servicios disponibles</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Booking Modal */}
+      {/* Bottom Action Bar Fijo - Controlando la visibilidad con pointer-events */}
+      <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-gradient-to-t from-background from-80% to-transparent pt-8 pb-5 px-4 space-y-3 z-30 pointer-events-none">
+        <div className="pointer-events-auto flex gap-2">
+          <button
+            onClick={handleWhatsApp}
+            className="flex-1 flex items-center justify-center gap-2 py-3 bg-green-600 hover:bg-green-700 text-white rounded-full font-semibold transition-colors shadow-lg"
+          >
+            <MessageCircle className="w-5 h-5" />
+            WhatsApp
+          </button>
+          <button
+            onClick={handleCall}
+            className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-semibold transition-colors shadow-lg"
+          >
+            <Phone className="w-5 h-5" />
+            Llamar
+          </button>
+          <button
+            onClick={handleShare}
+            className="w-14 h-14 flex items-center justify-center bg-card border border-border rounded-full hover:bg-muted transition-colors shadow-lg"
+          >
+            <Share2 className="w-5 h-5 text-foreground" />
+          </button>
+        </div>
+      </div>
+
+      {/* Booking Modal con estado controlado */}
       {showBookingModal && selectedService && (
         <BookingModal service={selectedService} onClose={() => setShowBookingModal(false)} />
       )}
