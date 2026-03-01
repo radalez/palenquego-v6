@@ -593,6 +593,14 @@ const initialRoutes: Route[] = [
   },
 ]
 
+// --- ESTA ES LA FUNCIÓN QUE LIMPIA TODO DE UN SOLO GOLPE ---
+const getProxyImage = (url: string) => {
+  if (!url) return "";
+  return url
+    .replace("http://209.97.146.210/media", MEDIA_BASE) // Quita la IP prohibida
+    .replace("/media/", `${MEDIA_BASE}/`);             // Cambia /media/ por /media-proxy/
+};
+
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
@@ -619,45 +627,33 @@ export const useAppStore = create<AppState>()(
 
       // --- ACCIONES DE API ---
       fetchServices: async (query = "") => {
-        set({ isLoading: true })
-        try {
-          const response = await fetch(`${API_BASE}/catalog/${query}`)
-          const data = await response.json()
-          const formatted = data.map((s: any) => {
-            // Si la imagen viene con la IP, la cambiamos por el proxy
-            const rawImage = s.imagen_principal || "";
-            const cleanImage = rawImage.replace("http://209.97.146.210/media", MEDIA_BASE);
-            
-            return {
-              ...s,
-              image: cleanImage.startsWith('/') ? cleanImage : `${MEDIA_BASE}${cleanImage}`
-            }
-          })
-          set({ services: formatted, isLoading: false })
-        } catch (error) {
-          set({ isLoading: false })
-        }
-      },
+  set({ isLoading: true })
+  try {
+    const response = await fetch(`${API_BASE}/catalog/${query}`)
+    const data = await response.json()
+    const formatted = data.map((s: any) => ({
+      ...s,
+      image: getProxyImage(s.imagen_principal || "")
+    }))
+    set({ services: formatted, isLoading: false })
+  } catch (error) {
+    set({ isLoading: false })
+  }
+},
 
       fetchBusinesses: async () => {
   try {
     const response = await fetch(`${API_BASE}/stores/list/`)
     const data = await response.json()
     
-    const formattedBusinesses = data.map((b: any) => {
-      // Limpiamos las URLs de portada y logo para que pasen por el túnel seguro
-      const cleanCover = (b.portada || "").replace("http://209.97.146.210/media", MEDIA_BASE);
-      const cleanLogo = (b.logo || "").replace("http://209.97.146.210/media", MEDIA_BASE);
-
-      return {
-        ...b,
-        name: b.nombre_comercial,
-        services: b.services || [],
-        socialLinks: b.socialLinks || {},
-        coverImage: cleanCover.startsWith('/') ? cleanCover : `${MEDIA_BASE}${cleanCover}`,
-        logo: cleanLogo.startsWith('/') ? cleanLogo : `${MEDIA_BASE}${cleanLogo}`
-      }
-    })
+    const formattedBusinesses = data.map((b: any) => ({
+      ...b,
+      name: b.nombre_comercial,
+      coverImage: getProxyImage(b.portada || ""),
+      logo: getProxyImage(b.logo || ""),
+      services: b.services || [],
+      socialLinks: b.socialLinks || {},
+    }))
 
     set({ businesses: formattedBusinesses })
   } catch (error) {
