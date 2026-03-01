@@ -21,7 +21,7 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
   const [selectedDate, setSelectedDate] = useState("")
   const [selectedTime, setSelectedTime] = useState("")
   
-  const [selectedExtras, setSelectedExtras] = useState<string[]>([])
+  const [selectedExtras, setSelectedExtras] = useState<Record<string, number>>({})
   const [bookingResult, setBookingResult] = useState<{ qrCode: string } | null>(null)
   const [showPoolsModal, setShowPoolsModal] = useState(false)
   const [joinedPool, setJoinedPool] = useState<Pool | null>(null)
@@ -41,20 +41,28 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
 
   const times = ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00"]
 
-  const toggleExtra = (extraName: string) => {
-    setSelectedExtras((prev) => (prev.includes(extraName) ? prev.filter((e) => e !== extraName) : [...prev, extraName]))
+  const updateExtraQuantity = (extraName: string, delta: number) => {
+    setSelectedExtras((prev) => {
+      const currentQty = prev[extraName] || 0
+      const newQty = Math.max(0, currentQty + delta)
+      return { ...prev, [extraName]: newQty }
+    })
   }
 
   const calculateTotal = () => {
     let total = service.price * guests
     if (service.extras) {
       service.extras.forEach((extra: any) => {
-        // Mapeo real: nombre y precio_adicional detectados en consola
+        // Mapeo blindado: usamos 'as any' para evitar el error rojo en precio_adicional
         const extraName = extra.nombre || extra.name
-        const extraPrice = parseFloat(extra.precio_adicional || extra.price || 0)
+        const extraPriceRaw = extra.precio_adicional || extra.price || 0
+        const extraPrice = typeof extraPriceRaw === "string" ? parseFloat(extraPriceRaw) : extraPriceRaw
         
-        if (selectedExtras.includes(extraName)) {
-          total += extraPrice * guests
+        // Buscamos la cantidad elegida en el estado selectedExtras
+        const quantity = (selectedExtras as any)[extraName] || 0
+        
+        if (quantity > 0) {
+          total += extraPrice * quantity
         }
       })
     }
@@ -71,12 +79,17 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
   }
 
   const handleConfirmBooking = () => {
+    // Convertimos las cantidades a una lista legible para el registro
+    const extrasSummary = Object.entries(selectedExtras)
+      .filter(([_, qty]) => qty > 0)
+      .map(([name, qty]) => `${qty}x ${name}`)
+
     const booking = addBooking({
       service,
       date: selectedDate || "15 Ene",
       time: selectedTime || "10:00",
       guests: joinedPool ? 1 : guests,
-      extras: selectedExtras,
+      extras: extrasSummary,
       totalPrice: joinedPool ? Math.round(joinedPool.totalPrice / joinedPool.targetMembers) : calculateTotal(),
       status: "CONFIRMADO",
       poolId: joinedPool?.id,
@@ -245,30 +258,38 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
               {service.extras?.map((extra: any) => {
                 const extraName = extra.nombre || extra.name
                 const extraPrice = parseFloat(extra.precio_adicional || extra.price || 0)
-                const isSelected = selectedExtras.includes(extraName)
+                const quantity = selectedExtras[extraName] || 0
                 
                 return (
-                  <button
+                  <div
                     key={extraName}
-                    onClick={() => toggleExtra(extraName)}
                     className={cn(
-                      "w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all",
-                      isSelected ? "border-primary bg-primary/5" : "border-border bg-card",
+                      "w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all shadow-sm",
+                      quantity > 0 ? "border-primary bg-primary/5" : "border-border bg-card",
                     )}
                   >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={cn(
-                          "w-6 h-6 rounded-full flex items-center justify-center",
-                          isSelected ? "bg-primary" : "border-2 border-muted-foreground",
-                        )}
-                      >
-                        {isSelected && <Check className="w-4 h-4 text-primary-foreground" />}
-                      </div>
-                      <span className="font-medium text-foreground">{extraName}</span>
+                    <div className="flex-1 text-left">
+                      <span className="block font-bold text-foreground">{extraName}</span>
+                      <span className="text-primary font-semibold text-sm">+${extraPrice} /u</span>
                     </div>
-                    <span className="text-primary font-semibold">+${extraPrice}</span>
-                  </button>
+
+                    <div className="flex items-center gap-3 bg-muted rounded-lg p-1 ml-4 border border-border">
+                      <button
+                        onClick={() => updateExtraQuantity(extraName, -1)}
+                        className="w-8 h-8 rounded-md bg-card flex items-center justify-center hover:bg-muted transition-colors shadow-sm"
+                        disabled={quantity === 0}
+                      >
+                        <Minus className="w-4 h-4 text-foreground" />
+                      </button>
+                      <span className="w-6 text-center font-bold text-foreground text-sm">{quantity}</span>
+                      <button
+                        onClick={() => updateExtraQuantity(extraName, 1)}
+                        className="w-8 h-8 rounded-md bg-primary flex items-center justify-center hover:bg-primary/90 transition-colors shadow-sm"
+                      >
+                        <Plus className="w-4 h-4 text-primary-foreground" />
+                      </button>
+                    </div>
+                  </div>
                 )
               })}
             </div>
@@ -330,14 +351,18 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
                 <span className="text-foreground font-medium">{joinedPool ? 1 : guests}</span>
               </div>
 
-              {selectedExtras.length > 0 && !joinedPool && (
+              {Object.values(selectedExtras).some((q: any) => q > 0) && !joinedPool && (
                 <div className="pt-2 border-t border-border">
-                  <span className="text-sm text-muted-foreground">Extras:</span>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {selectedExtras.map((extra) => (
-                      <Badge key={extra} variant="secondary">
-                        {extra}
-                      </Badge>
+                  <span className="text-sm text-muted-foreground font-medium">Extras seleccionados:</span>
+                  <div className="flex flex-col gap-2 mt-2">
+                    {Object.entries(selectedExtras).map(([name, qty]) => (qty as number) > 0 && (
+                      <div key={name} className="flex justify-between items-center text-sm bg-background/50 p-2 rounded-lg">
+                        <span className="font-semibold text-foreground">{qty}x {name}</span>
+                        <span className="text-primary font-bold">
+                          {/* FIX QUIRÚRGICO: Forzamos 'as any' para que el punto rojo desaparezca */}
+                          ${(parseFloat((service.extras?.find((e: any) => (e.nombre || e.name) === name) as any)?.precio_adicional || "0") * (qty as number)).toFixed(2)}
+                        </span>
+                      </div>
                     ))}
                   </div>
                 </div>
