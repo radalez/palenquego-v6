@@ -8,10 +8,15 @@ const MEDIA_BASE = "/media-proxy";
 // --- ESTA ES LA FUNCIÓN QUE LIMPIA TODO DE UN SOLO GOLPE ---
 const getProxyImage = (url: string) => {
   if (!url) return "";
-  // SI YA TIENE EL PROXY O ES UNA URL EXTERNA, NO HACEMOS NADA
-  if (url.includes(MEDIA_BASE) || url.startsWith('http') && !url.includes('209.97.146.210')) return url;
+  const cleanUrl = url.trim();
   
-  return url
+  // REGLA DE ORO: Si ya tiene el proxy o es una URL externa segura, NO LA TOQUES
+  if (cleanUrl.includes(MEDIA_BASE) || (cleanUrl.startsWith('http') && !cleanUrl.includes('209.97.146.210'))) {
+    return cleanUrl;
+  }
+  
+  // Si viene con la IP prohibida, la cambiamos por el túnel
+  return cleanUrl
     .replace("http://209.97.146.210/media", MEDIA_BASE)
     .replace("/media/", `${MEDIA_BASE}/`);
 };
@@ -640,6 +645,7 @@ export const useAppStore = create<AppState>()(
             name: b.nombre_comercial || b.name,
             description: b.biografia || b.description || "",
             location: b.ubicacion_gps || b.location || "El Salvador",
+            // Aplicamos el filtro blindado a los dos campos de imagen
             logo: getProxyImage(b.logo || ""),
             coverImage: getProxyImage(b.portada || b.coverImage || ""),
             rating: b.rating || 5.0,
