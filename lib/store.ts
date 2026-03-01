@@ -1,8 +1,8 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 
-const API_BASE = "http://157.245.181.207/api/v1"
-const MEDIA_BASE = "http://157.245.181.207"
+const API_BASE = "/api-proxy";
+const MEDIA_BASE = "/media-proxy";
 
 export interface Rating {
   userId: string

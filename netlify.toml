@@ -1,0 +1,11 @@
+[[redirects]]
+  from = "/api-proxy/*"
+  to = "http://209.97.146.210/api/v1/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/media-proxy/*"
+  to = "http://209.97.146.210/media/:splat"
+  status = 200
+  force = true
