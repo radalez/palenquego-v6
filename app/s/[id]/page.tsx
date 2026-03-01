@@ -23,9 +23,7 @@ import { BookingModal } from "@/components/booking-modal"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
 interface ServiceDetailPageProps {
-  params: {
-    id: string
-  }
+  params: Promise<{ id: string }>
 }
 
 export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
