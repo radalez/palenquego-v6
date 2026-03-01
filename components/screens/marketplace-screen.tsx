@@ -226,23 +226,28 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
               <div className="p-4">
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1 cursor-pointer" onClick={() => router.push(`/s/${service.id}`)}>
-                    <h3 className="font-semibold text-foreground hover:text-primary transition-colors">{service.name}</h3>
-                    <div className="flex items-center gap-1 text-muted-foreground text-sm">
-                      <MapPin className="w-3 h-3" />
+                    {/* Usamos el nombre unificado */}
+                    <h3 className="font-bold text-foreground hover:text-primary transition-colors text-lg">
+                      {service.name}
+                    </h3>
+                    <div className="flex items-center gap-1 text-muted-foreground text-sm mt-1">
+                      <MapPin className="w-3.5 h-3.5 text-primary" />
                       <span>{service.location}</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between mb-3 pb-3 border-b border-border">
-                  <div className="flex items-center gap-1">
-                    <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                    <span className="font-medium text-foreground text-sm">{service.rating}</span>
-                    <span className="text-muted-foreground text-xs">({service.reviews})</span>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200">
+                      <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                      <span className="font-bold text-amber-700 text-sm">{service.rating}</span>
+                    </div>
+                    <span className="text-muted-foreground text-xs font-medium">({service.reviews} reseñas)</span>
                   </div>
                   <button
                     onClick={() => setServiceToRate(service)}
-                    className="text-xs font-medium text-primary hover:underline"
+                    className="text-xs font-bold text-primary hover:bg-primary/5 px-2 py-1 rounded-lg transition-colors"
                   >
                     Calificar
                   </button>
@@ -253,15 +258,15 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
                     <div>
                       {service.isRemate ? (
                         <div className="flex items-center gap-2">
-                          <span className="text-muted-foreground line-through text-sm">
+                          <span className="text-muted-foreground line-through text-sm font-medium">
                             ${Math.round(service.price / (1 - (service.discount || 0) / 100))}
                           </span>
-                          <span className="text-xl font-bold text-secondary">${service.price}</span>
+                          <span className="text-2xl font-black text-secondary">${service.price}</span>
                         </div>
                       ) : (
-                        <span className="text-xl font-bold text-foreground">${service.price}</span>
+                        <span className="text-2xl font-black text-foreground">${service.price}</span>
                       )}
-                      <span className="text-muted-foreground text-sm"> / persona</span>
+                      <span className="text-muted-foreground text-sm font-medium"> / persona</span>
                     </div>
                   </div>
                   <div className="flex gap-2">

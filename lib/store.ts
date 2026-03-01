@@ -630,10 +630,20 @@ export const useAppStore = create<AppState>()(
           const data = await response.json()
           const formatted = data.map((s: any) => ({
             ...s,
-            // Esto asegura que el ID de la tienda y el precio se guarden bien
-            businessId: s.tienda?.id || s.businessId, 
-            price: parseFloat(s.precio_base) || s.price,
-            image: getProxyImage(s.imagen_principal || "")
+            // UNIFICACIÓN DE CAMPOS: Mapeamos lo que viene de la API a tus nombres de variable
+            id: s.id,
+            name: s.nombre || s.name || "Servicio sin nombre",
+            description: s.descripcion || s.description || "Sin descripción disponible",
+            location: s.ubicacion || s.location || "Palenque, El Salvador",
+            price: parseFloat(s.precio_base) || parseFloat(s.price) || 0,
+            image: getProxyImage(s.imagen_principal || s.image || ""),
+            rating: parseFloat(s.calificacion) || s.rating || 5.0,
+            reviews: parseInt(s.numero_resenas) || s.reviews || 0,
+            businessId: s.tienda?.id || s.businessId,
+            category: s.categoria?.nombre || s.category || "General",
+            spotsLeft: s.cupos_disponibles || s.spotsLeft || 0,
+            isRemate: s.en_oferta || s.isRemate || false,
+            discount: s.descuento || s.discount || 0,
           }))
           set({ services: formatted, isLoading: false })
         } catch (error) {
