@@ -627,6 +627,9 @@ export const useAppStore = create<AppState>()(
           const data = await response.json()
           const formatted = data.map((s: any) => ({
             ...s,
+            // LA CLAVE: Sacamos el ID de la tienda del objeto 'tienda' que nos mostraste
+            businessId: s.tienda?.id || s.businessId, 
+            price: parseFloat(s.precio_base) || s.price,
             image: getProxyImage(s.imagen_principal || "")
           }))
           set({ services: formatted, isLoading: false })

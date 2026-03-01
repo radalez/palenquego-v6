@@ -22,7 +22,10 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
   const [selectedService, setSelectedService] = useState<any>(null)
 
   const business = businesses.find((b) => b.id === parseInt(resolvedParams.id))
-  const businessServices = business ? services.filter((s) => business.services.includes(s.id)) : []
+  // Filtramos los servicios que tengan el mismo businessId que el ID de esta tienda
+  const businessServices = business 
+    ? services.filter((s) => s.businessId === business.id) 
+    : []
 
   // Render not found state after all hooks
   if (!business) {
