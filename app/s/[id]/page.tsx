@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { useAppStore, type Service } from "@/lib/store"
 import { BookingModal } from "@/components/booking-modal"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 
 interface ServiceDetailPageProps {
   params: Promise<{ id: string }>
@@ -59,15 +59,16 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
 
   const handleCall = () => {
     if (service.socialLinks?.whatsapp) {
-      window.location.href = `tel:${service.socialLinks.whatsapp}`
+      const cleanPhone = service.socialLinks.whatsapp.replace(/\D/g, "")
+      window.location.href = `tel:${cleanPhone}`
     }
   }
 
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
-        title: service.name,
-        text: service.description,
+        title: typeof service.name === 'object' ? (service as any).name?.nombre : service.name,
+        text: typeof service.description === 'object' ? (service as any).description?.descripcion : service.description,
         url: window.location.href,
       })
     }
@@ -101,7 +102,7 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
       <div className="relative h-64 bg-muted overflow-hidden">
         <img
           src={images[currentImageIndex] || "/placeholder.svg"}
-          alt={service.name}
+          alt={service.name as any}
           className="w-full h-full object-cover"
         />
 
@@ -142,10 +143,12 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
         <div>
           <div className="flex items-start justify-between mb-2">
             <div>
-              <h1 className="text-2xl font-bold text-foreground">{service.name}</h1>
+              <h1 className="text-2xl font-bold text-foreground">
+                {typeof service.name === 'object' ? (service as any).name?.nombre : service.name}
+              </h1>
               <div className="flex items-center gap-1 text-muted-foreground mt-1">
                 <MapPin className="w-4 h-4" />
-                <span>{service.location}</span>
+                <span>{typeof service.location === 'object' ? (service as any).location?.nombre : service.location}</span>
               </div>
             </div>
           </div>
@@ -158,7 +161,7 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
           </div>
         </div>
 
-        {/* Business Card */}
+        {/* Business Card - Logo Fixed */}
         {service.businessName && (
           <button
             onClick={() => router.push(`/b/${service.businessId}`)}
@@ -167,8 +170,10 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3 flex-1">
                 <Avatar className="w-14 h-14 border-2 border-primary">
+                  {/* Ahora sí mostramos el logo real si businessAvatar es la URL */}
+                  <AvatarImage src={service.businessAvatar} alt={service.businessName} className="object-cover" />
                   <AvatarFallback className="bg-primary text-primary-foreground font-bold text-lg">
-                    {service.businessAvatar}
+                    {service.businessAvatar?.substring(0, 2).toUpperCase() || "BZ"}
                   </AvatarFallback>
                 </Avatar>
                 <div className="text-left">
@@ -201,11 +206,13 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
         {service.description && (
           <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
             <h2 className="font-semibold text-foreground mb-2">📝 Descripción</h2>
-            <p className="text-foreground text-sm leading-relaxed">{service.description}</p>
+            <p className="text-foreground text-sm leading-relaxed">
+              {typeof service.description === 'object' ? (service as any).description?.descripcion : service.description}
+            </p>
           </div>
         )}
 
-        {/* Features */}
+        {/* Features - ANTI CRASH FIX */}
         {service.features && service.features.length > 0 && (
           <div>
             <h2 className="font-semibold text-foreground mb-3 text-lg">✨ Características Incluidas</h2>
@@ -216,7 +223,10 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
                   className="flex items-center gap-2 p-3 bg-primary/5 border border-primary/20 rounded-lg hover:bg-primary/10 transition-colors"
                 >
                   <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />
-                  <span className="text-foreground text-sm font-medium">{feature}</span>
+                  <span className="text-foreground text-sm font-medium">
+                    {/* Si el feature es un objeto con nombre, extraemos el texto */}
+                    {typeof feature === 'object' ? (feature as any).nombre : feature}
+                  </span>
                 </div>
               ))}
             </div>
@@ -301,7 +311,7 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
         )}
       </div>
 
-      {/* Bottom Action Bar - Fixed with proper gradient */}
+      {/* Bottom Action Bar */}
       <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-gradient-to-t from-background from-80% to-transparent pt-8 pb-5 px-4 space-y-3 z-30 pointer-events-none">
         <div className="pointer-events-auto space-y-3">
           <div className="flex gap-2">
