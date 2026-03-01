@@ -47,18 +47,21 @@ export function BusinessCard({ business, onViewProfile }: BusinessCardProps) {
       onViewProfile?.(business)
       router.push(`/b/${business.id}`)
     }}>
-      {/* Cover Image - El recorte se hace solo aquí, no en toda la tarjeta */}
-      <div className="relative w-full h-40 overflow-hidden rounded-t-xl bg-muted border-b">
-        <img
-          src={business.coverImage}
-          alt={business.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-        />
-        <Badge className="absolute top-3 right-3 bg-white/90 text-foreground hover:bg-white z-10 shadow-sm">
-          {business.category}
-        </Badge>
+      {/* Contenedor relativo para el Banner y el Logo flotante */}
+      <div className="relative">
+        {/* Cover Image - El overflow-hidden se queda solo aquí para recortar la imagen y no el logo */}
+        <div className="w-full h-40 overflow-hidden rounded-t-xl bg-muted border-b">
+          <img
+            src={business.coverImage}
+            alt={business.name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+          <Badge className="absolute top-3 right-3 bg-white/90 text-foreground hover:bg-white z-10 shadow-sm">
+            {business.category}
+          </Badge>
+        </div>
         
-        {/* AVATAR SOBREPUESTO - LA CLAVE ESTÁ EN EL Z-30 Y EL OVERFLOW DEL CARD */}
+        {/* AVATAR SOBREPUESTO - Movido fuera del overflow-hidden pero dentro del div relativo */}
         <div className="absolute -bottom-8 left-4 z-30">
           <div className="p-1 bg-background rounded-full shadow-xl">
             <Avatar className="w-16 h-16 border-2 border-background">
@@ -71,7 +74,7 @@ export function BusinessCard({ business, onViewProfile }: BusinessCardProps) {
         </div>
       </div>
 
-      {/* Content - Le damos más padding superior (pt-10) para que el nombre no choque con el logo flotante */}
+      {/* Content - Manteniendo pt-10 para dar espacio al logo que ahora sí sobresale */}
       <div className="p-4 pt-10 space-y-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
@@ -99,7 +102,6 @@ export function BusinessCard({ business, onViewProfile }: BusinessCardProps) {
 
         {/* Services Count */}
         <div className="text-xs text-muted-foreground">
-         {/* Usamos un seguro para que si services es undefined, use un array vacío */}
         {(business.services || []).length} servicio{(business.services || []).length !== 1 ? "s" : ""} disponible{(business.services || []).length !== 1 ? "s" : ""}
         </div>
 
@@ -144,7 +146,6 @@ export function BusinessCard({ business, onViewProfile }: BusinessCardProps) {
 
         {/* Social Links */}
         <div className="flex gap-2 pt-2 border-t">
-          {/* El error ocurre aquí: añadimos '?' */}
           {business.socialLinks?.instagram && (
             <Button
               size="sm"
