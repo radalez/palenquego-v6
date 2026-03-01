@@ -8,9 +8,12 @@ const MEDIA_BASE = "/media-proxy";
 // --- ESTA ES LA FUNCIÓN QUE LIMPIA TODO DE UN SOLO GOLPE ---
 const getProxyImage = (url: string) => {
   if (!url) return "";
+  // SI YA TIENE EL PROXY O ES UNA URL EXTERNA, NO HACEMOS NADA
+  if (url.includes(MEDIA_BASE) || url.startsWith('http') && !url.includes('209.97.146.210')) return url;
+  
   return url
-    .replace("http://209.97.146.210/media", MEDIA_BASE) // Quita la IP prohibida
-    .replace("/media/", `${MEDIA_BASE}/`);             // Cambia /media/ por /media-proxy/
+    .replace("http://209.97.146.210/media", MEDIA_BASE)
+    .replace("/media/", `${MEDIA_BASE}/`);
 };
 
 export interface Rating {
@@ -634,9 +637,14 @@ export const useAppStore = create<AppState>()(
           
           const formattedBusinesses = data.map((b: any) => ({
             ...b,
-            name: b.nombre_comercial,
-            coverImage: getProxyImage(b.portada || ""),
+            name: b.nombre_comercial || b.name,
+            description: b.biografia || b.description || "",
+            location: b.ubicacion_gps || b.location || "El Salvador",
             logo: getProxyImage(b.logo || ""),
+            coverImage: getProxyImage(b.portada || b.coverImage || ""),
+            rating: b.rating || 5.0,
+            reviews: b.reviews || 0,
+            category: b.category || "General",
             services: b.services || [],
             socialLinks: b.socialLinks || {},
           }))
