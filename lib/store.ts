@@ -4,6 +4,15 @@ import { persist } from "zustand/middleware"
 const API_BASE = "/api-proxy";
 const MEDIA_BASE = "/media-proxy";
 
+
+// --- ESTA ES LA FUNCIÓN QUE LIMPIA TODO DE UN SOLO GOLPE ---
+const getProxyImage = (url: string) => {
+  if (!url) return "";
+  return url
+    .replace("http://209.97.146.210/media", MEDIA_BASE) // Quita la IP prohibida
+    .replace("/media/", `${MEDIA_BASE}/`);             // Cambia /media/ por /media-proxy/
+};
+
 export interface Rating {
   userId: string
   userName: string
@@ -209,11 +218,7 @@ const initialServices: Service[] = [
     description: "Disfruta de vistas impresionantes al volcán desde tu habitación con todas las comodidades modernas.",
     capacityMin: 1,
     capacityMax: 4,
-    extras: [
-      { name: "Desayuno incluido", price: 15 },
-      { name: "Tour al volcán", price: 45 },
-      { name: "Spa & masajes", price: 35 },
-    ],
+    extras: [{ name: "Desayuno incluido", price: 15 }, { name: "Tour al volcán", price: 45 }, { name: "Spa & masajes", price: 35 }],
     ratings: [],
     linkTypes: ["oferta", "descuento"],
     businessId: 1,
@@ -224,11 +229,7 @@ const initialServices: Service[] = [
     galleryImages: ["/volcano-view-hotel.jpg"],
     features: ["Vistas panorámicas", "Spa completo", "Restaurante gourmet", "WiFi gratis", "Piscina temperada"],
     relatedServices: [2, 4],
-    socialLinks: {
-      whatsapp: "+50373456789",
-      instagram: "@hotelvolcan",
-      facebook: "HotelsVolcan",
-    },
+    socialLinks: { whatsapp: "+50373456789", instagram: "@hotelvolcan", facebook: "HotelsVolcan" },
   },
   {
     id: 2,
@@ -242,15 +243,10 @@ const initialServices: Service[] = [
     isRemate: false,
     allowsPool: true,
     spotsLeft: 5,
-    description:
-      "Clases de surf para todos los niveles con instructores certificados en la mejor playa de El Salvador.",
+    description: "Clases de surf para todos los niveles con instructores certificados en la mejor playa de El Salvador.",
     capacityMin: 1,
     capacityMax: 6,
-    extras: [
-      { name: "Alquiler de tabla", price: 20 },
-      { name: "Sesión de fotos", price: 25 },
-      { name: "Almuerzo playero", price: 12 },
-    ],
+    extras: [{ name: "Alquiler de tabla", price: 20 }, { name: "Sesión de fotos", price: 25 }, { name: "Almuerzo playero", price: 12 }],
     ratings: [],
     linkTypes: ["oferta"],
     businessId: 2,
@@ -261,11 +257,7 @@ const initialServices: Service[] = [
     galleryImages: ["/surfing-beach.jpg"],
     features: ["Instructores certificados", "Equipo de calidad", "Clases personalizadas", "Fotografía incluida"],
     relatedServices: [1, 3],
-    socialLinks: {
-      whatsapp: "+50373456790",
-      instagram: "@surftunco",
-      facebook: "SurfTuncoElSalvador",
-    },
+    socialLinks: { whatsapp: "+50373456790", instagram: "@surftunco", facebook: "SurfTuncoElSalvador" },
   },
   {
     id: 3,
@@ -593,13 +585,7 @@ const initialRoutes: Route[] = [
   },
 ]
 
-// --- ESTA ES LA FUNCIÓN QUE LIMPIA TODO DE UN SOLO GOLPE ---
-const getProxyImage = (url: string) => {
-  if (!url) return "";
-  return url
-    .replace("http://209.97.146.210/media", MEDIA_BASE) // Quita la IP prohibida
-    .replace("/media/", `${MEDIA_BASE}/`);             // Cambia /media/ por /media-proxy/
-};
+
 
 export const useAppStore = create<AppState>()(
   persist(
@@ -626,41 +612,40 @@ export const useAppStore = create<AppState>()(
       isLoading: false,
 
       // --- ACCIONES DE API ---
-      fetchServices: async (query = "") => {
-  set({ isLoading: true })
-  try {
-    const response = await fetch(`${API_BASE}/catalog/${query}`)
-    const data = await response.json()
-    const formatted = data.map((s: any) => ({
-      ...s,
-      image: getProxyImage(s.imagen_principal || "")
-    }))
-    set({ services: formatted, isLoading: false })
-  } catch (error) {
-    set({ isLoading: false })
-  }
-},
+     fetchServices: async (query = "") => {
+        set({ isLoading: true })
+        try {
+          const response = await fetch(`${API_BASE}/catalog/${query}`)
+          const data = await response.json()
+          const formatted = data.map((s: any) => ({
+            ...s,
+            image: getProxyImage(s.imagen_principal || "")
+          }))
+          set({ services: formatted, isLoading: false })
+        } catch (error) {
+          set({ isLoading: false })
+        }
+      },
 
       fetchBusinesses: async () => {
-  try {
-    const response = await fetch(`${API_BASE}/stores/list/`)
-    const data = await response.json()
-    
-    const formattedBusinesses = data.map((b: any) => ({
-      ...b,
-      name: b.nombre_comercial,
-      coverImage: getProxyImage(b.portada || ""),
-      logo: getProxyImage(b.logo || ""),
-      services: b.services || [],
-      socialLinks: b.socialLinks || {},
-    }))
+        try {
+          const response = await fetch(`${API_BASE}/stores/list/`)
+          const data = await response.json()
+          
+          const formattedBusinesses = data.map((b: any) => ({
+            ...b,
+            name: b.nombre_comercial,
+            coverImage: getProxyImage(b.portada || ""),
+            logo: getProxyImage(b.logo || ""),
+            services: b.services || [],
+            socialLinks: b.socialLinks || {},
+          }))
 
-    set({ businesses: formattedBusinesses })
-  } catch (error) {
-    console.error("Error tiendas:", error)
-  }
-},
-
+          set({ businesses: formattedBusinesses })
+        } catch (error) {
+          console.error("Error tiendas:", error)
+        }
+      },
       // --- TUS FUNCIONES ORIGINALES (SIN TOCAR NADA) ---
       toggleFavorite: (id) =>
         set((state) => ({
