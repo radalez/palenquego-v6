@@ -1,11 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  typescript: {
-    ignoreBuildErrors: true,
+  async rewrites() {
+    return [
+      {
+        source: '/api-proxy/:path*',
+        destination: 'http://209.97.146.210/api/v1/:path*',
+      },
+      {
+        source: '/media-proxy/:path*',
+        destination: 'http://209.97.146.210/media/:path*',
+      },
+    ]
   },
-  images: {
-    unoptimized: true,
-  },
-}
+};
 
-export default nextConfig
+export default nextConfig;
