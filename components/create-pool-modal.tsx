@@ -37,18 +37,19 @@ export function CreatePoolModal({ service: initialService, onClose, onSuccess }:
     if (!selectedService) return
 
     const totalPrice = selectedService.price * targetMembers
-    const newPool = addPool({
+   const newPool = addPool({
       serviceName: selectedService.name,
       serviceId: selectedService.id,
       location: selectedService.location,
       image: selectedService.image,
       leader: { name: currentUser.name, avatar: currentUser.avatar },
       currentMembers: 1,
-      targetMembers,
-      totalPrice,
-      deadline: "24h 00m",
+      targetMembers: targetMembers,
+      totalPrice: totalPrice,
+      deadline: "24h",
       status: "ABIERTO",
-      members: [{ name: currentUser.name, avatar: currentUser.avatar, paid: true }],
+      members: [{ name: currentUser.name, avatar: currentUser.avatar, paid: false }],
+      payments: [],
     })
 
     setCreatedPool(newPool)
