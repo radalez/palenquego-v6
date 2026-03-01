@@ -28,6 +28,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 interface ServiceDetailPageProps {
   params: Promise<{ id: string }>
 }
+ 
 
 export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
   const router = useRouter()
@@ -38,9 +39,12 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
 
   const service = services.find((s) => s.id === parseInt(resolvedParams.id))
 
-  // --- LOGS DE INVESTIGACIÓN DE DATOS ---
-  console.log("DEBUG: Datos del servicio actual:", service);
-  console.log("DEBUG: Contenido de extras:", service?.extras);
+  // --- LOGS DE INVESTIGACIÓN PARA EL NAVEGADOR ---
+  // Estos saldrán en tu consola (F12) apenas abras la página
+  console.log("DATOS DEL SERVICIO:", service);
+  if (service?.extras) {
+    console.log("ESTRUCTURA DE EXTRAS:", service.extras);
+  }
 
   // Render not found state after all hooks
   if (!service) {
@@ -91,7 +95,7 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
         >
           <ChevronLeft className="w-5 h-5 text-foreground" />
         </button>
-        <h1 className="text-lg font-bold text-foreground flex-1 text-center">Detalles</h1>
+        <h1 className="text-lg font-bold text-foreground flex-1 text-center">Detalles del Servicio</h1>
         <button
           onClick={() => toggleFavoritePreference(service.id)}
           className="w-10 h-10 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
@@ -109,7 +113,7 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
       <div className="relative h-64 bg-muted overflow-hidden">
         <img
           src={images[currentImageIndex] || "/placeholder.svg"}
-          alt={typeof service.name === 'object' ? (service as any).name?.nombre : service.name}
+          alt={typeof service.name === 'object' ? (service as any).name?.nombre : (service.name as string)}
           className="w-full h-full object-cover"
         />
 
@@ -128,94 +132,74 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
             >
               <ChevronRight className="w-5 h-5" />
             </button>
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1">
-              {images.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setCurrentImageIndex(i)}
-                  className={cn(
-                    "w-2 h-2 rounded-full transition-all",
-                    i === currentImageIndex ? "bg-white w-6" : "bg-white/50",
-                  )}
-                />
-              ))}
-            </div>
           </>
         )}
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto pb-32 px-4 py-6 space-y-6">
-        {/* Title and Rating */}
-        <div>
-          <div className="flex items-start justify-between mb-2">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">
+        {/* Title, Rating and PRECIO BASE */}
+        <div className="space-y-3">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <h1 className="text-2xl font-black text-foreground leading-tight">
                 {typeof service.name === 'object' ? (service as any).name?.nombre : service.name}
               </h1>
               <div className="flex items-center gap-1 text-muted-foreground mt-1">
                 <MapPin className="w-4 h-4 text-primary" />
-                <span>{typeof service.location === 'object' ? (service as any).location?.nombre : service.location}</span>
+                <span className="text-sm font-medium">
+                  {typeof service.location === 'object' ? (service as any).location?.nombre : service.location}
+                </span>
               </div>
             </div>
+            {/* AQUÍ ESTÁ EL PRECIO BASE QUE FALTABA */}
+            <div className="text-right">
+              <span className="block text-3xl font-black text-primary">${service.price}</span>
+              <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">Precio Base</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 mt-3">
+          
+          <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 bg-amber-50 px-2 py-1 rounded-lg border border-amber-100">
               <Star className="w-5 h-5 fill-amber-400 text-amber-400" />
               <span className="font-bold text-amber-900">{service.rating}</span>
-              <span className="text-amber-700 text-sm">({service.reviews} reseñas)</span>
+              <span className="text-amber-700 text-xs">({service.reviews} reseñas)</span>
             </div>
           </div>
         </div>
 
-        {/* Business Card - Logo Cargando desde URL */}
+        {/* Business Card */}
         {service.businessName && (
           <button
             onClick={() => router.push(`/b/${service.businessId}`)}
-            className="w-full bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/30 rounded-2xl p-4 hover:border-primary hover:shadow-md transition-all"
+            className="w-full bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-2xl p-4 hover:border-primary transition-all shadow-sm"
           >
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3 flex-1">
-                <Avatar className="w-14 h-14 border-2 border-primary shadow-sm">
+              <div className="flex items-center gap-3">
+                <Avatar className="w-12 h-12 border-2 border-background shadow-md">
                   <AvatarImage src={service.businessAvatar} alt={service.businessName} className="object-cover" />
-                  <AvatarFallback className="bg-primary text-primary-foreground font-bold text-lg">
+                  <AvatarFallback className="bg-primary text-white font-bold">
                     {service.businessAvatar?.substring(0, 2).toUpperCase() || "BZ"}
                   </AvatarFallback>
                 </Avatar>
                 <div className="text-left">
-                  <p className="text-[10px] text-primary font-bold uppercase tracking-wider mb-0.5">Ofrecido por</p>
-                  <h3 className="font-bold text-foreground text-sm leading-tight">{service.businessName}</h3>
-                  <div className="flex items-center gap-1 mt-1">
-                    <div className="flex">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={cn(
-                            "w-3 h-3",
-                            i < Math.floor(service.businessRating || 0)
-                              ? "fill-amber-400 text-amber-400"
-                              : "text-muted-foreground",
-                          )}
-                        />
-                      ))}
-                    </div>
-                    <span className="text-xs font-bold text-foreground">{service.businessRating}</span>
-                  </div>
+                  <p className="text-[9px] text-primary font-bold uppercase tracking-widest mb-0.5">Vendido por</p>
+                  <h3 className="font-bold text-foreground text-sm">{service.businessName}</h3>
                 </div>
               </div>
-              <ChevronRight className="text-primary w-6 h-6" />
+              <ChevronRight className="text-primary w-5 h-5" />
             </div>
           </button>
         )}
 
         {/* Description con Icono Lucide */}
         {service.description && (
-          <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
+          <div className="bg-card border border-border rounded-2xl p-4 shadow-sm">
             <div className="flex items-center gap-2 mb-2">
               <FileText className="w-5 h-5 text-primary" />
-              <h2 className="font-bold text-foreground text-sm uppercase tracking-wider">Descripción</h2>
+              <h2 className="font-bold text-foreground text-xs uppercase tracking-widest">Sobre el servicio</h2>
             </div>
-            <p className="text-foreground text-sm leading-relaxed italic">
+            <p className="text-foreground text-sm leading-relaxed italic opacity-90">
               "{typeof service.description === 'object' ? (service as any).description?.descripcion : service.description}"
             </p>
           </div>
@@ -223,19 +207,16 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
 
         {/* Features con Icono Lucide */}
         {service.features && service.features.length > 0 && (
-          <div>
-            <div className="flex items-center gap-2 mb-3">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-primary" />
-              <h2 className="font-bold text-foreground text-lg uppercase tracking-tight">Características Incluidas</h2>
+              <h2 className="font-bold text-foreground text-lg">¿Qué incluye?</h2>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               {service.features.map((feature, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-2 p-3 bg-card border border-border rounded-xl hover:border-primary/40 transition-colors"
-                >
+                <div key={i} className="flex items-center gap-2 p-3 bg-muted/30 rounded-xl border border-border/50">
                   <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
-                  <span className="text-foreground text-xs font-medium">
+                  <span className="text-foreground text-xs font-semibold">
                     {typeof feature === 'object' ? (feature as any).nombre : feature}
                   </span>
                 </div>
@@ -244,60 +225,26 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
           </div>
         )}
 
-        {/* Extras - Fix de Títulos y Precios con Icono Lucide */}
+        {/* Extras - LOGICA DEFENSIVA PARA PRECIOS */}
         {service.extras && service.extras.length > 0 && (
-          <div>
-            <div className="flex items-center gap-2 mb-3">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
               <Gift className="w-5 h-5 text-primary" />
-              <h2 className="font-bold text-foreground text-lg uppercase tracking-tight">Extras Disponibles</h2>
+              <h2 className="font-bold text-foreground text-lg">Personaliza tu reserva</h2>
             </div>
             <div className="space-y-2">
               {service.extras.map((extra: any, idx: number) => {
-                const extraName = extra.nombre || extra.name || "Servicio Adicional";
-                const extraPrice = extra.precio || extra.price || 0;
+                // Buscamos cualquier campo que pueda tener el precio real
+                const valExtra = extra.precio || extra.price || extra.monto || extra.valor || extra.precio_base || 0;
+                const nomExtra = extra.nombre || extra.name || "Extra";
                 
                 return (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between p-4 bg-card rounded-xl border border-border hover:border-primary/50 transition-all shadow-sm"
-                  >
-                    <span className="text-foreground font-semibold text-sm">{extraName}</span>
-                    <span className="text-primary font-black text-lg">+${extraPrice}</span>
+                  <div key={idx} className="flex items-center justify-between p-4 bg-card rounded-2xl border border-border hover:border-primary/40 transition-all shadow-sm">
+                    <span className="text-foreground font-bold text-sm">{nomExtra}</span>
+                    <span className="text-primary font-black text-xl">+${valExtra}</span>
                   </div>
                 );
               })}
-            </div>
-          </div>
-        )}
-
-        {/* Social Links con Estilo Premium */}
-        {service.socialLinks && (
-          <div className="pt-4 border-t border-border">
-            <div className="flex items-center gap-2 mb-4">
-              <Share2 className="w-5 h-5 text-primary" />
-              <h2 className="font-bold text-foreground text-lg uppercase tracking-tight">Síguenos en Redes</h2>
-            </div>
-            <div className="flex gap-3">
-              {service.socialLinks.instagram && (
-                <a
-                  href={`https://instagram.com/${service.socialLinks.instagram.replace("@", "")}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-gradient-to-tr from-[#F58529] via-[#DD2A7B] to-[#8134AF] text-white rounded-xl hover:shadow-lg transition-all font-bold text-sm"
-                >
-                  Instagram
-                </a>
-              )}
-              {service.socialLinks.facebook && (
-                <a
-                  href={`https://facebook.com/${service.socialLinks.facebook}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#1877F2] text-white rounded-xl hover:shadow-lg transition-all font-bold text-sm"
-                >
-                  Facebook
-                </a>
-              )}
             </div>
           </div>
         )}
@@ -306,31 +253,17 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
       {/* Bottom Action Bar */}
       <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-gradient-to-t from-background from-80% to-transparent pt-8 pb-5 px-4 space-y-3 z-30 pointer-events-auto">
         <div className="flex gap-2">
-          <button
-            onClick={handleWhatsApp}
-            className="flex-1 flex items-center justify-center gap-2 py-3 bg-green-600 hover:bg-green-700 text-white rounded-full font-bold shadow-lg transition-transform active:scale-95"
-          >
-            <MessageCircle className="w-5 h-5" />
-            WhatsApp
+          <button onClick={handleWhatsApp} className="flex-1 flex items-center justify-center gap-2 py-3 bg-green-600 text-white rounded-full font-bold shadow-lg">
+            <MessageCircle className="w-5 h-5" /> WhatsApp
           </button>
-          <button
-            onClick={handleCall}
-            className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-bold shadow-lg transition-transform active:scale-95"
-          >
-            <Phone className="w-5 h-5" />
-            Llamar
+          <button onClick={handleCall} className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-600 text-white rounded-full font-bold shadow-lg">
+            <Phone className="w-5 h-5" /> Llamar
           </button>
-          <button
-            onClick={handleShare}
-            className="w-14 h-14 flex items-center justify-center bg-card border border-border rounded-full hover:bg-muted text-foreground shadow-lg transition-transform active:scale-95"
-          >
+          <button onClick={handleShare} className="w-14 h-14 flex items-center justify-center bg-card border border-border rounded-full shadow-lg">
             <Share2 className="w-5 h-5" />
           </button>
         </div>
-        <Button
-          className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full font-black text-lg shadow-xl"
-          onClick={() => setShowBookingModal(true)}
-        >
+        <Button className="w-full h-14 bg-primary text-primary-foreground rounded-full font-black text-lg shadow-xl" onClick={() => setShowBookingModal(true)}>
           RESERVAR AHORA
         </Button>
       </div>
