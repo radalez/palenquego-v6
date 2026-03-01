@@ -5,7 +5,7 @@ import { Heart, MapPin, Star, ChevronLeft, Check, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAppStore } from "@/lib/store"
 import { BookingModal } from "@/components/booking-modal"
-import { favoriteServices } from "@/lib/data" // Declare the variable here
+ 
 
 interface FavoritesScreenProps {
   onBack: () => void

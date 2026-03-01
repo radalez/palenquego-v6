@@ -255,7 +255,7 @@ export function RecommendationsScreen({ onBack }: RecommendationsScreenProps) {
 
       {showShareModal && selectedRecommendation && (
         <ShareInviteModal
-          poolId={selectedRecommendation}
+          poolId={Number(selectedRecommendation)}
           poolName={
             recommendations.find((r) => r.id === selectedRecommendation)?.name ||
             "Mi Recomendación"

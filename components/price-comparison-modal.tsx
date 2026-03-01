@@ -1,11 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { X, Star, DollarSign, TrendingDown, Award, CheckIcon as Checkbox, ShoppingCart } from "lucide-react"
+import { X, Star, DollarSign, TrendingDown, Award, Check, ShoppingCart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAppStore, type Service } from "@/lib/store"
 import { BookingModal } from "@/components/booking-modal"
+ 
 
 interface PriceComparisonModalProps {
   services: Service[]
@@ -80,10 +81,11 @@ export function PriceComparisonModal({ services, onClose }: PriceComparisonModal
                       onClick={() => toggleServiceSelection(service.id)}
                       className="p-2 hover:bg-muted rounded transition-colors flex-shrink-0"
                     >
-                      <Checkbox
-                        checked={selectedServices.includes(service.id)}
-                        className={selectedServices.includes(service.id) ? "bg-primary" : ""}
-                      />
+                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${selectedServices.includes(service.id) ? "bg-primary border-primary" : "border-muted-foreground"}`}>
+                        {selectedServices.includes(service.id) && (
+                          <Check className="w-4 h-4 text-white" />
+                        )}
+                      </div>
                     </button>
 
                     {/* Service Info */}
@@ -149,10 +151,11 @@ export function PriceComparisonModal({ services, onClose }: PriceComparisonModal
                       onClick={() => toggleServiceSelection(service.id)}
                       className="p-2 hover:bg-muted rounded transition-colors flex-shrink-0"
                     >
-                      <Checkbox
-                        checked={selectedServices.includes(service.id)}
-                        className={selectedServices.includes(service.id) ? "bg-primary" : ""}
-                      />
+                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${selectedServices.includes(service.id) ? "bg-primary border-primary" : "border-muted-foreground"}`}>
+                        {selectedServices.includes(service.id) && (
+                          <Check className="w-4 h-4 text-white" />
+                        )}
+                      </div>
                     </button>
 
                     {/* Service Info */}
