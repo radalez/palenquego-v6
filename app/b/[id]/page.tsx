@@ -77,7 +77,7 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
       </div>
 
       {/* Cover Image */}
-      <div className="relative h-56 bg-gradient-to-br from-primary/20 to-primary/5 overflow-hidden border-b-2 border-primary/20">
+      <div className="relative h-56 bg-gradient-to-br from-primary/20 to-primary/5 overflow-hidden border-b-2 border-primary/20 z-0">
         <img
           src={business.coverImage || "/placeholder.svg"}
           alt={business.name}
@@ -86,7 +86,7 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto pb-32">
+    <div className="flex-1 overflow-y-auto pb-32 relative z-10">
         {/* Business Info Card - Enhanced Design */}
         <div className="px-4 space-y-4">
           {/* Avatar and Basic Info */}
