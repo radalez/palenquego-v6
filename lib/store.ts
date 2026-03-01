@@ -31,17 +31,20 @@ export interface Rating {
 export interface Service {
   id: number
   name: string
+  nombre?: string // <-- AÑADIR ESTO
   category: string
   location: string
   rating: number
   reviews: number
   price: number
+  precio_base?: string // <-- AÑADIR ESTO
   image: string
   isRemate?: boolean
   discount?: number
   allowsPool: boolean
   spotsLeft: number
   description?: string
+  descripcion?: string // <-- AÑADIR ESTO
   capacityMin?: number
   capacityMax?: number
   extras?: { name: string; price: number }[]
@@ -627,7 +630,7 @@ export const useAppStore = create<AppState>()(
           const data = await response.json()
           const formatted = data.map((s: any) => ({
             ...s,
-            // LA CLAVE: Sacamos el ID de la tienda del objeto 'tienda' que nos mostraste
+            // Esto asegura que el ID de la tienda y el precio se guarden bien
             businessId: s.tienda?.id || s.businessId, 
             price: parseFloat(s.precio_base) || s.price,
             image: getProxyImage(s.imagen_principal || "")
