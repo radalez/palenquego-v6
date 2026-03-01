@@ -11,9 +11,7 @@ import { useAppStore, type Business } from "@/lib/store"
 import { BookingModal } from "@/components/booking-modal"
 
 interface BusinessDetailPageProps {
-  params: {
-    id: string
-  }
+  params: Promise<{ id: string }>
 }
 
 export default function BusinessDetailPage({ params }: BusinessDetailPageProps) {
