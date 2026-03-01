@@ -623,12 +623,16 @@ export const useAppStore = create<AppState>()(
         try {
           const response = await fetch(`${API_BASE}/catalog/${query}`)
           const data = await response.json()
-          const formatted = data.map((s: any) => ({
-            ...s,
-            image: s.imagen_principal?.startsWith('http') 
-                   ? s.imagen_principal 
-                   : `${MEDIA_BASE}${s.imagen_principal}`
-          }))
+          const formatted = data.map((s: any) => {
+            // Si la imagen viene con la IP, la cambiamos por el proxy
+            const rawImage = s.imagen_principal || "";
+            const cleanImage = rawImage.replace("http://209.97.146.210/media", MEDIA_BASE);
+            
+            return {
+              ...s,
+              image: cleanImage.startsWith('/') ? cleanImage : `${MEDIA_BASE}${cleanImage}`
+            }
+          })
           set({ services: formatted, isLoading: false })
         } catch (error) {
           set({ isLoading: false })
@@ -636,29 +640,30 @@ export const useAppStore = create<AppState>()(
       },
 
       fetchBusinesses: async () => {
-        try {
-          const response = await fetch(`${API_BASE}/stores/list/`)
-          const data = await response.json()
-          
-          // AQUÍ ES DONDE PONES EL CÓDIGO NUEVO:
-          const formattedBusinesses = data.map((b: any) => ({
-            ...b,
-            name: b.nombre_comercial,
-            services: b.services || [], // Evita el error de .length
-            socialLinks: b.socialLinks || {}, // Evita el error de .instagram
-            coverImage: b.portada?.startsWith('http') 
-              ? b.portada 
-              : `http://157.245.181.207${b.portada}`,
-            logo: b.logo?.startsWith('http') 
-              ? b.logo 
-              : `http://157.245.181.207${b.logo}`
-          }))
+  try {
+    const response = await fetch(`${API_BASE}/stores/list/`)
+    const data = await response.json()
+    
+    const formattedBusinesses = data.map((b: any) => {
+      // Limpiamos las URLs de portada y logo para que pasen por el túnel seguro
+      const cleanCover = (b.portada || "").replace("http://209.97.146.210/media", MEDIA_BASE);
+      const cleanLogo = (b.logo || "").replace("http://209.97.146.210/media", MEDIA_BASE);
 
-          set({ businesses: formattedBusinesses })
-        } catch (error) {
-          console.error("Error tiendas:", error)
-        }
-      },
+      return {
+        ...b,
+        name: b.nombre_comercial,
+        services: b.services || [],
+        socialLinks: b.socialLinks || {},
+        coverImage: cleanCover.startsWith('/') ? cleanCover : `${MEDIA_BASE}${cleanCover}`,
+        logo: cleanLogo.startsWith('/') ? cleanLogo : `${MEDIA_BASE}${cleanLogo}`
+      }
+    })
+
+    set({ businesses: formattedBusinesses })
+  } catch (error) {
+    console.error("Error tiendas:", error)
+  }
+},
 
       // --- TUS FUNCIONES ORIGINALES (SIN TOCAR NADA) ---
       toggleFavorite: (id) =>
