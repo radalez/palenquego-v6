@@ -43,40 +43,43 @@ export function BusinessCard({ business, onViewProfile }: BusinessCardProps) {
   }
 
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer" onClick={() => {
+    <Card className="overflow-visible hover:shadow-xl transition-all duration-300 cursor-pointer relative bg-card border-none shadow-md group" onClick={() => {
       onViewProfile?.(business)
       router.push(`/b/${business.id}`)
     }}>
-      {/* Cover Image Container */}
-      <div className="relative w-full h-40 overflow-hidden bg-muted border-b">
+      {/* Cover Image - El recorte se hace solo aquí, no en toda la tarjeta */}
+      <div className="relative w-full h-40 overflow-hidden rounded-t-xl bg-muted border-b">
         <img
           src={business.coverImage}
           alt={business.name}
-          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
-        <Badge className="absolute top-3 right-3 bg-white/90 text-foreground hover:bg-white z-10">
+        <Badge className="absolute top-3 right-3 bg-white/90 text-foreground hover:bg-white z-10 shadow-sm">
           {business.category}
         </Badge>
         
-        {/* AVATAR SOBREPUESTO */}
-        <div className="absolute -bottom-6 left-4 z-20">
-          <Avatar className="w-16 h-16 border-4 border-background shadow-lg">
-            <AvatarImage src={business.logo} alt={business.name} className="object-cover" />
-            <AvatarFallback className="bg-primary text-primary-foreground font-bold text-xl">
-              {business.name?.charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+        {/* AVATAR SOBREPUESTO - LA CLAVE ESTÁ EN EL Z-30 Y EL OVERFLOW DEL CARD */}
+        <div className="absolute -bottom-8 left-4 z-30">
+          <div className="p-1 bg-background rounded-full shadow-xl">
+            <Avatar className="w-16 h-16 border-2 border-background">
+              <AvatarImage src={business.logo} alt={business.name} className="object-cover" />
+              <AvatarFallback className="bg-primary text-primary-foreground font-bold text-xl">
+                {business.name?.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+          </div>
         </div>
       </div>
 
-      {/* Content - Ajustamos el padding superior (pt-8) para el avatar */}
-      <div className="p-4 pt-8 space-y-4">
-        {/* Business Info */}
+      {/* Content - Le damos más padding superior (pt-10) para que el nombre no choque con el logo flotante */}
+      <div className="p-4 pt-10 space-y-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-lg text-foreground truncate">{business.name}</h3>
-            <p className="text-sm text-muted-foreground truncate flex items-center gap-1">
-              <MapPin className="w-3 h-3" />
+            <h3 className="font-bold text-lg text-foreground truncate group-hover:text-primary transition-colors">
+              {business.name}
+            </h3>
+            <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
+              <MapPin className="w-3 h-3 text-primary" />
               {business.location}
             </p>
           </div>

@@ -58,7 +58,7 @@ export function BusinessCarousel({ businesses, onViewProfile, onViewMore }: Busi
       <div className="relative">
         <div
           id="business-carousel-scroll"
-          className="flex gap-4 overflow-x-auto scroll-smooth pb-2 [-webkit-mask-image:linear-gradient(to_right,black_calc(100%-20px),transparent)] [mask-image:linear-gradient(to_right,black_calc(100%-20px),transparent)]"
+          className="flex gap-4 overflow-x-auto scroll-smooth pb-10 [-webkit-mask-image:linear-gradient(to_right,black_calc(100%-20px),transparent)] [mask-image:linear-gradient(to_right,black_calc(100%-20px),transparent)]"
         >
           {businesses.slice(0, 6).map((business) => (
             <div
