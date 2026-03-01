@@ -163,7 +163,7 @@ export default function Home() {
       )}
 
       {/* Bottom Navigation - only show on main tabs */}
-      {isMainTab && <MobileNav activeTab={activeTab} setActiveTab={setActiveTab} />}
+      {isMainTab && <MobileNav activeTab={activeTab} setActiveTab={(tab) => setActiveTab(tab as any)} />}
     </main>
   )
 }
