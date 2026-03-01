@@ -76,7 +76,7 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
         <div className="w-10" />
       </div>
 
-      {/* Cover Image - Full Width Banner */}
+      {/* Cover Image */}
       <div className="relative h-56 bg-gradient-to-br from-primary/20 to-primary/5 overflow-hidden border-b-2 border-primary/20">
         <img
           src={business.coverImage || "/placeholder.svg"}
@@ -91,7 +91,7 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
         <div className="px-4 space-y-4">
           {/* Avatar and Basic Info */}
           <div className="relative -mt-12 mb-4 flex items-end gap-4">
-            <Avatar className="w-24 h-24 border-4 border-background shadow-lg">
+            <Avatar className="w-24 h-24 border-4 border-background shadow-lg z-20">
               {/* Este es el que carga la imagen real usando el proxy */}
               <AvatarImage src={business.logo} alt={business.name} className="object-cover" />
               
