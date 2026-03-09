@@ -100,7 +100,8 @@ export interface Pool {
 export interface Route {
   id: number;
   name: string;
-  unit_name: string; // <-- Nuevo: Viene de Django
+  colorHex: string; // <-- Agregamos esta línea para que el build pase
+  unit_name: string;
   price_one_way: string;
   price_round_trip: string;
   is_active: boolean;
@@ -847,15 +848,15 @@ export const useAppStore = create<AppState>()(
      fetchRoutes: async () => {
         set({ isLoading: true });
         try {
-          // LA BARRA FINAL (/) ES OBLIGATORIA PARA DJANGO
           const response = await fetch(`${API_BASE}/transport/routes/`);
           const data = await response.json();
-          const formatted = data.map((r: any) => ({
-            id: r.id,
+          const formatted: Route[] = data.map((r: any) => ({
+            id: r.id, // Se queda como número
             name: r.name,
+            colorHex: r.color_hex || '#10b981', // Mapea el color de Django al componente
             unit_name: r.unit_name || "Unidad Estándar",
-            price_one_way: r.price_one_way,
-            price_round_trip: r.price_round_trip,
+            price_one_way: String(r.price_one_way), // Se queda como string
+            price_round_trip: String(r.price_round_trip), // Se queda como string
             is_active: r.is_active,
             stops: r.stops.map((s: any) => ({
               id: s.id,
