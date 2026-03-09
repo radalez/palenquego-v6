@@ -101,17 +101,18 @@ export interface Route {
   id: number;
   name: string;
   colorHex: string; 
+  pathSvg?: string;          // <-- AÑADIDO PARA QUE LOS DATOS ESTÁTICOS NO DEN ERROR
   unit_name: string;
   price_one_way: string;
   price_round_trip: string;
   is_active: boolean;
   stops: {
-    id?: number;               // Opcional con ?
-    name?: string;             // Opcional con ?
+    id?: number;
+    name?: string;
     latitude: number;
     longitude: number;
     order: number;
-    minutes_from_start?: number; // Opcional con ?
+    minutes_from_start?: number;
   }[];
 }
 
