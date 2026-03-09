@@ -101,11 +101,11 @@ export interface Route {
   id: number;
   name: string;
   colorHex: string; 
-  pathSvg?: string;          // <-- AÑADIDO PARA QUE LOS DATOS ESTÁTICOS NO DEN ERROR
-  unit_name: string;
-  price_one_way: string;
-  price_round_trip: string;
-  is_active: boolean;
+  pathSvg?: string;
+  unit_name?: string;       // Opcional con ?
+  price_one_way?: string;   // Opcional con ?
+  price_round_trip?: string;// Opcional con ?
+  is_active?: boolean;      // Opcional con ?
   stops: {
     id?: number;
     name?: string;
@@ -849,14 +849,13 @@ export const useAppStore = create<AppState>()(
      fetchRoutes: async () => {
         set({ isLoading: true });
         try {
-          // Usamos la barra final / porque Django es estricto
           const response = await fetch(`${API_BASE}/transport/routes/`);
           const data = await response.json();
           
           const formatted: Route[] = data.map((r: any) => ({
             id: r.id,
             name: r.name,
-            colorHex: r.color_hex || '#10b981', // Verde por defecto si no viene color
+            colorHex: r.color_hex || '#10b981',
             unit_name: r.unit_name || "Unidad Estándar",
             price_one_way: String(r.price_one_way),
             price_round_trip: String(r.price_round_trip),
