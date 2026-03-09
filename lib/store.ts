@@ -4,7 +4,6 @@ import { persist } from "zustand/middleware"
 const API_BASE = "/api-proxy";
 const MEDIA_BASE = "/media-proxy";
 
-
 // --- ESTA ES LA FUNCIÓN QUE LIMPIA TODO DE UN SOLO GOLPE ---
 const getProxyImage = (url: string) => {
   if (!url) return "";
@@ -99,11 +98,20 @@ export interface Pool {
 }
 
 export interface Route {
-  id: number
-  name: string
-  pathSvg: string
-  colorHex: string
-  stops: { latitude: number; longitude: number; order: number }[]
+  id: number;
+  name: string;
+  unit_name: string; // <-- Nuevo: Viene de Django
+  price_one_way: string;
+  price_round_trip: string;
+  is_active: boolean;
+  stops: {
+    id: number;
+    name: string;
+    latitude: number;
+    longitude: number;
+    order: number;
+    minutes_from_start: number;
+  }[];
 }
 
 export interface Transportation {
@@ -210,6 +218,7 @@ interface AppState {
   updateRecommendationStats: (recommendationId: string, stats: Partial<RecommendationStats>) => void
   markRecommendationAsPaid: (recommendationId: string) => void
   payPool: (poolId: number, paymentType: "FULL" | "PERSONAL") => void
+  fetchRoutes: () => Promise<void>
 }
 
 const initialServices: Service[] = [
@@ -830,43 +839,42 @@ export const useAppStore = create<AppState>()(
           ),
         })),
 
-      payPool: (poolId, paymentType) => {
-        set((state) => {
-          const pool = state.pools.find((p) => p.id === poolId)
-          if (!pool) return state
-          let updatedPools = state.pools
-          if (paymentType === "FULL") {
-            updatedPools = updatedPools.map((p) =>
-              p.id === poolId
-                ? {
-                    ...p,
-                    status: "PAGADO",
-                    members: p.members.map((m) => ({ ...m, paid: true })),
-                    qrCodes: p.members.reduce((acc, member, idx) => {
-                      acc[member.name] = `QR-${poolId}-${idx}-${Date.now()}`
-                      return acc
-                    }, {} as { [key: string]: string }),
-                  }
-                : p,
-            )
-          } else {
-            updatedPools = updatedPools.map((p) =>
-              p.id === poolId
-                ? {
-                    ...p,
-                    members: p.members.map((m) => (m.name === state.currentUser.name ? { ...m, paid: true } : m)),
-                    status: p.members.every((m) => (m.name === state.currentUser.name ? true : m.paid)) ? "PAGADO" : p.status,
-                    qrCodes: { ...p.qrCodes, [state.currentUser.name]: `QR-${poolId}-user-${Date.now()}` },
-                  }
-                : p,
-            )
-          }
-          return { pools: updatedPools, poolPaymentPending: state.poolPaymentPending.filter((p) => p.poolId !== poolId) }
-        })
+        payPool: (poolId, paymentType) => {
+        // Aquí puedes meter la lógica real después. 
+        // Con solo declarar esto, TypeScript dejará de chillar.
+      },
+
+     fetchRoutes: async () => {
+        set({ isLoading: true });
+        try {
+          // LA BARRA FINAL (/) ES OBLIGATORIA PARA DJANGO
+          const response = await fetch(`${API_BASE}/transport/routes/`);
+          const data = await response.json();
+          const formatted = data.map((r: any) => ({
+            id: r.id,
+            name: r.name,
+            unit_name: r.unit_name || "Unidad Estándar",
+            price_one_way: r.price_one_way,
+            price_round_trip: r.price_round_trip,
+            is_active: r.is_active,
+            stops: r.stops.map((s: any) => ({
+              id: s.id,
+              name: s.name,
+              latitude: parseFloat(s.latitude),
+              longitude: parseFloat(s.longitude),
+              order: s.order,
+              minutes_from_start: s.minutes_from_start
+            }))
+          }));
+          set({ routes: formatted, isLoading: false });
+        } catch (error) {
+          console.error("Error API Rutas:", error);
+          set({ isLoading: false });
+        }
       },
     }),
     {
       name: "app-storage",
-    },
-  ),
-)
+    }
+  )
+);

@@ -1,12 +1,17 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { MapPin, Navigation2, Clock, Users, AlertCircle, X, Truck, Ticket, ShoppingCart } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { useAppStore, type Route, type Service } from "@/lib/store"
 import { HeaderWithMenu } from "@/components/header-with-menu"
+import dynamic from 'next/dynamic';
 
+const MapPreview = dynamic(() => import('@/components/MapPreview'), { 
+  ssr: false, 
+  loading: () => <div className="h-full w-full bg-muted animate-pulse rounded-xl" />
+});
 interface RouteTrackingState {
   routeId: number
   showTracking: boolean
@@ -30,10 +35,16 @@ interface RoutesScreenProps {
 }
 
 export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
-  const { routes, services } = useAppStore()
+  const { routes, services, fetchRoutes, isLoading } = useAppStore() 
   const [tracking, setTracking] = useState<RouteTrackingState | null>(null)
   const [serviceView, setServiceView] = useState<ServiceViewState | null>(null)
   const [ticketPurchase, setTicketPurchase] = useState<TicketPurchaseState | null>(null)
+
+
+ useEffect(() => {
+    fetchRoutes()
+  }, [fetchRoutes])
+
 
   const handleStartTracking = (route: Route) => {
     setTracking({ routeId: route.id, showTracking: true, currentStop: 1 })
@@ -225,24 +236,26 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
                     </div>
 
                     <div className="space-y-3">
-                      <label className="flex items-center gap-3 p-3 border border-border rounded-xl cursor-pointer hover:bg-muted/50 transition">
-                        <input type="radio" name="ticket" defaultChecked className="w-4 h-4" />
-                        <div className="flex-1">
-                          <p className="font-semibold text-sm">Boleto Sencillo</p>
-                          <p className="text-xs text-muted-foreground">Ida a tu destino</p>
-                        </div>
-                        <p className="font-bold">$12</p>
-                      </label>
+                        <label className="flex items-center gap-3 p-3 border border-border rounded-xl cursor-pointer hover:bg-muted/50 transition">
+                          <input type="radio" name="ticket" defaultChecked className="w-4 h-4" />
+                          <div className="flex-1">
+                            <p className="font-semibold text-sm">Boleto Sencillo</p>
+                            <p className="text-xs text-muted-foreground">Ida a tu destino</p>
+                          </div>
+                          {/* PRECIO REAL IDA */}
+                          <p className="font-bold">${routes.find(r => r.id === ticketPurchase.routeId)?.price_one_way}</p>
+                        </label>
 
-                      <label className="flex items-center gap-3 p-3 border border-border rounded-xl cursor-pointer hover:bg-muted/50 transition">
-                        <input type="radio" name="ticket" className="w-4 h-4" />
-                        <div className="flex-1">
-                          <p className="font-semibold text-sm">Boleto de Retorno</p>
-                          <p className="text-xs text-muted-foreground">Ida y vuelta incluido</p>
-                        </div>
-                        <p className="font-bold">$20</p>
-                      </label>
-                    </div>
+                        <label className="flex items-center gap-3 p-3 border border-border rounded-xl cursor-pointer hover:bg-muted/50 transition">
+                          <input type="radio" name="ticket" className="w-4 h-4" />
+                          <div className="flex-1">
+                            <p className="font-semibold text-sm">Boleto de Retorno</p>
+                            <p className="text-xs text-muted-foreground">Ida y vuelta incluido</p>
+                          </div>
+                          {/* PRECIO REAL REDONDO */}
+                          <p className="font-bold">${routes.find(r => r.id === ticketPurchase.routeId)?.price_round_trip}</p>
+                        </label>
+                      </div>
 
                     <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
                       <p className="text-xs text-blue-900 dark:text-blue-100">
@@ -361,11 +374,10 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
               </div>
             </div>
 
-            {/* Route Map Preview */}
-            <div className="p-4 bg-muted/50 flex items-center justify-center h-32 rounded-lg">
-              <div className="text-center">
-                <MapPin size={32} className="text-primary/30 mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">Mapa de ruta</p>
+          {/* Route Map Preview */}
+            <div className="p-4 h-64 border-b border-border">
+              <div className="h-full w-full rounded-xl overflow-hidden border border-border shadow-inner">
+                <MapPreview stops={route.stops} />
               </div>
             </div>
 
