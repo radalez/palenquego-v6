@@ -620,7 +620,7 @@ export const useAppStore = create<AppState>()(
       // ESTADO INICIAL (Combinamos los tuyos con el estado de carga)
       services: initialServices,
       businesses: initialBusinesses,
-      pools: initialPools,
+      pools: [],
       bookings: [],
       favorites: [],
       userFavorites: [],

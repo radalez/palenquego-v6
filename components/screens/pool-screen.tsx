@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Users, Clock, MapPin, ChevronRight, Zap, Share2, Plus, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 import { useAppStore, type Pool } from "@/lib/store"
 import { CreatePoolModal } from "@/components/create-pool-modal"
 import { HeaderWithMenu } from "@/components/header-with-menu"
+
 
 interface PoolScreenProps {
   onOpenShare?: (pool: Pool) => void
@@ -19,7 +20,12 @@ export function PoolScreen({ onOpenShare, onOpenPayment, onNavigate }: PoolScree
   const [selectedPool, setSelectedPool] = useState<Pool | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
 
-  const { pools, joinPool, currentUser } = useAppStore()
+  const { pools, joinPool, currentUser, fetchPools, fetchServices } = useAppStore()
+
+  useEffect(() => {
+    fetchPools();    // Trae los pools reales de https://palenquego.com/api/v1/pools/
+    fetchServices(); // Trae las rutas reales para el modal de "+"
+  }, [fetchPools, fetchServices]);
 
   const getProgressColor = (current: number, target: number) => {
     const percentage = (current / target) * 100
