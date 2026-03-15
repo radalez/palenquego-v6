@@ -33,14 +33,14 @@ export function CreatePoolModal({ service: initialService, onClose, onSuccess }:
     { day: "Vie", date: "19", month: "Ene" },
   ]
 
+  // Busca handleCreatePool en create-pool-modal.tsx:
   const handleCreatePool = async () => {
-    if (!selectedService) return
+    if (!selectedService || !selectedDate) return // Validamos que existan ambos
 
-    const success = await createPool(selectedService.id, targetMembers)
+    // Pasamos el tercer argumento: selectedDate
+    const success = await createPool(selectedService.id, targetMembers, selectedDate)
 
     if (success) {
-      // Como la API nos devuelve el pool creado, aquí simplemente avanzamos
-      // El fetchPools que hicimos en el store ya actualizó la lista global
       setStep("success")
     } else {
       alert("Error al crear el pool en el servidor")

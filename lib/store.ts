@@ -225,7 +225,8 @@ interface AppState {
   payPool: (poolId: number, paymentType: "FULL" | "PERSONAL") => void
   fetchRoutes: () => Promise<void>
   fetchPools: () => Promise<void>
-  createPool: (serviceId: number, targetMembers: number) => Promise<boolean>
+  // Agregamos el tercer argumento 'date: string' aquí para que TypeScript deje de chillar
+  createPool: (serviceId: number, targetMembers: number, date: string) => Promise<boolean>
 }
 
 const initialServices: Service[] = [
@@ -925,7 +926,7 @@ export const useAppStore = create<AppState>()(
         }
       },
 
-      createPool: async (serviceId: number, targetMembers: number) => {
+      createPool: async (serviceId: number, targetMembers: number, date: string) => {
         set({ isLoading: true });
         try {
           const response = await fetch(`${API_BASE}/pools/`, {
@@ -934,6 +935,7 @@ export const useAppStore = create<AppState>()(
             body: JSON.stringify({
               servicio: serviceId,
               meta_personas: targetMembers,
+              fecha_servicio: date, // <-- Esto es lo que Django necesita para no dar error 400
             }),
           });
           
