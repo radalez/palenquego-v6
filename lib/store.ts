@@ -193,7 +193,7 @@ interface AppState {
   userFavorites: UserFavorite[]
   recommendations: Recommendation[]
   routes: Route[]
-  currentUser: { name: string; avatar: string }
+  currentUser: { id: number; name: string; avatar: string }
   isAuthenticated: boolean
   hasCompletedOnboarding: boolean
   userPlan: "FREE" | "ORO" | "PLATINO" | "PRO"
@@ -627,7 +627,7 @@ export const useAppStore = create<AppState>()(
       userFavorites: [],
       recommendations: [],
       routes: initialRoutes,
-      currentUser: { name: "Juan D.", avatar: "JD" },
+      currentUser: { id: 1, name: "Juan D.", avatar: "JD" },
       isAuthenticated: false,
       hasCompletedOnboarding: false,
       userPlan: "FREE",
@@ -926,8 +926,20 @@ export const useAppStore = create<AppState>()(
         }
       },
 
-      createPool: async (serviceId: number, targetMembers: number, date: string) => {
+      createPool: async (serviceId: number, targetMembers: number, dateStr: string) => {
+        const { currentUser } = get();
         set({ isLoading: true });
+
+        // Función interna para convertir "17 Ene" -> "2026-01-17"
+        const formatForDjango = (str: string) => {
+          const months: { [key: string]: string } = {
+            'Ene': '01', 'Feb': '02', 'Mar': '03', 'Abr': '04', 'May': '05', 'Jun': '06',
+            'Jul': '07', 'Ago': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dic': '12'
+          };
+          const [day, month] = str.split(' ');
+          return `2026-${months[month]}-${day.padStart(2, '0')}`;
+        };
+
         try {
           const response = await fetch(`${API_BASE}/pools/`, {
             method: 'POST',
@@ -935,7 +947,9 @@ export const useAppStore = create<AppState>()(
             body: JSON.stringify({
               servicio: serviceId,
               meta_personas: targetMembers,
-              fecha_servicio: date, // <-- Esto es lo que Django necesita para no dar error 400
+              fecha_servicio: formatForDjango(dateStr), // <-- Fecha corregida para Django
+              lider: currentUser.id,                   // <-- Ahora el ID sí existe
+              estado: "ABIERTO"
             }),
           });
           
@@ -945,10 +959,13 @@ export const useAppStore = create<AppState>()(
             set({ isLoading: false });
             return true;
           }
+          
+          const errorLog = await response.json();
+          console.error("Django rechazó la petición:", errorLog);
           set({ isLoading: false });
           return false;
         } catch (error) {
-          console.error("Error creando Pool:", error);
+          console.error("Error de red:", error);
           set({ isLoading: false });
           return false;
         }
