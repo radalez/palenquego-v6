@@ -21,7 +21,7 @@ export function CreatePoolModal({ service: initialService, onClose, onSuccess }:
   const [selectedDate, setSelectedDate] = useState("")
   const [createdPool, setCreatedPool] = useState<Pool | null>(null)
 
-  const { services, addPool, currentUser } = useAppStore()
+  const { services, createPool, currentUser } = useAppStore()
 
   const poolableServices = services.filter((s) => s.allowsPool)
 
@@ -33,28 +33,18 @@ export function CreatePoolModal({ service: initialService, onClose, onSuccess }:
     { day: "Vie", date: "19", month: "Ene" },
   ]
 
-  const handleCreatePool = () => {
+  const handleCreatePool = async () => {
     if (!selectedService) return
 
-    const totalPrice = selectedService.price * targetMembers
-   const newPool = addPool({
-      serviceName: selectedService.name,
-      serviceId: selectedService.id,
-      location: selectedService.location,
-      image: selectedService.image,
-      leader: { name: currentUser.name, avatar: currentUser.avatar },
-      currentMembers: 1,
-      targetMembers: targetMembers,
-      totalPrice: totalPrice,
-      deadline: "24h",
-      status: "ABIERTO",
-      members: [{ name: currentUser.name, avatar: currentUser.avatar, paid: false }],
-      payments: [],
-    })
+    const success = await createPool(selectedService.id, targetMembers)
 
-    setCreatedPool(newPool)
-    setStep("success")
-    onSuccess?.(newPool)
+    if (success) {
+      // Como la API nos devuelve el pool creado, aquí simplemente avanzamos
+      // El fetchPools que hicimos en el store ya actualizó la lista global
+      setStep("success")
+    } else {
+      alert("Error al crear el pool en el servidor")
+    }
   }
 
   const pricePerPerson = selectedService ? selectedService.price : 0
@@ -308,10 +298,10 @@ export function CreatePoolModal({ service: initialService, onClose, onSuccess }:
                 <div className="text-left">
                   <h4 className="font-semibold text-foreground">{createdPool.serviceName}</h4>
                   <p className="text-sm text-muted-foreground">
-                    {createdPool.currentMembers}/{createdPool.targetMembers} personas
+                    {createdPool.currentMembers ?? 0}/{createdPool.targetMembers ?? 0} personas
                   </p>
                   <p className="text-primary font-semibold">
-                    ${(createdPool.totalPrice / createdPool.targetMembers).toFixed(0)}/persona
+                    ${((createdPool.totalPrice ?? 0) / (createdPool.targetMembers ?? 1)).toFixed(0)}/persona
                   </p>
                 </div>
               </div>
@@ -322,7 +312,7 @@ export function CreatePoolModal({ service: initialService, onClose, onSuccess }:
                   className="flex-1 rounded-xl bg-transparent"
                   onClick={() => {
                     navigator.clipboard.writeText(
-                      `Unete a mi Pool en Palenque Go: ${createdPool.serviceName} - $${(createdPool.totalPrice / createdPool.targetMembers).toFixed(0)}/persona`,
+                      `Unete a mi Pool en Palenque Go: ${createdPool.serviceName} - $${((createdPool.totalPrice ?? 0) / (createdPool.targetMembers ?? 1)).toFixed(0)}/persona`,
                     )
                   }}
                 >

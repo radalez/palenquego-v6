@@ -80,21 +80,24 @@ export interface PoolPayment {
 
 export interface Pool {
   id: number
-  serviceName: string
-  serviceId: number
-  location: string
-  image: string
-  leader: { name: string; avatar: string }
-  currentMembers: number
-  targetMembers: number
-  totalPrice: number
-  pricePerMember?: number
-  deadline: string
-  status: "ABIERTO" | "LLENO" | "PAGADO" | "FINALIZADO"
-  members: PoolMember[]
-  payments: PoolPayment[]
+  serviceName?: string      // Mapeado desde servicio_detalle.nombre
+  serviceId?: number        // Mapeado desde servicio (ID)
+  location?: string
+  image?: string
+  leader?: { 
+    name: string; 
+    avatar: string 
+  }
+  currentMembers?: number    // Mapeado desde miembros_count
+  targetMembers?: number     // Mapeado desde meta_personas
+  totalPrice?: number        // Mapeado desde precio_total_servicio
+  pricePerMember?: number    // Mapeado desde precio_persona
+  deadline?: string
+  status?: "ABIERTO" | "LLENO" | "PAGADO" | "FINALIZADO"
+  members?: PoolMember[]
+  payments?: PoolPayment[]
   qrCodes?: { [key: string]: string }
-  createdAt: Date
+  createdAt?: string | Date
 }
 
 export interface Route {
@@ -203,7 +206,7 @@ interface AppState {
   fetchBusinesses: () => Promise<void>
   toggleFavorite: (id: number) => void
   addPool: (pool: Omit<Pool, "id" | "createdAt">) => Pool
-  joinPool: (poolId: number) => void
+  joinPool: (poolId: number) => Promise<boolean>
   addBooking: (booking: Omit<Booking, "id" | "qrCode">) => Booking
   updatePoolStatus: (poolId: number, status: Pool["status"]) => void
   login: (username: string, password: string) => boolean
@@ -221,6 +224,8 @@ interface AppState {
   markRecommendationAsPaid: (recommendationId: string) => void
   payPool: (poolId: number, paymentType: "FULL" | "PERSONAL") => void
   fetchRoutes: () => Promise<void>
+  fetchPools: () => Promise<void>
+  createPool: (serviceId: number, targetMembers: number) => Promise<boolean>
 }
 
 const initialServices: Service[] = [
@@ -703,24 +708,29 @@ export const useAppStore = create<AppState>()(
         return newPool
       },
 
-      joinPool: (poolId) =>
-        set((state) => ({
-          pools: state.pools.map((pool) => {
-            if (pool.id === poolId && pool.currentMembers < pool.targetMembers) {
-              const updatedPool = {
-                ...pool,
-                currentMembers: pool.currentMembers + 1,
-                members: [...pool.members, { name: state.currentUser.name, avatar: state.currentUser.avatar, paid: false }],
-              }
-              if (updatedPool.currentMembers >= updatedPool.targetMembers) {
-                updatedPool.status = "LLENO"
-                updatedPool.deadline = "Cerrado"
-              }
-              return updatedPool
-            }
-            return pool
-          }),
-        })),
+      joinPool: async (poolId: number) => {
+        set({ isLoading: true });
+        try {
+          const response = await fetch(`${API_BASE}/pools/${poolId}/join/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+          });
+
+          if (response.ok) {
+            const { fetchPools } = get();
+            await fetchPools(); // Refrescamos la lista para ver el nuevo miembro y el progreso real
+            set({ isLoading: false });
+            return true;
+          }
+          
+          set({ isLoading: false });
+          return false;
+        } catch (error) {
+          console.error("Error al unirse al pool:", error);
+          set({ isLoading: false });
+          return false;
+        }
+      },
 
       addBooking: (bookingData) => {
         const newBooking: Booking = {
@@ -876,6 +886,71 @@ export const useAppStore = create<AppState>()(
           set({ isLoading: false });
         }
       },
+
+
+      fetchPools: async () => {
+        set({ isLoading: true });
+        try {
+          const response = await fetch(`${API_BASE}/pools/`);
+          if (!response.ok) throw new Error("Error al obtener pools");
+          const data = await response.json();
+          
+          const formatted: Pool[] = data.map((p: any) => ({
+            id: p.id,
+            serviceId: p.servicio,
+            serviceName: p.servicio_detalle?.nombre || "Servicio Palenque",
+            status: p.estado,
+            targetMembers: p.meta_personas,
+            currentMembers: p.miembros_actuales,
+            totalPrice: parseFloat(p.precio_total_servicio),
+            pricePerMember: parseFloat(p.precio_persona),
+            leader: {
+              name: p.lider_nombre,
+              avatar: "/avatars/default.png"
+            },
+            location: p.servicio_detalle?.ubicacion || "El Salvador",
+            image: p.servicio_detalle?.imagen || "/placeholder.svg",
+            deadline: "24h restantes",
+            createdAt: p.creado_el,
+            members: [],
+            payments: [],
+            qrCodes: {}
+          }));
+
+          set({ pools: formatted, isLoading: false });
+        } catch (error) {
+          console.error("Error cargando Pools:", error);
+          set({ isLoading: false });
+        }
+      },
+
+      createPool: async (serviceId: number, targetMembers: number) => {
+        set({ isLoading: true });
+        try {
+          const response = await fetch(`${API_BASE}/pools/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              servicio: serviceId,
+              meta_personas: targetMembers,
+            }),
+          });
+          
+          if (response.ok) {
+            const { fetchPools } = get();
+            await fetchPools();
+            set({ isLoading: false });
+            return true;
+          }
+          set({ isLoading: false });
+          return false;
+        } catch (error) {
+          console.error("Error creando Pool:", error);
+          set({ isLoading: false });
+          return false;
+        }
+      },
+      
     }),
     {
       name: "app-storage",
