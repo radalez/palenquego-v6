@@ -27,7 +27,7 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
   const { currentUser, logout, bookings, pools, userFavorites, recommendations } = useAppStore()
 
   const totalSpent = bookings.reduce((acc, b) => acc + b.totalPrice, 0)
-  const poolsJoined = pools.filter((p) => p.members.some((m) => m.name === currentUser.name)).length
+ const poolsJoined = pools.filter((p) => (p.members ?? []).some((m) => m.name === currentUser.name)).length
 
   const menuItems = [
     {
