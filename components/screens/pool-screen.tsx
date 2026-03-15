@@ -41,10 +41,11 @@ export function PoolScreen({ onOpenShare, onOpenPayment, onNavigate }: PoolScree
     }
   }
 
-  const isUserInPool = (pool: Pool) => {
-    return pool.members.some((m) => m.name === currentUser.name)
+const isUserInPool = (pool: Pool) => {
+    return (pool.members ?? []).some((m) => m.name === currentUser.name)
   }
 
+  
   if (selectedPool) {
     return (
       <PoolDetail
@@ -104,8 +105,8 @@ export function PoolScreen({ onOpenShare, onOpenPayment, onNavigate }: PoolScree
 
         <div className="space-y-4">
           {pools.map((pool) => {
-            const progress = (pool.currentMembers / pool.targetMembers) * 100
-            const pricePerPerson = pool.totalPrice / pool.targetMembers
+            const progress = ((pool.currentMembers ?? 0) / (pool.targetMembers ?? 1)) * 100
+            const pricePerPerson = (pool.totalPrice ?? 0) / (pool.targetMembers ?? 1)
 
             return (
               <button
@@ -155,7 +156,7 @@ export function PoolScreen({ onOpenShare, onOpenPayment, onNavigate }: PoolScree
                         <div
                           className={cn(
                             "h-full rounded-full transition-all duration-500",
-                            getProgressColor(pool.currentMembers, pool.targetMembers),
+                            getProgressColor(pool.currentMembers ?? 0, pool.targetMembers ?? 1),
                           )}
                           style={{ width: `${progress}%` }}
                         />
@@ -239,9 +240,9 @@ function PoolDetail({
   // Get fresh pool data
   const currentPool = pools.find((p) => p.id === pool.id) || pool
 
-  const progress = (currentPool.currentMembers / currentPool.targetMembers) * 100
-  const pricePerPerson = currentPool.totalPrice / currentPool.targetMembers
-  const spotsLeft = currentPool.targetMembers - currentPool.currentMembers
+ const progress = ((currentPool.currentMembers ?? 0) / (currentPool.targetMembers ?? 1)) * 100
+  const pricePerPerson = (currentPool.totalPrice ?? 0) / (currentPool.targetMembers ?? 1)
+  const spotsLeft = (currentPool.targetMembers ?? 0) - (currentPool.currentMembers ?? 0)
 
   return (
     <div className="flex flex-col min-h-full">
@@ -323,7 +324,7 @@ function PoolDetail({
       <div className="px-4 py-6">
         <h2 className="font-semibold text-lg mb-4 text-foreground">Miembros del grupo</h2>
         <div className="space-y-3">
-          {currentPool.members.map((member, i) => (
+          { (currentPool.members ?? []).map((member, i) => (
             <div key={i} className="flex items-center justify-between p-3 bg-card rounded-xl border border-border">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
