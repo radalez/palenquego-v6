@@ -19,7 +19,7 @@ export function PoolsForServiceModal({ service, onClose, onJoinPool }: PoolsForS
 
   const calculateSavings = (pool: Pool) => {
     const regularPrice = service.price
-    const poolPrice = pool.totalPrice / pool.targetMembers
+    const poolPrice = (pool.totalPrice ?? 0) / (pool.targetMembers ?? 1)
     return Math.round(((regularPrice - poolPrice) / regularPrice) * 100)
   }
 
@@ -69,10 +69,10 @@ export function PoolsForServiceModal({ service, onClose, onJoinPool }: PoolsForS
           ) : (
             <div className="space-y-3">
               {availablePools.map((pool) => {
-                const progress = (pool.currentMembers / pool.targetMembers) * 100
+                const progress = ((pool.currentMembers ?? 0) / (pool.targetMembers ?? 1)) * 100
                 const savings = calculateSavings(pool)
-                const pricePerPerson = Math.round(pool.totalPrice / pool.targetMembers)
-                const isAlreadyMember = pool.members.some((m) => m.name === currentUser.name)
+                const pricePerPerson = Math.round((pool.totalPrice ?? 0) / (pool.targetMembers ?? 1))
+                const isAlreadyMember = (pool.members ?? []).some((m) => m.name === currentUser.name)
 
                 return (
                   <div key={pool.id} className="bg-card rounded-xl border border-border overflow-hidden">
@@ -81,10 +81,10 @@ export function PoolsForServiceModal({ service, onClose, onJoinPool }: PoolsForS
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                            <span className="text-xs font-bold text-primary">{pool.leader.avatar}</span>
+                            <span className="text-xs font-bold text-primary">{pool.leader?.avatar ?? "👤"}</span>
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-foreground">Lider: {pool.leader.name}</p>
+                            <p className="text-sm font-medium text-foreground">Lider: {pool.leader?.name ?? "No asignado"}</p>
                             <div className="flex items-center gap-1 text-xs text-muted-foreground">
                               <Clock className="w-3 h-3" />
                               <span>Cierra en {pool.deadline}</span>
@@ -114,7 +114,7 @@ export function PoolsForServiceModal({ service, onClose, onJoinPool }: PoolsForS
 
                       {/* Members */}
                       <div className="flex items-center gap-1 mb-3">
-                        {pool.members.slice(0, 5).map((member, i) => (
+                       {(pool.members ?? []).slice(0, 5).map((member, i) => (
                           <div
                             key={i}
                             className={cn(
@@ -125,9 +125,9 @@ export function PoolsForServiceModal({ service, onClose, onJoinPool }: PoolsForS
                             {member.avatar}
                           </div>
                         ))}
-                        {pool.targetMembers - pool.currentMembers > 0 && (
+                        {((pool.targetMembers ?? 0) - (pool.currentMembers ?? 0)) > 0 && (
                           <div className="w-7 h-7 rounded-full bg-border border-2 border-dashed border-muted-foreground flex items-center justify-center text-xs text-muted-foreground -ml-1">
-                            +{pool.targetMembers - pool.currentMembers}
+                            +{(pool.targetMembers ?? 0) - (pool.currentMembers ?? 0)}
                           </div>
                         )}
                       </div>
