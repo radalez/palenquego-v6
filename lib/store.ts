@@ -627,7 +627,7 @@ export const useAppStore = create<AppState>()(
       userFavorites: [],
       recommendations: [],
       routes: initialRoutes,
-      currentUser: { id: 1, name: "Juan D.", avatar: "JD" },
+      currentUser: { id: 1, name: "Enrique", avatar: "E" },
       isAuthenticated: false,
       hasCompletedOnboarding: false,
       userPlan: "FREE",
@@ -927,50 +927,46 @@ export const useAppStore = create<AppState>()(
       },
 
       createPool: async (serviceId: number, targetMembers: number, dateStr: string, totalPrice: number) => {
-        const { currentUser } = get();
-        set({ isLoading: true });
+  const { currentUser } = get();
+  set({ isLoading: true });
 
-        // Función para convertir "17 Ene" -> "2026-01-17"
-        const formatForDjango = (str: string) => {
-          const months: { [key: string]: string } = {
-            'Ene': '01', 'Feb': '02', 'Mar': '03', 'Abr': '04', 'May': '05', 'Jun': '06',
-            'Jul': '07', 'Ago': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dic': '12'
-          };
-          const [day, month] = str.split(' ');
-          return `2026-${months[month]}-${day.padStart(2, '0')}`;
-        };
+  // Conversor de fecha blindado para Django
+  const formatForDjango = (str: string) => {
+    const months: { [key: string]: string } = {
+      'Ene': '01', 'Feb': '02', 'Mar': '03', 'Abr': '04', 'May': '05', 'Jun': '06',
+      'Jul': '07', 'Ago': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dic': '12'
+    };
+    const parts = str.split(' ');
+    if (parts.length < 2) return "2026-03-15"; // Respaldo hoy
+    return `2026-${months[parts[1]]}-${parts[0].padStart(2, '0')}`;
+  };
 
-        try {
-          const response = await fetch(`${API_BASE}/pools/`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              servicio: serviceId,
-              meta_personas: targetMembers,
-              fecha_servicio: formatForDjango(dateStr),
-              lider: currentUser.id,               // <--- CAMPO REQUERIDO 1
-              precio_total_servicio: totalPrice,   // <--- CAMPO REQUERIDO 2
-              estado: "ABIERTO"
-            }),
-          });
-          
-          if (response.ok) {
-            const { fetchPools } = get();
-            await fetchPools();
-            set({ isLoading: false });
-            return true;
-          }
-          
-          const errorLog = await response.json();
-          console.error("Django sigue diciendo que falta algo:", errorLog);
-          set({ isLoading: false });
-          return false;
-        } catch (error) {
-          console.error("Error de red:", error);
-          set({ isLoading: false });
-          return false;
-        }
-      },
+  try {
+    const response = await fetch(`${API_BASE}/pools/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        servicio: serviceId,
+        meta_personas: targetMembers,
+        fecha_servicio: formatForDjango(dateStr),
+        lider: currentUser.id,                // <--- REQUERIDO
+        precio_total_servicio: totalPrice,    // <--- REQUERIDO
+        estado: "ABIERTO"
+      }),
+    });
+    
+    if (response.ok) {
+      await get().fetchPools();
+      set({ isLoading: false });
+      return true;
+    }
+    set({ isLoading: false });
+    return false;
+  } catch (error) {
+    set({ isLoading: false });
+    return false;
+  }
+},
       
     }),
     {

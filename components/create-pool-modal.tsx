@@ -38,12 +38,12 @@ export function CreatePoolModal({ service: initialService, onClose, onSuccess }:
   const handleCreatePool = async () => {
     if (!selectedService || !selectedDate) return
 
-    // Pasamos 4 argumentos ahora: id, meta, fecha y PRECIO
+    // MANDAMOS LOS 4 DATOS: id, meta, fecha y el precio total
     const success = await createPool(
       selectedService.id, 
       targetMembers, 
-      selectedDate, 
-      selectedService.price // <--- MANDAMOS EL PRECIO AQUÍ
+      selectedDate,
+      selectedService.price // <--- El precio es vital para Django
     )
 
     if (success) {
