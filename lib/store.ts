@@ -627,7 +627,7 @@ export const useAppStore = create<AppState>()(
       userFavorites: [],
       recommendations: [],
       routes: initialRoutes,
-      currentUser: { id: 1, name: "Enrique", avatar: "E" },
+      currentUser: { id: 2, name: "Enrique", avatar: "E" },
       isAuthenticated: false,
       hasCompletedOnboarding: false,
       userPlan: "FREE",
