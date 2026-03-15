@@ -653,6 +653,7 @@ export const useAppStore = create<AppState>()(
             location: s.ubicacion || s.location || "Palenque, El Salvador",
             price: parseFloat(s.precio_base) || parseFloat(s.price) || 0,
             image: getProxyImage(s.imagen_principal || s.image || ""),
+            allowsPool: s.permite_pool || s.allows_pool || s.allowsPool || true,
             rating: parseFloat(s.calificacion) || s.rating || 5.0,
             reviews: parseInt(s.numero_resenas) || s.reviews || 0,
             businessId: s.tienda?.id || s.businessId,
