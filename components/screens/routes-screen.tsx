@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { useAppStore, type Route, type Service } from "@/lib/store"
 import { HeaderWithMenu } from "@/components/header-with-menu"
 import dynamic from 'next/dynamic';
+import { cn } from "@/lib/utils"
 
 const MapPreview = dynamic(() => import('@/components/MapPreview'), { 
   ssr: false, 
@@ -126,16 +127,21 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
               {/* Timeline */}
               <div className="space-y-3">
                 <p className="font-semibold text-sm">Próximas paradas:</p>
-                {[1, 2, 3].map((stop) => (
-                  <div key={stop} className="flex items-center gap-3 p-2 bg-muted/50 rounded-lg">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                      stop === tracking.currentStop ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                    }`}>
-                      {stop}
+                {/* Buscamos las paradas de la ruta que estamos rastreando */}
+                {routes.find(r => r.id === tracking.routeId)?.stops.map((stop) => (
+                  <div key={stop.order} className="flex items-center gap-3 p-2 bg-muted/50 rounded-lg">
+                    <div className={cn(
+                      "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold",
+                      stop.order === tracking.currentStop ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                    )}>
+                      {stop.order}
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-medium">Parada {stop}</p>
-                      <p className="text-xs text-muted-foreground">{stop === 1 ? "5 min" : stop === 2 ? "15 min" : "25 min"}</p>
+                      {/* Mostramos el nombre real del stop */}
+                      <p className="text-sm font-medium">{stop.name || `Parada ${stop.order}`}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {stop.minutes_from_start ? `Llegada en ${stop.minutes_from_start} min` : "Próximamente"}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -362,12 +368,12 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
                     <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-xs">
                       {stop.order}
                     </div>
-                    <div className="flex-1">
-                      <p className="font-medium">Parada {stop.order}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {stop.latitude.toFixed(4)}, {stop.longitude.toFixed(4)}
-                      </p>
-                    </div>
+                    <div className="flex-1">                  
+                    <p className="font-medium">{stop.name || `Parada ${stop.order}`}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {stop.latitude.toFixed(4)}, {stop.longitude.toFixed(4)}
+                    </p>
+                  </div>
                     <Clock size={16} className="text-muted-foreground" />
                   </div>
                 ))}
