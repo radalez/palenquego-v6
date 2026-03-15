@@ -90,7 +90,7 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
       time: selectedTime || "10:00",
       guests: joinedPool ? 1 : guests,
       extras: extrasSummary,
-      totalPrice: joinedPool ? Math.round(joinedPool.totalPrice / joinedPool.targetMembers) : calculateTotal(),
+      totalPrice: joinedPool ? Math.round((joinedPool.totalPrice ?? 0) / (joinedPool.targetMembers ?? 1)) : calculateTotal(),
       status: "CONFIRMADO",
       poolId: joinedPool?.id,
     })
@@ -322,7 +322,7 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
                   <span className="font-medium text-secondary">Uniendote a Pool</span>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Te uniras al grupo de {joinedPool.leader.name} con otros {joinedPool.currentMembers} viajeros.
+                  Te uniras al grupo de {joinedPool.leader?.name || "un líder"} con otros {joinedPool.currentMembers ?? 0} viajeros.
                 </p>
               </div>
             )}
@@ -372,7 +372,7 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
                 <span className="font-semibold text-foreground">Total</span>
                 <div className="text-right">
                   <span className="text-2xl font-bold text-primary">
-                    ${joinedPool ? Math.round(joinedPool.totalPrice / joinedPool.targetMembers) : calculateTotal()}
+                    ${joinedPool ? Math.round((joinedPool.totalPrice ?? 0) / (joinedPool.targetMembers ?? 1)) : calculateTotal()}
                   </span>
                   {joinedPool && <p className="text-xs text-green-600">Ahorro grupal aplicado</p>}
                 </div>
@@ -460,7 +460,7 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Total pagado</span>
                 <span className="text-primary font-bold">
-                  ${joinedPool ? Math.round(joinedPool.totalPrice / joinedPool.targetMembers) : calculateTotal()}
+                  ${joinedPool ? Math.round((joinedPool.totalPrice ?? 0) / (joinedPool.targetMembers ?? 1)) : calculateTotal()}
                 </span>
               </div>
             </div>
