@@ -226,7 +226,7 @@ interface AppState {
   fetchRoutes: () => Promise<void>
   fetchPools: () => Promise<void>
   // Agregamos el tercer argumento 'date: string' aquí para que TypeScript deje de chillar
-  createPool: (serviceId: number, targetMembers: number, date: string) => Promise<boolean>
+  createPool: (serviceId: number, targetMembers: number, date: string, totalPrice: number) => Promise<boolean>
 }
 
 const initialServices: Service[] = [
@@ -926,11 +926,11 @@ export const useAppStore = create<AppState>()(
         }
       },
 
-      createPool: async (serviceId: number, targetMembers: number, dateStr: string) => {
+      createPool: async (serviceId: number, targetMembers: number, dateStr: string, totalPrice: number) => {
         const { currentUser } = get();
         set({ isLoading: true });
 
-        // Función interna para convertir "17 Ene" -> "2026-01-17"
+        // Función para convertir "17 Ene" -> "2026-01-17"
         const formatForDjango = (str: string) => {
           const months: { [key: string]: string } = {
             'Ene': '01', 'Feb': '02', 'Mar': '03', 'Abr': '04', 'May': '05', 'Jun': '06',
@@ -947,8 +947,9 @@ export const useAppStore = create<AppState>()(
             body: JSON.stringify({
               servicio: serviceId,
               meta_personas: targetMembers,
-              fecha_servicio: formatForDjango(dateStr), // <-- Fecha corregida para Django
-              lider: currentUser.id,                   // <-- Ahora el ID sí existe
+              fecha_servicio: formatForDjango(dateStr),
+              lider: currentUser.id,               // <--- CAMPO REQUERIDO 1
+              precio_total_servicio: totalPrice,   // <--- CAMPO REQUERIDO 2
               estado: "ABIERTO"
             }),
           });
@@ -961,7 +962,7 @@ export const useAppStore = create<AppState>()(
           }
           
           const errorLog = await response.json();
-          console.error("Django rechazó la petición:", errorLog);
+          console.error("Django sigue diciendo que falta algo:", errorLog);
           set({ isLoading: false });
           return false;
         } catch (error) {

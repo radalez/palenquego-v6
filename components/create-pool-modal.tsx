@@ -34,11 +34,17 @@ export function CreatePoolModal({ service: initialService, onClose, onSuccess }:
   ]
 
   // Busca handleCreatePool en create-pool-modal.tsx:
+  // Busca handleCreatePool en create-pool-modal.tsx
   const handleCreatePool = async () => {
-    if (!selectedService || !selectedDate) return // Validamos que existan ambos
+    if (!selectedService || !selectedDate) return
 
-    // Pasamos el tercer argumento: selectedDate
-    const success = await createPool(selectedService.id, targetMembers, selectedDate)
+    // Pasamos 4 argumentos ahora: id, meta, fecha y PRECIO
+    const success = await createPool(
+      selectedService.id, 
+      targetMembers, 
+      selectedDate, 
+      selectedService.price // <--- MANDAMOS EL PRECIO AQUÍ
+    )
 
     if (success) {
       setStep("success")
