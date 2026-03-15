@@ -911,7 +911,7 @@ export const useAppStore = create<AppState>()(
               avatar: "/avatars/default.png"
             },
             location: p.servicio_detalle?.ubicacion || "El Salvador",
-            image: p.servicio_detalle?.imagen || "/placeholder.svg",
+            image: getProxyImage(p.servicio_detalle?.imagen_principal || p.servicio_detalle?.imagen || "/placeholder.svg"),
             deadline: "24h restantes",
             createdAt: p.creado_el,
             members: [],
