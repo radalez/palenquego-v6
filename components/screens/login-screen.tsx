@@ -9,9 +9,10 @@ import { useAppStore } from "@/lib/store"
 
 interface LoginScreenProps {
   onLoginSuccess: () => void
+  onShowRegister: () => void
 }
 
-export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
+export function LoginScreen({ onLoginSuccess, onShowRegister }: LoginScreenProps) {
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
@@ -106,9 +107,17 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
           </Button>
         </div>
 
-        <p className="text-center text-xs text-muted-foreground mt-6">
-          Ingresa con tu cuenta de viajero de Palenque Flow
-        </p>
+        <div className="mt-6 text-center space-y-3">
+          <p className="text-xs text-muted-foreground">
+            Ingresa con tu cuenta de viajero de Palenque Flow
+          </p>
+          <button 
+            onClick={onShowRegister}
+            className="text-sm font-semibold text-primary hover:underline"
+          >
+            ¿No tienes cuenta? Regístrate aquí
+          </button>
+        </div>
       </div>
 
       {/* Footer */}

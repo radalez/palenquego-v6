@@ -212,7 +212,7 @@ interface AppState {
   joinPool: (poolId: number) => Promise<boolean>
   addBooking: (booking: Omit<Booking, "id" | "qrCode">) => Booking
   updatePoolStatus: (poolId: number, status: Pool["status"]) => void  
-  login: (username: string, password: string) => Promise<boolean>
+  login: (username: string, password: string) => Promise<boolean>   
   completeOnboarding: () => void
   logout: () => void
   upgradePlan: (plan: "ORO" | "PLATINO" | "PRO") => void
@@ -802,15 +802,15 @@ export const useAppStore = create<AppState>()(
           set({ isLoading: false });
           return false;
         }
-      },
-      
+      },    
+
       completeOnboarding: () => set({ hasCompletedOnboarding: true }),
-      logout: () => set({ 
+     logout: () => set({ 
         isAuthenticated: false, 
         hasCompletedOnboarding: false,
         accessToken: null,
         refreshToken: null,
-        currentUser: { id: 2, name: "Enrique", avatar: "E" } 
+        currentUser: { id: 0, name: "", avatar: "" } 
       }),
       upgradePlan: (plan) => set({ userPlan: plan }),
       addPaymentMethod: (method) =>

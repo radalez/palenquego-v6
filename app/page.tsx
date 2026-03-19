@@ -20,6 +20,7 @@ import { SupportScreen } from "@/components/screens/support-screen"
 import { SupportExtendedScreen } from "@/components/screens/support-extended-screen"
 import { RoutesScreen } from "@/components/screens/routes-screen"
 import { LoginScreen } from "@/components/screens/login-screen"
+import { RegisterScreen } from "@/components/screens/register-screen"
 import { OnboardingScreen } from "@/components/screens/onboarding-screen"
 import { FavoritesScreen } from "@/components/screens/favorites-screen"
 import { RecommendationsScreen } from "@/components/screens/recommendations-screen"
@@ -55,6 +56,7 @@ export default function Home() {
   const completeOnboarding = useAppStore((state) => state.completeOnboarding)
 
   const [showOnboarding, setShowOnboarding] = useState(false)
+  const [authView, setAuthView] = useState<"login" | "register">("register")
   const [showShareModal, setShowShareModal] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [selectedPoolForShare, setSelectedPoolForShare] = useState<any>(null)
@@ -91,7 +93,17 @@ export default function Home() {
   }
 
   if (!isAuthenticated) {
-    return <LoginScreen onLoginSuccess={handleLoginSuccess} />
+    return authView === "register" ? (
+      <RegisterScreen 
+        onRegisterSuccess={() => setAuthView("login")} 
+        onBackToLogin={() => setAuthView("login")} 
+      />
+    ) : (
+      <LoginScreen 
+        onLoginSuccess={handleLoginSuccess} 
+        onShowRegister={() => setAuthView("register")} 
+      />
+    )
   }
 
   if (showOnboarding || !hasCompletedOnboarding) {
