@@ -194,6 +194,8 @@ interface AppState {
   recommendations: Recommendation[]
   routes: Route[]
   currentUser: { id: number; name: string; avatar: string }
+  accessToken: string | null
+  refreshToken: string | null
   isAuthenticated: boolean
   hasCompletedOnboarding: boolean
   userPlan: "FREE" | "ORO" | "PLATINO" | "PRO"
@@ -208,8 +210,8 @@ interface AppState {
   addPool: (pool: Omit<Pool, "id" | "createdAt">) => Pool
   joinPool: (poolId: number) => Promise<boolean>
   addBooking: (booking: Omit<Booking, "id" | "qrCode">) => Booking
-  updatePoolStatus: (poolId: number, status: Pool["status"]) => void
-  login: (username: string, password: string) => boolean
+  updatePoolStatus: (poolId: number, status: Pool["status"]) => void  
+  login: (username: string, password: string) => Promise<boolean>
   completeOnboarding: () => void
   logout: () => void
   upgradePlan: (plan: "ORO" | "PLATINO" | "PRO") => void
@@ -628,6 +630,8 @@ export const useAppStore = create<AppState>()(
       recommendations: [],
       routes: initialRoutes,
       currentUser: { id: 2, name: "Enrique", avatar: "E" },
+      accessToken: null,
+      refreshToken: null,
       isAuthenticated: false,
       hasCompletedOnboarding: false,
       userPlan: "FREE",
@@ -749,14 +753,33 @@ export const useAppStore = create<AppState>()(
           pools: state.pools.map((pool) => (pool.id === poolId ? { ...pool, status } : pool)),
         })),
 
-      login: (username, password) => {
-        if (username === "demo" && password === "1234") {
-          set({ isAuthenticated: true })
-          return true
-        }
-        return false
-      },
+      login: async (username, password) => {
+        set({ isLoading: true });
+        try {
+          const response = await fetch(`${API_BASE}/auth/login/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password }),
+          });
 
+          if (response.ok) {
+            const data = await response.json();
+            set({ 
+              isAuthenticated: true, 
+              accessToken: data.access, 
+              refreshToken: data.refresh,
+              isLoading: false 
+            });
+            return true;
+          }
+          set({ isLoading: false });
+          return false;
+        } catch (error) {
+          console.error("Error en login:", error);
+          set({ isLoading: false });
+          return false;
+        }
+      },
       completeOnboarding: () => set({ hasCompletedOnboarding: true }),
       logout: () => set({ isAuthenticated: false, hasCompletedOnboarding: false }),
       upgradePlan: (plan) => set({ userPlan: plan }),
@@ -927,46 +950,48 @@ export const useAppStore = create<AppState>()(
       },
 
       createPool: async (serviceId: number, targetMembers: number, dateStr: string, totalPrice: number) => {
-  const { currentUser } = get();
-  set({ isLoading: true });
+        const { currentUser, accessToken } = get();
+        set({ isLoading: true });
 
-  // Conversor de fecha blindado para Django
-  const formatForDjango = (str: string) => {
-    const months: { [key: string]: string } = {
-      'Ene': '01', 'Feb': '02', 'Mar': '03', 'Abr': '04', 'May': '05', 'Jun': '06',
-      'Jul': '07', 'Ago': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dic': '12'
-    };
-    const parts = str.split(' ');
-    if (parts.length < 2) return "2026-03-15"; // Respaldo hoy
-    return `2026-${months[parts[1]]}-${parts[0].padStart(2, '0')}`;
-  };
+        const formatForDjango = (str: string) => {
+          const months: { [key: string]: string } = {
+            'Ene': '01', 'Feb': '02', 'Mar': '03', 'Abr': '04', 'May': '05', 'Jun': '06',
+            'Jul': '07', 'Ago': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dic': '12'
+          };
+          const parts = str.split(' ');
+          if (parts.length < 2) return "2026-03-15";
+          return `2026-${months[parts[1]]}-${parts[0].padStart(2, '0')}`;
+        };
 
-  try {
-    const response = await fetch(`${API_BASE}/pools/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        servicio: serviceId,
-        meta_personas: targetMembers,
-        fecha_servicio: formatForDjango(dateStr),
-        lider: currentUser.id,                // <--- REQUERIDO
-        precio_total_servicio: totalPrice,    // <--- REQUERIDO
-        estado: "ABIERTO"
-      }),
-    });
-    
-    if (response.ok) {
-      await get().fetchPools();
-      set({ isLoading: false });
-      return true;
-    }
-    set({ isLoading: false });
-    return false;
-  } catch (error) {
-    set({ isLoading: false });
-    return false;
-  }
-},
+        try {
+          const response = await fetch(`${API_BASE}/pools/`, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': accessToken ? `Bearer ${accessToken}` : '' 
+            },
+            body: JSON.stringify({
+              servicio: serviceId,
+              meta_personas: targetMembers,
+              fecha_servicio: formatForDjango(dateStr),
+              lider: currentUser.id,
+              precio_total_servicio: totalPrice,
+              estado: "ABIERTO"
+            }),
+          });
+          
+          if (response.ok) {
+            await get().fetchPools();
+            set({ isLoading: false });
+            return true;
+          }
+          set({ isLoading: false });
+          return false;
+        } catch (error) {
+          set({ isLoading: false });
+          return false;
+        }
+      },
       
     }),
     {

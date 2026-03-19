@@ -22,16 +22,14 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
     setError("")
     setIsLoading(true)
 
-    // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, 800))
-
-    const success = login(username, password)
+    // Llamamos al login del store y ESPERAMOS (await) la respuesta real de Django
+    const success = await login(username, password)
     setIsLoading(false)
 
     if (success) {
       onLoginSuccess()
     } else {
-      setError("Credenciales incorrectas. Usa: demo / 1234")
+      setError("Usuario o contraseña incorrectos. Verifica tus datos.")
     }
   }
 
@@ -88,7 +86,7 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
           {error && (
             <div className="flex items-center gap-2 p-3 bg-destructive/10 rounded-xl">
               <AlertCircle className="w-4 h-4 text-destructive" />
-              <span className="text-sm text-destructive">{error}</span>
+              <span className="text-sm text-destructive">{error || "Credenciales incorrectas"}</span>
             </div>
           )}
 
@@ -109,8 +107,7 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
         </div>
 
         <p className="text-center text-xs text-muted-foreground mt-6">
-          Demo: usuario <span className="font-mono bg-muted px-1.5 py-0.5 rounded">demo</span> contraseña{" "}
-          <span className="font-mono bg-muted px-1.5 py-0.5 rounded">1234</span>
+          Ingresa con tu cuenta de viajero de Palenque Flow
         </p>
       </div>
 
