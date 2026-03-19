@@ -196,6 +196,7 @@ interface AppState {
   currentUser: { id: number; name: string; avatar: string }
   accessToken: string | null
   refreshToken: string | null
+  signup: (userData: any) => Promise<boolean>
   isAuthenticated: boolean
   hasCompletedOnboarding: boolean
   userPlan: "FREE" | "ORO" | "PLATINO" | "PRO"
@@ -629,10 +630,10 @@ export const useAppStore = create<AppState>()(
       userFavorites: [],
       recommendations: [],
       routes: initialRoutes,
-      currentUser: { id: 2, name: "Enrique", avatar: "E" },
+      currentUser: { id: 0, name: "", avatar: "" },
+      isAuthenticated: false,      
       accessToken: null,
-      refreshToken: null,
-      isAuthenticated: false,
+      refreshToken: null,      
       hasCompletedOnboarding: false,
       userPlan: "FREE",
       paymentMethods: [
@@ -753,6 +754,22 @@ export const useAppStore = create<AppState>()(
           pools: state.pools.map((pool) => (pool.id === poolId ? { ...pool, status } : pool)),
         })),
 
+      signup: async (userData) => {
+        set({ isLoading: true });
+        try {
+          const response = await fetch(`${API_BASE}/auth/register/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(userData),
+          });
+          set({ isLoading: false });
+          return response.ok;
+        } catch (error) {
+          set({ isLoading: false });
+          return false;
+        }
+      },
+
       login: async (username, password) => {
         set({ isLoading: true });
         try {
@@ -764,10 +781,16 @@ export const useAppStore = create<AppState>()(
 
           if (response.ok) {
             const data = await response.json();
+            // Guardamos el ID REAL que viene de la base de datos de Django
             set({ 
               isAuthenticated: true, 
               accessToken: data.access, 
               refreshToken: data.refresh,
+              currentUser: {
+                id: data.user.id,
+                name: data.user.name,
+                avatar: data.user.avatar
+              },
               isLoading: false 
             });
             return true;
@@ -780,8 +803,15 @@ export const useAppStore = create<AppState>()(
           return false;
         }
       },
+      
       completeOnboarding: () => set({ hasCompletedOnboarding: true }),
-      logout: () => set({ isAuthenticated: false, hasCompletedOnboarding: false }),
+      logout: () => set({ 
+        isAuthenticated: false, 
+        hasCompletedOnboarding: false,
+        accessToken: null,
+        refreshToken: null,
+        currentUser: { id: 2, name: "Enrique", avatar: "E" } 
+      }),
       upgradePlan: (plan) => set({ userPlan: plan }),
       addPaymentMethod: (method) =>
         set((state) => ({

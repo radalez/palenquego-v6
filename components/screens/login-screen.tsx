@@ -24,14 +24,14 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
 
     // Llamamos al login del store y ESPERAMOS (await) la respuesta real de Django
     const success = await login(username, password)
-    setIsLoading(false)
+      setIsLoading(false)
 
-    if (success) {
-      onLoginSuccess()
-    } else {
-      setError("Usuario o contraseña incorrectos. Verifica tus datos.")
+      if (success) {
+        onLoginSuccess()
+      } else {
+        setError("Usuario o contraseña incorrectos. Verifica tus datos.")
+      }
     }
-  }
 
   return (
     <div className="min-h-screen bg-primary flex flex-col items-center justify-center p-6">
