@@ -193,7 +193,14 @@ interface AppState {
   userFavorites: UserFavorite[]
   recommendations: Recommendation[]
   routes: Route[]
-  currentUser: { id: number; name: string; avatar: string }
+  currentUser: { 
+    id: number; 
+    name: string; 
+    avatar: string;
+    email?: string;    // El ? significa que es opcional
+    telefono?: string; 
+    tipo?: string;
+  }
   accessToken: string | null
   refreshToken: string | null
   signup: (userData: any) => Promise<boolean>
@@ -716,11 +723,16 @@ export const useAppStore = create<AppState>()(
       },
 
       joinPool: async (poolId: number) => {
+        const { accessToken } = get(); // Traemos el token
         set({ isLoading: true });
         try {
+          
           const response = await fetch(`${API_BASE}/pools/${poolId}/join/`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}` // <-- Esto es vital
+            },
           });
 
           if (response.ok) {
@@ -789,7 +801,10 @@ export const useAppStore = create<AppState>()(
               currentUser: {
                 id: data.user.id,
                 name: data.user.name,
-                avatar: data.user.avatar
+                avatar: data.user.avatar,
+                email: data.user.email, // <-- Agregamos esto
+                telefono: data.user.telefono, // <-- Agregamos esto
+                tipo: data.user.tipo // <-- Agregamos esto
               },
               isLoading: false 
             });

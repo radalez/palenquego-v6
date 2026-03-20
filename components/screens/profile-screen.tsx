@@ -95,7 +95,7 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
             </div>
             <div className="flex-1">
               <h2 className="text-lg font-semibold text-foreground">{currentUser.name}</h2>
-              <p className="text-sm text-muted-foreground">Usuario Demo</p>
+              <p className="text-sm text-muted-foreground">{currentUser.tipo}</p>
               <div className="flex items-center gap-1 mt-1">
                 <div className="w-2 h-2 rounded-full bg-green-500" />
                 <span className="text-xs text-green-600">Verificado</span>
@@ -133,13 +133,13 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
           <div className="flex items-center gap-3 p-4">
             <Mail className="w-5 h-5 text-muted-foreground" />
             <div className="flex-1">
-              <p className="text-sm text-foreground">demo@palenquego.com</p>
+              <p className="text-sm text-foreground">{currentUser.email}</p>
             </div>
           </div>
           <div className="flex items-center gap-3 p-4">
             <Phone className="w-5 h-5 text-muted-foreground" />
             <div className="flex-1">
-              <p className="text-sm text-foreground">+503 7890-1234</p>
+              <p className="text-sm text-foreground">{currentUser.telefono || "Sin teléfono"}</p>
             </div>
           </div>
           <div className="flex items-center gap-3 p-4">
