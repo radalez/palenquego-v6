@@ -20,8 +20,8 @@ export function RegisterScreen({ onRegisterSuccess, onBackToLogin }: RegisterScr
 
   const handleRegister = async () => {
     setError("")
-    if (!formData.username || !formData.password || !formData.first_name) {
-      setError("Por favor completa los campos obligatorios.")
+   if (!formData.username || !formData.password || !formData.first_name || !formData.email) {
+      setError("Todos los campos, incluyendo el correo, son obligatorios.")
       return
     }
     setIsLoading(true)
@@ -43,10 +43,35 @@ export function RegisterScreen({ onRegisterSuccess, onBackToLogin }: RegisterScr
             <Label className="text-muted-foreground text-sm">Nombre Completo</Label>
             <Input placeholder="Ej: Enrique Pérez" value={formData.first_name} onChange={(e) => setFormData({...formData, first_name: e.target.value})} className="h-12 rounded-xl border-border bg-muted/50" />
           </div>
+
           <div className="space-y-2">
-            <Label className="text-muted-foreground text-sm">Usuario</Label>
-            <Input placeholder="nombre_usuario" value={formData.username} onChange={(e) => setFormData({...formData, username: e.target.value})} className="h-12 rounded-xl border-border bg-muted/50" />
+            <Label className="text-muted-foreground text-sm">Correo Electrónico</Label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Input
+                type="email"
+                placeholder="ejemplo@correo.com"
+                value={formData.email}
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                className="pl-10 h-12 rounded-xl border-border bg-muted/50"
+              />
+            </div>
           </div>
+
+
+          <div className="space-y-2">
+            <Label className="text-muted-foreground text-sm">Nombre de Usuario</Label>
+            <div className="relative">
+              <UserPlus className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Input
+                placeholder="ej: enrique_viajero"
+                value={formData.username}
+                onChange={(e) => setFormData({...formData, username: e.target.value})}
+                className="pl-10 h-12 rounded-xl border-border bg-muted/50"
+              />
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label className="text-muted-foreground text-sm">Contraseña</Label>
             <Input type="password" placeholder="••••••••" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} className="h-12 rounded-xl border-border bg-muted/50" />
