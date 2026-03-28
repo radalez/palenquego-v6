@@ -1042,19 +1042,21 @@ export const useAppStore = create<AppState>()(
       },
 
       fetchRecommendations: async () => {
-        // 1. SACAMOS EL TOKEN (Forzamos a TS a no chillar con 'as any')
-        const state = get() as any; 
-        const token = state.accessToken || state.token || state.currentUser?.token;
+        // 1. SACAMOS EL TOKEN DE MELVIS (Usamos 'as any' para que TS no joda)
+        const state = get() as any;
+        const token = state.currentUser?.token || state.currentUser?.access || state.accessToken;
 
         if (!token) {
-          console.error("❌ TOKEN NULL: Melvis no tiene sesión.");
+          console.error("❌ ERROR: Melvis tiene sesión, pero no estamos capturando el token.");
           return;
         }
 
         set({ isLoading: true });
         try {
-          // 2. LA RUTA EXACTA CON EL API/V1/ QUE FALTA
-          const response = await fetch(`/api-proxy/api/v1/marketing/campaigns/`, {
+          // 2. LA RUTA: Siguiendo el patrón de 'stores/list/' y 'catalog/' que SÍ FUNCIONAN
+          const url = `/api-proxy/marketing/campaigns/`; 
+          
+          const response = await fetch(url, {
             headers: { 
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
@@ -1064,7 +1066,7 @@ export const useAppStore = create<AppState>()(
           if (response.ok) {
             const data = await response.json();
             
-            // 3. MAPEAMOS CON TUS CAMPOS (titulo y nombre_servicio)
+            // 3. MAPEAMOS CON TUS CAMPOS DE DJANGO
             const formattedData = data.map((rec: any) => ({
               id: String(rec.id),
               name: rec.titulo, 
@@ -1077,12 +1079,11 @@ export const useAppStore = create<AppState>()(
 
             set({ recommendations: formattedData, isLoading: false });
           } else {
-            // Si entra aquí con 404, es que el prefijo api/v1/ no es ese.
             console.error("Error en Django:", response.status);
             set({ isLoading: false });
           }
         } catch (error) {
-          console.error("Error de Red:", error);
+          console.error("Fallo de conexión en el proxy:", error);
           set({ isLoading: false });
         }
       },
