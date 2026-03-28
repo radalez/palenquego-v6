@@ -1042,20 +1042,18 @@ export const useAppStore = create<AppState>()(
       },
 
       fetchRecommendations: async () => {
-        // 1. SACAMOS EL TOKEN DEL STORE (Sin que TypeScript chille)
+        // 1. SACAMOS EL TOKEN (Forzamos a TS a no chillar con 'as any')
         const state = get() as any; 
-        // Buscamos el token donde sea que Melvis lo guardó al hacer login
         const token = state.accessToken || state.token || state.currentUser?.token;
 
         if (!token) {
-          console.error("❌ EL TOKEN SIGUE SIENDO NULL: Melvis no tiene sesión o la llave es distinta.");
+          console.error("❌ TOKEN NULL: Melvis no tiene sesión.");
           return;
         }
 
         set({ isLoading: true });
         try {
-          // 2. LA RUTA DEL PROXY (Sin https:// ni mierd*s, solo el túnel de Netlify)
-          // Usamos 'campaigns/' que es tu ruta real en Django
+          // 2. LA RUTA EXACTA CON EL API/V1/ QUE FALTA
           const response = await fetch(`/api-proxy/api/v1/marketing/campaigns/`, {
             headers: { 
               'Authorization': `Bearer ${token}`,
@@ -1066,29 +1064,25 @@ export const useAppStore = create<AppState>()(
           if (response.ok) {
             const data = await response.json();
             
-            // 3. MAPEAMOS CON TUS CAMPOS DE DJANGO
+            // 3. MAPEAMOS CON TUS CAMPOS (titulo y nombre_servicio)
             const formattedData = data.map((rec: any) => ({
               id: String(rec.id),
-              name: rec.titulo, // <--- Usamos 'titulo' del serializer
-              serviceName: rec.nombre_servicio, // <--- Tu ReadOnlyField
+              name: rec.titulo, 
+              serviceName: rec.nombre_servicio, 
               discount: rec.porcentaje_descuento,
               expiry: rec.fecha_expiracion,
               link: "", 
-              stats: {
-                clicks: 0,
-                purchases: 0,
-                totalEarned: 0,
-                paymentStatus: "PENDIENTE"
-              }
+              stats: { clicks: 0, purchases: 0, totalEarned: 0, paymentStatus: "PENDIENTE" }
             }));
 
             set({ recommendations: formattedData, isLoading: false });
           } else {
-            console.error("Error en la API (Proxy vivo, pero Django dice no):", response.status);
+            // Si entra aquí con 404, es que el prefijo api/v1/ no es ese.
+            console.error("Error en Django:", response.status);
             set({ isLoading: false });
           }
         } catch (error) {
-          console.error("Fallo de red en el túnel:", error);
+          console.error("Error de Red:", error);
           set({ isLoading: false });
         }
       },
