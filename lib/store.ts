@@ -661,7 +661,6 @@ export const useAppStore = create<AppState>()(
           const data = await response.json()
           const formatted = data.map((s: any) => ({
             ...s,
-            // UNIFICACIÓN DE CAMPOS: Mapeamos lo que viene de la API a tus nombres de variable
             id: s.id,
             name: s.nombre || s.name || "Servicio sin nombre",
             description: s.descripcion || s.description || "Sin descripción disponible",
@@ -676,6 +675,8 @@ export const useAppStore = create<AppState>()(
             spotsLeft: s.cupos_disponibles || s.spotsLeft || 0,
             isRemate: s.en_oferta || s.isRemate || false,
             discount: s.descuento || s.discount || 0,
+            // --- ESTA ES LA LLAVE DEL RELOJ SUIZO ---
+            linkTypes: s.link_types || s.linkTypes || [], 
           }))
           set({ services: formatted, isLoading: false })
         } catch (error) {

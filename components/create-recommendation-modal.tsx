@@ -27,9 +27,12 @@ export function CreateRecommendationModal({ onClose, onRecommendationCreated }: 
   }
 
 const filteredServices = services.filter((service) => {
+    // 1. Buscador por nombre (El que me pediste)
     const matchesSearch = service.name.toLowerCase().includes(searchQuery.toLowerCase());
-    // FILTRO RELOJ SUIZO: Solo servicios con plantillas de marketing (linkTypes)
+    
+    // 2. Filtro de Autorización (Solo servicios con campañas configuradas en Django)
     const isAuthorized = service.linkTypes && service.linkTypes.length > 0;
+    
     return matchesSearch && isAuthorized;
   })
 
