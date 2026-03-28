@@ -1043,44 +1043,40 @@ export const useAppStore = create<AppState>()(
 
       fetchRecommendations: async () => {
         const { currentUser } = get();
-        // 1. SINCRONIZACIÓN: Si no hay usuario, no hay qué buscar
         if (!currentUser?.id) return;
         
         set({ isLoading: true });
         try {
-          // 2. LA RUTA REAL: Agregamos /api/v1/ para que coincida con tu endpoint
-          const url = `${API_BASE}/api/v1/marketing/recommendations/`;
-          console.log("Sincronizando con:", url); 
-
+          // USAMOS EL PROXY: El túnel que ya tenemos montado
+          // La ruta es campaigns/ según tus urlpatterns
+          const url = `${API_BASE}/api/v1/marketing/campaigns/`;
+          
           const response = await fetch(url, {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-            }
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
           });
 
           if (response.ok) {
             const data = await response.json();
             
-            // 3. MAPEO DE DATOS: Django (snake_case) -> Frontend (camelCase)
+            // MAPEAMOS CON TUS CAMPOS DE DJANGO
             const formattedData = data.map((rec: any) => ({
               id: String(rec.id),
-              name: rec.nombre_servicio || "Recomendación Palenque", 
-              // El link se construye con el slug que ya probaste
-              link: `${window.location.origin}/ref/${rec.slug_unico}`,
-              type: rec.type,
-              serviceId: rec.service_id,
-              createdAt: new Date(rec.created_at),
+              name: rec.titulo || "Campaña Palenque", 
+              serviceName: rec.nombre_servicio, // El campo ReadOnly de tu serializer
+              discount: rec.porcentaje_descuento,
+              expiry: rec.fecha_expiracion,
+              link: "", 
               stats: {
-                clicks: rec.clicks || 0,
-                purchases: rec.purchases || 0,
-                totalEarned: parseFloat(rec.total_earned) || 0,
-                paymentStatus: rec.payment_status || "PENDIENTE"
+                clicks: 0,
+                purchases: 0,
+                totalEarned: 0,
+                paymentStatus: "PENDIENTE"
               }
             }));
 
             set({ recommendations: formattedData, isLoading: false });
           } else {
-            console.error("Error en respuesta:", response.status);
+            console.error("Error en la respuesta de la API:", response.status);
             set({ isLoading: false });
           }
         } catch (error) {
