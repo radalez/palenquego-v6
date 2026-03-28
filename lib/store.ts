@@ -823,20 +823,20 @@ export const useAppStore = create<AppState>()(
       },    
 
       completeOnboarding: () => set({ hasCompletedOnboarding: true }),
-     logout: () => set({ 
-        isAuthenticated: false, 
-        hasCompletedOnboarding: false,
-        accessToken: null,
-        refreshToken: null,
-        currentUser: { 
-        id: 0, 
-        name: "", 
-        avatar: "",
-        email: "",
-        telefono: "",
-        tipo: "",
-        is_ambassador: false
-      },
+      logout: () => set({ 
+          isAuthenticated: false, 
+          hasCompletedOnboarding: false,
+          accessToken: null,
+          refreshToken: null,
+          currentUser: { 
+          id: 0, 
+          name: "", 
+          avatar: "",
+          email: "",
+          telefono: "",
+          tipo: "",
+          is_ambassador: false
+        },
       }),
       upgradePlan: (plan) => set({ userPlan: plan }),
       addPaymentMethod: (method) =>
