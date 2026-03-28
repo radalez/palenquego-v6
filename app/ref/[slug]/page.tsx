@@ -10,34 +10,44 @@ export default function RefPage() {
   useEffect(() => {
     const resolveLink = async () => {
       try {
-        // 1. Preguntamos a tu Django por el slug
+        console.log("Iniciando radar para el slug:", slug);
+        
+        // 1. Petición al servidor de producción
         const response = await fetch(`https://palenquego.com/api/v1/marketing/resolve/${slug}/`);
         
-        if (!response.ok) throw new Error("Link inválido");
+        if (!response.ok) {
+          throw new Error(`Servidor respondió con error: ${response.status}`);
+        }
 
         const data = await response.json();
+        console.log("Data de marketing recibida:", data);
 
-        // 2. Guardamos la "huella" de Melvis (Cookie por 30 días)
-        // Esto asegura que aunque el cliente cierre la pestaña y vuelva mañana, Melvis cobre.
+        // 2. Guardamos la huella del embajador (Cookie 30 días)
         document.cookie = `palenque_ref=${data.codigo_embajador}; path=/; max-age=${30 * 24 * 60 * 60}; SameSite=Lax`;
         
-        // También lo guardamos en LocalStorage por si las moscas
+        // Guardamos también en LocalStorage por seguridad
         localStorage.setItem("palenque_ref", data.codigo_embajador);
         localStorage.setItem("promo_cupon", data.cupon);
 
-        // 3. LA REDIRECCIÓN INTELIGENTE
-        // Aquí es donde usamos el "tipo" y el "id_destino" que tanto nos costó sacar
+        // 3. Redirección según tu estructura de carpetas (/s/ o /r/)
         if (data.tipo === "SERVICE") {
-        // Te mando a /s/[id] porque esa es tu carpeta
-        router.push(`/s/${data.id_destino}`);
+          console.log("Redirigiendo a servicio:", data.id_destino);
+          router.push(`/s/${data.id_destino}`);
         } else if (data.tipo === "ROUTE") {
-        // Te mando a /r/[id] porque esa es tu carpeta
-        router.push(`/r/${data.id_destino}`);
+          console.log("Redirigiendo a ruta:", data.id_destino);
+          router.push(`/r/${data.id_destino}`);
+        } else {
+          router.push("/");
         }
 
-      } catch (error) {
-        console.error("Error al resolver link:", error);
-        router.push("/"); // Si algo falla, lo mandamos al home para no perder al cliente
+      } catch (error: any) {
+        console.error("ERROR EN EL RADAR:", error);
+        
+        // ¡MIRA ESTO! Te avisará exactamente qué falló en una ventanita
+        alert("FALLO EL RADAR: " + error.message);
+        
+        // Comentamos la redirección al home para que puedas ver el error en consola
+        // router.push("/"); 
       }
     };
 
@@ -46,7 +56,6 @@ export default function RefPage() {
     }
   }, [slug, router]);
 
-  // Esto es lo "bonito" que verá el cliente mientras ocurre la magia
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50">
       <div className="p-8 bg-white rounded-2xl shadow-xl flex flex-col items-center">
