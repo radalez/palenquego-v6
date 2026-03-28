@@ -1042,20 +1042,24 @@ export const useAppStore = create<AppState>()(
       },
 
       fetchRecommendations: async () => {
-        // 1. OBTENEMOS EL TOKEN (Asegúrate de que la llave sea la misma que en el Login)
-        const token = localStorage.getItem('access_token') || localStorage.getItem('token'); 
-        
+        // 1. SACAMOS EL TOKEN SIN QUE TYPESCRIPT CHILLE [Cambiamos esta línea]
+        const state = get() as any; 
+        const token = state.accessToken || state.token || state.currentUser?.token;
+
+        // 2. VALIDACIÓN: Si sigue siendo null, te avisará en la consola
         if (!token) {
-          console.error("❌ ERROR: No hay token. Melvis no ha iniciado sesión o la llave está mal.");
+          console.error("❌ ERROR: No se encontró el token en el store. Melvis debe re-loguear.");
           return;
         }
 
         set({ isLoading: true });
         try {
-          // 2. RUTA: Agregamos el /api/v1/ que es el estándar de tu API
-          const response = await fetch(`/api-proxy/api/v1/marketing/campaigns/`, {
+          // 3. LA RUTA REAL: Usamos el proxy y el path que ya probamos
+          const url = `/api-proxy/api/v1/marketing/campaigns/`;
+          
+          const response = await fetch(url, {
             headers: { 
-              'Authorization': `Bearer ${token}`, 
+              'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
             }
           });
@@ -1063,25 +1067,29 @@ export const useAppStore = create<AppState>()(
           if (response.ok) {
             const data = await response.json();
             
-            // 3. MAPEAMOS CON TUS CAMPOS REALES [titulo y nombre_servicio]
+            // 4. MAPEAMOS CON TUS CAMPOS DE DJANGO
             const formattedData = data.map((rec: any) => ({
               id: String(rec.id),
-              name: rec.titulo, 
-              serviceName: rec.nombre_servicio, 
+              name: rec.titulo, // <--- Usamos 'titulo' de tu serializer
+              serviceName: rec.nombre_servicio, // <--- El ReadOnlyField de tu serializer
               discount: rec.porcentaje_descuento,
               expiry: rec.fecha_expiracion,
-              link: "", 
-              stats: { clicks: 0, purchases: 0, totalEarned: 0, paymentStatus: "PENDIENTE" }
+              link: "", // Esto se llena cuando generes el link personal
+              stats: {
+                clicks: 0,
+                purchases: 0,
+                totalEarned: 0,
+                paymentStatus: "PENDIENTE"
+              }
             }));
 
             set({ recommendations: formattedData, isLoading: false });
           } else {
-            const errorData = await response.json();
-            console.error("❌ ERROR DE DJANGO:", errorData);
+            console.error("Error en la respuesta de la API:", response.status);
             set({ isLoading: false });
           }
         } catch (error) {
-          console.error("❌ FALLO DE RED:", error);
+          console.error("Fallo total de red:", error);
           set({ isLoading: false });
         }
       },
