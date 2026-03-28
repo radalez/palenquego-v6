@@ -1047,25 +1047,28 @@ export const useAppStore = create<AppState>()(
         
         set({ isLoading: true });
         try {
-          // USAMOS EL PROXY: El túnel que ya tenemos montado
-          // La ruta es campaigns/ según tus urlpatterns
-          const url = `${API_BASE}/api/v1/marketing/campaigns/`;
+          // Si el Login funciona, usamos la misma base. 
+          // OJO: Asegúrate de que termine en '/'
+          const url = `${API_BASE}/marketing/campaigns/`; 
           
           const response = await fetch(url, {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
+            headers: { 
+              'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+              'Content-Type': 'application/json'
+            }
           });
 
           if (response.ok) {
             const data = await response.json();
             
-            // MAPEAMOS CON TUS CAMPOS DE DJANGO
+            // MAPEAMOS CON TUS CAMPOS REALES
             const formattedData = data.map((rec: any) => ({
               id: String(rec.id),
-              name: rec.titulo || "Campaña Palenque", 
-              serviceName: rec.nombre_servicio, // El campo ReadOnly de tu serializer
+              name: rec.titulo, // <--- Usamos 'titulo' de tu serializer
+              serviceName: rec.nombre_servicio, // <--- El ReadOnlyField de tu serializer
               discount: rec.porcentaje_descuento,
               expiry: rec.fecha_expiracion,
-              link: "", 
+              link: "", // Se llenará con 'generate-link/'
               stats: {
                 clicks: 0,
                 purchases: 0,
@@ -1076,11 +1079,10 @@ export const useAppStore = create<AppState>()(
 
             set({ recommendations: formattedData, isLoading: false });
           } else {
-            console.error("Error en la respuesta de la API:", response.status);
+            console.error("404: Revisa si en Django la app de marketing tiene el prefijo correcto.");
             set({ isLoading: false });
           }
         } catch (error) {
-          console.error("Fallo total en fetch:", error);
           set({ isLoading: false });
         }
       },
