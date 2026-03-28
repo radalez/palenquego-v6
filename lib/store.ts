@@ -1043,15 +1043,14 @@ export const useAppStore = create<AppState>()(
 
       fetchRecommendations: async () => {
         const { currentUser } = get();
-        // Solo intentamos cargar si hay un ID de usuario válido
-        if (!currentUser?.id) return; 
+        // 1. SINCRONIZACIÓN: Si no hay usuario, no hay qué buscar
+        if (!currentUser?.id) return;
         
         set({ isLoading: true });
         try {
-          // 1. OJO: Verifica si en Django tu ruta empieza por 'api/' o no.
-          // 2. OJO: La barra final '/' es obligatoria si así está en urls.py
-          const url = `${API_BASE}/marketing/recommendations/`;
-          console.log("Intentando fetch a:", url); // <--- DEBUG PARA VER EL 404
+          // 2. LA RUTA REAL: Agregamos /api/v1/ para que coincida con tu endpoint
+          const url = `${API_BASE}/api/v1/marketing/recommendations/`;
+          console.log("Sincronizando con:", url); 
 
           const response = await fetch(url, {
             headers: {
@@ -1062,20 +1061,20 @@ export const useAppStore = create<AppState>()(
           if (response.ok) {
             const data = await response.json();
             
-            // MAPEO DE DATOS: Django manda campos en snake_case (slug_unico, creado_el)
-            // Tu Store espera camelCase (serviceId, createdAt)
+            // 3. MAPEO DE DATOS: Django (snake_case) -> Frontend (camelCase)
             const formattedData = data.map((rec: any) => ({
               id: String(rec.id),
-              name: rec.name || "Enlace de Recomendación",
+              name: rec.nombre_servicio || "Recomendación Palenque", 
+              // El link se construye con el slug que ya probaste
               link: `${window.location.origin}/ref/${rec.slug_unico}`,
               type: rec.type,
-              serviceId: rec.service_id, // Asegúrate de que el Serializer mande el ID del servicio
-              createdAt: new Date(rec.creado_el),
+              serviceId: rec.service_id,
+              createdAt: new Date(rec.created_at),
               stats: {
                 clicks: rec.clicks || 0,
                 purchases: rec.purchases || 0,
-                totalEarned: parseFloat(rec.total_comision) || 0,
-                paymentStatus: rec.estado_pago || "PENDIENTE"
+                totalEarned: parseFloat(rec.total_earned) || 0,
+                paymentStatus: rec.payment_status || "PENDIENTE"
               }
             }));
 
