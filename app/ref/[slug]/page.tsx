@@ -10,44 +10,31 @@ export default function RefPage() {
   useEffect(() => {
     const resolveLink = async () => {
       try {
-        console.log("Iniciando radar para el slug:", slug);
+        // USAMOS TU PROPIO PROXY (/api-proxy)
+        // Esto es lo que ya usas en store.ts para login y servicios
+        const response = await fetch(`/api-proxy/marketing/resolve/${slug}/`);
         
-        // 1. Petición al servidor de producción
-        const response = await fetch(`https://palenquego.com/api/v1/marketing/resolve/${slug}/`);
-        
-        if (!response.ok) {
-          throw new Error(`Servidor respondió con error: ${response.status}`);
-        }
+        if (!response.ok) throw new Error("Link inválido");
 
         const data = await response.json();
-        console.log("Data de marketing recibida:", data);
 
-        // 2. Guardamos la huella del embajador (Cookie 30 días)
+        // Guardamos la huella del embajador (Cookie 30 días)
         document.cookie = `palenque_ref=${data.codigo_embajador}; path=/; max-age=${30 * 24 * 60 * 60}; SameSite=Lax`;
         
-        // Guardamos también en LocalStorage por seguridad
+        // Sincronizamos con tu localStorage como el resto de tu app
         localStorage.setItem("palenque_ref", data.codigo_embajador);
         localStorage.setItem("promo_cupon", data.cupon);
 
-        // 3. Redirección según tu estructura de carpetas (/s/ o /r/)
+        // REDIRECCIÓN INTELIGENTE A TUS CARPETAS REALES (/s/ o /r/)
         if (data.tipo === "SERVICE") {
-          console.log("Redirigiendo a servicio:", data.id_destino);
           router.push(`/s/${data.id_destino}`);
         } else if (data.tipo === "ROUTE") {
-          console.log("Redirigiendo a ruta:", data.id_destino);
           router.push(`/r/${data.id_destino}`);
-        } else {
-          router.push("/");
         }
 
-      } catch (error: any) {
-        console.error("ERROR EN EL RADAR:", error);
-        
-        // ¡MIRA ESTO! Te avisará exactamente qué falló en una ventanita
-        alert("FALLO EL RADAR: " + error.message);
-        
-        // Comentamos la redirección al home para que puedas ver el error en consola
-        // router.push("/"); 
+      } catch (error) {
+        console.error("Error en el radar de marketing:", error);
+        router.push("/"); // Seguridad: al home si el slug no existe
       }
     };
 
@@ -56,6 +43,7 @@ export default function RefPage() {
     }
   }, [slug, router]);
 
+  // Aquí tienes tu loader naranja intacto y funcionando
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50">
       <div className="p-8 bg-white rounded-2xl shadow-xl flex flex-col items-center">
