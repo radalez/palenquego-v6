@@ -200,6 +200,7 @@ interface AppState {
     email?: string;    // El ? significa que es opcional
     telefono?: string; 
     tipo?: string;
+    is_ambassador?: boolean;
   }
   accessToken: string | null
   refreshToken: string | null
@@ -229,12 +230,13 @@ interface AppState {
   toggleFavoritePreference: (serviceId: number) => void
   setFavoritePreference: (serviceId: number, preference: "me_gusta" | "me_gusta_mas") => void
   selectTripFavorite: (serviceId: number) => void
-  addRecommendation: (recommendation: Omit<Recommendation, "id"> | Recommendation) => Recommendation
+  addRecommendation: (recommendation: Omit<Recommendation, "id"> | Recommendation) => Promise<Recommendation>
   updateRecommendationStats: (recommendationId: string, stats: Partial<RecommendationStats>) => void
   markRecommendationAsPaid: (recommendationId: string) => void
   payPool: (poolId: number, paymentType: "FULL" | "PERSONAL") => void
   fetchRoutes: () => Promise<void>
   fetchPools: () => Promise<void>
+  fetchRecommendations: () => Promise<void>
   // Agregamos el tercer argumento 'date: string' aquí para que TypeScript deje de chillar
   createPool: (serviceId: number, targetMembers: number, date: string, totalPrice: number) => Promise<boolean>
 }
@@ -637,7 +639,7 @@ export const useAppStore = create<AppState>()(
       userFavorites: [],
       recommendations: [],
       routes: initialRoutes,
-      currentUser: { id: 0, name: "", avatar: "" },
+      currentUser: { id: 0, name: "", avatar: "", is_ambassador: false },
       isAuthenticated: false,      
       accessToken: null,
       refreshToken: null,      
@@ -802,9 +804,10 @@ export const useAppStore = create<AppState>()(
                 id: data.user.id,
                 name: data.user.name,
                 avatar: data.user.avatar,
-                email: data.user.email, // <-- Agregamos esto
-                telefono: data.user.telefono, // <-- Agregamos esto
-                tipo: data.user.tipo // <-- Agregamos esto
+                email: data.user.email || "",
+                telefono: data.user.telefono || "",
+                tipo: data.user.tipo || "",
+                is_ambassador: Boolean(data.user.is_ambassador)
               },
               isLoading: false 
             });
@@ -825,7 +828,15 @@ export const useAppStore = create<AppState>()(
         hasCompletedOnboarding: false,
         accessToken: null,
         refreshToken: null,
-        currentUser: { id: 0, name: "", avatar: "" } 
+        currentUser: { 
+        id: 0, 
+        name: "", 
+        avatar: "",
+        email: "",
+        telefono: "",
+        tipo: "",
+        is_ambassador: false
+      },
       }),
       upgradePlan: (plan) => set({ userPlan: plan }),
       addPaymentMethod: (method) =>
@@ -896,13 +907,48 @@ export const useAppStore = create<AppState>()(
           })),
         })),
 
-      addRecommendation: (recommendationData) => {
-        const newRecommendation: Recommendation = {
-          ...recommendationData,
-          id: "rec-" + Date.now(),
+      addRecommendation: async (recommendationData) => {
+        const { accessToken } = get();
+        set({ isLoading: true });
+        
+        try {
+          const response = await fetch(`${API_BASE}/marketing/generate-link/`, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken || localStorage.getItem('access_token')}`
+            },
+            body: JSON.stringify({
+              service_id: recommendationData.serviceId,
+              type: recommendationData.type,
+              name: recommendationData.name
+            }),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            // El link real usa el slug generado por Django: /ref/del-tano...
+            const newRecommendation: Recommendation = {
+              ...recommendationData,
+              id: String(data.id),
+              link: `${window.location.origin}/ref/${data.slug}`,
+              createdAt: new Date(),
+            };
+            
+            set((state) => ({ 
+              recommendations: [newRecommendation, ...state.recommendations],
+              isLoading: false 
+            }));
+            return newRecommendation;
+          }
+          throw new Error("Error al crear link en Django");
+        } catch (error) {
+          console.error("Fallo creación de recomendación:", error);
+          set({ isLoading: false });
+          // Fallback por si falla el servidor
+          const fallback: Recommendation = { ...recommendationData, id: "temp-" + Date.now(), createdAt: new Date() };
+          return fallback;
         }
-        set((state) => ({ recommendations: [...state.recommendations, newRecommendation] }))
-        return newRecommendation
       },
 
       updateRecommendationStats: (recommendationId, stats) =>
@@ -990,6 +1036,27 @@ export const useAppStore = create<AppState>()(
           set({ pools: formatted, isLoading: false });
         } catch (error) {
           console.error("Error cargando Pools:", error);
+          set({ isLoading: false });
+        }
+      },
+
+      fetchRecommendations: async () => {
+        const { currentUser } = get();
+        if (!currentUser) return;
+        
+        set({ isLoading: true });
+        try {
+          const response = await fetch(`${API_BASE}/marketing/recommendations/`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+            }
+          });
+          if (response.ok) {
+            const data = await response.json();
+            set({ recommendations: data, isLoading: false });
+          }
+        } catch (error) {
+          console.error("Error fetching recommendations:", error);
           set({ isLoading: false });
         }
       },

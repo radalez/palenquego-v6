@@ -26,21 +26,23 @@ export function CreateRecommendationModal({ onClose, onRecommendationCreated }: 
     feriado: { label: "Feriado", icon: Gift, color: "bg-purple-100 text-purple-700 border-purple-300" },
   }
 
-  const filteredServices = services.filter((service) =>
-    service.name.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
+const filteredServices = services.filter((service) => {
+    const matchesSearch = service.name.toLowerCase().includes(searchQuery.toLowerCase());
+    // FILTRO RELOJ SUIZO: Solo servicios con plantillas de marketing (linkTypes)
+    const isAuthorized = service.linkTypes && service.linkTypes.length > 0;
+    return matchesSearch && isAuthorized;
+  })
 
   const availableTypes = selectedService?.linkTypes && selectedService.linkTypes.length > 0 
     ? selectedService.linkTypes 
     : ["oferta", "descuento", "feriado"] as const
 
-  const handleCreateRecommendation = () => {
+  const handleCreateRecommendation = async () => {
     if (!selectedService || !selectedType) return
 
-    const linkId = `link-${selectedService.id}-${Date.now()}`
     const recommendationData = {
       name: recommendationName || `${selectedService.name} - ${typeConfig[selectedType].label}`,
-      link: `${typeof window !== "undefined" ? window.location.origin : ""}/r/${linkId}`,
+      link: "", // Se generará en el store con el slug de Django
       type: selectedType,
       serviceId: selectedService.id,
       createdAt: new Date(),
@@ -52,7 +54,8 @@ export function CreateRecommendationModal({ onClose, onRecommendationCreated }: 
       },
     }
 
-    const recommendation = addRecommendation(recommendationData)
+    // AHORA SÍ: Esperamos a que Django responda y nos dé el ID y Link real
+    const recommendation = await addRecommendation(recommendationData)
     onRecommendationCreated(recommendation.id)
   }
 
