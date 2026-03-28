@@ -1043,21 +1043,49 @@ export const useAppStore = create<AppState>()(
 
       fetchRecommendations: async () => {
         const { currentUser } = get();
-        if (!currentUser) return;
+        // Solo intentamos cargar si hay un ID de usuario válido
+        if (!currentUser?.id) return; 
         
         set({ isLoading: true });
         try {
-          const response = await fetch(`${API_BASE}/marketing/recommendations/`, {
+          // 1. OJO: Verifica si en Django tu ruta empieza por 'api/' o no.
+          // 2. OJO: La barra final '/' es obligatoria si así está en urls.py
+          const url = `${API_BASE}/marketing/recommendations/`;
+          console.log("Intentando fetch a:", url); // <--- DEBUG PARA VER EL 404
+
+          const response = await fetch(url, {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('access_token')}`
             }
           });
+
           if (response.ok) {
             const data = await response.json();
-            set({ recommendations: data, isLoading: false });
+            
+            // MAPEO DE DATOS: Django manda campos en snake_case (slug_unico, creado_el)
+            // Tu Store espera camelCase (serviceId, createdAt)
+            const formattedData = data.map((rec: any) => ({
+              id: String(rec.id),
+              name: rec.name || "Enlace de Recomendación",
+              link: `${window.location.origin}/ref/${rec.slug_unico}`,
+              type: rec.type,
+              serviceId: rec.service_id, // Asegúrate de que el Serializer mande el ID del servicio
+              createdAt: new Date(rec.creado_el),
+              stats: {
+                clicks: rec.clicks || 0,
+                purchases: rec.purchases || 0,
+                totalEarned: parseFloat(rec.total_comision) || 0,
+                paymentStatus: rec.estado_pago || "PENDIENTE"
+              }
+            }));
+
+            set({ recommendations: formattedData, isLoading: false });
+          } else {
+            console.error("Error en respuesta:", response.status);
+            set({ isLoading: false });
           }
         } catch (error) {
-          console.error("Error fetching recommendations:", error);
+          console.error("Fallo total en fetch:", error);
           set({ isLoading: false });
         }
       },
