@@ -1042,18 +1042,20 @@ export const useAppStore = create<AppState>()(
       },
 
       fetchRecommendations: async () => {
-        const { currentUser } = get();
-        if (!currentUser?.id) return;
+        // 1. OBTENEMOS EL TOKEN (Asegúrate de que la llave sea la misma que en el Login)
+        const token = localStorage.getItem('access_token') || localStorage.getItem('token'); 
         
+        if (!token) {
+          console.error("❌ ERROR: No hay token. Melvis no ha iniciado sesión o la llave está mal.");
+          return;
+        }
+
         set({ isLoading: true });
         try {
-          // Si el Login funciona, usamos la misma base. 
-          // OJO: Asegúrate de que termine en '/'
-          const url = `${API_BASE}/marketing/campaigns/`; 
-          
-          const response = await fetch(url, {
+          // 2. RUTA: Agregamos el /api/v1/ que es el estándar de tu API
+          const response = await fetch(`/api-proxy/api/v1/marketing/campaigns/`, {
             headers: { 
-              'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+              'Authorization': `Bearer ${token}`, 
               'Content-Type': 'application/json'
             }
           });
@@ -1061,28 +1063,25 @@ export const useAppStore = create<AppState>()(
           if (response.ok) {
             const data = await response.json();
             
-            // MAPEAMOS CON TUS CAMPOS REALES
+            // 3. MAPEAMOS CON TUS CAMPOS REALES [titulo y nombre_servicio]
             const formattedData = data.map((rec: any) => ({
               id: String(rec.id),
-              name: rec.titulo, // <--- Usamos 'titulo' de tu serializer
-              serviceName: rec.nombre_servicio, // <--- El ReadOnlyField de tu serializer
+              name: rec.titulo, 
+              serviceName: rec.nombre_servicio, 
               discount: rec.porcentaje_descuento,
               expiry: rec.fecha_expiracion,
-              link: "", // Se llenará con 'generate-link/'
-              stats: {
-                clicks: 0,
-                purchases: 0,
-                totalEarned: 0,
-                paymentStatus: "PENDIENTE"
-              }
+              link: "", 
+              stats: { clicks: 0, purchases: 0, totalEarned: 0, paymentStatus: "PENDIENTE" }
             }));
 
             set({ recommendations: formattedData, isLoading: false });
           } else {
-            console.error("404: Revisa si en Django la app de marketing tiene el prefijo correcto.");
+            const errorData = await response.json();
+            console.error("❌ ERROR DE DJANGO:", errorData);
             set({ isLoading: false });
           }
         } catch (error) {
+          console.error("❌ FALLO DE RED:", error);
           set({ isLoading: false });
         }
       },
