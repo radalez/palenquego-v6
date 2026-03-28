@@ -1042,22 +1042,21 @@ export const useAppStore = create<AppState>()(
       },
 
       fetchRecommendations: async () => {
-        // 1. SACAMOS EL TOKEN SIN QUE TYPESCRIPT CHILLE [Cambiamos esta línea]
+        // 1. SACAMOS EL TOKEN DEL STORE (Sin que TypeScript chille)
         const state = get() as any; 
+        // Buscamos el token donde sea que Melvis lo guardó al hacer login
         const token = state.accessToken || state.token || state.currentUser?.token;
 
-        // 2. VALIDACIÓN: Si sigue siendo null, te avisará en la consola
         if (!token) {
-          console.error("❌ ERROR: No se encontró el token en el store. Melvis debe re-loguear.");
+          console.error("❌ EL TOKEN SIGUE SIENDO NULL: Melvis no tiene sesión o la llave es distinta.");
           return;
         }
 
         set({ isLoading: true });
         try {
-          // 3. LA RUTA REAL: Usamos el proxy y el path que ya probamos
-          const url = `/api-proxy/api/v1/marketing/campaigns/`;
-          
-          const response = await fetch(url, {
+          // 2. LA RUTA DEL PROXY (Sin https:// ni mierd*s, solo el túnel de Netlify)
+          // Usamos 'campaigns/' que es tu ruta real en Django
+          const response = await fetch(`/api-proxy/api/v1/marketing/campaigns/`, {
             headers: { 
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
@@ -1067,14 +1066,14 @@ export const useAppStore = create<AppState>()(
           if (response.ok) {
             const data = await response.json();
             
-            // 4. MAPEAMOS CON TUS CAMPOS DE DJANGO
+            // 3. MAPEAMOS CON TUS CAMPOS DE DJANGO
             const formattedData = data.map((rec: any) => ({
               id: String(rec.id),
-              name: rec.titulo, // <--- Usamos 'titulo' de tu serializer
-              serviceName: rec.nombre_servicio, // <--- El ReadOnlyField de tu serializer
+              name: rec.titulo, // <--- Usamos 'titulo' del serializer
+              serviceName: rec.nombre_servicio, // <--- Tu ReadOnlyField
               discount: rec.porcentaje_descuento,
               expiry: rec.fecha_expiracion,
-              link: "", // Esto se llena cuando generes el link personal
+              link: "", 
               stats: {
                 clicks: 0,
                 purchases: 0,
@@ -1085,11 +1084,11 @@ export const useAppStore = create<AppState>()(
 
             set({ recommendations: formattedData, isLoading: false });
           } else {
-            console.error("Error en la respuesta de la API:", response.status);
+            console.error("Error en la API (Proxy vivo, pero Django dice no):", response.status);
             set({ isLoading: false });
           }
         } catch (error) {
-          console.error("Fallo total de red:", error);
+          console.error("Fallo de red en el túnel:", error);
           set({ isLoading: false });
         }
       },
