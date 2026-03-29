@@ -1073,7 +1073,7 @@ export const useAppStore = create<AppState>()(
               serviceName: rec.nombre_servicio, 
               discount: rec.porcentaje_descuento,
               expiry: rec.fecha_expiracion,
-              link: "", 
+              link: rec.slug_unico ? `${window.location.origin}/ref/${rec.slug_unico}` : "", 
               stats: { clicks: 0, purchases: 0, totalEarned: 0, paymentStatus: "PENDIENTE" }
             }));
 
