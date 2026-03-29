@@ -1055,7 +1055,8 @@ export const useAppStore = create<AppState>()(
         set({ isLoading: true });
         try {
           // AHORA LE PEGAMOS A LA RUTA NUEVA CON EL TOKEN DE AUTENTICACIÓN (PASE VIP)
-          const token = typeof window !== "undefined" ? localStorage.getItem("token") || localStorage.getItem("access") : "";
+         // Sacamos el token a la fuerza, directo de la bóveda secreta de Zustand
+          const token = get().accessToken || (typeof window !== "undefined" && localStorage.getItem("app-storage") ? JSON.parse(localStorage.getItem("app-storage") as string)?.state?.accessToken : "");
           const response = await fetch(`${API_BASE}/marketing/my-links/`, {
             headers: {
               'Content-Type': 'application/json',
