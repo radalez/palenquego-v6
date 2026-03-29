@@ -19,8 +19,8 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useAppStore } from "@/lib/store"
-import { cn } from "@/lib/utils"
-import { ShareInviteModal } from "@/components/share-invite-modal"
+import { cn } from "@/lib/utils" 
+import { ShareRecommendationModal } from "@/components/share-recommendation-modal"
 import { CreateRecommendationModal } from "@/components/create-recommendation-modal"
 
 interface RecommendationsScreenProps {
@@ -233,21 +233,23 @@ export function RecommendationsScreen({ onBack }: RecommendationsScreenProps) {
 {/* REEMPLAZA EL BLOQUE DE showShareModal POR ESTE: */}
       {showShareModal && selectedRecommendation && (
         (() => {
-          // Buscamos la recomendación en la lista para sacar su link real
-          const rec = recommendations.find(r => r.id === selectedRecommendation);
+          const rec = recommendations.find((r) => r.id === selectedRecommendation)
+          const service = services.find((s) => s.id === rec?.serviceId)
           
+          if (!rec) return null
+
           return (
-            <ShareInviteModal
-              type="marketing"           // 1. Activa el modo "Oferta"
-              poolName={rec?.name || "Mi Oferta"}
-              customLink={rec?.link}      // 2. PASA EL LINK REAL (Mata el /pool/undefined)
-              discount={20}               // 3. El % de descuento
+            <ShareRecommendationModal
+              recommendation={rec}
+              serviceName={service?.name}
+              discount={service?.discount}
               onClose={() => {
                 setShowShareModal(false)
                 setSelectedRecommendation(null)
+                setShowCreateModal(false)
               }}
             />
-          );
+          )
         })()
       )}
     </div>
