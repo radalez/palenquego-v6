@@ -21,6 +21,7 @@ export function ShareRecommendationModal({ recommendation, onClose }: ShareRecom
   const descuento = recommendation.descuento || recommendation.discount || 0
   const cupon = recommendation.cupon || recommendation.codigo_embajador || "afiliado"
 
+
 // 2. CONSTRUIMOS EL ENLACE REAL (¡A LA FUERZA, IGNORANDO LA BASURA VIEJA!)
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://palenquego.com"
   // Si el backend no te manda el slug, te va a chillar en la pantalla para que te des cuenta
