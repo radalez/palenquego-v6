@@ -21,13 +21,11 @@ export function ShareRecommendationModal({ recommendation, onClose }: ShareRecom
   const descuento = recommendation.descuento || recommendation.discount || 0
   const cupon = recommendation.cupon || recommendation.codigo_embajador || "afiliado"
 
-
-// 2. CONSTRUIMOS EL ENLACE REAL (¡A LA FUERZA, IGNORANDO LA BASURA VIEJA!)
+// 2. CONSTRUIMOS EL ENLACE REAL (LIMPIO Y DEFINITIVO)
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://palenquego.com"
-  // Si el backend no te manda el slug, te va a chillar en la pantalla para que te des cuenta
-  const slugReal = recommendation.slug || "FALTA-SLUG-EN-BACKEND"
-  // Imponemos la ruta /ref/ sí o sí.
-  const shareLink = `${baseUrl}/ref/${slugReal}`
+  // Extraemos el slug. Si no está (por caché viejo del navegador), usamos el enlace seguro del store
+  const slugReal = recommendation.slug || recommendation.slug_unico
+  const shareLink = slugReal ? `${baseUrl}/ref/${slugReal}` : recommendation.link
   
   // 3. ARMAMOS EL MENSAJE DE VENTA PERFECTO
   const descuentoText = descuento > 0 ? ` con un ${descuento}% de descuento` : ""
