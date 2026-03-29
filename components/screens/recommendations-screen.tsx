@@ -238,11 +238,19 @@ export function RecommendationsScreen({ onBack }: RecommendationsScreenProps) {
           
           if (!rec) return null
 
+          // Fusionamos los datos del servicio y la recomendación para que el modal
+          // reciba la estructura EXACTA que espera (y que escupirá la API después)
+          const recommendationData = {
+            ...rec,
+            nombre: service?.name || rec.name,
+            descuento: service?.discount || 10, // Le forzamos el 10% que vimos en tu JSON
+            cupon: "mel_rod", // Le forzamos el cupón de tu JSON
+          }
+
           return (
             <ShareRecommendationModal
-              recommendation={rec}
-              serviceName={service?.name}
-              discount={service?.discount}
+              // Ahora SOLO le pasamos recommendationData, sin serviceName ni discount aparte
+              recommendation={recommendationData}
               onClose={() => {
                 setShowShareModal(false)
                 setSelectedRecommendation(null)

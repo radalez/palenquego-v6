@@ -156,13 +156,22 @@ export interface RecommendationStats {
 }
 
 export interface Recommendation {
-  id: string
-  name: string
-  link: string
-  type: "oferta" | "descuento" | "feriado"
-  serviceId: number
-  createdAt: Date
-  stats: RecommendationStats
+  // --- CAMPOS DEL FRONTEND (Para que tu código actual no explote) ---
+  id: string;
+  name: string;
+  link: string;
+  type: "oferta" | "descuento" | "feriado" | string;
+  serviceId: number;
+  createdAt: Date;
+  stats: RecommendationStats;
+
+  // --- CAMPOS DE LA API (Opcionales por ahora, para tu Modal de compartir) ---
+  tipo?: string;
+  id_destino?: number;
+  nombre?: string;
+  descuento?: number;
+  cupon?: string;
+  codigo_embajador?: string;
 }
 
 export interface Business {

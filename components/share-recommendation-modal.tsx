@@ -4,53 +4,61 @@ import { useState } from "react"
 import { X, Facebook, Twitter, Linkedin, Mail, MessageCircle, Contact, Copy, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { type Recommendation } from "@/lib/store"
 
+// Adaptamos la interfaz EXACTAMENTE a lo que escupe tu API
 interface ShareRecommendationModalProps {
-  recommendation: Recommendation
-  serviceName?: string
-  discount?: number
+  recommendation: any // Le ponemos any por ahora para que trague tus datos de la API sin que TypeScript joda
   onClose: () => void
 }
 
-export function ShareRecommendationModal({ recommendation, serviceName, discount, onClose }: ShareRecommendationModalProps) {
+export function ShareRecommendationModal({ recommendation, onClose }: ShareRecommendationModalProps) {
   const [copiedLink, setCopiedLink] = useState(false)
   const [showContacts, setShowContacts] = useState(false)
 
-  // Enlace real de tu campaña de embajador
-  const shareLink = recommendation.link
+  // 1. EXTRAEMOS LOS DATOS REALES DE TU JSON
+  // Manejamos tanto la versión vieja del store (name) como la nueva de la API (nombre)
+  const nombreCampaña = recommendation.nombre || recommendation.name || "Servicio"
+  const descuento = recommendation.descuento || recommendation.discount || 0
+  const cupon = recommendation.cupon || recommendation.codigo_embajador || "afiliado"
+
+  // 2. CONSTRUIMOS EL ENLACE REAL
+  // Si la API no te devuelve el 'link' explícito, lo construimos usando el frontend y el cupón
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://palenquego.com"
+  const shareLink = recommendation.link || `${baseUrl}/r/${cupon}`
   
-  const discountText = discount ? ` con un ${discount}% de descuento` : ""
-  const shareText = `¡Te recomiendo ${serviceName || recommendation.name}${discountText}! Usa mi enlace exclusivo aquí:`
+  // 3. ARMAMOS EL MENSAJE DE VENTA PERFECTO
+  const descuentoText = descuento > 0 ? ` con un ${descuento}% de descuento` : ""
+  const cuponText = cupon ? `\n🎁 Usa mi cupón exclusivo: *${cupon}*` : ""
+  const shareText = `¡Te recomiendo ${nombreCampaña}${descuentoText}!${cuponText}\n👇 Reserva aquí:`
 
   const shareMethods = [
-    {
-      id: "facebook",
-      name: "Facebook",
-      icon: Facebook,
-      color: "bg-blue-600",
-      url: `https://www.facebook.com/sharer/sharer.php?u=${shareLink}&quote=${encodeURIComponent(shareText)}`,
-    },
-    {
-      id: "twitter",
-      name: "X (Twitter)",
-      icon: Twitter,
-      color: "bg-black",
-      url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${shareLink}`,
-    },
-    {
-      id: "linkedin",
-      name: "LinkedIn",
-      icon: Linkedin,
-      color: "bg-blue-700",
-      url: `https://www.linkedin.com/sharing/share-offsite/?url=${shareLink}`,
-    },
     {
       id: "whatsapp",
       name: "WhatsApp",
       icon: MessageCircle,
       color: "bg-green-600",
       url: `https://wa.me/?text=${encodeURIComponent(shareText + " " + shareLink)}`,
+    },
+    {
+      id: "facebook",
+      name: "Facebook",
+      icon: Facebook,
+      color: "bg-blue-600",
+      url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareLink)}&quote=${encodeURIComponent(shareText)}`,
+    },
+    {
+      id: "twitter",
+      name: "X (Twitter)",
+      icon: Twitter,
+      color: "bg-black",
+      url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareLink)}`,
+    },
+    {
+      id: "linkedin",
+      name: "LinkedIn",
+      icon: Linkedin,
+      color: "bg-blue-700",
+      url: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareLink)}`,
     },
     {
       id: "email",
@@ -68,7 +76,6 @@ export function ShareRecommendationModal({ recommendation, serviceName, discount
     },
   ]
 
-  // Restaurados los contactos que te había quitado
   const mockContacts = [
     { id: 1, name: "María García", phone: "+503 7123-4567" },
     { id: 2, name: "Carlos López", phone: "+503 7234-5678" },
@@ -104,18 +111,27 @@ export function ShareRecommendationModal({ recommendation, serviceName, discount
 
         {!showContacts ? (
           <div className="p-6 space-y-4">
-            {/* Campaign Info - Adaptado para embajadores */}
+            {/* AQUÍ SE VERÁN LOS DATOS REALES */}
             <div className="bg-primary/10 border border-primary/20 p-4 rounded-xl">
               <p className="text-sm text-muted-foreground">Compartiendo campaña:</p>
-              <p className="font-semibold text-foreground">{recommendation.name}</p>
-              {discount && (
+              <p className="font-semibold text-foreground">{nombreCampaña}</p>
+              
+              {/* Descuento real de la API */}
+              {descuento > 0 && (
                 <p className="text-sm text-green-600 font-bold mt-1">
-                  Aplica {discount}% de descuento
+                  Aplica {descuento}% de descuento
+                </p>
+              )}
+              
+              {/* Cupón real de la API */}
+              {cupon && (
+                <p className="text-xs font-mono bg-background px-2 py-1 rounded border border-border mt-2 inline-block">
+                  Cupón: {cupon}
                 </p>
               )}
             </div>
 
-            {/* Copy Link */}
+            {/* Copy Link arreglado */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Copiar enlace</label>
               <div className="flex items-center gap-2">
@@ -143,7 +159,7 @@ export function ShareRecommendationModal({ recommendation, serviceName, discount
               <div className="flex-1 h-px bg-border" />
             </div>
 
-            {/* Share Methods Grid - Todas las opciones restauradas */}
+            {/* Redes */}
             <div className="grid grid-cols-3 gap-3">
               {shareMethods.map((method) => {
                 const Icon = method.icon
@@ -165,7 +181,6 @@ export function ShareRecommendationModal({ recommendation, serviceName, discount
             </div>
           </div>
         ) : (
-          /* Vista de contactos restaurada exactamente igual */
           <div className="p-6 space-y-4">
             <div className="flex items-center gap-3 mb-4">
               <button
@@ -182,7 +197,7 @@ export function ShareRecommendationModal({ recommendation, serviceName, discount
                 <button
                   key={contact.id}
                   onClick={() => {
-                    const whatsappUrl = `https://wa.me/${contact.phone.replace(/\D/g, "")}?text=${encodeURIComponent(shareText + "\n\n" + shareLink)}`
+                    const whatsappUrl = `https://wa.me/${contact.phone.replace(/\D/g, "")}?text=${encodeURIComponent(shareText + " " + shareLink)}`
                     window.open(whatsappUrl, "_blank")
                   }}
                   className="w-full flex items-center justify-between p-3 hover:bg-muted rounded-lg transition border border-border"
