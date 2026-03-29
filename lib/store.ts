@@ -1055,7 +1055,14 @@ export const useAppStore = create<AppState>()(
         set({ isLoading: true });
         try {
           // AHORA LE PEGAMOS A LA RUTA NUEVA QUE ACABAS DE SUBIR A DIGITALOCEAN
-          const response = await fetch(`${API_BASE}/marketing/my-links/`);
+          // AHORA LE PEGAMOS A LA RUTA NUEVA CON EL TOKEN DE AUTENTICACIÓN (PASE VIP)
+          const token = typeof window !== "undefined" ? localStorage.getItem("token") || localStorage.getItem("access") : "";
+          const response = await fetch(`${API_BASE}/marketing/my-links/`, {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            }
+          });
           
           if (response.ok) {
             const data = await response.json();
