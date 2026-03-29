@@ -21,10 +21,12 @@ export function ShareRecommendationModal({ recommendation, onClose }: ShareRecom
   const descuento = recommendation.descuento || recommendation.discount || 0
   const cupon = recommendation.cupon || recommendation.codigo_embajador || "afiliado"
 
-  // 2. CONSTRUIMOS EL ENLACE REAL
-  // Si la API no te devuelve el 'link' explícito, lo construimos usando el frontend y el cupón
+// 2. CONSTRUIMOS EL ENLACE REAL (¡A LA FUERZA, IGNORANDO LA BASURA VIEJA!)
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://palenquego.com"
-  const shareLink = recommendation.link || `${baseUrl}/r/${cupon}`
+  // Si el backend no te manda el slug, te va a chillar en la pantalla para que te des cuenta
+  const slugReal = recommendation.slug || "FALTA-SLUG-EN-BACKEND"
+  // Imponemos la ruta /ref/ sí o sí.
+  const shareLink = `${baseUrl}/ref/${slugReal}`
   
   // 3. ARMAMOS EL MENSAJE DE VENTA PERFECTO
   const descuentoText = descuento > 0 ? ` con un ${descuento}% de descuento` : ""
