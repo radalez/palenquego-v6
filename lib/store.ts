@@ -1054,35 +1054,35 @@ export const useAppStore = create<AppState>()(
       fetchRecommendations: async () => {
         set({ isLoading: true });
         try {
-          // Usamos tu proxy tal como en tu RefPage
-          const response = await fetch(`${API_BASE}/marketing/campaigns/`);
+          // AHORA LE PEGAMOS A LA RUTA NUEVA QUE ACABAS DE SUBIR A DIGITALOCEAN
+          const response = await fetch(`${API_BASE}/marketing/my-links/`);
           
           if (response.ok) {
             const data = await response.json();
             
             const formattedRecommendations = data.map((camp: any) => ({
-              // --- DATOS VIEJOS DE RELLENO (Para que no pete la UI) ---
-              id: camp.slug || camp.codigo_embajador || `rec-${Date.now()}`,
+              // --- DATOS VIEJOS DE RELLENO (Para que tu frontend no explote) ---
+              id: camp.slug_unico || camp.codigo_embajador || `rec-${Date.now()}`,
               name: camp.nombre || "Campaña",
-              link: `${typeof window !== "undefined" ? window.location.origin : ""}/ref/${camp.slug}`,
+              link: `${typeof window !== "undefined" ? window.location.origin : ""}/ref/${camp.slug_unico}`,
               type: "descuento", 
               serviceId: camp.id_destino || 0,
-              createdAt: new Date(),
+              createdAt: camp.creado_el ? new Date(camp.creado_el) : new Date(),
               stats: {
-                clicks: camp.vistas || 0,
-                purchases: camp.ventas || 0,
-                totalEarned: camp.ganancia || 0,
-                paymentStatus: camp.estado_pago || "PENDIENTE",
+                clicks: 0,
+                purchases: 0,
+                totalEarned: 0,
+                paymentStatus: "PENDIENTE",
               },
 
-              // --- LA JOYA DE LA CORONA (Datos reales de la API) ---
+              // --- LA JOYA DE LA CORONA (Datos reales de la nueva API) ---
               tipo: camp.tipo,
               id_destino: camp.id_destino,
               nombre: camp.nombre,
               descuento: camp.descuento,
               cupon: camp.cupon,
               codigo_embajador: camp.codigo_embajador,
-              slug: camp.slug // AQUÍ ESTÁ EL PUTO SLUG REAL
+              slug: camp.slug_unico // ¡AQUÍ ATRAPAMOS EL SLUG_UNICO DE DJANGO!
             }));
 
             set({ recommendations: formattedRecommendations, isLoading: false });
@@ -1090,10 +1090,11 @@ export const useAppStore = create<AppState>()(
             set({ isLoading: false });
           }
         } catch (error) {
-          console.error("Error trayendo las campañas:", error);
+          console.error("Error trayendo las campañas del embajador:", error);
           set({ isLoading: false });
         }
       },
+
       generateAmbassadorLink: async (templateId: number) => {
         const state = get() as any;
         const token = state.currentUser?.access || state.currentUser?.token || state.accessToken;
