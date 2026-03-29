@@ -1087,6 +1087,40 @@ export const useAppStore = create<AppState>()(
           set({ isLoading: false });
         }
       },
+      generateAmbassadorLink: async (templateId: number) => {
+        const state = get() as any;
+        const token = state.currentUser?.access || state.currentUser?.token || state.accessToken;
+
+        if (!token) return;
+
+        try {
+          const response = await fetch(`/api-proxy/marketing/generate-link/`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ template_id: templateId })
+          });
+
+          if (response.ok) {
+            const newLink = await response.json();
+            
+            // Actualizamos la recomendación específica con el link real
+            const currentRecs = get().recommendations;
+            const updatedRecs = currentRecs.map(rec => 
+              rec.id === String(templateId) 
+                ? { ...rec, link: `${window.location.origin}/ref/${newLink.slug_unico}` }
+                : rec
+            );
+
+            set({ recommendations: updatedRecs });
+            return newLink.slug_unico;
+          }
+        } catch (error) {
+          console.error("Error generando el link:", error);
+        }
+      },
 
       createPool: async (serviceId: number, targetMembers: number, dateStr: string, totalPrice: number) => {
         const { currentUser, accessToken } = get();

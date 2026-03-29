@@ -6,19 +6,37 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 interface ShareInviteModalProps {
-  poolId: number
+  poolId?: number // Opcional ahora
   poolName: string
-  spotPrice: number
-  spotsLeft: number
+  spotPrice?: number // Opcional ahora
+  spotsLeft?: number // Opcional ahora
   onClose: () => void
+  // --- EXTENSIÓN PARA MARKETING (MANTENEMOS TODO LO ANTERIOR) ---
+  type?: 'pool' | 'marketing'
+  discount?: number
+  customLink?: string
 }
 
-export function ShareInviteModal({ poolId, poolName, spotPrice, spotsLeft, onClose }: ShareInviteModalProps) {
+export function ShareInviteModal({ 
+  poolId, 
+  poolName, 
+  spotPrice, 
+  spotsLeft, 
+  onClose,
+  type = 'pool', // Por defecto sigue siendo un Pool para no romper nada
+  discount,
+  customLink
+}: ShareInviteModalProps) {
   const [copiedLink, setCopiedLink] = useState(false)
   const [showContacts, setShowContacts] = useState(false)
 
-  const poolLink = `https://palenquego.app/pool/${poolId}`
-  const shareText = `Únete a mi Pool en Palenque Go: "${poolName}" por $${spotPrice}. ${spotsLeft} cupo${spotsLeft !== 1 ? "s" : ""} disponible${spotsLeft !== 1 ? "s" : ""}. ¡Ahorra con nosotros!`
+  // 1. LÓGICA DE ENLACE: Si viene customLink (de Melvis), usamos ese. Si no, el de Pool.
+  const finalLink = customLink || `https://palenquego.app/pool/${poolId}`
+
+  // 2. LÓGICA DE TEXTO: Cambia según el tipo, manteniendo el formato original.
+  const shareText = type === 'marketing'
+    ? `¡Aprovecha esta oferta en Palenque Go! "${poolName}" con un ${discount}% de descuento exclusivo. ¡No te lo pierdas!`
+    : `Únete a mi Pool en Palenque Go: "${poolName}" por $${spotPrice}. ${spotsLeft} cupo${spotsLeft !== 1 ? "s" : ""} disponible${spotsLeft !== 1 ? "s" : ""}. ¡Ahorra con nosotros!`
 
   const shareMethods = [
     {
@@ -26,35 +44,35 @@ export function ShareInviteModal({ poolId, poolName, spotPrice, spotsLeft, onClo
       name: "Facebook",
       icon: Facebook,
       color: "bg-blue-600",
-      url: `https://www.facebook.com/sharer/sharer.php?u=${poolLink}&quote=${encodeURIComponent(shareText)}`,
+      url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(finalLink)}&quote=${encodeURIComponent(shareText)}`,
     },
     {
       id: "twitter",
       name: "X (Twitter)",
       icon: Twitter,
       color: "bg-black",
-      url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${poolLink}`,
+      url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(finalLink)}`,
     },
     {
       id: "linkedin",
       name: "LinkedIn",
       icon: Linkedin,
       color: "bg-blue-700",
-      url: `https://www.linkedin.com/sharing/share-offsite/?url=${poolLink}`,
+      url: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(finalLink)}`,
     },
     {
       id: "whatsapp",
       name: "WhatsApp",
       icon: MessageCircle,
       color: "bg-green-600",
-      url: `https://wa.me/?text=${encodeURIComponent(shareText + " " + poolLink)}`,
+      url: `https://wa.me/?text=${encodeURIComponent(shareText + " " + finalLink)}`,
     },
     {
       id: "email",
       name: "Email",
       icon: Mail,
       color: "bg-gray-600",
-      url: `mailto:?subject=Únete a mi Pool en Palenque Go&body=${encodeURIComponent(shareText + "\n\n" + poolLink)}`,
+      url: `mailto:?subject=${encodeURIComponent(type === 'marketing' ? 'Oferta especial Palenque' : 'Únete a mi Pool')}&body=${encodeURIComponent(shareText + "\n\n" + finalLink)}`,
     },
     {
       id: "contacts",
@@ -74,7 +92,7 @@ export function ShareInviteModal({ poolId, poolName, spotPrice, spotsLeft, onClo
   ]
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(poolLink)
+    navigator.clipboard.writeText(finalLink)
     setCopiedLink(true)
     setTimeout(() => setCopiedLink(false), 2000)
   }
@@ -88,11 +106,13 @@ export function ShareInviteModal({ poolId, poolName, spotPrice, spotsLeft, onClo
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
       <div className="bg-card rounded-2xl max-w-sm w-full max-h-[90vh] overflow-y-auto shadow-xl">
-        {/* Header */}
+        {/* Header - Dinámico pero con el mismo estilo */}
         <div className="sticky top-0 bg-card border-b border-border px-6 py-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold">Invitar amigos</h2>
+          <h2 className="text-xl font-bold">
+            {type === 'marketing' ? "Compartir oferta" : "Invitar amigos"}
+          </h2>
           <button onClick={onClose} className="p-1 hover:bg-muted rounded-lg transition">
             <X size={20} />
           </button>
@@ -100,20 +120,26 @@ export function ShareInviteModal({ poolId, poolName, spotPrice, spotsLeft, onClo
 
         {!showContacts ? (
           <div className="p-6 space-y-4">
-            {/* Pool Info */}
+            {/* Info Box - Muestra Precio o Descuento según el tipo */}
             <div className="bg-muted p-4 rounded-xl">
               <p className="text-sm text-muted-foreground">Compartiendo:</p>
               <p className="font-semibold">{poolName}</p>
-              <p className="text-sm text-primary font-bold">${spotPrice} por persona</p>
+              {type === 'marketing' ? (
+                <p className="text-sm text-primary font-bold">{discount}% de descuento</p>
+              ) : (
+                <p className="text-sm text-primary font-bold">${spotPrice} por persona</p>
+              )}
             </div>
 
-            {/* Copy Link */}
+            {/* Copy Link - Usa el finalLink (Pool o Ref) */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Copiar enlace</label>
+              <label className="text-sm font-medium">
+                {type === 'marketing' ? "Tu enlace de embajador" : "Copiar enlace"}
+              </label>
               <div className="flex items-center gap-2">
                 <input
                   type="text"
-                  value={poolLink}
+                  value={finalLink}
                   readOnly
                   className="flex-1 px-3 py-2 bg-muted rounded-lg text-sm border border-border"
                 />
@@ -135,7 +161,7 @@ export function ShareInviteModal({ poolId, poolName, spotPrice, spotsLeft, onClo
               <div className="flex-1 h-px bg-border" />
             </div>
 
-            {/* Share Methods Grid */}
+            {/* Share Methods Grid - EXACTAMENTE EL MISMO QUE TENÍAS */}
             <div className="grid grid-cols-3 gap-3">
               {shareMethods.map((method) => {
                 const Icon = method.icon
@@ -156,12 +182,15 @@ export function ShareInviteModal({ poolId, poolName, spotPrice, spotsLeft, onClo
               })}
             </div>
 
-            {/* Info */}
-            <div className="bg-secondary/10 border border-secondary/30 rounded-lg p-3 text-sm text-secondary-foreground">
-              Cuota disponible: <strong>{spotsLeft}</strong>
-            </div>
+            {/* Info de cupos - Solo se muestra si es tipo Pool */}
+            {type === 'pool' && spotsLeft !== undefined && (
+              <div className="bg-secondary/10 border border-secondary/30 rounded-lg p-3 text-sm text-secondary-foreground">
+                Cuota disponible: <strong>{spotsLeft}</strong>
+              </div>
+            )}
           </div>
         ) : (
+          /* Seccion de Contactos - INTEGRA TOTALMENTE TU LÓGICA ORIGINAL */
           <div className="p-6 space-y-4">
             <div className="flex items-center gap-3 mb-4">
               <button
@@ -178,7 +207,7 @@ export function ShareInviteModal({ poolId, poolName, spotPrice, spotsLeft, onClo
                 <button
                   key={contact.id}
                   onClick={() => {
-                    const whatsappUrl = `https://wa.me/${contact.phone.replace(/\D/g, "")}?text=${encodeURIComponent(shareText + "\n\n" + poolLink)}`
+                    const whatsappUrl = `https://wa.me/${contact.phone.replace(/\D/g, "")}?text=${encodeURIComponent(shareText + "\n\n" + finalLink)}`
                     window.open(whatsappUrl, "_blank")
                   }}
                   className="w-full flex items-center justify-between p-3 hover:bg-muted rounded-lg transition border border-border"
