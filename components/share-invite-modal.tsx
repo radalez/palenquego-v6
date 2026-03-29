@@ -6,12 +6,12 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 interface ShareInviteModalProps {
-  poolId?: number // Opcional ahora
+  poolId?: number // Lo hacemos opcional para que no chille en marketing
   poolName: string
-  spotPrice?: number // Opcional ahora
-  spotsLeft?: number // Opcional ahora
+  spotPrice?: number // Lo hacemos opcional
+  spotsLeft?: number // Lo hacemos opcional
   onClose: () => void
-  // --- EXTENSIÓN PARA MARKETING (MANTENEMOS TODO LO ANTERIOR) ---
+  // --- AGREGAMOS ESTO PARA QUE EL RELOJ SUIZO FUNCIONE EN MARKETING ---
   type?: 'pool' | 'marketing'
   discount?: number
   customLink?: string
@@ -23,17 +23,17 @@ export function ShareInviteModal({
   spotPrice, 
   spotsLeft, 
   onClose,
-  type = 'pool', // Por defecto sigue siendo un Pool para no romper nada
+  type = 'pool', // Por defecto es pool para no romper tus otras pantallas
   discount,
-  customLink
+  customLink 
 }: ShareInviteModalProps) {
   const [copiedLink, setCopiedLink] = useState(false)
   const [showContacts, setShowContacts] = useState(false)
 
-  // 1. LÓGICA DE ENLACE: Si viene customLink (de Melvis), usamos ese. Si no, el de Pool.
+  // 1. EL LINK REAL: Si hay customLink (el de Melvis), se usa ese. Si no, el de pool.
   const finalLink = customLink || `https://palenquego.app/pool/${poolId}`
 
-  // 2. LÓGICA DE TEXTO: Cambia según el tipo, manteniendo el formato original.
+  // 2. EL TEXTO REAL: Cambia según lo que estamos compartiendo
   const shareText = type === 'marketing'
     ? `¡Aprovecha esta oferta en Palenque Go! "${poolName}" con un ${discount}% de descuento exclusivo. ¡No te lo pierdas!`
     : `Únete a mi Pool en Palenque Go: "${poolName}" por $${spotPrice}. ${spotsLeft} cupo${spotsLeft !== 1 ? "s" : ""} disponible${spotsLeft !== 1 ? "s" : ""}. ¡Ahorra con nosotros!`
@@ -72,7 +72,7 @@ export function ShareInviteModal({
       name: "Email",
       icon: Mail,
       color: "bg-gray-600",
-      url: `mailto:?subject=${encodeURIComponent(type === 'marketing' ? 'Oferta especial Palenque' : 'Únete a mi Pool')}&body=${encodeURIComponent(shareText + "\n\n" + finalLink)}`,
+      url: `mailto:?subject=${encodeURIComponent(type === 'marketing' ? 'Oferta Palenque' : 'Únete a mi Pool')}&body=${encodeURIComponent(shareText + "\n\n" + finalLink)}`,
     },
     {
       id: "contacts",
@@ -108,11 +108,9 @@ export function ShareInviteModal({
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
       <div className="bg-card rounded-2xl max-w-sm w-full max-h-[90vh] overflow-y-auto shadow-xl">
-        {/* Header - Dinámico pero con el mismo estilo */}
+        {/* Header */}
         <div className="sticky top-0 bg-card border-b border-border px-6 py-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold">
-            {type === 'marketing' ? "Compartir oferta" : "Invitar amigos"}
-          </h2>
+          <h2 className="text-xl font-bold">{type === 'marketing' ? 'Compartir oferta' : 'Invitar amigos'}</h2>
           <button onClick={onClose} className="p-1 hover:bg-muted rounded-lg transition">
             <X size={20} />
           </button>
@@ -120,7 +118,7 @@ export function ShareInviteModal({
 
         {!showContacts ? (
           <div className="p-6 space-y-4">
-            {/* Info Box - Muestra Precio o Descuento según el tipo */}
+            {/* Info Section - Aquí es donde matamos los 0$ */}
             <div className="bg-muted p-4 rounded-xl">
               <p className="text-sm text-muted-foreground">Compartiendo:</p>
               <p className="font-semibold">{poolName}</p>
@@ -131,11 +129,9 @@ export function ShareInviteModal({
               )}
             </div>
 
-            {/* Copy Link - Usa el finalLink (Pool o Ref) */}
+            {/* Copy Link - Usamos finalLink para que no salga pool/3 */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">
-                {type === 'marketing' ? "Tu enlace de embajador" : "Copiar enlace"}
-              </label>
+              <label className="text-sm font-medium">{type === 'marketing' ? 'Tu enlace de embajador' : 'Copiar enlace'}</label>
               <div className="flex items-center gap-2">
                 <input
                   type="text"
@@ -161,7 +157,7 @@ export function ShareInviteModal({
               <div className="flex-1 h-px bg-border" />
             </div>
 
-            {/* Share Methods Grid - EXACTAMENTE EL MISMO QUE TENÍAS */}
+            {/* Share Methods Grid */}
             <div className="grid grid-cols-3 gap-3">
               {shareMethods.map((method) => {
                 const Icon = method.icon
@@ -182,7 +178,7 @@ export function ShareInviteModal({
               })}
             </div>
 
-            {/* Info de cupos - Solo se muestra si es tipo Pool */}
+            {/* Info Footer - Solo para pools */}
             {type === 'pool' && spotsLeft !== undefined && (
               <div className="bg-secondary/10 border border-secondary/30 rounded-lg p-3 text-sm text-secondary-foreground">
                 Cuota disponible: <strong>{spotsLeft}</strong>
@@ -190,7 +186,7 @@ export function ShareInviteModal({
             )}
           </div>
         ) : (
-          /* Seccion de Contactos - INTEGRA TOTALMENTE TU LÓGICA ORIGINAL */
+          /* Sección de Contactos - TAL CUAL LA TIENES */
           <div className="p-6 space-y-4">
             <div className="flex items-center gap-3 mb-4">
               <button
