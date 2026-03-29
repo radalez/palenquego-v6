@@ -9,15 +9,28 @@ import { cn } from "@/lib/utils"
 
 import { ShareInviteModal } from "./share-invite-modal"
 
-export function CreateRecommendationModal({ onClose, onRecommendationCreated }: any) {
+// 1. RESTAURAMOS TU INTERFAZ ORIGINAL (Adiós líneas rojas en los props)
+interface CreateRecommendationModalProps {
+  onClose: () => void
+  onRecommendationCreated: (recommendationId: string) => void
+}
+
+// 2. CREAMOS LA INTERFAZ PARA LAS CAMPAÑAS (Para que TypeScript no llore)
+interface Campaign {
+  id: number;
+  titulo: string;
+  nombre_servicio?: string; // Opcional porque puede ser una ruta
+  porcentaje_descuento: number;
+}
+
+export function CreateRecommendationModal({ onClose, onRecommendationCreated }: CreateRecommendationModalProps) {
   const { fetchRecommendations } = useAppStore()
   
-  const [campaigns, setCampaigns] = useState<any[]>([])
+  const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [isLoadingCampaigns, setIsLoadingCampaigns] = useState(true)
-  const [selectedCampaign, setSelectedCampaign] = useState<any | null>(null)
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   
-  // --- ESTADOS RESTAURADOS PARA EL NOMBRE ---
   const [step, setStep] = useState<"select_campaign" | "name">("select_campaign")
   const [recommendationName, setRecommendationName] = useState("")
 
@@ -49,9 +62,12 @@ export function CreateRecommendationModal({ onClose, onRecommendationCreated }: 
     loadCampaigns()
   }, [])
 
+  // 3. PROTEGEMOS EL BUSCADOR (Por si nombre_servicio viene vacío)
   const filteredCampaigns = campaigns.filter((camp) => {
     const term = searchQuery.toLowerCase()
-    return camp.titulo.toLowerCase().includes(term) || camp.nombre_servicio.toLowerCase().includes(term)
+    const tituloMatch = camp.titulo.toLowerCase().includes(term)
+    const servicioMatch = camp.nombre_servicio ? camp.nombre_servicio.toLowerCase().includes(term) : false
+    return tituloMatch || servicioMatch
   })
 
   const handleCreateRecommendation = async () => {
@@ -71,7 +87,7 @@ export function CreateRecommendationModal({ onClose, onRecommendationCreated }: 
         },
         body: JSON.stringify({ 
           template: selectedCampaign.id,
-          alias_embajador: recommendationName || selectedCampaign.titulo // Mandamos el alias a Django
+          alias_embajador: recommendationName || selectedCampaign.titulo 
         }) 
       })
 
@@ -106,7 +122,6 @@ export function CreateRecommendationModal({ onClose, onRecommendationCreated }: 
 
           <div className="flex-1 overflow-y-auto p-6">
             
-            {/* PASO 1: SELECCIONAR CAMPAÑA */}
             {step === "select_campaign" && (
               <div className="space-y-4">
                 <div>
@@ -137,7 +152,7 @@ export function CreateRecommendationModal({ onClose, onRecommendationCreated }: 
                         key={camp.id}
                         onClick={() => {
                           setSelectedCampaign(camp)
-                          setRecommendationName(camp.titulo) // Sugerimos el nombre de la campaña
+                          setRecommendationName(camp.titulo) 
                         }}
                         className={cn(
                           "w-full flex gap-3 p-4 rounded-lg border-2 transition-all text-left",
@@ -149,7 +164,7 @@ export function CreateRecommendationModal({ onClose, onRecommendationCreated }: 
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold text-foreground">{camp.titulo}</h3>
                           <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                            <Gift className="w-3 h-3" /> {camp.nombre_servicio}
+                            <Gift className="w-3 h-3" /> {camp.nombre_servicio || "Ruta Palenque"}
                           </p>
                           <p className="text-sm font-bold text-green-600 mt-2">
                             {camp.porcentaje_descuento}% OFF
@@ -162,7 +177,6 @@ export function CreateRecommendationModal({ onClose, onRecommendationCreated }: 
               </div>
             )}
 
-            {/* PASO 2: PONERLE NOMBRE */}
             {step === "name" && selectedCampaign && (
               <div className="space-y-4">
                 <div>
@@ -213,7 +227,7 @@ export function CreateRecommendationModal({ onClose, onRecommendationCreated }: 
       {showShareModal && selectedCampaign && (
         <ShareInviteModal
           type="marketing"
-          poolName={recommendationName || selectedCampaign.titulo} // Pasamos el nombre personalizado al modal final
+          poolName={recommendationName || selectedCampaign.titulo} 
           discount={selectedCampaign.porcentaje_descuento}
           customLink={finalGeneratedLink}
           onClose={() => {
