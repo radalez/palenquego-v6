@@ -229,8 +229,7 @@ export function RecommendationsScreen({ onBack }: RecommendationsScreenProps) {
           }}
         />
       )}
-
-     // 1. Busca esta parte al final de tu RecommendationsScreen
+    
 {showShareModal && selectedRecommendation && (
   (() => {
     // Buscamos la recomendación real para sacar su link de Django
