@@ -156,7 +156,7 @@ export interface RecommendationStats {
 }
 
 export interface Recommendation {
-  // --- CAMPOS DEL FRONTEND (Para que tu código actual no explote) ---
+  // --- CAMPOS DEL FRONTEND ---
   id: string;
   name: string;
   link: string;
@@ -165,13 +165,14 @@ export interface Recommendation {
   createdAt: Date;
   stats: RecommendationStats;
 
-  // --- CAMPOS DE LA API (Opcionales por ahora, para tu Modal de compartir) ---
+  // --- CAMPOS DE LA API ---
   tipo?: string;
   id_destino?: number;
   nombre?: string;
   descuento?: number;
   cupon?: string;
   codigo_embajador?: string;
+  slug?: string; // <--- ¡AÑADE ESTO! Es vital para construir el enlace
 }
 
 export interface Business {
@@ -1051,48 +1052,45 @@ export const useAppStore = create<AppState>()(
       },
 
       fetchRecommendations: async () => {
-        // 1. SACAMOS EL TOKEN DE MELVIS (Usamos 'as any' para que TS no joda)
-        const state = get() as any;
-        const token = state.currentUser?.token || state.currentUser?.access || state.accessToken;
-
-        if (!token) {
-          console.error("❌ ERROR: Melvis tiene sesión, pero no estamos capturando el token.");
-          return;
-        }
-
         set({ isLoading: true });
         try {
-          // 2. LA RUTA: Siguiendo el patrón de 'stores/list/' y 'catalog/' que SÍ FUNCIONAN
-          const url = `/api-proxy/marketing/campaigns/`; 
+          // Usamos tu proxy tal como en tu RefPage
+          const response = await fetch(`${API_BASE}/marketing/campaigns/`);
           
-          const response = await fetch(url, {
-            headers: { 
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          });
-
           if (response.ok) {
             const data = await response.json();
             
-            // 3. MAPEAMOS CON TUS CAMPOS DE DJANGO
-            const formattedData = data.map((rec: any) => ({
-              id: String(rec.id),
-              name: rec.titulo, 
-              serviceName: rec.nombre_servicio, 
-              discount: rec.porcentaje_descuento,
-              expiry: rec.fecha_expiracion,
-              link: rec.slug_unico ? `${window.location.origin}/ref/${rec.slug_unico}` : "", 
-              stats: { clicks: 0, purchases: 0, totalEarned: 0, paymentStatus: "PENDIENTE" }
+            const formattedRecommendations = data.map((camp: any) => ({
+              // --- DATOS VIEJOS DE RELLENO (Para que no pete la UI) ---
+              id: camp.slug || camp.codigo_embajador || `rec-${Date.now()}`,
+              name: camp.nombre || "Campaña",
+              link: `${typeof window !== "undefined" ? window.location.origin : ""}/ref/${camp.slug}`,
+              type: "descuento", 
+              serviceId: camp.id_destino || 0,
+              createdAt: new Date(),
+              stats: {
+                clicks: camp.vistas || 0,
+                purchases: camp.ventas || 0,
+                totalEarned: camp.ganancia || 0,
+                paymentStatus: camp.estado_pago || "PENDIENTE",
+              },
+
+              // --- LA JOYA DE LA CORONA (Datos reales de la API) ---
+              tipo: camp.tipo,
+              id_destino: camp.id_destino,
+              nombre: camp.nombre,
+              descuento: camp.descuento,
+              cupon: camp.cupon,
+              codigo_embajador: camp.codigo_embajador,
+              slug: camp.slug // AQUÍ ESTÁ EL PUTO SLUG REAL
             }));
 
-            set({ recommendations: formattedData, isLoading: false });
+            set({ recommendations: formattedRecommendations, isLoading: false });
           } else {
-            console.error("Error en Django:", response.status);
             set({ isLoading: false });
           }
         } catch (error) {
-          console.error("Fallo de conexión en el proxy:", error);
+          console.error("Error trayendo las campañas:", error);
           set({ isLoading: false });
         }
       },
