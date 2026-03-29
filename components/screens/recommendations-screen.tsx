@@ -230,18 +230,27 @@ export function RecommendationsScreen({ onBack }: RecommendationsScreenProps) {
         />
       )}
 
-      {showShareModal && selectedRecommendation && (
-        <ShareInviteModal
-          poolId={Number(selectedRecommendation)}
-          poolName={recommendations.find(r => r.id === selectedRecommendation)?.name || "Mi Oferta"}
-          spotPrice={0}
-          spotsLeft={0}
-          onClose={() => {
-            setShowShareModal(false)
-            setSelectedRecommendation(null)
-          }}
-        />
-      )}
+     // 1. Busca esta parte al final de tu RecommendationsScreen
+{showShareModal && selectedRecommendation && (
+  (() => {
+    // Buscamos la recomendación real para sacar su link de Django
+    const rec = recommendations.find(r => r.id === selectedRecommendation);
+    
+    return (
+      <ShareInviteModal
+        // --- AQUÍ ESTÁ LA MAGIA ---
+        type="marketing"           // 1. Activa el modo oferta (quita lo de "Invitar")
+        poolName={rec?.name || "Mi Oferta"}
+        customLink={rec?.link}      // 2. USA EL LINK REAL (Mata el pool/3)
+        discount={20}               // 3. El % que quieras mostrar
+        onClose={() => {
+          setShowShareModal(false)
+          setSelectedRecommendation(null)
+        }}
+      />
+    );
+  })()
+)}
     </div>
   )
 }
