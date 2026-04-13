@@ -246,11 +246,11 @@ interface AppState {
   payPool: (poolId: number, paymentType: "FULL" | "PERSONAL") => void
   fetchRoutes: () => Promise<void>
   fetchPools: () => Promise<void>
-  fetchRecommendations: () => Promise<void>
-  // Agregamos el tercer argumento 'date: string' aquí para que TypeScript deje de chillar
+fetchRecommendations: () => Promise<void>
+  plans: any[]
+  fetchPlans: () => Promise<void>
   createPool: (serviceId: number, targetMembers: number, date: string, totalPrice: number) => Promise<boolean>
 }
-
 const initialServices: Service[] = [
   {
     id: 1,
@@ -648,6 +648,7 @@ export const useAppStore = create<AppState>()(
       favorites: [],
       userFavorites: [],
       recommendations: [],
+      plans: [],
       routes: initialRoutes,
       currentUser: { id: 0, name: "", avatar: "", is_ambassador: false },
       isAuthenticated: false,      
@@ -1098,6 +1099,22 @@ export const useAppStore = create<AppState>()(
           }
         } catch (error) {
           console.error("Error trayendo las campañas del embajador:", error);
+          set({ isLoading: false });
+        }
+      },
+      fetchPlans: async () => {
+        set({ isLoading: true });
+        try {
+          // Apuntamos a /auth/plans/ porque así está en tu urls.py
+          const response = await fetch(`${API_BASE}/auth/plans/`);
+          if (response.ok) {
+            const data = await response.json();
+            set({ plans: data, isLoading: false });
+          } else {
+            set({ isLoading: false });
+          }
+        } catch (error) {
+          console.error("Error cargando planes desde la API de Django:", error);
           set({ isLoading: false });
         }
       },
