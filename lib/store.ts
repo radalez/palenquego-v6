@@ -851,7 +851,14 @@ export const useAppStore = create<AppState>()(
         },
       }),
       upgradePlan: async (planId: number) => {
-        const { accessToken } = get();
+        const state = get();
+        const token = state.accessToken;
+        
+        if (!token) {
+          alert("Sesión no encontrada. Por favor, inicia sesión de nuevo.");
+          return;
+        }
+
         set({ isLoading: true });
 
         try {
@@ -859,27 +866,36 @@ export const useAppStore = create<AppState>()(
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${accessToken}`
+              'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({ plan_id: planId }),
           });
 
+          // Si el servidor dice que no estamos autorizados
+          if (response.status === 401) {
+            set({ isLoading: false });
+            alert("Tu sesión ha expirado. Por favor, sal y vuelve a entrar a tu cuenta.");
+            return;
+          }
+
           const data = await response.json();
 
           if (data.url) {
-            // Redirección inmediata a la pasarela segura de Stripe Sandbox
+            // REDIRECCIÓN A STRIPE
             window.location.href = data.url;
           } else {
-            console.error("Error en la respuesta de Stripe:", data.error);
+            const msg = data.error || data.detail || "Error en la pasarela";
+            console.error("Error de Stripe:", msg);
             set({ isLoading: false });
-            alert("No se pudo iniciar la sesión de pago. Revisa la consola.");
+            alert(`Atención: ${msg}`);
           }
         } catch (error) {
-          console.error("Fallo en la comunicación con el servidor:", error);
+          console.error("Fallo de red:", error);
           set({ isLoading: false });
-          alert("Error de conexión con el servidor.");
+          alert("Error crítico de conexión.");
         }
       },
+
       addPaymentMethod: (method) =>
         set((state) => ({
           paymentMethods: [
