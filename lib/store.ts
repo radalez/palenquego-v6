@@ -233,7 +233,7 @@ interface AppState {
   login: (username: string, password: string) => Promise<boolean>   
   completeOnboarding: () => void
   logout: () => void
-  upgradePlan: (plan: "ORO" | "PLATINO" | "PRO") => void
+  upgradePlan: (planId: number) => Promise<void>
   addPaymentMethod: (method: { type: string; last4: string }) => void
   updateNotifications: (settings: { email?: boolean; sms?: boolean; push?: boolean }) => void
   rateService: (serviceId: number, stars: number) => void
@@ -850,7 +850,36 @@ export const useAppStore = create<AppState>()(
           is_ambassador: false
         },
       }),
-      upgradePlan: (plan) => set({ userPlan: plan }),
+      upgradePlan: async (planId: number) => {
+        const { accessToken } = get();
+        set({ isLoading: true });
+
+        try {
+          const response = await fetch(`${API_BASE}/auth/create-checkout-session/`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`
+            },
+            body: JSON.stringify({ plan_id: planId }),
+          });
+
+          const data = await response.json();
+
+          if (data.url) {
+            // Redirección inmediata a la pasarela segura de Stripe Sandbox
+            window.location.href = data.url;
+          } else {
+            console.error("Error en la respuesta de Stripe:", data.error);
+            set({ isLoading: false });
+            alert("No se pudo iniciar la sesión de pago. Revisa la consola.");
+          }
+        } catch (error) {
+          console.error("Fallo en la comunicación con el servidor:", error);
+          set({ isLoading: false });
+          alert("Error de conexión con el servidor.");
+        }
+      },
       addPaymentMethod: (method) =>
         set((state) => ({
           paymentMethods: [

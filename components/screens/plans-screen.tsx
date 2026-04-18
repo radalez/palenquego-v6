@@ -72,6 +72,7 @@ export function PlansScreen({ onBack }: PlansScreenProps) {
           const config = getVisualConfig(plan.nombre)
           const Icon = config.icon
           const isCurrentPlan = userPlan === plan.nombre
+          const { isLoading } = useAppStore()
 
           return (
             <div
@@ -132,9 +133,9 @@ export function PlansScreen({ onBack }: PlansScreenProps) {
               ) : (
                 <Button
                   className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-                  onClick={() => upgradePlan(plan.nombre)}
+                  onClick={() => upgradePlan(plan.id)}
                 >
-                  Actualizar a {plan.nombre}
+                 {isLoading ? "Procesando..." : `Actualizar a ${plan.nombre}`}
                 </Button>
               )}
             </div>
