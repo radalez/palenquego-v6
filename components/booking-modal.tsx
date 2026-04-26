@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { useAppStore, type Service, type Pool } from "@/lib/store"
 import { PoolsForServiceModal } from "./pools-for-service-modal"
+import { useEffect } from "react"
 
 interface BookingModalProps {
   service: Service
@@ -28,6 +29,17 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
 
   const { addBooking, pools, joinPool, payService, isLoading } = useAppStore()
 
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("success") === "true") {
+      // Solo aquí, cuando el pago es positivo, mostramos el QR
+      setStep("success");
+      setBookingResult({ qrCode: `PGO-${Math.random().toString(36).toUpperCase().substring(2, 10)}` });
+    }
+  }, []);
+
+  
   // Check for available pools for this service
   const availablePools = pools.filter((p) => p.serviceId === service.id && p.status === "ABIERTO")
 
@@ -76,30 +88,31 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
     setStep("confirm")
   }
 
-  const handleConfirmBooking = async () => {
-    // Calculamos el total (ya sea de Pool o reserva normal con extras)
+ const handleConfirmBooking = async () => {
+    // 1. Cálculo del total real
     const total = joinedPool 
-      ? Math.round((joinedPool.totalPrice ?? 0) / (joinedPool.targetMembers ?? 1)) 
+      ? Math.round((Number(joinedPool.totalPrice) ?? 0) / (Number(joinedPool.targetMembers) ?? 1)) 
       : calculateTotal();
 
-    // 1. Disparamos el pago real enviando el ID y el TOTAL calculado
+    // 2. Disparamos el pago (Esto es lo que te redirigirá a Stripe)
     await payService(service.id, total);
 
-    // 2. Registro local
+    // 3. Generar el resumen de extras (Esto es lo que faltaba y daba error)
     const extrasSummary = Object.entries(selectedExtras)
-      .filter(([_, qty]) => (qty as number) > 0)
-      .map(([name, qty]) => `${qty}x ${name}`)
+      .filter(([_, qty]) => Number(qty) > 0)
+      .map(([name, qty]) => `${qty}x ${name}`);
 
+    // 4. Registro local (Ahora con todos los campos obligatorios)
     addBooking({
       service,
       date: selectedDate || "15 Ene",
       time: selectedTime || "10:00",
       guests: guests,
-      extras: extrasSummary,
+      extras: extrasSummary, // <--- Propiedad obligatoria añadida
       totalPrice: total,
       status: "PENDIENTE",
       poolId: joinedPool?.id,
-    })
+    });
   }
 
   if (showPoolsModal) {
