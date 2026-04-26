@@ -15,7 +15,7 @@ interface ServiceCardProps {
 
 export function ServiceCard({ service, onBook }: ServiceCardProps) {
   const [showRatingModal, setShowRatingModal] = useState(false)
-  const { toggleFavorite, favorites } = useAppStore()
+  const { toggleFavorite, favorites, payService, isLoading } = useAppStore()
   const isFavorite = favorites.includes(service.id)
 
   return (
@@ -101,11 +101,17 @@ export function ServiceCard({ service, onBook }: ServiceCardProps) {
 
           {/* Action Button */}
           <Button
-            onClick={() => onBook?.(service)}
+            onClick={() => payService(service.id)}
             className="w-full"
-            disabled={service.spotsLeft === 0}
+            disabled={service.spotsLeft === 0 || isLoading}
           >
-            {service.spotsLeft > 0 ? "Reservar" : "Agotado"}
+            {isLoading ? (
+              "Procesando..."
+            ) : service.spotsLeft > 0 ? (
+              "Pagar ahora"
+            ) : (
+              "Agotado"
+            )}
           </Button>
         </div>
       </div>

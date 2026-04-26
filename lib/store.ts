@@ -234,6 +234,8 @@ interface AppState {
   completeOnboarding: () => void
   logout: () => void
   upgradePlan: (planId: number) => Promise<void>
+  payService: (serviceId: number) => Promise<void>
+  sendNotification: (title: string, message: string) => void
   addPaymentMethod: (method: { type: string; last4: string }) => void
   updateNotifications: (settings: { email?: boolean; sms?: boolean; push?: boolean }) => void
   rateService: (serviceId: number, stars: number) => void
@@ -894,6 +896,52 @@ export const useAppStore = create<AppState>()(
           set({ isLoading: false });
           alert("Error crítico de conexión.");
         }
+      },
+      payService: async (serviceId: number) => {
+        const { accessToken, sendNotification } = get();
+        set({ isLoading: true });
+
+        try {
+          // Llamamos al endpoint de servicios que acabamos de crear en Django
+          const response = await fetch(`${API_BASE}/auth/pay-service/`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`
+            },
+            body: JSON.stringify({ service_id: serviceId }),
+          });
+
+          const data = await response.json();
+          
+          if (data.url) {
+            // Si el usuario tiene notificaciones activas, le avisamos
+            sendNotification("Pago de Servicio", "Hola, mi estimado. Te estamos redirigiendo a la pasarela de pago.");
+            
+            // Redirección inmediata a Stripe
+            window.location.href = data.url;
+          } else {
+            alert("Error: " + (data.error || "No se pudo iniciar el pago"));
+            set({ isLoading: false });
+          }
+        } catch (error) {
+          console.error("Error de conexión:", error);
+          set({ isLoading: false });
+          alert("Error de conexión con el servidor.");
+        }
+      },
+
+      sendNotification: (title: string, message: string) => {
+        const { notifications } = get();
+        
+        // Notificación Push si hay permiso en el navegador
+        if (notifications.push && "Notification" in window && Notification.permission === "granted") {
+          new Notification(title, { body: message });
+        }
+
+        // Logs de respaldo para Email y SMS
+        if (notifications.email) console.log(`📧 [EMAIL] ${title}: ${message}`);
+        if (notifications.sms) console.log(`📱 [SMS] ${title}: ${message}`);
       },
 
       addPaymentMethod: (method) =>
