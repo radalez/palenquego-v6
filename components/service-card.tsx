@@ -101,7 +101,7 @@ export function ServiceCard({ service, onBook }: ServiceCardProps) {
 
           {/* Action Button */}
           <Button
-            onClick={() => payService(service.id)}
+            onClick={() => payService(service.id, service.price)}
             className="w-full"
             disabled={service.spotsLeft === 0 || isLoading}
           >

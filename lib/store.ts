@@ -234,7 +234,7 @@ interface AppState {
   completeOnboarding: () => void
   logout: () => void
   upgradePlan: (planId: number) => Promise<void>
-  payService: (serviceId: number) => Promise<void>
+  payService: (serviceId: number, amount: number) => Promise<void>
   sendNotification: (title: string, message: string) => void
   addPaymentMethod: (method: { type: string; last4: string }) => void
   updateNotifications: (settings: { email?: boolean; sms?: boolean; push?: boolean }) => void
@@ -897,37 +897,44 @@ export const useAppStore = create<AppState>()(
           alert("Error crítico de conexión.");
         }
       },
-      payService: async (serviceId: number) => {
+      payService: async (serviceId: number, amount: number) => {
         const { accessToken, sendNotification } = get();
         set({ isLoading: true });
 
         try {
-          // Llamamos al endpoint de servicios que acabamos de crear en Django
+          // Llamamos al endpoint de servicios enviando el ID y el MONTO REAL
           const response = await fetch(`${API_BASE}/auth/pay-service/`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${accessToken}`
             },
-            body: JSON.stringify({ service_id: serviceId }),
+            body: JSON.stringify({ 
+              service_id: serviceId,
+              amount: amount // Aquí mandamos el total con extras y personas
+            }),
           });
 
           const data = await response.json();
           
           if (data.url) {
-            // Si el usuario tiene notificaciones activas, le avisamos
-            sendNotification("Pago de Servicio", "Hola, mi estimado. Te estamos redirigiendo a la pasarela de pago.");
+            // Notificación visual antes de salir de la app
+            sendNotification(
+              "Procesando Pago", 
+              `Hola, mi estimado. Redirigiendo para el pago de $${amount.toLocaleString()}.`
+            );
             
-            // Redirección inmediata a Stripe
+            // Redirección inmediata a la pasarela segura de Stripe
             window.location.href = data.url;
           } else {
-            alert("Error: " + (data.error || "No se pudo iniciar el pago"));
+            const errorMsg = data.error || data.detail || "No se pudo iniciar el pago";
+            alert("Error: " + errorMsg);
             set({ isLoading: false });
           }
         } catch (error) {
-          console.error("Error de conexión:", error);
+          console.error("Error de conexión con Stripe:", error);
           set({ isLoading: false });
-          alert("Error de conexión con el servidor.");
+          alert("Fallo de conexión. Revisa tu internet o el estado del servidor.");
         }
       },
 

@@ -26,7 +26,7 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
   const [showPoolsModal, setShowPoolsModal] = useState(false)
   const [joinedPool, setJoinedPool] = useState<Pool | null>(null)
 
-  const { addBooking, pools, joinPool } = useAppStore()
+  const { addBooking, pools, joinPool, payService, isLoading } = useAppStore()
 
   // Check for available pools for this service
   const availablePools = pools.filter((p) => p.serviceId === service.id && p.status === "ABIERTO")
@@ -50,19 +50,17 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
   }
 
   const calculateTotal = () => {
-    let total = service.price * guests
+    // Forzamos Number() para evitar que "90" + "30" sea "9030"
+    let total = Number(service.price) * Number(guests)
+    
     if (service.extras) {
       service.extras.forEach((extra: any) => {
-        // Mapeo blindado: usamos 'as any' para evitar el error rojo en precio_adicional
         const extraName = extra.nombre || extra.name
-        const extraPriceRaw = extra.precio_adicional || extra.price || 0
-        const extraPrice = typeof extraPriceRaw === "string" ? parseFloat(extraPriceRaw) : extraPriceRaw
-        
-        // Buscamos la cantidad elegida en el estado selectedExtras
-        const quantity = (selectedExtras as any)[extraName] || 0
+        const extraPrice = Number(extra.precio_adicional || extra.price || 0)
+        const quantity = Number(selectedExtras[extraName] || 0)
         
         if (quantity > 0) {
-          total += extraPrice * quantity
+          total += (extraPrice * quantity)
         }
       })
     }
@@ -78,24 +76,30 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
     setStep("confirm")
   }
 
-  const handleConfirmBooking = () => {
-    // Convertimos las cantidades a una lista legible para el registro
+  const handleConfirmBooking = async () => {
+    // Calculamos el total (ya sea de Pool o reserva normal con extras)
+    const total = joinedPool 
+      ? Math.round((joinedPool.totalPrice ?? 0) / (joinedPool.targetMembers ?? 1)) 
+      : calculateTotal();
+
+    // 1. Disparamos el pago real enviando el ID y el TOTAL calculado
+    await payService(service.id, total);
+
+    // 2. Registro local
     const extrasSummary = Object.entries(selectedExtras)
-      .filter(([_, qty]) => qty > 0)
+      .filter(([_, qty]) => (qty as number) > 0)
       .map(([name, qty]) => `${qty}x ${name}`)
 
-    const booking = addBooking({
+    addBooking({
       service,
       date: selectedDate || "15 Ene",
       time: selectedTime || "10:00",
-      guests: joinedPool ? 1 : guests,
+      guests: guests,
       extras: extrasSummary,
-      totalPrice: joinedPool ? Math.round((joinedPool.totalPrice ?? 0) / (joinedPool.targetMembers ?? 1)) : calculateTotal(),
-      status: "CONFIRMADO",
+      totalPrice: total,
+      status: "PENDIENTE",
       poolId: joinedPool?.id,
     })
-    setBookingResult({ qrCode: booking.qrCode })
-    setStep("success")
   }
 
   if (showPoolsModal) {
@@ -396,14 +400,12 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
               </Button>
               <Button
                 className={cn(
-                  "flex-1 h-14 rounded-xl font-semibold",
-                  joinedPool
-                    ? "bg-secondary hover:bg-secondary/90 text-secondary-foreground"
-                    : "bg-secondary hover:bg-secondary/90 text-secondary-foreground",
+                  "flex-1 h-14 rounded-xl font-semibold bg-secondary hover:bg-secondary/90 text-secondary-foreground",
                 )}
                 onClick={handleConfirmBooking}
+                disabled={isLoading}
               >
-                {joinedPool ? "Unirme al Pool" : "Confirmar Reserva"}
+                {isLoading ? "Procesando pago..." : joinedPool ? "Unirme al Pool" : "Confirmar y Pagar ahora"}
               </Button>
             </div>
           </div>
