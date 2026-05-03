@@ -147,6 +147,14 @@ export interface UserFavorite {
   addedAt: Date
 }
 
+
+export interface Guardian {
+  id: number;
+  name: string;
+  phone_number: string;
+  is_active: boolean;
+}
+
 export interface RecommendationStats {
   clicks: number
   purchases: number
@@ -252,6 +260,9 @@ fetchRecommendations: () => Promise<void>
   plans: any[]
   fetchPlans: () => Promise<void>
   createPool: (serviceId: number, targetMembers: number, date: string, totalPrice: number) => Promise<boolean>
+  guardians: Guardian[]
+  fetchGuardians: () => Promise<void>
+  addGuardian: (name: string, phone: string) => Promise<boolean>
 }
 const initialServices: Service[] = [
   {
@@ -664,6 +675,7 @@ export const useAppStore = create<AppState>()(
       ],
       notifications: { email: true, sms: true, push: true },
       poolPaymentPending: [],
+      guardians: [],
       isLoading: false,
 
       // --- ACCIONES DE API ---
@@ -1294,6 +1306,42 @@ export const useAppStore = create<AppState>()(
           return false;
         } catch (error) {
           set({ isLoading: false });
+          return false;
+        }
+      },
+
+      fetchGuardians: async () => {
+        const { accessToken } = get();
+        try {
+          const response = await fetch(`${API_BASE}/safeflow/guardians/`, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+          });
+          if (response.ok) {
+            const data = await response.json();
+            set({ guardians: data });
+          }
+        } catch (error) {
+          console.error("Error fetching guardians:", error);
+        }
+      },
+
+      addGuardian: async (name: string, phone: string) => {
+        const { accessToken } = get();
+        try {
+          const response = await fetch(`${API_BASE}/safeflow/guardians/`, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}` 
+            },
+            body: JSON.stringify({ name: name, phone_number: phone })
+          });
+          if (response.ok) {
+            await get().fetchGuardians(); 
+            return true;
+          }
+          return false;
+        } catch (error) {
           return false;
         }
       },

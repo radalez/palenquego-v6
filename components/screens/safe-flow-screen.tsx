@@ -1,10 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { QrCode, Shield, Bell, CheckCircle2, AlertTriangle, Scan } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { HeaderWithMenu } from "@/components/header-with-menu"
+import { useAppStore } from "@/lib/store"
+import { AddContactModal } from "@/components/add-contact-modal"
 
 interface Contact {
   id: number
@@ -21,11 +23,18 @@ interface SafeFlowScreenProps {
 export function SafeFlowScreen({ onNavigate }: SafeFlowScreenProps) {
   const [isScanning, setIsScanning] = useState(false)
   const [scanResult, setScanResult] = useState<"success" | "error" | null>(null)
+  const [showAddContact, setShowAddContact] = useState(false)
+  const { guardians, fetchGuardians } = useAppStore()
   const [contacts, setContacts] = useState<Contact[]>([
     { id: 1, name: "Mamá", phone: "+503 7890 1234", avatar: "M", notifyOnArrival: true },
     { id: 2, name: "Papá", phone: "+503 7890 5678", avatar: "P", notifyOnArrival: true },
     { id: 3, name: "Ana (Hermana)", phone: "+503 7890 9012", avatar: "A", notifyOnArrival: false },
   ])
+
+
+  useEffect(() => {
+    fetchGuardians()
+  }, [])
 
   const toggleNotify = (id: number) => {
     setContacts((prev) => prev.map((c) => (c.id === id ? { ...c, notifyOnArrival: !c.notifyOnArrival } : c)))
@@ -153,30 +162,40 @@ export function SafeFlowScreen({ onNavigate }: SafeFlowScreenProps) {
       <div className="px-4 pb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold text-lg text-foreground">Contactos de emergencia</h2>
-          <Button variant="ghost" size="sm" className="text-primary">
+         <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-primary"
+            onClick={() => setShowAddContact(true)}
+          >
             + Añadir
           </Button>
         </div>
 
         <div className="space-y-3">
-          {contacts.map((contact) => (
+          {guardians.map((guardian) => (
             <div
-              key={contact.id}
+              key={guardian.id}
               className="flex items-center justify-between p-4 bg-card rounded-xl border border-border"
             >
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-                  <span className="text-primary font-semibold">{contact.avatar}</span>
+                  <span className="text-primary font-semibold">
+                    {guardian.name.charAt(0).toUpperCase()}
+                  </span>
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">{contact.name}</p>
-                  <p className="text-sm text-muted-foreground">{contact.phone}</p>
+                  <p className="font-medium text-foreground">{guardian.name}</p>
+                  <p className="text-sm text-muted-foreground">{guardian.phone_number}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex flex-col items-end">
-                  <span className="text-xs text-muted-foreground mb-1">Notificar</span>
-                  <Switch checked={contact.notifyOnArrival} onCheckedChange={() => toggleNotify(contact.id)} />
+                  <span className="text-xs text-muted-foreground mb-1">Activo</span>
+                  <Switch 
+                    checked={guardian.is_active} 
+                    onCheckedChange={() => {/* Aquí irá luego la lógica de desactivar */}}
+                  />
                 </div>
               </div>
             </div>
@@ -235,6 +254,9 @@ export function SafeFlowScreen({ onNavigate }: SafeFlowScreenProps) {
           animation: scan 2s ease-in-out infinite;
         }
       `}</style>
+      {showAddContact && (
+        <AddContactModal onClose={() => setShowAddContact(false)} />
+      )}
     </div>
   )
 }
