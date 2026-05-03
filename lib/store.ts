@@ -263,6 +263,7 @@ fetchRecommendations: () => Promise<void>
   guardians: Guardian[]
   fetchGuardians: () => Promise<void>
   addGuardian: (name: string, phone: string) => Promise<boolean>
+  scanCheckpoint: (tripId: number, stopId: string, lat: number, lng: number) => Promise<any>
 }
 const initialServices: Service[] = [
   {
@@ -1312,6 +1313,10 @@ export const useAppStore = create<AppState>()(
 
       fetchGuardians: async () => {
         const { accessToken } = get();
+        if (!accessToken) {
+          console.error("No hay token en el store, por eso sale el 401");
+          return;
+        }
         try {
           const response = await fetch(`${API_BASE}/safeflow/guardians/`, {
             headers: { 'Authorization': `Bearer ${accessToken}` }
@@ -1343,6 +1348,28 @@ export const useAppStore = create<AppState>()(
           return false;
         } catch (error) {
           return false;
+        }
+      },
+
+      scanCheckpoint: async (tripId: number, stopId: string, lat: number, lng: number) => {
+        const { accessToken } = get();
+        try {
+          const response = await fetch(`${API_BASE}/safeflow/trips/${tripId}/scan_checkpoint/`, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}` 
+            },
+            body: JSON.stringify({ 
+              stop_id: stopId,
+              lat: lat,
+              lng: lng
+            })
+          });
+          return await response.json();
+        } catch (error) {
+          console.error("Error al escanear:", error);
+          return null;
         }
       },
       

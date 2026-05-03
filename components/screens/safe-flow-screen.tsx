@@ -40,15 +40,39 @@ export function SafeFlowScreen({ onNavigate }: SafeFlowScreenProps) {
     setContacts((prev) => prev.map((c) => (c.id === id ? { ...c, notifyOnArrival: !c.notifyOnArrival } : c)))
   }
 
-  const simulateScan = () => {
+const handleRealScan = () => {
     setIsScanning(true)
     setScanResult(null)
 
-    // Simulate scanning process
-    setTimeout(() => {
+    // 1. Obtenemos la ubicación real del celular
+    if (!navigator.geolocation) {
+      alert("Tu navegador no soporta GPS")
       setIsScanning(false)
-      setScanResult("success")
-    }, 2500)
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords
+        
+        // 2. Aquí simulamos que el QR leyó la "Parada ID 1"
+        // En el futuro, el valor '1' vendrá de lo que lea la cámara
+        const result = await useAppStore.getState().scanCheckpoint(1, "1", latitude, longitude)
+
+        if (result) {
+          setIsScanning(false)
+          setScanResult("success")
+        } else {
+          setIsScanning(false)
+          setScanResult("error")
+        }
+      },
+      (error) => {
+        console.error("Error de GPS:", error)
+        setIsScanning(false)
+        setScanResult("error")
+      }
+    )
   }
 
   const resetScan = () => {
@@ -79,7 +103,7 @@ export function SafeFlowScreen({ onNavigate }: SafeFlowScreenProps) {
               </div>
 
               <Button
-                onClick={simulateScan}
+                onClick={handleRealScan}
                 className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-lg font-semibold"
               >
                 <Scan className="w-5 h-5 mr-2" />
