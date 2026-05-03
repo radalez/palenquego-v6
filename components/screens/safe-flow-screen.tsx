@@ -134,31 +134,35 @@ const handleRealScan = () => {
                 <CheckCircle2 className="w-10 h-10 text-emerald-500" />
               </div>
               <h3 className="font-semibold text-lg text-foreground mb-2">¡Llegada confirmada!</h3>
-              <p className="text-muted-foreground text-sm mb-4">Hotel Vista al Volcán, Santa Ana</p>
+              <p className="text-muted-foreground text-sm mb-4">Ubicación registrada exitosamente</p>
 
-              {/* Notification Alert */}
+              {/* Notificación Dinámica usando tus Guardianes Reales */}
               <div className="bg-primary/10 rounded-xl p-4 mb-4">
                 <div className="flex items-center gap-2 text-primary mb-2">
                   <Bell className="w-5 h-5" />
                   <span className="font-medium">Notificación enviada</span>
                 </div>
-                <p className="text-sm text-muted-foreground">Mamá y Papá han sido notificados de tu llegada segura</p>
+                <p className="text-sm text-muted-foreground italic">
+                  {guardians.filter(g => g.is_active).length > 0 
+                    ? `${guardians.filter(g => g.is_active).map(g => g.name).join(" y ")} han sido notificados de tu llegada.`
+                    : "Tus contactos de emergencia han sido notificados."
+                  }
+                </p>
               </div>
 
-              {/* Benefits unlocked */}
               <div className="bg-secondary/10 rounded-xl p-4 mb-4">
                 <div className="flex items-center gap-2 text-secondary mb-2">
                   <Shield className="w-5 h-5" />
-                  <span className="font-medium">Beneficios activados</span>
+                  <span className="font-medium">Seguridad Activa</span>
                 </div>
-                <ul className="text-sm text-muted-foreground space-y-1 text-left">
-                  <li>✓ Pago liberado al anfitrión (85%)</li>
-                  <li>✓ Comisión del afiliado activada (7%)</li>
-                  <li>✓ Enlace de recomendación generado</li>
-                </ul>
+                <p className="text-sm text-muted-foreground text-left">
+                  ✓ Punto de control verificado.<br/>
+                  ✓ Alerta de llegada procesada.<br/>
+                  ✓ Tracking actualizado.
+                </p>
               </div>
 
-              <Button onClick={resetScan} variant="outline" className="w-full h-12 rounded-xl bg-transparent">
+              <Button onClick={resetScan} variant="outline" className="w-full h-12 rounded-xl bg-transparent border-primary/30 text-foreground">
                 Escanear otro código
               </Button>
             </div>
@@ -218,7 +222,9 @@ const handleRealScan = () => {
                   <span className="text-xs text-muted-foreground mb-1">Activo</span>
                   <Switch 
                     checked={guardian.is_active} 
-                    onCheckedChange={() => {/* Aquí irá luego la lógica de desactivar */}}
+                    onCheckedChange={(checked) => {
+                      useAppStore.getState().toggleGuardianActive(guardian.id, checked)
+                    }} 
                   />
                 </div>
               </div>

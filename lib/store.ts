@@ -263,6 +263,7 @@ fetchRecommendations: () => Promise<void>
   guardians: Guardian[]
   fetchGuardians: () => Promise<void>
   addGuardian: (name: string, phone: string) => Promise<boolean>
+  toggleGuardianActive: (guardianId: number, isActive: boolean) => Promise<void>
   scanCheckpoint: (tripId: number, stopId: string, lat: number, lng: number) => Promise<any>
 }
 const initialServices: Service[] = [
@@ -1348,6 +1349,25 @@ export const useAppStore = create<AppState>()(
           return false;
         } catch (error) {
           return false;
+        }
+      },
+
+      toggleGuardianActive: async (guardianId: number, isActive: boolean) => {
+        const { accessToken } = get();
+        try {
+          const response = await fetch(`${API_BASE}/safeflow/guardians/${guardianId}/`, {
+            method: 'PATCH', // Usamos PATCH para actualizar solo un campo
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}` 
+            },
+            body: JSON.stringify({ is_active: isActive })
+          });
+          if (response.ok) {
+            await get().fetchGuardians(); // Refrescamos la lista para que el UI se actualice
+          }
+        } catch (error) {
+          console.error("Error al actualizar guardián:", error);
         }
       },
 
