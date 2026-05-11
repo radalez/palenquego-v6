@@ -1105,22 +1105,25 @@ export const useAppStore = create<AppState>()(
           const data = await response.json();
           
           const formatted: Route[] = data.map((r: any) => ({
-            id: r.id,
-            name: r.name,
-            colorHex: r.color_hex || '#10b981',
-            unit_name: r.unit_name || "Unidad Estándar",
-            price_one_way: String(r.price_one_way),
-            price_round_trip: String(r.price_round_trip),
-            is_active: r.is_active,
-            stops: r.stops.map((s: any) => ({
-              id: s.id,
-              name: s.name,
-              latitude: parseFloat(s.latitude),
-              longitude: parseFloat(s.longitude),
-              order: s.order,
-              minutes_from_start: s.minutes_from_start
-            }))
-          }));
+              id: r.id,
+              name: r.name,
+              colorHex: r.color_hex || '#10b981',
+              unit_name: r.unit_name || "Unidad Estándar",
+              // --- GPS VIVO ---
+              unit_lat: r.unit_lat, 
+              unit_lng: r.unit_lng, 
+              price_one_way: String(r.price_one_way),
+              price_round_trip: String(r.price_round_trip),
+              is_active: r.is_active,
+              stops: r.stops.map((s: any) => ({
+                id: s.id,
+                name: s.name,
+                latitude: parseFloat(s.latitude),
+                longitude: parseFloat(s.longitude),
+                order: s.order,
+                minutes_from_start: s.minutes_from_start
+              }))
+            }));
           
           set({ routes: formatted, isLoading: false });
         } catch (error) {

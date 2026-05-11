@@ -9,54 +9,103 @@ const containerStyle = {
   borderRadius: '12px'
 }
 
-export default function MapPreview({ stops }: { stops: any[] }) {
+interface MapPreviewProps {
+  stops: any[]
+  unitLocation?: {
+    lat: number
+    lng: number
+  }
+}
+
+export default function MapPreview({ stops, unitLocation }: MapPreviewProps) {
   // 1. Cargamos el motor con tu llave de Netlify
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ""
   })
 
-  // 2. Calculamos el centro basado en tus paradas actuales
-  const center = stops && stops.length > 0 
-    ? { lat: stops[0].latitude, lng: stops[0].longitude }
-    : { lat: 13.6893, lng: -89.1872 }; // San Salvador por defecto
+  const [map, setMap] = useState(null)
 
-  // 3. Convertimos tus paradas al formato de Google para la línea (Polyline)
+  // 2. Calculamos el centro: Si hay bus, centramos ahí. Si no, en la primera parada.
+  const center = unitLocation 
+    ? { lat: unitLocation.lat, lng: unitLocation.lng }
+    : (stops && stops.length > 0 
+        ? { lat: stops[0].latitude, lng: stops[0].longitude }
+        : { lat: 13.6893, lng: -89.1872 }); // San Salvador por defecto
+
+  // 3. Convertimos paradas para la línea de ruta (Polyline)
   const pathCoordinates = stops.map(stop => ({
     lat: stop.latitude,
     lng: stop.longitude
   }))
 
-  if (!isLoaded) return <div className="h-full w-full bg-muted animate-pulse rounded-xl" />
+  const onLoad = useCallback(function callback(mapInstance: any) {
+    setMap(mapInstance)
+  }, [])
+
+  if (!isLoaded) {
+    return (
+      <div className="h-full w-full bg-muted animate-pulse rounded-xl flex items-center justify-center text-muted-foreground text-xs">
+        Cargando Satélites de Google...
+      </div>
+    )
+  }
 
   return (
     <GoogleMap
       mapContainerStyle={containerStyle}
       center={center}
-      zoom={13}
+      zoom={14}
+      onLoad={onLoad}
       options={{
-        disableDefaultUI: true, // Mapa limpio como lo tenías
+        disableDefaultUI: true,
         zoomControl: true,
+        styles: [
+          {
+            featureType: "poi",
+            elementType: "labels",
+            stylers: [{ visibility: "off" }]
+          }
+        ]
       }}
     >
-      {/* Dibujamos la línea verde de la ruta que ya tenías en Leaflet */}
+      {/* 4. Dibujamos la línea de la ruta */}
       <Polyline
         path={pathCoordinates}
         options={{
           strokeColor: "#059669",
-          strokeOpacity: 1.0,
-          strokeWeight: 4,
+          strokeOpacity: 0.8,
+          strokeWeight: 5,
         }}
       />
 
-      {/* Ponemos los marcadores de tus paradas reales */}
+      {/* 5. Ponemos los marcadores de las paradas */}
       {stops.map((stop) => (
         <Marker
           key={stop.id}
           position={{ lat: stop.latitude, lng: stop.longitude }}
           title={stop.name}
+          label={{
+            text: stop.name.charAt(0),
+            color: "white",
+            fontSize: "10px",
+            fontWeight: "bold"
+          }}
         />
       ))}
+
+      {/* 6. EL BUS (Marcador que se mueve en tiempo real) */}
+      {unitLocation && (
+        <Marker
+          position={unitLocation}
+          title="Ubicación del Bus"
+          icon={{
+            url: "https://cdn-icons-png.flaticon.com/512/3448/3448339.png",
+            scaledSize: new window.google.maps.Size(45, 45),
+            anchor: new window.google.maps.Point(22, 22)
+          }}
+        />
+      )}
     </GoogleMap>
   )
 }

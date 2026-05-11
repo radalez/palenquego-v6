@@ -42,9 +42,21 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
   const [ticketPurchase, setTicketPurchase] = useState<TicketPurchaseState | null>(null)
 
 
- useEffect(() => {
-    fetchRoutes()
-  }, [fetchRoutes])
+useEffect(() => {
+    // Primera carga inmediata
+    fetchRoutes();
+
+    // Establecemos el intervalo de 10 segundos para refrescar el GPS del bus
+    const gpsInterval = setInterval(() => {
+      console.log("Refrescando posición GPS del bus...");
+      fetchRoutes();
+    }, 10000);
+
+    // Limpieza al desmontar el componente para evitar fugas de memoria
+    return () => {
+      clearInterval(gpsInterval);
+    };
+  }, [fetchRoutes]);
 
 
   const handleStartTracking = (route: Route) => {
@@ -383,7 +395,14 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
           {/* Route Map Preview */}
             <div className="p-4 h-64 border-b border-border">
               <div className="h-full w-full rounded-xl overflow-hidden border border-border shadow-inner">
-                <MapPreview stops={route.stops} />
+                <MapPreview 
+                  stops={route.stops} 
+                  unitLocation={
+                    route.stops[0] 
+                      ? { lat: route.stops[0].latitude, lng: route.stops[0].longitude } 
+                      : undefined
+                  } 
+                />
               </div>
             </div>
 
