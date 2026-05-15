@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Leaf, Lock, User, Mail, UserPlus, AlertCircle, ArrowLeft } from "lucide-react"
+import { Leaf, Lock, User, Mail, UserPlus, AlertCircle, ArrowLeft, Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -14,6 +14,7 @@ interface RegisterScreenProps {
 
 export function RegisterScreen({ onRegisterSuccess, onBackToLogin }: RegisterScreenProps) {
   const [formData, setFormData] = useState({ username: "", password: "", email: "", first_name: "" })
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const signup = useAppStore((state) => state.signup)
@@ -74,7 +75,22 @@ export function RegisterScreen({ onRegisterSuccess, onBackToLogin }: RegisterScr
 
           <div className="space-y-2">
             <Label className="text-muted-foreground text-sm">Contraseña</Label>
-            <Input type="password" placeholder="••••••••" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} className="h-12 rounded-xl border-border bg-muted/50" />
+            <div className="relative">
+              <Input 
+                type={showPassword ? "text" : "password"} 
+                placeholder="••••••••" 
+                value={formData.password} 
+                onChange={(e) => setFormData({...formData, password: e.target.value})} 
+                className="h-12 rounded-xl border-border bg-muted/50 pr-10" 
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
+              >
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
           </div>
           {error && <div className="flex items-center gap-2 p-3 bg-destructive/10 rounded-xl"><AlertCircle className="w-4 h-4 text-destructive" /><span className="text-sm text-destructive">{error}</span></div>}
           <Button onClick={handleRegister} disabled={isLoading} className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-base mt-2">
