@@ -40,7 +40,7 @@ export function LoginScreen({ onLoginSuccess, onShowRegister }: LoginScreenProps
       {/* Logo and branding */}
       <div className="flex flex-col items-center mb-10">
         <div className="w-20 h-20 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-4 shadow-lg">
-          <img src="/logo_white.png" alt="Palenque Go Logo" className="w-16 h-16 object-contain" />
+          <img src="/logo-white.png" alt="Palenque Go Logo" className="w-16 h-16 object-contain" />
         </div>
         <h1 className="text-3xl font-bold text-white tracking-tight">Palenque Go</h1>
         <p className="text-white/70 text-sm mt-1">Turismo Circular & Comunitario</p>
