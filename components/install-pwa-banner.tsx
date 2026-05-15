@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 
 export function InstallPWABanner() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
-  const [isVisible, setIsVisible] = useState(false)
+  const [isVisible, setIsVisible] = useState(true)
   const [isIOS, setIsIOS] = useState(false)
 
   useEffect(() => {
@@ -16,32 +16,32 @@ export function InstallPWABanner() {
     // Detect if already installed (standalone)
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone
     
+    if (isStandalone) {
+      setIsVisible(false)
+    }
+    
     // Listen for beforeinstallprompt (Android / Desktop Chrome)
     const handler = (e: any) => {
       e.preventDefault()
       setDeferredPrompt(e)
-      setIsVisible(true)
     }
 
     window.addEventListener('beforeinstallprompt', handler)
     
-    // If not standalone and it's iOS, we can show a specific instruction
-    // We only show it for iOS because Android/Desktop use the beforeinstallprompt event natively.
-    if (isIOSDevice && !isStandalone) {
-      setIsVisible(true)
-    }
-
     return () => window.removeEventListener('beforeinstallprompt', handler)
   }, [])
 
   const handleInstall = async () => {
-    if (!deferredPrompt) return
-    deferredPrompt.prompt()
-    const { outcome } = await deferredPrompt.userChoice
-    if (outcome === 'accepted') {
-      setIsVisible(false)
+    if (deferredPrompt) {
+      deferredPrompt.prompt()
+      const { outcome } = await deferredPrompt.userChoice
+      if (outcome === 'accepted') {
+        setIsVisible(false)
+      }
+      setDeferredPrompt(null)
+    } else {
+      alert("Para instalar: toca los 3 puntos del menú del navegador (arriba a la derecha) y selecciona 'Instalar aplicación' o 'Añadir a inicio'.")
     }
-    setDeferredPrompt(null)
   }
 
   if (!isVisible) return null
