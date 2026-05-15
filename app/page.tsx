@@ -26,6 +26,7 @@ import { FavoritesScreen } from "@/components/screens/favorites-screen"
 import { RecommendationsScreen } from "@/components/screens/recommendations-screen"
 import { ShareInviteModal } from "@/components/share-invite-modal"
 import { PoolPaymentModal } from "@/components/pool-payment-modal"
+import { InstallPWABanner } from "@/components/install-pwa-banner"
 import { useAppStore } from "@/lib/store"
 
 type ActiveTab =
@@ -115,6 +116,8 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-background flex flex-col max-w-md mx-auto relative">
+      <InstallPWABanner />
+      
       {/* Sidebar Menu */}
       <SidebarMenu activeTab={activeTab} onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />
 
