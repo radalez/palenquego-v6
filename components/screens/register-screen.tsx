@@ -34,6 +34,14 @@ export function RegisterScreen({ onRegisterSuccess, onBackToLogin }: RegisterScr
 
   return (
     <div className="min-h-screen bg-primary flex flex-col items-center justify-center p-6">
+      {/* Logo and branding */}
+      <div className="flex flex-col items-center mb-8">
+        <div className="w-20 h-20 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-4 shadow-lg">
+          <img src="/logo_white.png" alt="Palenque Go Logo" className="w-16 h-16 object-contain" />
+        </div>
+        <h1 className="text-2xl font-bold text-white tracking-tight">Palenque Go</h1>
+      </div>
+
       <div className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-xl">
         <button onClick={onBackToLogin} className="flex items-center gap-2 text-muted-foreground text-sm mb-4 hover:text-primary transition-colors">
           <ArrowLeft className="w-4 h-4" /> Volver al ingreso
