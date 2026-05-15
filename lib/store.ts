@@ -152,6 +152,7 @@ export interface Guardian {
   id: number;
   name: string;
   phone_number: string;
+  email?: string;
   is_active: boolean;
 }
 
@@ -262,8 +263,9 @@ fetchRecommendations: () => Promise<void>
   createPool: (serviceId: number, targetMembers: number, date: string, totalPrice: number) => Promise<boolean>
   guardians: Guardian[]
   fetchGuardians: () => Promise<void>
-  addGuardian: (name: string, phone: string) => Promise<boolean>
+  addGuardian: (name: string, phone: string, email: string) => Promise<boolean>
   toggleGuardianActive: (guardianId: number, isActive: boolean) => Promise<void>
+  scanQRCode: (token: string) => Promise<any>
   scanCheckpoint: (tripId: number, stopId: string, lat: number, lng: number) => Promise<any>
 }
 const initialServices: Service[] = [
@@ -1334,7 +1336,7 @@ export const useAppStore = create<AppState>()(
         }
       },
 
-      addGuardian: async (name: string, phone: string) => {
+      addGuardian: async (name: string, phone: string, email: string) => {
         const { accessToken } = get();
         try {
           const response = await fetch(`${API_BASE}/safeflow/guardians/`, {
@@ -1343,7 +1345,7 @@ export const useAppStore = create<AppState>()(
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${accessToken}` 
             },
-            body: JSON.stringify({ name: name, phone_number: phone })
+            body: JSON.stringify({ name: name, phone_number: phone, email: email })
           });
           if (response.ok) {
             await get().fetchGuardians(); 
@@ -1371,6 +1373,24 @@ export const useAppStore = create<AppState>()(
           }
         } catch (error) {
           console.error("Error al actualizar guardián:", error);
+        }
+      },
+
+      scanQRCode: async (token: string) => {
+        const { accessToken } = get();
+        try {
+          const response = await fetch(`${API_BASE}/safeflow/trips/scan_qr/`, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}` 
+            },
+            body: JSON.stringify({ token })
+          });
+          return await response.json();
+        } catch (error) {
+          console.error("Error al escanear QR:", error);
+          return null;
         }
       },
 

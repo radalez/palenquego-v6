@@ -1,20 +1,21 @@
 "use client"
 
 import { useState } from "react"
-import { X, User, Phone } from "lucide-react"
+import { X, User, Phone, Mail } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAppStore } from "@/lib/store"
 
 export function AddContactModal({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState("")
   const [phone, setPhone] = useState("")
+  const [email, setEmail] = useState("")
   const [loading, setLoading] = useState(false)
   const { addGuardian } = useAppStore()
 
   const handleSave = async () => {
     if (!name || !phone) return
     setLoading(true)
-    const success = await addGuardian(name, phone)
+    const success = await addGuardian(name, phone, email)
     if (success) onClose()
     setLoading(false)
   }
@@ -50,6 +51,20 @@ export function AddContactModal({ onClose }: { onClose: () => void }) {
                 placeholder="+503 7000 0000"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Correo Electrónico</label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
+              <input 
+                className="w-full pl-10 pr-4 py-3 rounded-xl bg-muted border-none focus:ring-2 focus:ring-primary text-foreground"
+                placeholder="correo@ejemplo.com"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
           </div>
