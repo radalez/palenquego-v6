@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Leaf, Lock, User, AlertCircle } from "lucide-react"
+import { Leaf, Lock, User, AlertCircle, Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,6 +15,7 @@ interface LoginScreenProps {
 export function LoginScreen({ onLoginSuccess, onShowRegister }: LoginScreenProps) {
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const login = useAppStore((state) => state.login)
@@ -74,13 +75,20 @@ export function LoginScreen({ onLoginSuccess, onShowRegister }: LoginScreenProps
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
                 id="password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder="••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="pl-10 h-12 rounded-xl border-border bg-muted/50"
+                className="pl-10 pr-10 h-12 rounded-xl border-border bg-muted/50"
                 onKeyDown={(e) => e.key === "Enter" && handleLogin()}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
+              >
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
             </div>
           </div>
 
