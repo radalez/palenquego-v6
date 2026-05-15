@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { QrCode, Shield, Bell, CheckCircle2, AlertTriangle, Scan } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
+import { Scanner } from '@yudiel/react-qr-scanner'
 import { HeaderWithMenu } from "@/components/header-with-menu"
 import { useAppStore } from "@/lib/store"
 import { AddContactModal } from "@/components/add-contact-modal"
@@ -40,39 +41,21 @@ export function SafeFlowScreen({ onNavigate }: SafeFlowScreenProps) {
     setContacts((prev) => prev.map((c) => (c.id === id ? { ...c, notifyOnArrival: !c.notifyOnArrival } : c)))
   }
 
-const handleRealScan = () => {
+  const handleRealScan = () => {
     setIsScanning(true)
     setScanResult(null)
+  }
 
-    // 1. Obtenemos la ubicación real del celular
-    if (!navigator.geolocation) {
-      alert("Tu navegador no soporta GPS")
-      setIsScanning(false)
-      return
+  const handleQRScan = async (token: string) => {
+    setIsScanning(false)
+    const result = await useAppStore.getState().scanQRCode(token)
+    
+    if (result && !result.error) {
+      setScanResult("success")
+    } else {
+      setScanResult("error")
+      alert(result?.error || "Código QR inválido o viaje no encontrado")
     }
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords
-        
-        // 2. Aquí simulamos que el QR leyó la "Parada ID 1"
-        // En el futuro, el valor '1' vendrá de lo que lea la cámara
-        const result = await useAppStore.getState().scanCheckpoint(1, "1", latitude, longitude)
-
-        if (result) {
-          setIsScanning(false)
-          setScanResult("success")
-        } else {
-          setIsScanning(false)
-          setScanResult("error")
-        }
-      },
-      (error) => {
-        console.error("Error de GPS:", error)
-        setIsScanning(false)
-        setScanResult("error")
-      }
-    )
   }
 
   const resetScan = () => {
@@ -113,18 +96,21 @@ const handleRealScan = () => {
           )}
 
           {isScanning && (
-            <div className="py-8">
-              <div className="relative w-48 h-48 mx-auto mb-6">
-                {/* Scanner Animation */}
-                <div className="absolute inset-0 border-4 border-primary rounded-2xl" />
-                <div className="absolute inset-4 border-2 border-dashed border-primary/50 rounded-xl animate-pulse" />
-                <div className="absolute inset-0 overflow-hidden rounded-2xl">
-                  <div className="w-full h-1 bg-secondary animate-scan" />
-                </div>
-                <QrCode className="absolute inset-0 m-auto w-16 h-16 text-primary/30" />
+            <div className="py-4">
+              <div className="relative w-full max-w-sm mx-auto overflow-hidden rounded-2xl mb-4 border-4 border-primary/30">
+                <Scanner 
+                  onScan={(result) => {
+                    if (result && result.length > 0) {
+                      handleQRScan(result[0].rawValue)
+                    }
+                  }}
+                  formats={['qr_code']}
+                />
               </div>
-              <p className="text-center text-muted-foreground">Escaneando código QR...</p>
-              <p className="text-center text-sm text-muted-foreground mt-2">Apunta la cámara al código del destino</p>
+              <p className="text-center text-muted-foreground font-medium mb-4">Apunta la cámara al código QR del pasajero</p>
+              <Button onClick={resetScan} variant="outline" className="w-full">
+                Cancelar Escaneo
+              </Button>
             </div>
           )}
 
