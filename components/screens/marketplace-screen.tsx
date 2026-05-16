@@ -183,7 +183,7 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
       </div>
 
       {/* Listado de Tarjetas */}
-      <div className="px-4 space-y-4 pb-24">
+      <div className="px-4 pb-24 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {isLoading ? (
           <div className="py-10 text-center">
             <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />

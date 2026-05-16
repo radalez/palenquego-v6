@@ -27,6 +27,7 @@ import { RecommendationsScreen } from "@/components/screens/recommendations-scre
 import { ShareInviteModal } from "@/components/share-invite-modal"
 import { PoolPaymentModal } from "@/components/pool-payment-modal"
 import { InstallPWABanner } from "@/components/install-pwa-banner"
+import { DesktopSidebar } from "@/components/desktop-sidebar"
 import { useAppStore } from "@/lib/store"
 
 type ActiveTab =
@@ -115,14 +116,23 @@ export default function Home() {
     activeTab === "marketplace" || activeTab === "businesses" || activeTab === "pool" || activeTab === "safeflow" || activeTab === "profile" || activeTab === "rutas"
 
   return (
-    <main className="min-h-screen bg-background flex flex-col max-w-md mx-auto relative">
-      <InstallPWABanner />
-      
-      {/* Sidebar Menu */}
-      <SidebarMenu activeTab={activeTab} onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />
+    <div className="min-h-screen bg-background flex w-full overflow-hidden">
+      {/* Desktop Sidebar */}
+      <div className="hidden lg:block h-screen flex-shrink-0 shadow-lg relative z-20">
+        <DesktopSidebar activeTab={activeTab} onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />
+      </div>
 
-      {/* Screen Content */}
-      <div className="flex-1 overflow-y-auto pb-20">
+      {/* Main Content Area */}
+      <main className="flex-1 flex flex-col relative h-screen overflow-hidden w-full lg:max-w-none max-w-md mx-auto shadow-2xl lg:shadow-none bg-background lg:border-l lg:border-border">
+        <InstallPWABanner />
+        
+        {/* Mobile Sidebar Menu (hamburger) */}
+        <div className="lg:hidden">
+          <SidebarMenu activeTab={activeTab} onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />
+        </div>
+
+        {/* Screen Content */}
+        <div className="flex-1 overflow-y-auto pb-20 lg:pb-0">
         {activeTab === "marketplace" && (
           <MarketplaceScreen
             onNavigate={(tab) => setActiveTab(tab as ActiveTab)}
@@ -177,8 +187,13 @@ export default function Home() {
         />
       )}
 
-      {/* Bottom Navigation - only show on main tabs */}
-      {isMainTab && <MobileNav activeTab={activeTab} setActiveTab={(tab) => setActiveTab(tab as any)} />}
-    </main>
+      {/* Bottom Navigation - only show on main tabs for mobile */}
+      {isMainTab && (
+        <div className="lg:hidden">
+          <MobileNav activeTab={activeTab} setActiveTab={(tab) => setActiveTab(tab as any)} />
+        </div>
+      )}
+      </main>
+    </div>
   )
 }

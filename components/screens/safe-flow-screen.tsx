@@ -71,7 +71,7 @@ export function SafeFlowScreen({ onNavigate }: SafeFlowScreenProps) {
       </div>
 
       {/* QR Scanner Section */}
-      <div className="px-4 -mt-4">
+      <div className="px-4 -mt-4 max-w-2xl mx-auto w-full">
         <div className="bg-card rounded-2xl p-5 shadow-lg border border-border">
           {!isScanning && !scanResult && (
             <>
@@ -157,7 +157,7 @@ export function SafeFlowScreen({ onNavigate }: SafeFlowScreenProps) {
       </div>
 
       {/* Security Notice */}
-      <div className="px-4 py-6">
+      <div className="px-4 py-6 max-w-2xl mx-auto w-full">
         <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4">
           <div className="flex items-start gap-3">
             <AlertTriangle className="w-6 h-6 text-amber-500 flex-shrink-0 mt-0.5" />
@@ -173,7 +173,7 @@ export function SafeFlowScreen({ onNavigate }: SafeFlowScreenProps) {
       </div>
 
       {/* Emergency Contacts */}
-      <div className="px-4 pb-6">
+      <div className="px-4 pb-6 max-w-4xl mx-auto w-full">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold text-lg text-foreground">Contactos de emergencia</h2>
          <Button 
@@ -186,7 +186,7 @@ export function SafeFlowScreen({ onNavigate }: SafeFlowScreenProps) {
           </Button>
         </div>
 
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {guardians.map((guardian) => (
             <div
               key={guardian.id}
@@ -220,16 +220,16 @@ export function SafeFlowScreen({ onNavigate }: SafeFlowScreenProps) {
       </div>
 
       {/* How Safe-Flow Works */}
-      <div className="px-4 pb-6">
+      <div className="px-4 pb-24 max-w-4xl mx-auto w-full">
         <h2 className="font-semibold text-lg mb-4 text-foreground">¿Cómo funciona Safe-Flow?</h2>
-        <div className="bg-muted rounded-2xl p-4 space-y-4">
+        <div className="bg-muted rounded-2xl p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="flex items-start gap-3">
             <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
               <QrCode className="w-4 h-4 text-primary-foreground" />
             </div>
             <div>
               <p className="font-medium text-foreground">Escanea el QR al llegar</p>
-              <p className="text-sm text-muted-foreground">El "apretón de manos digital" confirma tu llegada</p>
+              <p className="text-sm text-muted-foreground">El &quot;apretón de manos digital&quot; confirma tu llegada</p>
             </div>
           </div>
           <div className="flex items-start gap-3">

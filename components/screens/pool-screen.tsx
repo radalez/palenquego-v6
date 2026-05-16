@@ -109,7 +109,7 @@ const isUserInPool = (pool: Pool) => {
       <div className="px-4 py-6">
         <h2 className="font-semibold text-lg mb-4 text-foreground">Pools Activos</h2>
 
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {pools.map((pool) => {
             const progress = ((pool.currentMembers ?? 0) / (pool.targetMembers ?? 1)) * 100
             const pricePerPerson = (pool.totalPrice ?? 0) / (pool.targetMembers ?? 1)
@@ -186,9 +186,9 @@ const isUserInPool = (pool: Pool) => {
       </div>
 
       {/* How it works */}
-      <div className="px-4 pb-6">
-        <h2 className="font-semibold text-lg mb-4 text-foreground">Como funciona?</h2>
-        <div className="bg-muted rounded-2xl p-4 space-y-4">
+      <div className="px-4 pb-24">
+        <h2 className="font-semibold text-lg mb-4 text-foreground">¿Cómo funciona?</h2>
+        <div className="bg-muted rounded-2xl p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="flex items-start gap-3">
             <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
               <span className="text-primary-foreground font-semibold text-sm">1</span>

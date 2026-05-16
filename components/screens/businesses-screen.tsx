@@ -151,7 +151,7 @@ export function BusinessesScreen({ onNavigate }: BusinessesScreenProps) {
       </div>
 
       {/* Business Cards */}
-      <div className="px-4 space-y-4 pb-4">
+      <div className="px-4 pb-24 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {filteredBusinesses.length > 0 ? (
           filteredBusinesses.map((business) => (
           <div

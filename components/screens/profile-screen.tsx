@@ -82,34 +82,36 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
   ]
 
   return (
-    <div className="flex flex-col min-h-full">
+    <div className="flex flex-col min-h-full items-center">
       {/* Header */}
-      <div className="bg-gradient-to-br from-primary to-primary/80 px-4 pt-12 pb-8">
-        <h1 className="text-2xl font-bold text-primary-foreground mb-6">Mi Perfil</h1>
+      <div className="bg-gradient-to-br from-primary to-primary/80 px-4 pt-12 pb-8 w-full">
+        <div className="max-w-3xl mx-auto w-full">
+          <h1 className="text-2xl font-bold text-primary-foreground mb-6">Mi Perfil</h1>
 
-        {/* User Card */}
-        <div className="bg-card rounded-2xl p-4 shadow-lg">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
-              <span className="text-xl font-bold text-primary">{currentUser.avatar}</span>
-            </div>
-            <div className="flex-1">
-              <h2 className="text-lg font-semibold text-foreground">{currentUser.name}</h2>
-              <p className="text-sm text-muted-foreground">{currentUser.tipo}</p>
-              <div className="flex items-center gap-1 mt-1">
-                <div className="w-2 h-2 rounded-full bg-green-500" />
-                <span className="text-xs text-green-600">Verificado</span>
+          {/* User Card */}
+          <div className="bg-card rounded-2xl p-4 shadow-lg">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
+                <span className="text-xl font-bold text-primary">{currentUser.avatar}</span>
               </div>
+              <div className="flex-1">
+                <h2 className="text-lg font-semibold text-foreground">{currentUser.name}</h2>
+                <p className="text-sm text-muted-foreground">{currentUser.tipo}</p>
+                <div className="flex items-center gap-1 mt-1">
+                  <div className="w-2 h-2 rounded-full bg-green-500" />
+                  <span className="text-xs text-green-600">Verificado</span>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" className="bg-transparent">
+                <Settings className="w-4 h-4" />
+              </Button>
             </div>
-            <Button variant="outline" size="sm" className="bg-transparent">
-              <Settings className="w-4 h-4" />
-            </Button>
           </div>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="px-4 -mt-4">
+      <div className="px-4 -mt-4 w-full max-w-3xl mx-auto">
         <div className="bg-card rounded-2xl p-4 shadow-md border border-border grid grid-cols-3 gap-4">
           <div className="text-center">
             <p className="text-2xl font-bold text-primary">{bookings.length}</p>
@@ -127,7 +129,7 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
       </div>
 
       {/* Contact Info */}
-      <div className="px-4 mt-6">
+      <div className="px-4 mt-6 w-full max-w-3xl mx-auto">
         <h3 className="text-sm font-semibold text-muted-foreground mb-3">INFORMACION DE CONTACTO</h3>
         <div className="bg-card rounded-xl border border-border divide-y divide-border">
           <div className="flex items-center gap-3 p-4">
@@ -152,7 +154,7 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
       </div>
 
       {/* Menu Items */}
-      <div className="px-4 mt-6">
+      <div className="px-4 mt-6 w-full max-w-3xl mx-auto">
         <h3 className="text-sm font-semibold text-muted-foreground mb-3">CONFIGURACION</h3>
         <div className="bg-card rounded-xl border border-border divide-y divide-border">
           {menuItems.map((item) => {
@@ -178,7 +180,7 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
       </div>
 
       {/* Logout Button */}
-      <div className="px-4 mt-6 pb-24">
+      <div className="px-4 mt-6 pb-24 w-full max-w-3xl mx-auto">
         <Button
           variant="outline"
           className="w-full h-12 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 bg-transparent"
