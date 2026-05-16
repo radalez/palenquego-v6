@@ -87,6 +87,7 @@ export function InstallPWABanner() {
           </Button>
         )}
       </div>
+      </div>
     </div>
   )
 }
