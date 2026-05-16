@@ -47,8 +47,9 @@ export function InstallPWABanner() {
   if (!isVisible) return null
 
   return (
-    <div className="fixed top-4 left-4 right-4 z-[100] max-w-md mx-auto animate-in slide-in-from-top-4 fade-in duration-300">
-      <div className="bg-white/95 backdrop-blur-md border border-primary/20 shadow-xl rounded-2xl p-4 flex flex-col gap-3">
+    <div className="fixed bottom-4 inset-x-4 lg:inset-0 lg:flex lg:items-center lg:justify-center z-[100] pointer-events-none">
+      <div className="max-w-sm w-full mx-auto pointer-events-auto animate-in slide-in-from-bottom-4 lg:slide-in-from-bottom-0 lg:zoom-in-95 fade-in duration-300">
+        <div className="bg-white/95 backdrop-blur-md border border-primary/20 shadow-2xl rounded-2xl p-4 flex flex-col gap-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">

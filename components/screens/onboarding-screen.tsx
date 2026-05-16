@@ -46,8 +46,9 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const isLastSlide = currentSlide === onboardingSlides.length - 1
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
+    <div className="min-h-screen bg-background flex flex-col items-center">
+      <div className="w-full max-w-md flex flex-col min-h-screen">
+        {/* Header */}
       <div className="p-6 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
@@ -122,6 +123,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
             </span>
           )}
         </Button>
+      </div>
       </div>
     </div>
   )
