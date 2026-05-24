@@ -267,6 +267,7 @@ fetchRecommendations: () => Promise<void>
   toggleGuardianActive: (guardianId: number, isActive: boolean) => Promise<void>
   scanQRCode: (token: string) => Promise<any>
   scanCheckpoint: (tripId: number, stopId: string, lat: number, lng: number) => Promise<any>
+  changePassword: (oldPassword: string, newPassword: string) => Promise<{success: boolean, error?: string}>
 }
 const initialServices: Service[] = [
   {
@@ -865,7 +866,34 @@ export const useAppStore = create<AppState>()(
           set({ isLoading: false });
           return false;
         }
-      },    
+      },
+
+      changePassword: async (oldPassword, newPassword) => {
+        const { accessToken } = get();
+        set({ isLoading: true });
+        try {
+          const response = await fetch(`${API_BASE}/auth/change-password/`, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`
+            },
+            body: JSON.stringify({ old_password: oldPassword, new_password: newPassword }),
+          });
+
+          set({ isLoading: false });
+          
+          if (response.ok) {
+            return { success: true };
+          } else {
+            const data = await response.json();
+            return { success: false, error: data.error || "Error al cambiar contraseña" };
+          }
+        } catch (error) {
+          set({ isLoading: false });
+          return { success: false, error: "Fallo de conexión" };
+        }
+      },
 
       completeOnboarding: () => set({ hasCompletedOnboarding: true }),
       logout: () => set({ 

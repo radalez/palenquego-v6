@@ -5,13 +5,17 @@ import { ChevronLeft, Lock, Eye, Trash2, Download, AlertTriangle } from 'lucide-
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Input } from '@/components/ui/input'
+import { useAppStore } from '@/lib/store'
 
 interface PrivacyExtendedScreenProps {
   onBack: () => void
 }
 
 export function PrivacyExtendedScreen({ onBack }: PrivacyExtendedScreenProps) {
+  const changePassword = useAppStore(state => state.changePassword)
   const [showPasswordModal, setShowPasswordModal] = useState(false)
+  const [isChangingPassword, setIsChangingPassword] = useState(false)
+  const [passwordError, setPasswordError] = useState('')
   const [passwordData, setPasswordData] = useState({
     current: '',
     new: '',
@@ -24,11 +28,27 @@ export function PrivacyExtendedScreen({ onBack }: PrivacyExtendedScreenProps) {
     twoFactorAuth: false,
   })
 
-  const handleChangePassword = () => {
-    if (passwordData.current && passwordData.new === passwordData.confirm) {
-      console.log('[v0] Password changed')
+  const handleChangePassword = async () => {
+    setPasswordError('')
+    if (!passwordData.current || !passwordData.new || !passwordData.confirm) {
+      setPasswordError('Todos los campos son obligatorios')
+      return
+    }
+    if (passwordData.new !== passwordData.confirm) {
+      setPasswordError('Las contraseñas nuevas no coinciden')
+      return
+    }
+    
+    setIsChangingPassword(true)
+    const result = await changePassword(passwordData.current, passwordData.new)
+    setIsChangingPassword(false)
+
+    if (result.success) {
       setPasswordData({ current: '', new: '', confirm: '' })
       setShowPasswordModal(false)
+      alert("Contraseña actualizada con éxito")
+    } else {
+      setPasswordError(result.error || 'Error al cambiar la contraseña')
     }
   }
 
@@ -219,14 +239,15 @@ export function PrivacyExtendedScreen({ onBack }: PrivacyExtendedScreenProps) {
               </div>
             </div>
 
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={() => setShowPasswordModal(false)} className="flex-1">
+            <div className="flex gap-3 mt-6">
+              <Button variant="outline" onClick={() => setShowPasswordModal(false)} className="flex-1" disabled={isChangingPassword}>
                 Cancelar
               </Button>
-              <Button onClick={handleChangePassword} className="flex-1">
-                Guardar
+              <Button onClick={handleChangePassword} className="flex-1" disabled={isChangingPassword}>
+                {isChangingPassword ? "Guardando..." : "Guardar"}
               </Button>
             </div>
+            {passwordError && <p className="text-destructive text-sm text-center mt-4">{passwordError}</p>}
           </div>
         </div>
       )}

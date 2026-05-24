@@ -79,7 +79,7 @@ export function BusinessCarousel({ businesses, onViewProfile, onViewMore }: Busi
         }}
         className="w-full bg-primary hover:bg-primary/90"
       >
-        Ver Más Tiendas
+        Ver Más Tiendas 
         <ArrowRight className="w-4 h-4 ml-2" />
       </Button>
     </div>
