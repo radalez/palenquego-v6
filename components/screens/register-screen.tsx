@@ -13,7 +13,7 @@ interface RegisterScreenProps {
 }
 
 export function RegisterScreen({ onRegisterSuccess, onBackToLogin }: RegisterScreenProps) {
-  const [formData, setFormData] = useState({ username: "", password: "", email: "", first_name: "" })
+  const [formData, setFormData] = useState({ password: "", email: "", first_name: "" })
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -21,8 +21,8 @@ export function RegisterScreen({ onRegisterSuccess, onBackToLogin }: RegisterScr
 
   const handleRegister = async () => {
     setError("")
-   if (!formData.username || !formData.password || !formData.first_name || !formData.email) {
-      setError("Todos los campos, incluyendo el correo, son obligatorios.")
+    if (!formData.password || !formData.first_name || !formData.email) {
+      setError("Todos los campos son obligatorios.")
       return
     }
     setIsLoading(true)
@@ -68,18 +68,7 @@ export function RegisterScreen({ onRegisterSuccess, onBackToLogin }: RegisterScr
           </div>
 
 
-          <div className="space-y-2">
-            <Label className="text-muted-foreground text-sm">Nombre de Usuario</Label>
-            <div className="relative">
-              <UserPlus className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input
-                placeholder="ej: enrique_viajero"
-                value={formData.username}
-                onChange={(e) => setFormData({...formData, username: e.target.value})}
-                className="pl-10 h-12 rounded-xl border-border bg-muted/50"
-              />
-            </div>
-          </div>
+
 
           <div className="space-y-2">
             <Label className="text-muted-foreground text-sm">Contraseña</Label>

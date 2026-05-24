@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Leaf, Lock, User, AlertCircle, Eye, EyeOff } from "lucide-react"
+import { Leaf, Lock, Mail, AlertCircle, Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -53,13 +53,14 @@ export function LoginScreen({ onLoginSuccess, onShowRegister }: LoginScreenProps
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="username" className="text-muted-foreground text-sm">
-              Usuario
+              Correo Electrónico
             </Label>
             <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
                 id="username"
-                placeholder="demo"
+                type="email"
+                placeholder="ejemplo@correo.com"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="pl-10 h-12 rounded-xl border-border bg-muted/50"
