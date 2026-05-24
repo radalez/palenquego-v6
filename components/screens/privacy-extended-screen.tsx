@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Input } from '@/components/ui/input'
 import { useAppStore } from '@/lib/store'
+import { useToast } from '@/components/ui/use-toast'
 
 interface PrivacyExtendedScreenProps {
   onBack: () => void
@@ -13,6 +14,7 @@ interface PrivacyExtendedScreenProps {
 
 export function PrivacyExtendedScreen({ onBack }: PrivacyExtendedScreenProps) {
   const changePassword = useAppStore(state => state.changePassword)
+  const { toast } = useToast()
   const [showPasswordModal, setShowPasswordModal] = useState(false)
   const [isChangingPassword, setIsChangingPassword] = useState(false)
   const [passwordError, setPasswordError] = useState('')
@@ -46,7 +48,11 @@ export function PrivacyExtendedScreen({ onBack }: PrivacyExtendedScreenProps) {
     if (result.success) {
       setPasswordData({ current: '', new: '', confirm: '' })
       setShowPasswordModal(false)
-      alert("Contraseña actualizada con éxito")
+      toast({
+        title: "¡Contraseña actualizada!",
+        description: "Tu contraseña ha sido cambiada con éxito.",
+        className: "bg-green-50 border-green-200 text-green-900",
+      })
     } else {
       setPasswordError(result.error || 'Error al cambiar la contraseña')
     }
