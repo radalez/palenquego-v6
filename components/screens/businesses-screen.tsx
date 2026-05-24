@@ -103,7 +103,7 @@ export function BusinessesScreen({ onNavigate }: BusinessesScreenProps) {
 
   return (
     <div className="flex flex-col">
-      <HeaderWithMenu title="Negocios" onNavigate={onNavigate} />
+      <HeaderWithMenu title="Tiendas" onNavigate={onNavigate} />
       <div className="flex justify-between items-center px-4 py-4">
         <div className="w-10 h-10 rounded-full bg-primary-foreground/20 flex items-center justify-center">
           <span className="text-primary-foreground font-semibold">JD</span>
@@ -112,7 +112,7 @@ export function BusinessesScreen({ onNavigate }: BusinessesScreenProps) {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <Input
-            placeholder="Buscar negocios..."
+            placeholder="Buscar tiendas..."
             className="pl-10 pr-12 bg-card border-0 h-12 rounded-xl text-foreground placeholder:text-muted-foreground"
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -278,7 +278,7 @@ export function BusinessesScreen({ onNavigate }: BusinessesScreenProps) {
           ))
         ) : (
           <div className="text-center py-12">
-            <p className="text-muted-foreground">No se encontraron negocios</p>
+            <p className="text-muted-foreground">No se encontraron tiendas</p>
           </div>
         )}
       </div>

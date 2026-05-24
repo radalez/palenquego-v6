@@ -33,7 +33,7 @@ export function BusinessCarousel({ businesses, onViewProfile, onViewMore }: Busi
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-foreground">Negocios Destacados</h2>
+        <h2 className="text-xl font-bold text-foreground">Tiendas Destacadas</h2>
         <div className="flex gap-2">
           <Button
             size="sm"
@@ -79,7 +79,7 @@ export function BusinessCarousel({ businesses, onViewProfile, onViewMore }: Busi
         }}
         className="w-full bg-primary hover:bg-primary/90"
       >
-        Ver Más Negocios
+        Ver Más Tiendas
         <ArrowRight className="w-4 h-4 ml-2" />
       </Button>
     </div>

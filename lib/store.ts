@@ -687,6 +687,14 @@ export const useAppStore = create<AppState>()(
         set({ isLoading: true })
         try {
           const response = await fetch(`${API_BASE}/catalog/${query}`)
+          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+          
+          // Verificamos si la respuesta es JSON para evitar el error de "Unexpected token <"
+          const contentType = response.headers.get("content-type")
+          if (!contentType || !contentType.includes("application/json")) {
+            throw new Error("No JSON response from server")
+          }
+          
           const data = await response.json()
           const formatted = data.map((s: any) => ({
             ...s,
@@ -716,6 +724,13 @@ export const useAppStore = create<AppState>()(
       fetchBusinesses: async () => {
         try {
           const response = await fetch(`${API_BASE}/stores/list/`)
+          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+          
+          const contentType = response.headers.get("content-type")
+          if (!contentType || !contentType.includes("application/json")) {
+            throw new Error("No JSON response from server")
+          }
+
           const data = await response.json()
           
           const formattedBusinesses = data.map((b: any) => ({

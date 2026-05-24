@@ -14,7 +14,7 @@ export function MobileNav({ activeTab, setActiveTab }: MobileNavProps) {
 
   const tabs = [
     { id: "marketplace", label: "Servicios", icon: Store },
-    { id: "businesses", label: "Negocios", icon: Briefcase },
+    { id: "businesses", label: "Tiendas", icon: Briefcase },
     { id: "pool", label: "Pool", icon: Users },
     { id: "safeflow", label: "Safe-Flow", icon: QrCode },
     { id: "rutas", label: "Rutas", icon: Map },
