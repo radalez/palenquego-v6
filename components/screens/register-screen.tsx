@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useAppStore } from "@/lib/store"
+import { GoogleLogin } from "@react-oauth/google"
 
 interface RegisterScreenProps {
   onRegisterSuccess: () => void
@@ -90,9 +91,48 @@ export function RegisterScreen({ onRegisterSuccess, onBackToLogin }: RegisterScr
             </div>
           </div>
           {error && <div className="flex items-center gap-2 p-3 bg-destructive/10 rounded-xl"><AlertCircle className="w-4 h-4 text-destructive" /><span className="text-sm text-destructive">{error}</span></div>}
-          <Button onClick={handleRegister} disabled={isLoading} className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-base mt-2">
-            {isLoading ? "Creando..." : "Registrarme"}
+          <Button
+            onClick={handleRegister}
+            disabled={isLoading || !formData.first_name || !formData.email || !formData.password}
+            className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-base mt-2"
+          >
+            {isLoading ? (
+              <span className="flex items-center gap-2">
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Registrando...
+              </span>
+            ) : (
+              "Registrarme"
+            )}
           </Button>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-muted" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white px-2 text-muted-foreground">o regístrate con</span>
+            </div>
+          </div>
+
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={async (credentialResponse) => {
+                if (credentialResponse.credential) {
+                  const success = await useAppStore.getState().loginWithGoogle(credentialResponse.credential);
+                  if (success) {
+                    onRegisterSuccess();
+                  } else {
+                    setError("Error al registrarse con Google");
+                  }
+                }
+              }}
+              onError={() => setError("Error en el registro de Google")}
+              theme="outline"
+              size="large"
+              shape="pill"
+            />
+          </div>
         </div>
       </div>
     </div>
