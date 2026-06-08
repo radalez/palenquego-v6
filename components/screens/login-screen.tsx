@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useAppStore } from "@/lib/store"
+import { GoogleLogin } from "@react-oauth/google"
 
 interface LoginScreenProps {
   onLoginSuccess: () => void
@@ -114,6 +115,34 @@ export function LoginScreen({ onLoginSuccess, onShowRegister }: LoginScreenProps
               "Ingresar"
             )}
           </Button>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-muted" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white px-2 text-muted-foreground">o continúa con</span>
+            </div>
+          </div>
+
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={async (credentialResponse) => {
+                if (credentialResponse.credential) {
+                  const success = await useAppStore.getState().loginWithGoogle(credentialResponse.credential);
+                  if (success) {
+                    onLoginSuccess();
+                  } else {
+                    setError("Error al iniciar sesión con Google");
+                  }
+                }
+              }}
+              onError={() => setError("Error en el inicio de sesión de Google")}
+              theme="outline"
+              size="large"
+              shape="pill"
+            />
+          </div>
         </div>
 
         <div className="mt-6 text-center space-y-3">

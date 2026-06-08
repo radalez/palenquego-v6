@@ -240,6 +240,7 @@ interface AppState {
   addBooking: (booking: Omit<Booking, "id" | "qrCode">) => Booking
   updatePoolStatus: (poolId: number, status: Pool["status"]) => void  
   login: (username: string, password: string) => Promise<boolean>   
+  loginWithGoogle: (token: string) => Promise<boolean>
   completeOnboarding: () => void
   logout: () => void
   upgradePlan: (planId: number) => Promise<void>
@@ -863,6 +864,43 @@ export const useAppStore = create<AppState>()(
           return false;
         } catch (error) {
           console.error("Error en login:", error);
+          set({ isLoading: false });
+          return false;
+        }
+      },
+
+      loginWithGoogle: async (token) => {
+        set({ isLoading: true });
+        try {
+          const response = await fetch(`${API_BASE}/auth/google/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id_token: token }),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            set({ 
+              isAuthenticated: true, 
+              accessToken: data.access, 
+              refreshToken: data.refresh,
+              currentUser: {
+                id: data.user.id,
+                name: data.user.name,
+                avatar: data.user.avatar || "",
+                email: data.user.email || "",
+                telefono: data.user.telefono || "",
+                tipo: data.user.tipo || "",
+                is_ambassador: Boolean(data.user.is_ambassador)
+              },
+              isLoading: false 
+            });
+            return true;
+          }
+          set({ isLoading: false });
+          return false;
+        } catch (error) {
+          console.error("Error en login con Google:", error);
           set({ isLoading: false });
           return false;
         }

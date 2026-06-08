@@ -25,6 +25,8 @@ export const viewport: Viewport = {
   themeColor: "#2d5a3d",
 }
 
+import { GoogleProvider } from "@/components/GoogleProvider"
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -32,7 +34,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body className={`font-sans antialiased`}>{children}</body>
+      <body className={`font-sans antialiased`}>
+        <GoogleProvider>
+          {children}
+        </GoogleProvider>
+      </body>
     </html>
   )
 }
