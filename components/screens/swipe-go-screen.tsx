@@ -187,7 +187,7 @@ function SwipeableCard({ business, isFront, onSwipe, onInfoClick, showPoolToolti
       onDragEnd={handleDragEnd}
       animate={{ scale: isFront ? 1 : 0.95 }}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
-      className={`absolute w-full max-w-[360px] h-[70vh] max-h-[600px] bg-white rounded-3xl shadow-xl overflow-hidden cursor-grab active:cursor-grabbing border border-border/50 ${isFront ? 'z-20' : 'z-10'}`}
+      className={`absolute w-full max-w-[360px] h-full max-h-[600px] bg-white rounded-3xl shadow-xl overflow-hidden cursor-grab active:cursor-grabbing border border-border/50 ${isFront ? 'z-20' : 'z-10'}`}
     >
       {/* Photo Gallery Area */}
       <div className="relative w-full h-[65%] bg-zinc-900 group" onClick={onInfoClick}>
