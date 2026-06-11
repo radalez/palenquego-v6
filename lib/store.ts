@@ -195,6 +195,8 @@ export interface Business {
   description: string
   location: string
   services: number[]
+  galleryImages?: string[]
+  image?: string
   socialLinks: {
     whatsapp?: string
     instagram?: string
