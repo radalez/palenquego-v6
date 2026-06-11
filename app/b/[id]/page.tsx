@@ -129,7 +129,7 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
               </div>
             </div>
             <span className="text-xs font-semibold text-primary bg-primary/10 px-3 py-1 rounded-full">
-              {business.category.charAt(0).toUpperCase() + business.category.slice(1)}
+              {business.category ? business.category.charAt(0).toUpperCase() + business.category.slice(1) : 'General'}
             </span>
           </div>
 

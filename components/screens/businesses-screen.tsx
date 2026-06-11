@@ -103,7 +103,7 @@ export function BusinessesScreen({ onNavigate }: BusinessesScreenProps) {
 
   return (
     <div className="flex flex-col">
-      <HeaderWithMenu title="Tiendas" onNavigate={onNavigate} />
+      <HeaderWithMenu title="Servicios" onNavigate={onNavigate} />
       <div className="flex justify-between items-center px-4 py-4">
         <div className="w-10 h-10 rounded-full bg-primary-foreground/20 flex items-center justify-center">
           <span className="text-primary-foreground font-semibold">JD</span>
@@ -148,6 +148,18 @@ export function BusinessesScreen({ onNavigate }: BusinessesScreenProps) {
             )
           })}
         </div>
+      </div>
+      
+      {/* Botón para ir a las rutas clásicas */}
+      <div className="px-4 pb-2">
+        <Button 
+          variant="outline" 
+          className="w-full font-medium" 
+          onClick={() => onNavigate?.("rutas-classic")}
+        >
+          <MapPin className="w-4 h-4 mr-2" />
+          Ver mapa y rutas clásicas
+        </Button>
       </div>
 
       {/* Business Cards */}

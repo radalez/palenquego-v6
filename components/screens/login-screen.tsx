@@ -147,7 +147,7 @@ export function LoginScreen({ onLoginSuccess, onShowRegister }: LoginScreenProps
 
         <div className="mt-6 text-center space-y-3">
           <p className="text-xs text-muted-foreground">
-            Ingresa con tu cuenta de viajero de Palenque Flow
+            Ingresa con tu cuenta de viajero de PalenqueGo
           </p>
           <button 
             onClick={onShowRegister}

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 
 export function InstallPWABanner() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
-  const [isVisible, setIsVisible] = useState(true)
+  const [isVisible, setIsVisible] = useState(false) // Empezar oculto
   const [isIOS, setIsIOS] = useState(false)
 
   useEffect(() => {
@@ -16,14 +16,21 @@ export function InstallPWABanner() {
     // Detect if already installed (standalone)
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone
     
-    if (isStandalone) {
-      setIsVisible(false)
+    // En iOS lo mostramos si no está standalone y si no lo han cerrado
+    const isDismissed = localStorage.getItem('pwa-prompt-dismissed') === 'true'
+    
+    if (isIOSDevice && !isStandalone && !isDismissed) {
+      setIsVisible(true)
     }
     
     // Listen for beforeinstallprompt (Android / Desktop Chrome)
+    // Este evento SOLO se dispara si la app NO está instalada y cumple los requisitos
     const handler = (e: any) => {
       e.preventDefault()
       setDeferredPrompt(e)
+      if (!isDismissed) {
+        setIsVisible(true) // Mostrar el botón SOLO si Android confirma que se puede instalar y no se cerró antes
+      }
     }
 
     window.addEventListener('beforeinstallprompt', handler)
@@ -36,6 +43,7 @@ export function InstallPWABanner() {
       deferredPrompt.prompt()
       const { outcome } = await deferredPrompt.userChoice
       if (outcome === 'accepted') {
+        localStorage.setItem('pwa-prompt-dismissed', 'true')
         setIsVisible(false)
       }
       setDeferredPrompt(null)
@@ -56,14 +64,17 @@ export function InstallPWABanner() {
               <Download className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h3 className="font-semibold text-foreground text-sm">Instalar Palenque Flow</h3>
+              <h3 className="font-semibold text-foreground text-sm">Instalar PalenqueGo</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
                 Acceso rápido a tus viajes y reservas
               </p>
             </div>
           </div>
           <button 
-            onClick={() => setIsVisible(false)}
+            onClick={() => {
+              localStorage.setItem('pwa-prompt-dismissed', 'true')
+              setIsVisible(false)
+            }}
             className="text-muted-foreground hover:bg-muted p-1 rounded-full transition-colors flex-shrink-0"
           >
             <X className="w-4 h-4" />

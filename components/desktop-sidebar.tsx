@@ -27,11 +27,11 @@ export function DesktopSidebar({ activeTab, onNavigate }: DesktopSidebarProps) {
   ]
 
   const mainTabs = [
-    { id: "marketplace", label: "Servicios", icon: Store },
-    { id: "businesses", label: "Tiendas", icon: Briefcase },
+    { id: "marketplace", label: "Inicio", icon: Store },
+    { id: "businesses", label: "Servicios", icon: Briefcase },
     { id: "pool", label: "Pool", icon: Users },
     { id: "safeflow", label: "Safe-Flow", icon: QrCode },
-    { id: "rutas", label: "Rutas", icon: Map },
+    { id: "rutas", label: "Go", icon: Map },
   ]
 
   const secondaryTabs = [

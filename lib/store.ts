@@ -689,12 +689,18 @@ export const useAppStore = create<AppState>()(
         set({ isLoading: true })
         try {
           const response = await fetch(`${API_BASE}/catalog/${query}`)
-          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+          if (!response.ok) {
+            console.warn(`Catálogo no disponible (status: ${response.status}). Usando datos de prueba.`);
+            set({ isLoading: false });
+            return;
+          }
           
           // Verificamos si la respuesta es JSON para evitar el error de "Unexpected token <"
           const contentType = response.headers.get("content-type")
           if (!contentType || !contentType.includes("application/json")) {
-            throw new Error("No JSON response from server")
+            console.warn("No JSON response from server for catalog. Usando datos de prueba.");
+            set({ isLoading: false });
+            return;
           }
           
           const data = await response.json()
@@ -726,7 +732,10 @@ export const useAppStore = create<AppState>()(
       fetchBusinesses: async () => {
         try {
           const response = await fetch(`${API_BASE}/stores/list/`)
-          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+          if (!response.ok) {
+            console.warn(`Tiendas no disponibles (status: ${response.status}). Usando datos de prueba.`);
+            return;
+          }
           
           const contentType = response.headers.get("content-type")
           if (!contentType || !contentType.includes("application/json")) {

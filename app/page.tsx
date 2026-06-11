@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { MobileNav } from "@/components/mobile-nav"
 import { SidebarMenu } from "@/components/sidebar-menu"
 import { MarketplaceScreen } from "@/components/screens/marketplace-screen"
@@ -19,6 +19,7 @@ import { PrivacyExtendedScreen } from "@/components/screens/privacy-extended-scr
 import { SupportScreen } from "@/components/screens/support-screen"
 import { SupportExtendedScreen } from "@/components/screens/support-extended-screen"
 import { RoutesScreen } from "@/components/screens/routes-screen"
+import { SwipeGoScreen } from "@/components/screens/swipe-go-screen"
 import { LoginScreen } from "@/components/screens/login-screen"
 import { RegisterScreen } from "@/components/screens/register-screen"
 import { OnboardingScreen } from "@/components/screens/onboarding-screen"
@@ -37,6 +38,7 @@ type ActiveTab =
   | "safeflow"
   | "profile"
   | "rutas"
+  | "rutas-classic"
   | "billing"
   | "planes"
   | "pagos"
@@ -52,6 +54,19 @@ type ActiveTab =
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("marketplace")
+
+  // Restaurar la pestaña previa si venimos navegando hacia atrás
+  useEffect(() => {
+    const savedTab = sessionStorage.getItem("palenque-active-tab") as ActiveTab;
+    if (savedTab) {
+      setActiveTab(savedTab);
+    }
+  }, []);
+
+  // Guardar la pestaña activa actual en sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem("palenque-active-tab", activeTab);
+  }, [activeTab]);
 
   const isAuthenticated = useAppStore((state) => state.isAuthenticated)
   const hasCompletedOnboarding = useAppStore((state) => state.hasCompletedOnboarding)
@@ -143,7 +158,22 @@ export default function Home() {
         )}
         {activeTab === "pool" && <PoolScreen onOpenShare={handleOpenShare} onOpenPayment={handleOpenPayment} onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />}
         {activeTab === "safeflow" && <SafeFlowScreen onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />}
-        {activeTab === "rutas" && <RoutesScreen onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />}
+        
+        {/* Nueva vista Tinder-Style para "Go" (rutas) */}
+        {activeTab === "rutas" && <SwipeGoScreen onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />}
+        
+        {/* Vista Clásica de Rutas */}
+        {activeTab === "rutas-classic" && (
+          <div className="w-full h-full relative">
+            <button 
+              onClick={() => setActiveTab("businesses")}
+              className="absolute z-50 top-4 left-4 bg-background/80 backdrop-blur rounded-full p-2"
+            >
+              ← Volver
+            </button>
+            <RoutesScreen onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />
+          </div>
+        )}
         {activeTab === "profile" && <ProfileScreen onNavigateToBilling={handleNavigateToBilling} onNavigateToSettings={(tab) => setActiveTab(tab as ActiveTab)} />}
         {activeTab === "favoritos" && <FavoritesScreen onBack={() => setActiveTab("profile")} />}
         {activeTab === "recomendaciones" && <RecommendationsScreen onBack={() => setActiveTab("profile")} />}

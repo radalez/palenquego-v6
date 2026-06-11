@@ -11,7 +11,7 @@ interface MobileNavProps {
 export function MobileNav({ activeTab, setActiveTab }: MobileNavProps) {
   const tabs = [
     { id: "marketplace", label: "Inicio", icon: Home },
-    { id: "businesses", label: "Tiendas", icon: Briefcase },
+    { id: "businesses", label: "Servicios", icon: Briefcase },
     { id: "rutas", label: "Go", isCenter: true },
     { id: "pool", label: "Pools", icon: Users },
     { id: "safeflow", label: "SafeFlow", icon: QrCode },
