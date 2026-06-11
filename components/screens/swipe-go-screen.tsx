@@ -138,6 +138,14 @@ interface SwipeableCardProps {
 
 function SwipeableCard({ business, isFront, onSwipe, onInfoClick, showPoolTooltip, setShowPoolTooltip }: SwipeableCardProps) {
   const x = useMotionValue(0)
+  const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 375
+
+  const allServices = useAppStore(state => state.services)
+  const firstServiceId = business.services && business.services.length > 0 ? business.services[0] : null
+  const firstService = firstServiceId ? allServices.find(s => s.id === firstServiceId) : null
+  const displayCapacity = firstService?.capacityMax || 10
+  const displayPrice = firstService?.price || 50
+  
   const rotate = useTransform(x, [-200, 200], [-15, 15])
   const opacity = useTransform(x, [-200, -150, 0, 150, 200], [0, 1, 1, 1, 0])
   
@@ -229,13 +237,13 @@ function SwipeableCard({ business, isFront, onSwipe, onInfoClick, showPoolToolti
             <div>
               <h2 className="text-3xl font-bold leading-tight drop-shadow-md">{business.name}</h2>
               <p className="text-white/90 text-sm font-medium drop-shadow-sm flex items-center gap-1 mt-1">
-                <Users className="w-4 h-4" /> Ideal para {business.services[0]?.capacityMax || 10} pers.
+                <Users className="w-4 h-4" /> Ideal para {displayCapacity} pers.
               </p>
             </div>
             {/* Logo o precio */}
             <div className="text-right">
                <span className="bg-white text-black px-3 py-1 rounded-xl font-bold shadow-lg">
-                 ${business.services[0]?.price || 50}
+                 ${displayPrice}
                </span>
             </div>
           </div>
