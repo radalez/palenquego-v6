@@ -252,6 +252,7 @@ interface AppState {
   updateNotifications: (settings: { email?: boolean; sms?: boolean; push?: boolean }) => void
   rateService: (serviceId: number, stars: number) => void
   toggleFavoritePreference: (serviceId: number) => void
+  removeFavoriteLike: (serviceId: number) => void
   setFavoritePreference: (serviceId: number, preference: "me_gusta" | "me_gusta_mas") => void
   addSwipeLike: (serviceId: number) => void
   addBusinessSwipeLike: (business: Business) => void
@@ -1103,7 +1104,14 @@ export const useAppStore = create<AppState>()(
         set((state) => {
           const existingFavorite = state.userFavorites.find((f) => f.serviceId === serviceId)
           if (existingFavorite) {
-            return { userFavorites: state.userFavorites.filter((f) => f.serviceId !== serviceId) }
+            // Eliminar de favoritos. Si es servicio sintético (id negativo), también del array de services
+            const isSynthetic = serviceId < 0
+            return {
+              userFavorites: state.userFavorites.filter((f) => f.serviceId !== serviceId),
+              services: isSynthetic
+                ? state.services.filter((s) => s.id !== serviceId)
+                : state.services,
+            }
           } else {
             return {
               userFavorites: [
@@ -1111,6 +1119,32 @@ export const useAppStore = create<AppState>()(
                 { serviceId, preference: "me_gusta", selectedForTrip: false, addedAt: new Date() },
               ],
             }
+          }
+        }),
+
+      // Elimina un favorito del swipe y llama al backend para sincronizar
+      removeFavoriteLike: (serviceId) =>
+        set((state) => {
+          const isSynthetic = serviceId < 0
+          // El businessId real es el valor absoluto del syntheticId
+          const backendId = isSynthetic ? Math.abs(serviceId) : serviceId
+          
+          // Llamada al backend para marcar como nope
+          const token = localStorage.getItem('access_token')
+          fetch(`/api-proxy/catalog/${backendId}/swipe/`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+            },
+            body: JSON.stringify({ es_like: false })
+          }).catch(e => console.error('Remove swipe error:', e))
+
+          return {
+            userFavorites: state.userFavorites.filter((f) => f.serviceId !== serviceId),
+            services: isSynthetic
+              ? state.services.filter((s) => s.id !== serviceId)
+              : state.services,
           }
         }),
 
