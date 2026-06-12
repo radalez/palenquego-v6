@@ -104,7 +104,7 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
                 service={service}
                 isFront={isFront}
                 onSwipe={handleSwipe}
-                onInfoClick={() => router.push(`/service/${service.id}`)}
+                onInfoClick={() => router.push(`/s/${service.id}`)}
                 showPoolTooltip={isFront ? showPoolTooltip : false}
                 setShowPoolTooltip={setShowPoolTooltip}
               />
@@ -124,7 +124,7 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
           </button>
           
           <button
-            onClick={() => router.push(`/service/${deck[currentIndex].id}`)}
+            onClick={() => router.push(`/s/${deck[currentIndex].id}`)}
             className="w-12 h-12 rounded-full bg-white shadow-md flex items-center justify-center border border-gray-100 hover:scale-105 active:scale-95 transition-all text-blue-500"
           >
             <Info className="w-6 h-6" />

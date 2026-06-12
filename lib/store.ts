@@ -1623,6 +1623,19 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "app-storage",
+      version: 2,
+      migrate: (persistedState: any, version: number) => {
+        if (version < 2) {
+          // Limpiar datos corruptos de versiones anteriores
+          // (servicios sintéticos con IDs negativos, userFavorites rotos)
+          return {
+            ...persistedState,
+            services: initialServices,
+            userFavorites: [],
+          }
+        }
+        return persistedState as AppState
+      },
     }
   )
 );
