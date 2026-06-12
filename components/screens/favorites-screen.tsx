@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Heart, MapPin, Star, ChevronLeft, Check, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAppStore } from "@/lib/store"
@@ -12,8 +12,12 @@ interface FavoritesScreenProps {
 }
 
 export function FavoritesScreen({ onBack }: FavoritesScreenProps) {
-  const { services, userFavorites, toggleFavoritePreference, setFavoritePreference, selectTripFavorite } =
+  const { services, userFavorites, toggleFavoritePreference, setFavoritePreference, selectTripFavorite, fetchServices } =
     useAppStore()
+
+  useEffect(() => {
+    fetchServices()
+  }, [fetchServices])
 
   const [clickCount, setClickCount] = useState<{ [key: number]: number }>({})
   const [clickTimeouts, setClickTimeouts] = useState<{ [key: number]: NodeJS.Timeout }>({})

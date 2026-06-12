@@ -4,7 +4,7 @@ import { persist } from "zustand/middleware"
 const API_BASE = "/api-proxy";
 const MEDIA_BASE = "/media-proxy";
 
-// --- ESTA ES LA FUNCIÓN QUE LIMPIA TODO DE UN SOLO GOLPE ---
+// --- ESTA ES LA FUNCIÃ“N QUE LIMPIA TODO DE UN SOLO GOLPE ---
 const getProxyImage = (url: string) => {
   if (!url) return "";
   const cleanUrl = url.trim();
@@ -14,7 +14,7 @@ const getProxyImage = (url: string) => {
     return cleanUrl;
   }
   
-  // Si viene con la IP prohibida, la cambiamos por el túnel
+  // Si viene con la IP prohibida, la cambiamos por el tÃºnel
   return cleanUrl
     .replace("http://209.97.146.210/media", MEDIA_BASE)
     .replace("/media/", `${MEDIA_BASE}/`);
@@ -30,20 +30,20 @@ export interface Rating {
 export interface Service {
   id: number
   name: string
-  nombre?: string // <-- AÑADIR ESTO
+  nombre?: string // <-- AÃ‘ADIR ESTO
   category: string
   location: string
   rating: number
   reviews: number
   price: number
-  precio_base?: string // <-- AÑADIR ESTO
+  precio_base?: string // <-- AÃ‘ADIR ESTO
   image: string
   isRemate?: boolean
   discount?: number
   allowsPool: boolean
   spotsLeft: number
   description?: string
-  descripcion?: string // <-- AÑADIR ESTO
+  descripcion?: string // <-- AÃ‘ADIR ESTO
   capacityMin?: number
   capacityMax?: number
   extras?: { name: string; price: number }[]
@@ -181,7 +181,7 @@ export interface Recommendation {
   descuento?: number;
   cupon?: string;
   codigo_embajador?: string;
-  slug?: string; // <--- ¡AÑADE ESTO! Es vital para construir el enlace
+  slug?: string; // <--- Â¡AÃ‘ADE ESTO! Es vital para construir el enlace
 }
 
 export interface Business {
@@ -275,391 +275,11 @@ fetchRecommendations: () => Promise<void>
   scanCheckpoint: (tripId: number, stopId: string, lat: number, lng: number) => Promise<any>
   changePassword: (oldPassword: string, newPassword: string) => Promise<{success: boolean, error?: string}>
 }
-const initialServices: Service[] = [
-  {
-    id: 1,
-    name: "Hotel Vista al Volcán",
-    category: "hotel",
-    location: "Santa Ana",
-    rating: 4.9,
-    reviews: 127,
-    price: 85,
-    image: "/volcano-view-hotel.jpg",
-    isRemate: true,
-    discount: 30,
-    allowsPool: true,
-    spotsLeft: 3,
-    description: "Disfruta de vistas impresionantes al volcán desde tu habitación con todas las comodidades modernas.",
-    capacityMin: 1,
-    capacityMax: 4,
-    extras: [{ name: "Desayuno incluido", price: 15 }, { name: "Tour al volcán", price: 45 }, { name: "Spa & masajes", price: 35 }],
-    ratings: [],
-    linkTypes: ["oferta", "descuento"],
-    businessId: 1,
-    businessName: "Hoteles Volcán El Salvador",
-    businessAvatar: "HV",
-    businessRating: 4.9,
-    businessReviews: 127,
-    galleryImages: ["/volcano-view-hotel.jpg"],
-    features: ["Vistas panorámicas", "Spa completo", "Restaurante gourmet", "WiFi gratis", "Piscina temperada"],
-    relatedServices: [2, 4],
-    socialLinks: { whatsapp: "+50373456789", instagram: "@hotelvolcan", facebook: "HotelsVolcan" },
-  },
-  {
-    id: 2,
-    name: "Surf Experience El Tunco",
-    category: "surf",
-    location: "El Tunco",
-    rating: 4.8,
-    reviews: 89,
-    price: 45,
-    image: "/surfing-beach.jpg",
-    isRemate: false,
-    allowsPool: true,
-    spotsLeft: 5,
-    description: "Clases de surf para todos los niveles con instructores certificados en la mejor playa de El Salvador.",
-    capacityMin: 1,
-    capacityMax: 6,
-    extras: [{ name: "Alquiler de tabla", price: 20 }, { name: "Sesión de fotos", price: 25 }, { name: "Almuerzo playero", price: 12 }],
-    ratings: [],
-    linkTypes: ["oferta"],
-    businessId: 2,
-    businessName: "Escuela Surf Tunco",
-    businessAvatar: "ST",
-    businessRating: 4.8,
-    businessReviews: 89,
-    galleryImages: ["/surfing-beach.jpg"],
-    features: ["Instructores certificados", "Equipo de calidad", "Clases personalizadas", "Fotografía incluida"],
-    relatedServices: [1, 3],
-    socialLinks: { whatsapp: "+50373456790", instagram: "@surftunco", facebook: "SurfTuncoElSalvador" },
-  },
-  {
-    id: 3,
-    name: "Ruta del Café Premium",
-    category: "cafe",
-    location: "Ataco",
-    rating: 5.0,
-    reviews: 64,
-    price: 35,
-    image: "/coffee-plantation.jpg",
-    isRemate: false,
-    allowsPool: true,
-    spotsLeft: 8,
-    description: "Recorre las fincas de café más exclusivas y aprende todo sobre el proceso del grano a la taza.",
-    capacityMin: 2,
-    capacityMax: 8,
-    extras: [
-      { name: "Degustación premium", price: 15 },
-      { name: "Bolsa de café 1lb", price: 18 },
-      { name: "Almuerzo típico", price: 12 },
-    ],
-    ratings: [],
-    linkTypes: ["feriado"],
-    businessId: 3,
-    businessName: "Cafeterías Ataco Exclusivo",
-    businessAvatar: "CA",
-    businessRating: 5.0,
-    businessReviews: 64,
-    galleryImages: ["/coffee-plantation.jpg"],
-    features: ["Plantaciones orgánicas", "Degustación gourmet", "Almuerzo típico", "Tour educativo"],
-    relatedServices: [4, 5],
-    socialLinks: {
-      whatsapp: "+50373456791",
-      instagram: "@cafeatacoelsalvador",
-      facebook: "CafeteríasAtaco",
-    },
-  },
-  {
-    id: 4,
-    name: "Parque El Imposible Trek",
-    category: "eco",
-    location: "Ahuachapán",
-    rating: 4.7,
-    reviews: 156,
-    price: 55,
-    image: "/rainforest-hiking.jpg",
-    isRemate: true,
-    discount: 20,
-    allowsPool: true,
-    spotsLeft: 4,
-    description: "Aventura en el bosque nuboso más biodiverso de El Salvador con guías expertos.",
-    capacityMin: 2,
-    capacityMax: 10,
-    extras: [
-      { name: "Guía privado", price: 30 },
-      { name: "Equipo de camping", price: 25 },
-      { name: "Comida orgánica", price: 15 },
-    ],
-    ratings: [],
-    linkTypes: ["descuento", "feriado"],
-    businessId: 4,
-    businessName: "Ecoturismo Salvadoreño",
-    businessAvatar: "ES",
-    businessRating: 4.7,
-    businessReviews: 156,
-    galleryImages: ["/rainforest-hiking.jpg"],
-    features: ["Biodiversidad única", "Guías expertos", "Equipamiento completo", "Avistamiento de fauna"],
-    relatedServices: [1, 3],
-    socialLinks: {
-      whatsapp: "+50373456792",
-      instagram: "@ecoturismosalvador",
-      facebook: "EcoturismoSalvadoreno",
-    },
-  },
-  {
-    id: 5,
-    name: "Pupusería La Abuela",
-    category: "food",
-    location: "San Salvador",
-    rating: 4.9,
-    reviews: 312,
-    price: 12,
-    image: "/traditional-pupusas.jpg",
-    isRemate: false,
-    allowsPool: false,
-    spotsLeft: 0,
-    description: "Las mejores pupusas tradicionales de El Salvador, receta de tres generaciones.",
-    capacityMin: 1,
-    capacityMax: 20,
-    ratings: [],
-    linkTypes: ["oferta"],
-    businessId: 5,
-    businessName: "Pupusería La Abuela",
-    businessAvatar: "PA",
-    businessRating: 4.9,
-    businessReviews: 312,
-    galleryImages: ["/traditional-pupusas.jpg"],
-    features: ["Receta tradicional", "Ingredientes frescos", "Comida casera", "Auténtica salvadoreña"],
-    relatedServices: [6],
-    socialLinks: {
-      whatsapp: "+50373456793",
-      instagram: "@pupuseriaabuela",
-      facebook: "PupuseriaLaAbuela",
-    },
-  },
-  {
-    id: 6,
-    name: "Festival del Añil",
-    category: "events",
-    location: "Suchitoto",
-    rating: 4.6,
-    reviews: 78,
-    price: 25,
-    image: "/cultural-festival.jpg",
-    isRemate: true,
-    discount: 15,
-    allowsPool: true,
-    spotsLeft: 12,
-    description: "Vive la tradición del añil con talleres, música y gastronomía local.",
-    capacityMin: 1,
-    capacityMax: 15,
-    extras: [
-      { name: "Taller de teñido", price: 20 },
-      { name: "Comida tradicional", price: 10 },
-    ],
-    ratings: [],
-    linkTypes: ["feriado"],
-    businessId: 6,
-    businessName: "Eventos Culturales Suchitoto",
-    businessAvatar: "EC",
-    businessRating: 4.6,
-    businessReviews: 78,
-    galleryImages: ["/cultural-festival.jpg"],
-    features: ["Taller de teñido", "Música tradicional", "Gastronomía local", "Experiencia cultural"],
-    relatedServices: [5],
-    socialLinks: {
-      whatsapp: "+50373456794",
-      instagram: "@festivalesuchioto",
-      facebook: "FestivalesSuchitoto",
-    },
-  },
-]
 
-const initialBusinesses: Business[] = [
-  {
-    id: 1,
-    name: "Hoteles Volcán El Salvador",
-    category: "hotel",
-    logo: "HV",
-    coverImage: "/volcano-view-hotel.jpg",
-    rating: 4.9,
-    reviews: 127,
-    description: "Cadena hotelera con las mejores vistas volcánicas de El Salvador. Experiencia premium con todos los servicios.",
-    location: "Santa Ana, El Salvador",
-    services: [1],
-    socialLinks: {
-      whatsapp: "+50373456789",
-      instagram: "@hotelvolcan",
-      facebook: "HotelsVolcan",
-      phone: "+50324567890",
-    },
-  },
-  {
-    id: 2,
-    name: "Escuela Surf Tunco",
-    category: "surf",
-    logo: "ST",
-    coverImage: "/surfing-beach.jpg",
-    rating: 4.8,
-    reviews: 89,
-    description: "Escuela de surf con instructores certificados internacionalmente. Clases para principiantes hasta avanzados.",
-    location: "El Tunco, El Salvador",
-    services: [2],
-    socialLinks: {
-      whatsapp: "+50373456790",
-      instagram: "@surftunco",
-      facebook: "SurfTuncoElSalvador",
-      phone: "+50324567891",
-    },
-  },
-  {
-    id: 3,
-    name: "Cafeterías Ataco Exclusivo",
-    category: "cafe",
-    logo: "CA",
-    coverImage: "/coffee-plantation.jpg",
-    rating: 5.0,
-    reviews: 64,
-    description: "Café gourmet de las mejores plantaciones de El Salvador. Tours educativos y degustaciones premium.",
-    location: "Ataco, El Salvador",
-    services: [3],
-    socialLinks: {
-      whatsapp: "+50373456791",
-      instagram: "@cafeatacoelsalvador",
-      facebook: "CafeteríasAtaco",
-      phone: "+50324567892",
-    },
-  },
-  {
-    id: 4,
-    name: "Ecoturismo Salvadoreño",
-    category: "eco",
-    logo: "ES",
-    coverImage: "/rainforest-hiking.jpg",
-    rating: 4.7,
-    reviews: 156,
-    description: "Operador turístico especializado en aventura y naturaleza. Rutas diseñadas para conservación ambiental.",
-    location: "Ahuachapán, El Salvador",
-    services: [4],
-    socialLinks: {
-      whatsapp: "+50373456792",
-      instagram: "@ecoturismosalvador",
-      facebook: "EcoturismoSalvadoreno",
-      phone: "+50324567893",
-    },
-  },
-  {
-    id: 5,
-    name: "Pupusería La Abuela",
-    category: "food",
-    logo: "PA",
-    coverImage: "/traditional-pupusas.jpg",
-    rating: 4.9,
-    reviews: 312,
-    description: "Tradición culinaria salvadoreña desde 1975. Las mejores pupusas con receta auténtica.",
-    location: "San Salvador, El Salvador",
-    services: [5],
-    socialLinks: {
-      whatsapp: "+50373456793",
-      instagram: "@pupuseriaabuela",
-      facebook: "PupuseriaLaAbuela",
-      phone: "+50324567894",
-    },
-  },
-  {
-    id: 6,
-    name: "Eventos Culturales Suchitoto",
-    category: "events",
-    logo: "EC",
-    coverImage: "/cultural-festival.jpg",
-    rating: 4.6,
-    reviews: 78,
-    description: "Promotora de eventos y experiencias culturales. Celebramos la identidad salvadoreña.",
-    location: "Suchitoto, El Salvador",
-    services: [6],
-    socialLinks: {
-      whatsapp: "+50373456794",
-      instagram: "@festivalesuchioto",
-      facebook: "FestivalesSuchitoto",
-      phone: "+50324567895",
-    },
-  },
-]
-
-const initialPools: Pool[] = [
-  {
-    id: 1,
-    serviceName: "Hotel Vista al Volcán",
-    serviceId: 1,
-    location: "Santa Ana",
-    image: "/volcano-view-hotel.jpg",
-    leader: { name: "María G.", avatar: "MG" },
-    currentMembers: 3,
-    targetMembers: 4,
-    totalPrice: 340,
-    pricePerMember: 85,
-    deadline: "2h 30m",
-    status: "ABIERTO",
-    members: [
-      { name: "María G.", avatar: "MG", paid: true },
-      { name: "Carlos R.", avatar: "CR", paid: true },
-      { name: "Ana L.", avatar: "AL", paid: false },
-    ],
-    payments: [],
-    createdAt: new Date(),
-  },
-  {
-    id: 2,
-    serviceName: "Surf Experience El Tunco",
-    serviceId: 2,
-    location: "El Tunco",
-    image: "/surfing-beach.jpg",
-    leader: { name: "José P.", avatar: "JP" },
-    currentMembers: 5,
-    targetMembers: 5,
-    totalPrice: 225,
-    pricePerMember: 45,
-    deadline: "Cerrado",
-    status: "PAGADO",
-    members: [
-      { name: "José P.", avatar: "JP", paid: true },
-      { name: "Luis M.", avatar: "LM", paid: true },
-      { name: "Sofia T.", avatar: "ST", paid: true },
-      { name: "Diego V.", avatar: "DV", paid: true },
-      { name: "Elena R.", avatar: "ER", paid: true },
-    ],
-    qrCodes: {
-      "José P.": "QR-2-0-COMPLETE",
-      "Luis M.": "QR-2-1-COMPLETE",
-      "Sofia T.": "QR-2-2-COMPLETE",
-      "Diego V.": "QR-2-3-COMPLETE",
-      "Elena R.": "QR-2-4-COMPLETE",
-    },
-    payments: [
-      { memberId: "1", name: "José P.", amount: 45, status: "PAGADO", paymentDate: new Date() },
-      { memberId: "2", name: "Luis M.", amount: 45, status: "PAGADO", paymentDate: new Date() },
-      { memberId: "3", name: "Sofia T.", amount: 45, status: "PAGADO", paymentDate: new Date() },
-      { memberId: "4", name: "Diego V.", amount: 45, status: "PAGADO", paymentDate: new Date() },
-      { memberId: "5", name: "Elena R.", amount: 45, status: "PAGADO", paymentDate: new Date() },
-    ],
-    createdAt: new Date(),
-  },
-]
-
-const initialRoutes: Route[] = [
-  {
-    id: 1,
-    name: "Ruta del Sol",
-    pathSvg: "M10 10 L100 100 L200 50 L300 150",
-    colorHex: "#F59E0B",
-    stops: [
-      { latitude: 13.6843, longitude: -89.2191, order: 1 },
-      { latitude: 13.7339, longitude: -89.2191, order: 2 },
-    ],
-  },
-]
-
-
+const initialServices: Service[] = []
+const initialBusinesses: Business[] = []
+const initialPools: Pool[] = []
+const initialRoutes: Route[] = []
 
 export const useAppStore = create<AppState>()(
   persist(
@@ -695,7 +315,7 @@ export const useAppStore = create<AppState>()(
         try {
           const response = await fetch(`${API_BASE}/catalog/${query}`)
           if (!response.ok) {
-            console.warn(`Catálogo no disponible (status: ${response.status}). Usando datos de prueba.`);
+            console.warn(`CatÃ¡logo no disponible (status: ${response.status}). Usando datos de prueba.`);
             set({ isLoading: false });
             return;
           }
@@ -713,7 +333,7 @@ export const useAppStore = create<AppState>()(
             ...s,
             id: s.id,
             name: s.nombre || s.name || "Servicio sin nombre",
-            description: s.descripcion || s.description || "Sin descripción disponible",
+            description: s.descripcion || s.description || "Sin descripciÃ³n disponible",
             location: s.ubicacion || s.location || "Palenque, El Salvador",
             price: parseFloat(s.precio_base) || parseFloat(s.price) || 0,
             image: getProxyImage(s.imagen_principal || s.image || ""),
@@ -729,7 +349,7 @@ export const useAppStore = create<AppState>()(
             discount: s.descuento || s.discount || 0,
             capacityMin: s.capacidad_min || s.capacityMin,
             capacityMax: s.capacidad_max || s.capacityMax,
-            // Galería: mapear images[] del API a galleryImages[]
+            // GalerÃ­a: mapear images[] del API a galleryImages[]
             galleryImages: s.images && s.images.length > 0
               ? s.images.map((img: any) => getProxyImage(img.imagen || ""))
               : s.galleryImages || [],
@@ -947,11 +567,11 @@ export const useAppStore = create<AppState>()(
             return { success: true };
           } else {
             const data = await response.json();
-            return { success: false, error: data.error || "Error al cambiar contraseña" };
+            return { success: false, error: data.error || "Error al cambiar contraseÃ±a" };
           }
         } catch (error) {
           set({ isLoading: false });
-          return { success: false, error: "Fallo de conexión" };
+          return { success: false, error: "Fallo de conexiÃ³n" };
         }
       },
 
@@ -976,7 +596,7 @@ export const useAppStore = create<AppState>()(
         const token = state.accessToken;
         
         if (!token) {
-          alert("Sesión no encontrada. Por favor, inicia sesión de nuevo.");
+          alert("SesiÃ³n no encontrada. Por favor, inicia sesiÃ³n de nuevo.");
           return;
         }
 
@@ -995,25 +615,25 @@ export const useAppStore = create<AppState>()(
           // Si el servidor dice que no estamos autorizados
           if (response.status === 401) {
             set({ isLoading: false });
-            alert("Tu sesión ha expirado. Por favor, sal y vuelve a entrar a tu cuenta.");
+            alert("Tu sesiÃ³n ha expirado. Por favor, sal y vuelve a entrar a tu cuenta.");
             return;
           }
 
           const data = await response.json();
 
           if (data.url) {
-            // REDIRECCIÓN A STRIPE
+            // REDIRECCIÃ“N A STRIPE
             window.location.href = data.url;
           } else {
             const msg = data.error || data.detail || "Error en la pasarela";
             console.error("Error de Stripe:", msg);
             set({ isLoading: false });
-            alert(`Atención: ${msg}`);
+            alert(`AtenciÃ³n: ${msg}`);
           }
         } catch (error) {
           console.error("Fallo de red:", error);
           set({ isLoading: false });
-          alert("Error crítico de conexión.");
+          alert("Error crÃ­tico de conexiÃ³n.");
         }
       },
       payService: async (serviceId: number, amount: number) => {
@@ -1030,20 +650,20 @@ export const useAppStore = create<AppState>()(
             },
             body: JSON.stringify({ 
               service_id: serviceId,
-              amount: amount // Aquí mandamos el total con extras y personas
+              amount: amount // AquÃ­ mandamos el total con extras y personas
             }),
           });
 
           const data = await response.json();
           
           if (data.url) {
-            // Notificación visual antes de salir de la app
+            // NotificaciÃ³n visual antes de salir de la app
             sendNotification(
               "Procesando Pago", 
               `Hola, mi estimado. Redirigiendo para el pago de $${amount.toLocaleString()}.`
             );
             
-            // Redirección inmediata a la pasarela segura de Stripe
+            // RedirecciÃ³n inmediata a la pasarela segura de Stripe
             window.location.href = data.url;
           } else {
             const errorMsg = data.error || data.detail || "No se pudo iniciar el pago";
@@ -1051,23 +671,23 @@ export const useAppStore = create<AppState>()(
             set({ isLoading: false });
           }
         } catch (error) {
-          console.error("Error de conexión con Stripe:", error);
+          console.error("Error de conexiÃ³n con Stripe:", error);
           set({ isLoading: false });
-          alert("Fallo de conexión. Revisa tu internet o el estado del servidor.");
+          alert("Fallo de conexiÃ³n. Revisa tu internet o el estado del servidor.");
         }
       },
 
       sendNotification: (title: string, message: string) => {
         const { notifications } = get();
         
-        // Notificación Push si hay permiso en el navegador
+        // NotificaciÃ³n Push si hay permiso en el navegador
         if (notifications.push && "Notification" in window && Notification.permission === "granted") {
           new Notification(title, { body: message });
         }
 
         // Logs de respaldo para Email y SMS
-        if (notifications.email) console.log(`📧 [EMAIL] ${title}: ${message}`);
-        if (notifications.sms) console.log(`📱 [SMS] ${title}: ${message}`);
+        if (notifications.email) console.log(`ðŸ“§ [EMAIL] ${title}: ${message}`);
+        if (notifications.sms) console.log(`ðŸ“± [SMS] ${title}: ${message}`);
       },
 
       addPaymentMethod: (method) =>
@@ -1112,7 +732,7 @@ export const useAppStore = create<AppState>()(
         set((state) => {
           const existingFavorite = state.userFavorites.find((f) => f.serviceId === serviceId)
           if (existingFavorite) {
-            // Eliminar de favoritos. Si es servicio sintético (id negativo), también del array de services
+            // Eliminar de favoritos. Si es servicio sintÃ©tico (id negativo), tambiÃ©n del array de services
             const isSynthetic = serviceId < 0
             return {
               userFavorites: state.userFavorites.filter((f) => f.serviceId !== serviceId),
@@ -1191,7 +811,7 @@ export const useAppStore = create<AppState>()(
 
       addBusinessSwipeLike: (business) =>
         set((state) => {
-          // Determinar qué serviceId usar
+          // Determinar quÃ© serviceId usar
           // Primero intentamos encontrar un servicio real del negocio
           const existingServiceId = business.services && business.services.length > 0
             ? business.services.find(sid => state.services.some(s => s.id === sid)) ?? null
@@ -1209,7 +829,7 @@ export const useAppStore = create<AppState>()(
             }
           }
 
-          // No existe servicio real - creamos uno sintético con ID único negativo para no colisionar
+          // No existe servicio real - creamos uno sintÃ©tico con ID Ãºnico negativo para no colisionar
           const syntheticId = -(business.id)
           const alreadyFav = state.userFavorites.some(f => f.serviceId === syntheticId)
           if (alreadyFav) return state
@@ -1283,7 +903,7 @@ export const useAppStore = create<AppState>()(
           }
           throw new Error("Error al crear link en Django");
         } catch (error) {
-          console.error("Fallo creación de recomendación:", error);
+          console.error("Fallo creaciÃ³n de recomendaciÃ³n:", error);
           set({ isLoading: false });
           // Fallback por si falla el servidor
           const fallback: Recommendation = { ...recommendationData, id: "temp-" + Date.now(), createdAt: new Date() };
@@ -1308,8 +928,8 @@ export const useAppStore = create<AppState>()(
         })),
 
         payPool: (poolId, paymentType) => {
-        // Aquí puedes meter la lógica real después. 
-        // Con solo declarar esto, TypeScript dejará de chillar.
+        // AquÃ­ puedes meter la lÃ³gica real despuÃ©s. 
+        // Con solo declarar esto, TypeScript dejarÃ¡ de chillar.
       },
 
      fetchRoutes: async () => {
@@ -1322,7 +942,7 @@ export const useAppStore = create<AppState>()(
               id: r.id,
               name: r.name,
               colorHex: r.color_hex || '#10b981',
-              unit_name: r.unit_name || "Unidad Estándar",
+              unit_name: r.unit_name || "Unidad EstÃ¡ndar",
               // --- GPS VIVO ---
               unit_lat: r.unit_lat, 
               unit_lng: r.unit_lng, 
@@ -1386,8 +1006,8 @@ export const useAppStore = create<AppState>()(
       fetchRecommendations: async () => {
         set({ isLoading: true });
         try {
-          // AHORA LE PEGAMOS A LA RUTA NUEVA CON EL TOKEN DE AUTENTICACIÓN (PASE VIP)
-         // Sacamos el token a la fuerza, directo de la bóveda secreta de Zustand
+          // AHORA LE PEGAMOS A LA RUTA NUEVA CON EL TOKEN DE AUTENTICACIÃ“N (PASE VIP)
+         // Sacamos el token a la fuerza, directo de la bÃ³veda secreta de Zustand
           const token = get().accessToken || (typeof window !== "undefined" && localStorage.getItem("app-storage") ? JSON.parse(localStorage.getItem("app-storage") as string)?.state?.accessToken : "");
           const response = await fetch(`${API_BASE}/marketing/my-links/`, {
             headers: {
@@ -1402,7 +1022,7 @@ export const useAppStore = create<AppState>()(
             const formattedRecommendations = data.map((camp: any) => ({
               // --- DATOS VIEJOS DE RELLENO (Para que tu frontend no explote) ---
               id: camp.slug_unico || camp.codigo_embajador || `rec-${Date.now()}`,
-              name: camp.nombre || "Campaña",
+              name: camp.nombre || "CampaÃ±a",
               link: `${typeof window !== "undefined" ? window.location.origin : ""}/ref/${camp.slug_unico}`,
               type: "descuento", 
               serviceId: camp.id_destino || 0,
@@ -1421,7 +1041,7 @@ export const useAppStore = create<AppState>()(
               descuento: camp.descuento,
               cupon: camp.cupon,
               codigo_embajador: camp.codigo_embajador,
-              slug: camp.slug_unico // ¡AQUÍ ATRAPAMOS EL SLUG_UNICO DE DJANGO!
+              slug: camp.slug_unico // Â¡AQUÃ ATRAPAMOS EL SLUG_UNICO DE DJANGO!
             }));
 
             set({ recommendations: formattedRecommendations, isLoading: false });
@@ -1429,14 +1049,14 @@ export const useAppStore = create<AppState>()(
             set({ isLoading: false });
           }
         } catch (error) {
-          console.error("Error trayendo las campañas del embajador:", error);
+          console.error("Error trayendo las campaÃ±as del embajador:", error);
           set({ isLoading: false });
         }
       },
       fetchPlans: async () => {
         set({ isLoading: true });
         try {
-          // Apuntamos a /auth/plans/ porque así está en tu urls.py
+          // Apuntamos a /auth/plans/ porque asÃ­ estÃ¡ en tu urls.py
           const response = await fetch(`${API_BASE}/auth/plans/`);
           if (response.ok) {
             const data = await response.json();
@@ -1469,7 +1089,7 @@ export const useAppStore = create<AppState>()(
           if (response.ok) {
             const newLink = await response.json();
             
-            // Actualizamos la recomendación específica con el link real
+            // Actualizamos la recomendaciÃ³n especÃ­fica con el link real
             const currentRecs = get().recommendations;
             const updatedRecs = currentRecs.map(rec => 
               rec.id === String(templateId) 
@@ -1584,7 +1204,7 @@ export const useAppStore = create<AppState>()(
             await get().fetchGuardians(); // Refrescamos la lista para que el UI se actualice
           }
         } catch (error) {
-          console.error("Error al actualizar guardián:", error);
+          console.error("Error al actualizar guardiÃ¡n:", error);
         }
       },
 
@@ -1631,14 +1251,15 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "app-storage",
-      version: 2,
+      version: 3,
       migrate: (persistedState: any, version: number) => {
-        if (version < 2) {
-          // Limpiar datos corruptos de versiones anteriores
-          // (servicios sintéticos con IDs negativos, userFavorites rotos)
+        if (version < 3) {
+          // v3: Eliminar TODOS los datos falsos hardcodeados
+          // Solo datos reales del API deben existir
           return {
             ...persistedState,
-            services: initialServices,
+            services: [],
+            businesses: [],
             userFavorites: [],
           }
         }
