@@ -14,7 +14,7 @@ interface SwipeGoScreenProps {
 
 export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
   const router = useRouter()
-  const { businesses, services, addSwipeLike } = useAppStore()
+  const { businesses, addBusinessSwipeLike } = useAppStore()
   // Maintain deck state
   const [deck, setDeck] = useState<Business[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -38,16 +38,8 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
     
     if (direction === "right") {
       console.log(`Liked ${currentBusiness.name} - registrando en favoritos`)
-      
-      // Buscar el primer servicio real del negocio
-      const firstServiceId = currentBusiness.services && currentBusiness.services.length > 0
-        ? currentBusiness.services[0]
-        : null
-      const serviceToLike = firstServiceId ? services.find(s => s.id === firstServiceId) : null
-      
-      // Si encontramos el servicio, usamos su ID; si no, usamos el ID del negocio como fallback
-      const targetId = serviceToLike ? serviceToLike.id : currentBusiness.id
-      addSwipeLike(targetId)
+      // Esto crea un servicio sintético si no existe, y lo agrega a favoritos
+      addBusinessSwipeLike(currentBusiness)
       
       // Registrar en backend también
       fetch(`/api-proxy/catalog/${currentBusiness.id}/swipe/`, {

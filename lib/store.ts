@@ -254,6 +254,7 @@ interface AppState {
   toggleFavoritePreference: (serviceId: number) => void
   setFavoritePreference: (serviceId: number, preference: "me_gusta" | "me_gusta_mas") => void
   addSwipeLike: (serviceId: number) => void
+  addBusinessSwipeLike: (business: Business) => void
   selectTripFavorite: (serviceId: number) => void
   addRecommendation: (recommendation: Omit<Recommendation, "id"> | Recommendation) => Promise<Recommendation>
   updateRecommendationStats: (recommendationId: string, stats: Partial<RecommendationStats>) => void
@@ -1137,11 +1138,61 @@ export const useAppStore = create<AppState>()(
       addSwipeLike: (serviceId) =>
         set((state) => {
           const exists = state.userFavorites.some((f) => f.serviceId === serviceId)
-          if (exists) return state // Ya está en favoritos, no duplicar
+          if (exists) return state
           return {
             userFavorites: [
               ...state.userFavorites,
               { serviceId, preference: "me_gusta" as const, selectedForTrip: false, addedAt: new Date() },
+            ],
+          }
+        }),
+
+      addBusinessSwipeLike: (business) =>
+        set((state) => {
+          // Determinar qué serviceId usar
+          // Primero intentamos encontrar un servicio real del negocio
+          const existingServiceId = business.services && business.services.length > 0
+            ? business.services.find(sid => state.services.some(s => s.id === sid)) ?? null
+            : null
+
+          if (existingServiceId) {
+            // Ya existe un servicio real - solo agregar a favoritos
+            const alreadyFav = state.userFavorites.some(f => f.serviceId === existingServiceId)
+            if (alreadyFav) return state
+            return {
+              userFavorites: [
+                ...state.userFavorites,
+                { serviceId: existingServiceId, preference: "me_gusta" as const, selectedForTrip: false, addedAt: new Date() },
+              ],
+            }
+          }
+
+          // No existe servicio real - creamos uno sintético con ID único negativo para no colisionar
+          const syntheticId = -(business.id)
+          const alreadyFav = state.userFavorites.some(f => f.serviceId === syntheticId)
+          if (alreadyFav) return state
+
+          const syntheticService: Service = {
+            id: syntheticId,
+            name: business.name,
+            category: business.category || "general",
+            location: business.location,
+            rating: business.rating,
+            reviews: business.reviews,
+            price: 0,
+            image: business.coverImage || business.image || "/placeholder.svg",
+            isRemate: false,
+            allowsPool: false,
+            spotsLeft: 0,
+            description: business.description,
+            galleryImages: business.galleryImages,
+          }
+
+          return {
+            services: [...state.services, syntheticService],
+            userFavorites: [
+              ...state.userFavorites,
+              { serviceId: syntheticId, preference: "me_gusta" as const, selectedForTrip: false, addedAt: new Date() },
             ],
           }
         }),
