@@ -14,7 +14,7 @@ interface SwipeGoScreenProps {
 
 export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
   const router = useRouter()
-  const { businesses, addBusinessSwipeLike } = useAppStore()
+  const { businesses, addBusinessSwipeLike, accessToken } = useAppStore()
   // Maintain deck state
   const [deck, setDeck] = useState<Business[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -41,18 +41,30 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
       // Esto crea un servicio sintético si no existe, y lo agrega a favoritos
       addBusinessSwipeLike(currentBusiness)
       
-      // Registrar en backend también
+      // Registrar en backend con el token de autenticación
+      const token = accessToken || localStorage.getItem('access_token')
       fetch(`/api-proxy/catalog/${currentBusiness.id}/swipe/`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { "Authorization": `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({ es_like: true })
-      }).catch(e => console.error(e))
+      }).then(r => {
+        if (!r.ok) console.warn(`Swipe backend error: ${r.status}`)
+      }).catch(e => console.error("Swipe fetch error:", e))
     } else {
+      const token = accessToken || localStorage.getItem('access_token')
       fetch(`/api-proxy/catalog/${currentBusiness.id}/swipe/`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { "Authorization": `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({ es_like: false })
-      }).catch(e => console.error(e))
+      }).then(r => {
+        if (!r.ok) console.warn(`Swipe backend error: ${r.status}`)
+      }).catch(e => console.error("Swipe fetch error:", e))
     }
 
     setTimeout(() => {
