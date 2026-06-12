@@ -14,7 +14,7 @@ interface SwipeGoScreenProps {
 
 export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
   const router = useRouter()
-  const { businesses } = useAppStore()
+  const { businesses, services, setFavoritePreference } = useAppStore()
   // Maintain deck state
   const [deck, setDeck] = useState<Business[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -38,6 +38,20 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
     
     if (direction === "right") {
       console.log(`Liked ${currentBusiness.name} - sent to favorites`)
+      
+      // Conectar con el sistema de favoritos del store (sección "Me Gusta")
+      // Buscamos el primer servicio real que pertenece a este negocio
+      const firstServiceId = currentBusiness.services && currentBusiness.services.length > 0
+        ? currentBusiness.services[0]
+        : null
+      const serviceToLike = firstServiceId ? services.find(s => s.id === firstServiceId) : null
+      
+      if (serviceToLike) {
+        // Agregar a la sección "Me gusta" de Mis Favoritos
+        setFavoritePreference(serviceToLike.id, "me_gusta")
+      }
+      
+      // Registrar en la base de datos del backend también
       fetch(`/api-proxy/catalog/${currentBusiness.id}/swipe/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
