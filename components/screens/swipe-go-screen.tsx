@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { motion, useMotionValue, useTransform, AnimatePresence } from "framer-motion"
 import { X, Heart, Info, MapPin, Users, HelpCircle, ChevronLeft, ChevronRight, Share2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useAppStore, type Service } from "@/lib/store"
+import { useAppStore, type Service, type Pool } from "@/lib/store"
 import { HeaderWithMenu } from "@/components/header-with-menu"
 
 interface SwipeGoScreenProps {
@@ -14,18 +14,19 @@ interface SwipeGoScreenProps {
 
 export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
   const router = useRouter()
-  const { services, addSwipeLike, accessToken, fetchServices } = useAppStore()
+  const { services, pools, addSwipeLike, accessToken, fetchServices, fetchPools } = useAppStore()
   // Maintain deck state — ahora con SERVICIOS, no tiendas
   const [deck, setDeck] = useState<Service[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
-
+ 
   // Modales/Tooltips
   const [showPoolTooltip, setShowPoolTooltip] = useState(false)
-
-  // Cargar servicios reales del API al montar
+ 
+  // Cargar servicios y pools del API al montar
   useEffect(() => {
     fetchServices()
-  }, [fetchServices])
+    fetchPools()
+  }, [fetchServices, fetchPools])
 
   useEffect(() => {
     // Cargar servicios en el deck cuando lleguen del API
@@ -112,6 +113,8 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
                 onInfoClick={() => router.push(`/s/${service.id}`)}
                 showPoolTooltip={isFront ? showPoolTooltip : false}
                 setShowPoolTooltip={setShowPoolTooltip}
+                pools={pools}
+                onNavigate={onNavigate}
               />
             )
           })}
@@ -154,14 +157,25 @@ interface SwipeableServiceCardProps {
   onInfoClick: () => void
   showPoolTooltip: boolean
   setShowPoolTooltip: (val: boolean) => void
+  pools: Pool[]
+  onNavigate?: (tab: string) => void
 }
 
-function SwipeableServiceCard({ service, isFront, onSwipe, onInfoClick, showPoolTooltip, setShowPoolTooltip }: SwipeableServiceCardProps) {
+function SwipeableServiceCard({ service, isFront, onSwipe, onInfoClick, showPoolTooltip, setShowPoolTooltip, pools, onNavigate }: SwipeableServiceCardProps) {
   const x = useMotionValue(0)
   const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 375
 
   const displayCapacity = service.capacityMax || 10
   const displayPrice = service.price || 0
+
+  // Buscar pool activo asociado al servicio
+  const activePool = service.allowsPool
+    ? pools.find(p => p.serviceId === service.id && p.status === "ABIERTO")
+    : undefined
+
+  const spotsRemaining = activePool
+    ? (activePool.targetMembers || 0) - (activePool.currentMembers || 0)
+    : 0
   
   const rotate = useTransform(x, [-200, 200], [-15, 15])
   const opacity = useTransform(x, [-200, -150, 0, 150, 200], [0, 1, 1, 1, 0])
@@ -295,19 +309,32 @@ function SwipeableServiceCard({ service, isFront, onSwipe, onInfoClick, showPool
         </div>
  
         {/* Pool Gamification Status */}
-        {service.allowsPool && (
+        {activePool && spotsRemaining > 0 && (
           <div className="mt-auto relative z-30" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-2 bg-primary/5 border border-primary/25 p-2 rounded-xl relative overflow-visible">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
               <span className="text-[11px] font-bold text-primary flex-1">
-                Pool Activo Disponible
+                {spotsRemaining === 1 || spotsRemaining === 2
+                  ? `Falta${spotsRemaining === 1 ? "" : "n"} ${spotsRemaining} ¡Únete ya!`
+                  : "Pool Activo Disponible"}
               </span>
+
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNavigate?.("pool");
+                }}
+                className="px-2 py-1 bg-primary text-primary-foreground text-[10px] font-bold rounded-lg hover:bg-primary/90 transition-all shadow-sm shrink-0"
+              >
+                {spotsRemaining === 1 || spotsRemaining === 2 ? "Únete ya" : "Únete aquí"}
+              </button>
+
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowPoolTooltip(!showPoolTooltip);
                 }}
-                className="p-1 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors"
+                className="p-1 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors shrink-0"
               >
                 <HelpCircle className="w-3.5 h-3.5 text-primary" />
               </button>
