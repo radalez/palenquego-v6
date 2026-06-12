@@ -721,10 +721,18 @@ export const useAppStore = create<AppState>()(
             rating: parseFloat(s.calificacion) || s.rating || 5.0,
             reviews: parseInt(s.numero_resenas) || s.reviews || 0,
             businessId: s.tienda?.id || s.businessId,
+            businessName: s.tienda?.nombre_comercial || s.businessName,
+            businessAvatar: s.tienda?.logo ? getProxyImage(s.tienda.logo) : s.businessAvatar,
             category: s.categoria?.nombre || s.category || "General",
             spotsLeft: s.cupos_disponibles || s.spotsLeft || 0,
             isRemate: s.en_oferta || s.isRemate || false,
             discount: s.descuento || s.discount || 0,
+            capacityMin: s.capacidad_min || s.capacityMin,
+            capacityMax: s.capacidad_max || s.capacityMax,
+            // Galería: mapear images[] del API a galleryImages[]
+            galleryImages: s.images && s.images.length > 0
+              ? s.images.map((img: any) => getProxyImage(img.imagen || ""))
+              : s.galleryImages || [],
             // --- ESTA ES LA LLAVE DEL RELOJ SUIZO ---
             linkTypes: s.link_types || s.linkTypes || [], 
           }))

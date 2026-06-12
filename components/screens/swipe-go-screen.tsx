@@ -14,7 +14,7 @@ interface SwipeGoScreenProps {
 
 export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
   const router = useRouter()
-  const { services, addSwipeLike, accessToken } = useAppStore()
+  const { services, addSwipeLike, accessToken, fetchServices } = useAppStore()
   // Maintain deck state — ahora con SERVICIOS, no tiendas
   const [deck, setDeck] = useState<Service[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -22,12 +22,17 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
   // Modales/Tooltips
   const [showPoolTooltip, setShowPoolTooltip] = useState(false)
 
+  // Cargar servicios reales del API al montar
   useEffect(() => {
-    // Cargar servicios en el deck
-    if (deck.length === 0 && services.length > 0) {
+    fetchServices()
+  }, [fetchServices])
+
+  useEffect(() => {
+    // Cargar servicios en el deck cuando lleguen del API
+    if (services.length > 0) {
       setDeck(services)
     }
-  }, [services, deck.length])
+  }, [services])
 
   // Swipe logic
   const handleSwipe = (direction: "left" | "right") => {
