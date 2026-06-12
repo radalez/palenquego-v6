@@ -207,7 +207,7 @@ function SwipeableServiceCard({ service, isFront, onSwipe, onInfoClick, showPool
       className={`absolute w-full max-w-[360px] h-full max-h-[600px] bg-white rounded-3xl shadow-xl overflow-hidden cursor-grab active:cursor-grabbing border border-border/50 ${isFront ? 'z-20' : 'z-10'}`}
     >
       {/* Photo Gallery Area */}
-      <div className="relative w-full h-[65%] bg-zinc-900 group" onClick={onInfoClick}>
+      <div className="relative w-full h-[55%] bg-zinc-900 group" onClick={onInfoClick}>
         <img 
           src={gallery[photoIndex]} 
           alt={service.name} 
@@ -224,7 +224,7 @@ function SwipeableServiceCard({ service, isFront, onSwipe, onInfoClick, showPool
             <div key={idx} className={`h-1 flex-1 rounded-full bg-white transition-opacity ${idx === photoIndex ? 'opacity-100' : 'opacity-40 shadow-sm'}`} />
           ))}
         </div>
-
+ 
         {/* Badges */}
         <div className="absolute top-6 left-3 right-3 flex justify-between z-20 pointer-events-none">
           <div className="bg-black/40 backdrop-blur-md px-3 py-1 rounded-full text-white text-xs font-semibold flex items-center gap-1 border border-white/20">
@@ -237,7 +237,7 @@ function SwipeableServiceCard({ service, isFront, onSwipe, onInfoClick, showPool
             </div>
           )}
         </div>
-
+ 
         {/* Swipe Overlays */}
         <motion.div style={{ opacity: likeOpacity }} className="absolute top-10 left-6 z-30 pointer-events-none rotate-[-15deg]">
           <div className="border-4 border-emerald-400 text-emerald-400 font-black text-4xl px-4 py-1 rounded-lg uppercase tracking-widest shadow-sm bg-white/10 backdrop-blur-sm">
@@ -249,53 +249,57 @@ function SwipeableServiceCard({ service, isFront, onSwipe, onInfoClick, showPool
             NOPE
           </div>
         </motion.div>
-
+ 
         {/* Gradient Bottom */}
-        <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black/80 via-black/30 to-transparent pointer-events-none" />
+        <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black/85 via-black/35 to-transparent pointer-events-none" />
         
         {/* Title Info overlay inside image */}
-        <div className="absolute bottom-4 left-4 right-4 text-white pointer-events-none">
-          <div className="flex justify-between items-end">
-            <div>
-              <h2 className="text-3xl font-bold leading-tight drop-shadow-md">{service.name}</h2>
-              <p className="text-white/90 text-sm font-medium drop-shadow-sm flex items-center gap-1 mt-1">
-                <Users className="w-4 h-4" /> Ideal para {displayCapacity} pers.
-              </p>
-              {service.businessName && (
-                <p className="text-white/70 text-xs mt-0.5">por {service.businessName}</p>
-              )}
+        <div className="absolute bottom-3 left-3 right-3 text-white pointer-events-none">
+          <div className="flex justify-between items-end gap-2">
+            <div className="flex-1 min-w-0">
+              <h2 className="text-xl font-extrabold leading-tight drop-shadow-md line-clamp-2">{service.name}</h2>
+              <div className="flex items-center gap-1.5 mt-1 text-xs">
+                <p className="text-white/95 font-semibold drop-shadow-sm flex items-center gap-1">
+                  <Users className="w-3.5 h-3.5" /> Ideal para {displayCapacity} pers.
+                </p>
+                {service.businessName && (
+                  <span className="text-white/80 drop-shadow-sm truncate">
+                    • por {service.businessName}
+                  </span>
+                )}
+              </div>
             </div>
             {/* Precio */}
-            <div className="text-right">
-               <span className="bg-white text-black px-3 py-1 rounded-xl font-bold shadow-lg">
+            <div className="flex-shrink-0">
+               <span className="bg-primary text-primary-foreground px-3 py-1 rounded-xl text-sm font-bold shadow-lg border border-primary-foreground/10">
                  ${displayPrice}
                </span>
             </div>
           </div>
         </div>
       </div>
-
+ 
       {/* Info Card Content Bottom */}
-      <div className="p-5 h-[35%] flex flex-col justify-between">
-        <div>
-          <p className="text-muted-foreground text-sm line-clamp-3 leading-relaxed">
+      <div className="p-4 h-[45%] flex flex-col justify-between">
+        <div className="space-y-2">
+          <p className="text-muted-foreground text-xs md:text-sm line-clamp-2 leading-relaxed">
             {service.description || service.descripcion || "Sin descripción disponible"}
           </p>
           {service.features && service.features.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-2">
+            <div className="flex flex-wrap gap-1">
               {service.features.slice(0, 3).map((f, i) => (
-                <span key={i} className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{f}</span>
+                <span key={i} className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">{f}</span>
               ))}
             </div>
           )}
         </div>
-
+ 
         {/* Pool Gamification Status */}
         {service.allowsPool && (
-          <div className="mt-3 relative z-30" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 p-3 rounded-xl relative overflow-visible">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-sm font-semibold text-primary flex-1">
+          <div className="mt-auto relative z-30" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-2 bg-primary/5 border border-primary/25 p-2 rounded-xl relative overflow-visible">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
+              <span className="text-[11px] font-bold text-primary flex-1">
                 Pool Activo Disponible
               </span>
               <button 
@@ -303,23 +307,23 @@ function SwipeableServiceCard({ service, isFront, onSwipe, onInfoClick, showPool
                   e.stopPropagation();
                   setShowPoolTooltip(!showPoolTooltip);
                 }}
-                className="p-1.5 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors"
+                className="p-1 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors"
               >
-                <HelpCircle className="w-5 h-5 text-primary" />
+                <HelpCircle className="w-3.5 h-3.5 text-primary" />
               </button>
-
+ 
               {/* Tooltip Gamificado */}
               <AnimatePresence>
                 {showPoolTooltip && (
                   <motion.div 
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    initial={{ opacity: 0, y: 5, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 5, scale: 0.95 }}
-                    className="absolute bottom-full mb-3 right-0 w-[240px] bg-primary text-primary-foreground p-4 rounded-2xl shadow-xl z-50 text-sm"
+                    exit={{ opacity: 0, y: 3, scale: 0.95 }}
+                    className="absolute bottom-full mb-2 right-0 w-[220px] bg-primary text-primary-foreground p-3 rounded-2xl shadow-xl z-50 text-xs"
                   >
-                    <div className="absolute -bottom-2 right-4 w-4 h-4 bg-primary rotate-45" />
-                    <p className="font-bold mb-1 flex items-center gap-2">
-                      <Users className="w-4 h-4"/> ¡Ahorra en Grupo!
+                    <div className="absolute -bottom-1 right-4 w-3 h-3 bg-primary rotate-45" />
+                    <p className="font-bold mb-1 flex items-center gap-1.5">
+                      <Users className="w-3.5 h-3.5"/> ¡Ahorra en Grupo!
                     </p>
                     <p className="opacity-90 leading-snug">
                       Darle LIKE aumenta tus chances de unirte a un Pool con descuentos si hace match con otros recientes.
