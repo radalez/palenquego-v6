@@ -353,6 +353,10 @@ export const useAppStore = create<AppState>()(
             galleryImages: s.images && s.images.length > 0
               ? s.images.map((img: any) => getProxyImage(img.imagen || ""))
               : s.galleryImages || [],
+            // Normalizar features a un array de strings para evitar errores de renderizado de objetos en React
+            features: s.features && s.features.length > 0
+              ? s.features.map((f: any) => typeof f === "string" ? f : (f.nombre || f.name || ""))
+              : [],
             // --- ESTA ES LA LLAVE DEL RELOJ SUIZO ---
             linkTypes: s.link_types || s.linkTypes || [], 
           }))
