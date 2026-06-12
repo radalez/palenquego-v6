@@ -253,6 +253,7 @@ interface AppState {
   rateService: (serviceId: number, stars: number) => void
   toggleFavoritePreference: (serviceId: number) => void
   setFavoritePreference: (serviceId: number, preference: "me_gusta" | "me_gusta_mas") => void
+  addSwipeLike: (serviceId: number) => void
   selectTripFavorite: (serviceId: number) => void
   addRecommendation: (recommendation: Omit<Recommendation, "id"> | Recommendation) => Promise<Recommendation>
   updateRecommendationStats: (recommendationId: string, stats: Partial<RecommendationStats>) => void
@@ -1113,11 +1114,37 @@ export const useAppStore = create<AppState>()(
         }),
 
       setFavoritePreference: (serviceId, preference) =>
-        set((state) => ({
-          userFavorites: state.userFavorites.map((f) =>
-            f.serviceId === serviceId ? { ...f, preference } : f,
-          ),
-        })),
+        set((state) => {
+          const exists = state.userFavorites.some((f) => f.serviceId === serviceId)
+          if (exists) {
+            // Si ya existe, solo actualiza la preferencia
+            return {
+              userFavorites: state.userFavorites.map((f) =>
+                f.serviceId === serviceId ? { ...f, preference } : f,
+              ),
+            }
+          } else {
+            // Si NO existe, agregar el nuevo favorito
+            return {
+              userFavorites: [
+                ...state.userFavorites,
+                { serviceId, preference, selectedForTrip: false, addedAt: new Date() },
+              ],
+            }
+          }
+        }),
+
+      addSwipeLike: (serviceId) =>
+        set((state) => {
+          const exists = state.userFavorites.some((f) => f.serviceId === serviceId)
+          if (exists) return state // Ya está en favoritos, no duplicar
+          return {
+            userFavorites: [
+              ...state.userFavorites,
+              { serviceId, preference: "me_gusta" as const, selectedForTrip: false, addedAt: new Date() },
+            ],
+          }
+        }),
 
       selectTripFavorite: (serviceId) =>
         set((state) => ({
