@@ -7,14 +7,17 @@ const MEDIA_BASE = "/media-proxy";
 // --- ESTA ES LA FUNCIÃ“N QUE LIMPIA TODO DE UN SOLO GOLPE ---
 const getProxyImage = (url: string) => {
   if (!url) return "";
-  const cleanUrl = url.trim();
+  let cleanUrl = url.trim();
+  
+  // Siempre forzar https para el dominio de producción
+  cleanUrl = cleanUrl.replace("http://palenquego.com", "https://palenquego.com");
   
   // REGLA DE ORO: Si ya tiene el proxy o es una URL externa segura, NO LA TOQUES
-  if (cleanUrl.includes(MEDIA_BASE) || (cleanUrl.startsWith('http') && !cleanUrl.includes('209.97.146.210'))) {
+  if (cleanUrl.includes(MEDIA_BASE) || (cleanUrl.startsWith('https://') && !cleanUrl.includes('209.97.146.210'))) {
     return cleanUrl;
   }
   
-  // Si viene con la IP prohibida, la cambiamos por el tÃºnel
+  // Si viene con la IP prohibida, la cambiamos por el túnel
   return cleanUrl
     .replace("http://209.97.146.210/media", MEDIA_BASE)
     .replace("/media/", `${MEDIA_BASE}/`);

@@ -51,7 +51,9 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
     )
   }
 
-  const images = service.galleryImages || [service.image]
+  const images = service.galleryImages && service.galleryImages.length > 0
+    ? service.galleryImages
+    : [service.image || "/placeholder.svg"]
   const isFavorite = userFavorites.some((f) => f.serviceId === service.id)
 
   const handleWhatsApp = () => {
