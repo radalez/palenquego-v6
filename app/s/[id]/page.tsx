@@ -40,6 +40,22 @@ const ScriptInjector = ({ htmlContent }: { htmlContent: string }) => {
     } catch (e) {
       console.error("Error inyectando script:", e)
     }
+    return () => {
+      // Limpiar los elementos inyectados globalmente por el chatbot de Landingfy
+      const tooltip = document.getElementById('lfyTooltip');
+      if (tooltip) tooltip.remove();
+      
+      const launcher = document.getElementById('lfyLauncher');
+      if (launcher) launcher.remove();
+      
+      const widget = document.getElementById('lfyWidget');
+      if (widget) widget.remove();
+      
+      // Restablecer la variable global para permitir que se cargue de nuevo
+      if (typeof window !== 'undefined') {
+        (window as any).LandingFyChatbotLoaded = false;
+      }
+    }
   }, [htmlContent])
 
   return <div ref={containerRef} />
@@ -312,26 +328,30 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
       {/* Bottom Action Bar */}
       <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-gradient-to-t from-background from-80% to-transparent pt-8 pb-5 px-4 space-y-3 z-30 pointer-events-auto">
         <div className="flex gap-2">
-          <button
-            onClick={handleWhatsApp}
-            className="flex-1 flex items-center justify-center gap-2 py-3 bg-green-600 hover:bg-green-700 text-white rounded-full font-bold shadow-lg transition-transform active:scale-95"
-          >
-            <MessageCircle className="w-5 h-5" />
-            WhatsApp
-          </button>
-          <button
-            onClick={handleCall}
-            className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-bold shadow-lg transition-transform active:scale-95"
-          >
-            <Phone className="w-5 h-5" />
-            Llamar
-          </button>
-          <button
-            onClick={handleShare}
-            className="w-14 h-14 flex items-center justify-center bg-card border border-border rounded-full hover:bg-muted text-foreground shadow-lg transition-transform active:scale-95"
-          >
-            <Share2 className="w-5 h-5" />
-          </button>
+          {!service.chatbotScript && (
+            <>
+              <button
+                onClick={handleWhatsApp}
+                className="flex-1 flex items-center justify-center gap-2 py-3 bg-green-600 hover:bg-green-700 text-white rounded-full font-bold shadow-lg transition-transform active:scale-95"
+              >
+                <MessageCircle className="w-5 h-5" />
+                WhatsApp
+              </button>
+              <button
+                onClick={handleCall}
+                className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-bold shadow-lg transition-transform active:scale-95"
+              >
+                <Phone className="w-5 h-5" />
+                Llamar
+              </button>
+              <button
+                onClick={handleShare}
+                className="w-14 h-14 flex items-center justify-center bg-card border border-border rounded-full hover:bg-muted text-foreground shadow-lg transition-transform active:scale-95"
+              >
+                <Share2 className="w-5 h-5" />
+              </button>
+            </>
+          )}
         </div>
         <Button
           className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full font-black text-lg shadow-xl"
