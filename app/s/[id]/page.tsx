@@ -353,12 +353,16 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
             </>
           )}
         </div>
-        <Button
-          className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full font-black text-lg shadow-xl"
-          onClick={() => setShowBookingModal(true)}
-        >
-          RESERVAR AHORA
-        </Button>
+        <div className={`flex ${service.chatbotScript ? 'justify-start' : 'justify-center'} w-full`}>
+          <Button
+            className={`h-14 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full font-black text-lg shadow-xl ${
+              service.chatbotScript ? 'w-[80%]' : 'w-full'
+            }`}
+            onClick={() => setShowBookingModal(true)}
+          >
+            RESERVAR AHORA
+          </Button>
+        </div>
       </div>
 
       {/* Booking Modal */}
