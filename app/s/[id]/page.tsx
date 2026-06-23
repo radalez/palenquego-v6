@@ -1,7 +1,6 @@
 "use client"
 
-import { useState } from "react"
-import { use } from "react"
+import { useState, useEffect, useRef, use } from "react"
 import { useRouter } from "next/navigation"
 import {
   X,
@@ -27,6 +26,23 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 
 interface ServiceDetailPageProps {
   params: Promise<{ id: string }>
+}
+
+const ScriptInjector = ({ htmlContent }: { htmlContent: string }) => {
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!containerRef.current || !htmlContent) return
+    try {
+      const slotHtml = document.createRange().createContextualFragment(htmlContent)
+      containerRef.current.innerHTML = ''
+      containerRef.current.appendChild(slotHtml)
+    } catch (e) {
+      console.error("Error inyectando script:", e)
+    }
+  }, [htmlContent])
+
+  return <div ref={containerRef} />
 }
  
 
@@ -327,6 +343,9 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
 
       {/* Booking Modal */}
       {showBookingModal && <BookingModal service={service} onClose={() => setShowBookingModal(false)} />}
+
+      {/* Chatbot Script Injector */}
+      {service.chatbotScript && <ScriptInjector htmlContent={service.chatbotScript} />}
     </main>
   )
 }

@@ -65,6 +65,7 @@ export interface Service {
     instagram?: string
     facebook?: string
   }
+  chatbotScript?: string
 }
 
 export interface PoolMember {
@@ -361,7 +362,8 @@ export const useAppStore = create<AppState>()(
               ? s.features.map((f: any) => typeof f === "string" ? f : (f.nombre || f.name || ""))
               : [],
             // --- ESTA ES LA LLAVE DEL RELOJ SUIZO ---
-            linkTypes: s.link_types || s.linkTypes || [], 
+            linkTypes: s.link_types || s.linkTypes || [],
+            chatbotScript: s.chatbot_script || null,
           }))
           set({ services: formatted, isLoading: false })
         } catch (error) {
