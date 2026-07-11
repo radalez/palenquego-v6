@@ -151,15 +151,19 @@ export function BusinessesScreen({ onNavigate }: BusinessesScreenProps) {
       </div>
       
       {/* Botón para ir a las rutas clásicas */}
-      <div className="px-4 pb-2">
-        <Button 
-          variant="outline" 
-          className="w-full font-medium" 
+      <div className="px-4 pb-4">
+        <div 
           onClick={() => onNavigate?.("rutas-classic")}
+          className="bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-2xl p-4 flex items-center gap-4 cursor-pointer hover:border-primary/40 transition-colors shadow-sm"
         >
-          <MapPin className="w-4 h-4 mr-2" />
-          Ver mapa y rutas clásicas
-        </Button>
+          <div className="bg-primary/20 p-3 rounded-full flex-shrink-0">
+            <MapPin className="w-6 h-6 text-primary" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-bold text-foreground text-base">Mapa y Rutas en Vivo</h3>
+            <p className="text-sm text-muted-foreground leading-tight mt-0.5">Sigue tu transporte y mira las paradas en tiempo real.</p>
+          </div>
+        </div>
       </div>
 
       {/* Business Cards */}
