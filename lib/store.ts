@@ -278,7 +278,17 @@ fetchRecommendations: () => Promise<void>
   scanQRCode: (token: string) => Promise<any>
   scanCheckpoint: (tripId: number, stopId: string, lat: number, lng: number) => Promise<any>
   changePassword: (oldPassword: string, newPassword: string) => Promise<{success: boolean, error?: string}>
+
+  // --- DRIVER GPS LOGIC ---
+  isDriverTracking: boolean
+  driverGpsError: string | null
+  driverGpsCount: number
+  driverCurrentPos: { lat: number; lng: number } | null
+  startDriverTracking: (unitId: number) => void
+  stopDriverTracking: () => void
 }
+
+let driverGpsInterval: NodeJS.Timeout | null = null;
 
 const initialServices: Service[] = []
 const initialBusinesses: Business[] = []
@@ -312,6 +322,62 @@ export const useAppStore = create<AppState>()(
       poolPaymentPending: [],
       guardians: [],
       isLoading: false,
+
+      // --- GPS INITIAL STATE ---
+      isDriverTracking: false,
+      driverGpsError: null,
+      driverGpsCount: 0,
+      driverCurrentPos: null,
+
+      startDriverTracking: (unitId: number) => {
+        const { accessToken } = get();
+        if (!navigator.geolocation || !accessToken) {
+          set({ driverGpsError: "GPS no soportado o sin sesión." })
+          return
+        }
+        
+        set({ isDriverTracking: true, driverGpsError: null, driverGpsCount: 0 });
+        sessionStorage.setItem('chofer-gps-active', 'true');
+
+        const sendLocation = async (lat: number, lng: number) => {
+          try {
+            const res = await fetch(`${API_BASE}/transport/units/${unitId}/update_location/`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
+              body: JSON.stringify({ lat, lng })
+            })
+            if (res.ok) {
+              set((state) => ({ driverGpsCount: state.driverGpsCount + 1, driverGpsError: null }))
+            } else {
+              set({ driverGpsError: `Error: ${res.status}` })
+            }
+          } catch {
+            set({ driverGpsError: "Sin conexión" })
+          }
+        }
+
+        const success = (pos: GeolocationPosition) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          set({ driverCurrentPos: { lat, lng } });
+          sendLocation(lat, lng);
+        }
+        const error = (err: GeolocationPositionError) => set({ driverGpsError: "GPS: " + err.message })
+
+        navigator.geolocation.getCurrentPosition(success, error, { enableHighAccuracy: true, timeout: 10000 });
+
+        if (driverGpsInterval) clearInterval(driverGpsInterval);
+        driverGpsInterval = setInterval(() => {
+          navigator.geolocation.getCurrentPosition(success, error, { enableHighAccuracy: true, timeout: 10000 });
+        }, 10000)
+      },
+
+      stopDriverTracking: () => {
+        if (driverGpsInterval) clearInterval(driverGpsInterval);
+        driverGpsInterval = null;
+        sessionStorage.removeItem('chofer-gps-active');
+        set({ isDriverTracking: false, driverCurrentPos: null, driverGpsCount: 0 });
+      },
 
       // --- ACCIONES DE API ---
      fetchServices: async (query = "") => {

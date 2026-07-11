@@ -21,22 +21,19 @@ interface MyUnit {
 
 export function DriverScreen({ onNavigate }: DriverScreenProps) {
   const { routes, fetchRoutes, accessToken } = useAppStore()
+  const { isDriverTracking, driverGpsError, driverCurrentPos, startDriverTracking, stopDriverTracking, driverGpsCount } = useAppStore()
+  
   const [myUnit, setMyUnit] = useState<MyUnit | null>(null)
   const [unitError, setUnitError] = useState<string | null>(null)
-  const [isTracking, setIsTracking] = useState(false)
-  const [currentPos, setCurrentPos] = useState<{ lat: number; lng: number } | null>(null)
-  const [lastSent, setLastSent] = useState<Date | null>(null)
-  const [gpsError, setGpsError] = useState<string | null>(null)
-  const [sendCount, setSendCount] = useState(0)
-  const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
   // Cargamos las rutas y buscamos la unidad del chofer al montar
   useEffect(() => {
     fetchRoutes()
     fetchMyUnit()
-  }, [fetchRoutes])
+  }, [fetchRoutes, accessToken])
 
   const fetchMyUnit = async () => {
+    if (!accessToken) return
     try {
       const res = await fetch('/api-proxy/transport/units/my-unit/', {
         headers: {
@@ -61,83 +58,15 @@ export function DriverScreen({ onNavigate }: DriverScreenProps) {
     ? routes.find((r: any) => r.unit_id === myUnit.id || r.unit_name === myUnit.name) ?? null
     : null
 
-  // Envía las coordenadas al servidor
-  const sendLocation = async (lat: number, lng: number) => {
-    if (!myUnit?.id || !accessToken) return
-    try {
-      const res = await fetch(`/api-proxy/transport/units/${myUnit.id}/update_location/`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`
-        },
-        body: JSON.stringify({ lat, lng })
-      })
-      if (res.ok) {
-        setLastSent(new Date())
-        setSendCount(c => c + 1)
-        setGpsError(null)
-      } else {
-        setGpsError(`Error servidor: ${res.status}`)
-      }
-    } catch {
-      setGpsError("Sin conexión al enviar GPS.")
+  const handleStartTracking = () => {
+    if (myUnit) {
+      startDriverTracking(myUnit.id)
+      // Redirigir a rutas poco después
+      setTimeout(() => {
+        if (onNavigate) onNavigate('rutas-classic')
+      }, 1500)
     }
   }
-
-  const startTracking = () => {
-    if (!navigator.geolocation) {
-      setGpsError("Este dispositivo no soporta GPS.")
-      return
-    }
-    if (!myUnit) {
-      setGpsError("No tienes vehículo asignado. Pídele al admin.")
-      return
-    }
-    setGpsError(null)
-    setIsTracking(true)
-
-    // Posición inmediata → al tener señal, guardar flag y redirigir a rutas
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords
-        setCurrentPos({ lat: latitude, lng: longitude })
-        sendLocation(latitude, longitude)
-
-        // Guardar flag para que no le salga la config de nuevo
-        sessionStorage.setItem('chofer-gps-active', 'true')
-        // Redirigir a la vista de rutas después de un breve delay
-        setTimeout(() => {
-          if (onNavigate) onNavigate('rutas-classic')
-        }, 1500)
-      },
-      (err) => setGpsError("GPS: " + err.message),
-      { enableHighAccuracy: true, timeout: 10000 }
-    )
-
-    // Actualizar cada 10 segundos
-    intervalRef.current = setInterval(() => {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const { latitude, longitude } = pos.coords
-          setCurrentPos({ lat: latitude, lng: longitude })
-          sendLocation(latitude, longitude)
-        },
-        (err) => setGpsError("GPS: " + err.message),
-        { enableHighAccuracy: true, timeout: 10000 }
-      )
-    }, 10000)
-  }
-
-  const stopTracking = () => {
-    if (intervalRef.current) clearInterval(intervalRef.current)
-    setIsTracking(false)
-    sessionStorage.removeItem('chofer-gps-active')
-  }
-
-  useEffect(() => {
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
-  }, [])
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -177,39 +106,39 @@ export function DriverScreen({ onNavigate }: DriverScreenProps) {
         {/* Estado GPS */}
         <div className={cn(
           "rounded-2xl p-5 border text-center space-y-2 transition-all",
-          isTracking
+          isDriverTracking
             ? "bg-green-50 dark:bg-green-950 border-green-300 dark:border-green-700"
             : "bg-muted border-border"
         )}>
           <div className="flex justify-center">
-            {isTracking
+            {isDriverTracking
               ? <Wifi className="w-10 h-10 text-green-600 animate-pulse" />
               : <WifiOff className="w-10 h-10 text-muted-foreground" />
             }
           </div>
           <p className={cn("font-bold text-lg",
-            isTracking ? "text-green-700 dark:text-green-300" : "text-muted-foreground"
+            isDriverTracking ? "text-green-700 dark:text-green-300" : "text-muted-foreground"
           )}>
-            {isTracking ? "Enviando ubicación en vivo" : "GPS Inactivo"}
+            {isDriverTracking ? "Enviando ubicación en vivo" : "GPS Inactivo"}
           </p>
-          {currentPos && (
+          {driverCurrentPos && (
             <div className="text-xs font-mono space-y-0.5 text-muted-foreground">
-              <p>Lat: <span className="text-foreground">{currentPos.lat.toFixed(6)}</span></p>
-              <p>Lng: <span className="text-foreground">{currentPos.lng.toFixed(6)}</span></p>
+              <p>Lat: <span className="text-foreground">{driverCurrentPos.lat.toFixed(6)}</span></p>
+              <p>Lng: <span className="text-foreground">{driverCurrentPos.lng.toFixed(6)}</span></p>
             </div>
           )}
-          {lastSent && (
+          {isDriverTracking && (
             <p className="text-xs text-green-600 dark:text-green-400">
-              ✓ Última señal: {lastSent.toLocaleTimeString()} ({sendCount} envíos)
+              ✓ ({driverGpsCount} envíos)
             </p>
           )}
-          {gpsError && <p className="text-xs text-red-500">{gpsError}</p>}
+          {driverGpsError && <p className="text-xs text-red-500">{driverGpsError}</p>}
         </div>
 
         {/* Botón principal */}
-        {!isTracking ? (
+        {!isDriverTracking ? (
           <Button
-            onClick={startTracking}
+            onClick={handleStartTracking}
             disabled={!myUnit}
             className="w-full h-16 text-lg font-bold bg-green-600 hover:bg-green-700 text-white rounded-2xl gap-3 disabled:opacity-50"
           >
@@ -218,7 +147,7 @@ export function DriverScreen({ onNavigate }: DriverScreenProps) {
           </Button>
         ) : (
           <Button
-            onClick={stopTracking}
+            onClick={stopDriverTracking}
             variant="destructive"
             className="w-full h-16 text-lg font-bold rounded-2xl gap-3"
           >
