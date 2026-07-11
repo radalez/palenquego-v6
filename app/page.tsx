@@ -25,6 +25,7 @@ import { RegisterScreen } from "@/components/screens/register-screen"
 import { OnboardingScreen } from "@/components/screens/onboarding-screen"
 import { FavoritesScreen } from "@/components/screens/favorites-screen"
 import { RecommendationsScreen } from "@/components/screens/recommendations-screen"
+import { DriverScreen } from "@/components/screens/driver-screen"
 import { ShareInviteModal } from "@/components/share-invite-modal"
 import { PoolPaymentModal } from "@/components/pool-payment-modal"
 import { InstallPWABanner } from "@/components/install-pwa-banner"
@@ -71,6 +72,7 @@ export default function Home() {
   const isAuthenticated = useAppStore((state) => state.isAuthenticated)
   const hasCompletedOnboarding = useAppStore((state) => state.hasCompletedOnboarding)
   const completeOnboarding = useAppStore((state) => state.completeOnboarding)
+  const currentUser = useAppStore((state) => state.currentUser)
 
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [authView, setAuthView] = useState<"login" | "register">("register")
@@ -125,6 +127,11 @@ export default function Home() {
 
   if (showOnboarding || !hasCompletedOnboarding) {
     return <OnboardingScreen onComplete={handleOnboardingComplete} />
+  }
+
+  // Si el usuario es CHOFER, mostrar siempre el panel del conductor
+  if (currentUser?.tipo === 'CHOFER') {
+    return <DriverScreen onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />
   }
 
   const isMainTab =
