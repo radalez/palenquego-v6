@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Navigation2, MapPin, StopCircle, Truck, Wifi, WifiOff } from "lucide-react"
+import { Navigation2, StopCircle, Truck, Wifi, WifiOff, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAppStore } from "@/lib/store"
 import { HeaderWithMenu } from "@/components/header-with-menu"
@@ -11,29 +11,61 @@ interface DriverScreenProps {
   onNavigate?: (tab: string) => void
 }
 
+interface MyUnit {
+  id: number
+  name: string
+  license_plate: string
+  current_lat: number | null
+  current_lng: number | null
+}
+
 export function DriverScreen({ onNavigate }: DriverScreenProps) {
   const { routes, fetchRoutes, accessToken } = useAppStore()
+  const [myUnit, setMyUnit] = useState<MyUnit | null>(null)
+  const [unitError, setUnitError] = useState<string | null>(null)
   const [isTracking, setIsTracking] = useState(false)
   const [currentPos, setCurrentPos] = useState<{ lat: number; lng: number } | null>(null)
   const [lastSent, setLastSent] = useState<Date | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [gpsError, setGpsError] = useState<string | null>(null)
   const [sendCount, setSendCount] = useState(0)
-  const watchIdRef = useRef<number | null>(null)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Obtenemos la ruta del chofer desde el store
-  const myRoute = routes[0] // El chofer solo ve su ruta
-  const unitId = myRoute ? (myRoute as any).unit_id : null
-
+  // Cargamos las rutas y buscamos la unidad del chofer al montar
   useEffect(() => {
     fetchRoutes()
+    fetchMyUnit()
   }, [fetchRoutes])
 
-  // Función que envía las coordenadas al servidor
-  const sendLocation = async (lat: number, lng: number) => {
-    if (!unitId || !accessToken) return
+  const fetchMyUnit = async () => {
     try {
-      const res = await fetch(`/api-proxy/transport/units/${unitId}/update_location/`, {
+      const res = await fetch('/api-proxy/transport/units/my-unit/', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setMyUnit(data)
+        setUnitError(null)
+      } else {
+        setUnitError("Sin vehículo asignado aún.")
+      }
+    } catch {
+      setUnitError("Error al buscar tu vehículo.")
+    }
+  }
+
+  // Encontramos la ruta que usa NUESTRA unidad
+  const myRoute = myUnit
+    ? routes.find((r: any) => r.unit_id === myUnit.id || r.unit_name === myUnit.name) ?? null
+    : null
+
+  // Envía las coordenadas al servidor
+  const sendLocation = async (lat: number, lng: number) => {
+    if (!myUnit?.id || !accessToken) return
+    try {
+      const res = await fetch(`/api-proxy/transport/units/${myUnit.id}/update_location/`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -44,40 +76,39 @@ export function DriverScreen({ onNavigate }: DriverScreenProps) {
       if (res.ok) {
         setLastSent(new Date())
         setSendCount(c => c + 1)
-        setError(null)
+        setGpsError(null)
       } else {
-        setError(`Error del servidor: ${res.status}`)
+        setGpsError(`Error servidor: ${res.status}`)
       }
-    } catch (e) {
-      setError("Sin conexión. Reintentando...")
+    } catch {
+      setGpsError("Sin conexión al enviar GPS.")
     }
   }
 
   const startTracking = () => {
     if (!navigator.geolocation) {
-      setError("Este dispositivo no tiene GPS disponible.")
+      setGpsError("Este dispositivo no soporta GPS.")
       return
     }
-    if (!unitId) {
-      setError("No se encontró ningún vehículo asignado a tu cuenta. Pídele al admin que te asigne una unidad.")
+    if (!myUnit) {
+      setGpsError("No tienes vehículo asignado. Pídele al admin.")
       return
     }
-
-    setError(null)
+    setGpsError(null)
     setIsTracking(true)
 
-    // Obtenemos posición inmediata
+    // Posición inmediata
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords
         setCurrentPos({ lat: latitude, lng: longitude })
         sendLocation(latitude, longitude)
       },
-      (err) => setError("No se pudo obtener el GPS: " + err.message),
-      { enableHighAccuracy: true }
+      (err) => setGpsError("GPS: " + err.message),
+      { enableHighAccuracy: true, timeout: 10000 }
     )
 
-    // Enviamos cada 10 segundos
+    // Actualizar cada 10 segundos
     intervalRef.current = setInterval(() => {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
@@ -85,50 +116,57 @@ export function DriverScreen({ onNavigate }: DriverScreenProps) {
           setCurrentPos({ lat: latitude, lng: longitude })
           sendLocation(latitude, longitude)
         },
-        (err) => setError("GPS: " + err.message),
-        { enableHighAccuracy: true }
+        (err) => setGpsError("GPS: " + err.message),
+        { enableHighAccuracy: true, timeout: 10000 }
       )
     }, 10000)
   }
 
   const stopTracking = () => {
     if (intervalRef.current) clearInterval(intervalRef.current)
-    if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current)
     setIsTracking(false)
   }
 
   useEffect(() => {
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current)
-    }
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
   }, [])
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <HeaderWithMenu title="Panel del Chofer" onNavigate={onNavigate} />
 
-      <div className="flex-1 p-4 space-y-4">
+      <div className="flex-1 p-4 space-y-4 pb-8">
 
-        {/* Estado de la ruta asignada */}
+        {/* Tarjeta: vehículo y ruta */}
         <div className="bg-card border border-border rounded-2xl p-4">
           <div className="flex items-center gap-3 mb-3">
             <div className="bg-primary/10 p-2 rounded-full">
               <Truck className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Tu ruta asignada</p>
-              <p className="font-bold">{myRoute?.name ?? "Sin ruta asignada"}</p>
+              <p className="text-xs text-muted-foreground">Tu vehículo</p>
+              <p className="font-bold">{myUnit?.name ?? "Buscando vehículo…"}</p>
+              {myUnit?.license_plate && (
+                <p className="text-xs text-muted-foreground font-mono">{myUnit.license_plate}</p>
+              )}
             </div>
           </div>
           {myRoute && (
-            <div className="text-xs text-muted-foreground space-y-1">
-              <p>Vehículo: <span className="text-foreground font-medium">{myRoute.unit_name ?? "Sin vehículo"}</span></p>
-              <p>Paradas: <span className="text-foreground font-medium">{myRoute.stops.length}</span></p>
+            <div className="bg-muted rounded-xl p-3 text-sm space-y-1">
+              <p className="text-xs text-muted-foreground">Ruta asignada</p>
+              <p className="font-semibold">{myRoute.name}</p>
+              <p className="text-xs text-muted-foreground">{myRoute.stops.length} paradas</p>
+            </div>
+          )}
+          {unitError && !myUnit && (
+            <div className="flex items-center gap-2 text-amber-600 bg-amber-50 dark:bg-amber-950 rounded-lg p-3 text-sm">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <p>{unitError} Pídele al admin que te asigne en <strong>Transport → Units</strong>.</p>
             </div>
           )}
         </div>
 
-        {/* Estado GPS en vivo */}
+        {/* Estado GPS */}
         <div className={cn(
           "rounded-2xl p-5 border text-center space-y-2 transition-all",
           isTracking
@@ -141,8 +179,10 @@ export function DriverScreen({ onNavigate }: DriverScreenProps) {
               : <WifiOff className="w-10 h-10 text-muted-foreground" />
             }
           </div>
-          <p className={cn("font-bold text-lg", isTracking ? "text-green-700 dark:text-green-300" : "text-muted-foreground")}>
-            {isTracking ? "GPS Activo — Enviando ubicación" : "GPS Inactivo"}
+          <p className={cn("font-bold text-lg",
+            isTracking ? "text-green-700 dark:text-green-300" : "text-muted-foreground"
+          )}>
+            {isTracking ? "Enviando ubicación en vivo" : "GPS Inactivo"}
           </p>
           {currentPos && (
             <div className="text-xs font-mono space-y-0.5 text-muted-foreground">
@@ -155,17 +195,15 @@ export function DriverScreen({ onNavigate }: DriverScreenProps) {
               ✓ Última señal: {lastSent.toLocaleTimeString()} ({sendCount} envíos)
             </p>
           )}
-          {error && (
-            <p className="text-xs text-red-500">{error}</p>
-          )}
+          {gpsError && <p className="text-xs text-red-500">{gpsError}</p>}
         </div>
 
         {/* Botón principal */}
         {!isTracking ? (
           <Button
             onClick={startTracking}
-            className="w-full h-16 text-lg font-bold bg-green-600 hover:bg-green-700 text-white rounded-2xl gap-3"
-            disabled={!unitId}
+            disabled={!myUnit}
+            className="w-full h-16 text-lg font-bold bg-green-600 hover:bg-green-700 text-white rounded-2xl gap-3 disabled:opacity-50"
           >
             <Navigation2 className="w-6 h-6" />
             Iniciar Viaje y Activar GPS
@@ -181,13 +219,7 @@ export function DriverScreen({ onNavigate }: DriverScreenProps) {
           </Button>
         )}
 
-        {!unitId && (
-          <p className="text-xs text-center text-muted-foreground px-4">
-            ⚠️ Pídele al administrador que te asigne un vehículo en el panel de Django Admin.
-          </p>
-        )}
-
-        {/* Paradas de la ruta */}
+        {/* Paradas */}
         {myRoute && myRoute.stops.length > 0 && (
           <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
             <p className="font-semibold text-sm">Paradas de tu ruta</p>
@@ -206,6 +238,7 @@ export function DriverScreen({ onNavigate }: DriverScreenProps) {
             ))}
           </div>
         )}
+
       </div>
     </div>
   )
