@@ -91,14 +91,21 @@ useEffect(() => {
       <HeaderWithMenu title="Rutas de Transporte" onNavigate={onNavigate} />
 
       {/* Tracking Modal with Scroll */}
-      {tracking?.showTracking && (
+      {tracking?.showTracking && (() => {
+        const trackedRoute = routes.find(r => r.id === tracking.routeId)
+        const routeAny = trackedRoute as any
+        const hasGPS = routeAny?.unit_lat && routeAny?.unit_lng
+        return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-card rounded-2xl max-w-sm w-full max-h-[85vh] shadow-xl overflow-hidden flex flex-col">
             {/* Header */}
             <div className="bg-primary px-6 py-4 flex items-center justify-between text-primary-foreground flex-shrink-0">
               <div className="flex items-center gap-2">
                 <Truck className="w-5 h-5" />
-                <h2 className="text-lg font-bold">Rastreando Ruta</h2>
+                <div>
+                  <h2 className="text-lg font-bold leading-tight">Rastreando Ruta</h2>
+                  <p className="text-xs text-primary-foreground/70 leading-tight">{trackedRoute?.name}</p>
+                </div>
               </div>
               <button
                 onClick={() => setTracking(null)}
@@ -109,50 +116,48 @@ useEffect(() => {
             </div>
 
             <div className="overflow-y-auto flex-1 p-6 space-y-6">
-              {/* Current Status */}
-              <div className="bg-muted p-4 rounded-xl space-y-3">
+              {/* GPS Status - REAL */}
+              <div className={cn("p-4 rounded-xl space-y-3", hasGPS ? "bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800" : "bg-muted")}>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
-                  <p className="font-semibold">En tránsito</p>
+                  <div className={cn("w-3 h-3 rounded-full", hasGPS ? "bg-green-500 animate-pulse" : "bg-muted-foreground")}></div>
+                  <p className="font-semibold">{hasGPS ? "GPS en vivo" : "Sin señal GPS aún"}</p>
                 </div>
-                <div className="space-y-2 text-sm">
-                  <p className="text-muted-foreground">Parada actual: {tracking.currentStop}</p>
-                  <p className="text-muted-foreground">Próxima parada en 10 minutos</p>
-                  <p className="text-muted-foreground">Velocidad: 60 km/h</p>
-                </div>
+                {hasGPS ? (
+                  <div className="space-y-1 text-sm">
+                    <p className="text-muted-foreground">Lat: <span className="font-mono text-foreground">{routeAny.unit_lat?.toFixed(6)}</span></p>
+                    <p className="text-muted-foreground">Lng: <span className="font-mono text-foreground">{routeAny.unit_lng?.toFixed(6)}</span></p>
+                    <p className="text-xs text-green-600 dark:text-green-400 mt-1">Actualizado hace unos segundos</p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    El chofer aún no ha activado el GPS. Cuando lo haga, verás la posición en vivo aquí.
+                  </p>
+                )}
               </div>
 
-              {/* Map Preview */}
-              <div className="bg-muted/50 rounded-xl h-48 flex items-center justify-center relative overflow-hidden">
-                <div className="absolute inset-0 opacity-10">
-                  <svg className="w-full h-full" viewBox="0 0 100 100">
-                    <path d="M10 50 L30 30 L50 40 L80 25 L90 60" stroke="currentColor" strokeWidth="2" fill="none" />
-                  </svg>
-                </div>
-                <div className="relative text-center z-10">
-                  <MapPin className="w-8 h-8 text-primary mx-auto mb-2" />
-                  <p className="text-sm font-semibold">Ubicación en tiempo real</p>
-                  <p className="text-xs text-muted-foreground mt-1">13.6843°N, 89.2191°W</p>
-                </div>
+              {/* Map Preview - real si hay GPS */}
+              <div className="rounded-xl h-48 overflow-hidden border border-border shadow-inner">
+                <MapPreview
+                  stops={trackedRoute?.stops || []}
+                  unitLocation={hasGPS ? { lat: routeAny.unit_lat, lng: routeAny.unit_lng } : undefined}
+                />
               </div>
 
-              {/* Timeline */}
+              {/* Paradas */}
               <div className="space-y-3">
-                <p className="font-semibold text-sm">Próximas paradas:</p>
-                {/* Buscamos las paradas de la ruta que estamos rastreando */}
-                {routes.find(r => r.id === tracking.routeId)?.stops.map((stop) => (
+                <p className="font-semibold text-sm">Paradas de la ruta:</p>
+                {(trackedRoute?.stops || []).map((stop) => (
                   <div key={stop.order} className="flex items-center gap-3 p-2 bg-muted/50 rounded-lg">
                     <div className={cn(
-                      "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold",
-                      stop.order === tracking.currentStop ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                      "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0",
+                      "bg-primary/10 text-primary"
                     )}>
                       {stop.order}
                     </div>
-                    <div className="flex-1">
-                      {/* Mostramos el nombre real del stop */}
-                      <p className="text-sm font-medium">{stop.name || `Parada ${stop.order}`}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{stop.name || `Parada ${stop.order}`}</p>
                       <p className="text-xs text-muted-foreground">
-                        {stop.minutes_from_start ? `Llegada en ${stop.minutes_from_start} min` : "Próximamente"}
+                        {stop.minutes_from_start ? `~${stop.minutes_from_start} min desde el inicio` : ""}
                       </p>
                     </div>
                   </div>
@@ -169,7 +174,8 @@ useEffect(() => {
             </div>
           </div>
         </div>
-      )}
+        )
+      })()}
 
       {/* Services Modal */}
       {serviceView?.showServices && (
@@ -338,35 +344,35 @@ useEffect(() => {
           >
             {/* Route Header */}
             <div className="p-4 border-b border-border">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex-1">
-                  <h3 className="text-lg font-bold">{route.name}</h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div
-                      className="w-4 h-4 rounded-full"
-                      style={{ backgroundColor: route.colorHex }}
-                    />
-                    <span className="text-xs text-muted-foreground">Ruta activa</span>
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold">{route.name}</h3>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div
+                        className="w-4 h-4 rounded-full"
+                        style={{ backgroundColor: route.colorHex }}
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        {route.unit_name ? `Unidad: ${route.unit_name}` : 'Ruta activa'}
+                      </span>
+                    </div>
                   </div>
+                  <Badge className={route.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' : 'bg-muted text-muted-foreground'}>
+                    {route.is_active ? 'ACTIVA' : 'INACTIVA'}
+                  </Badge>
                 </div>
-                <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
-                  EN SERVICIO
-                </Badge>
-              </div>
 
               {/* Route Stats */}
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 <div className="bg-muted p-2 rounded-lg text-center">
                   <p className="text-xs text-muted-foreground">Paradas</p>
                   <p className="font-bold text-sm">{route.stops.length}</p>
                 </div>
                 <div className="bg-muted p-2 rounded-lg text-center">
-                  <p className="text-xs text-muted-foreground">Estado</p>
-                  <p className="font-bold text-sm text-green-600">En ruta</p>
-                </div>
-                <div className="bg-muted p-2 rounded-lg text-center">
-                  <p className="text-xs text-muted-foreground">Próxima</p>
-                  <p className="font-bold text-sm">15 min</p>
+                  <p className="text-xs text-muted-foreground">GPS</p>
+                  <p className={`font-bold text-sm ${ (route as any).unit_lat ? 'text-green-600' : 'text-muted-foreground'}`}>
+                    {(route as any).unit_lat ? 'En vivo ●' : 'Sin señal'}
+                  </p>
                 </div>
               </div>
             </div>

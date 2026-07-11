@@ -937,28 +937,48 @@ export const useAppStore = create<AppState>()(
         })),
 
         payPool: (poolId, paymentType) => {
-        // AquÃ­ puedes meter la lÃ³gica real despuÃ©s. 
-        // Con solo declarar esto, TypeScript dejarÃ¡ de chillar.
+        // Aquí puedes meter la lógica real después. 
+        // Con solo declarar esto, TypeScript dejará de chillar.
       },
 
      fetchRoutes: async () => {
         set({ isLoading: true });
         try {
-          const response = await fetch(`${API_BASE}/transport/routes/`);
+          const { accessToken } = get();
+          const response = await fetch(`${API_BASE}/transport/routes/`, {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`
+            }
+          });
+
+          // Si el servidor dice 401/403, salimos limpio sin explotar
+          if (!response.ok) {
+            console.warn(`Rutas: servidor respondió ${response.status}.`);
+            set({ routes: [], isLoading: false });
+            return;
+          }
+
           const data = await response.json();
+
+          // Protección: si no es array (error de Django), salimos
+          if (!Array.isArray(data)) {
+            set({ routes: [], isLoading: false });
+            return;
+          }
           
           const formatted: Route[] = data.map((r: any) => ({
               id: r.id,
               name: r.name,
               colorHex: r.color_hex || '#10b981',
-              unit_name: r.unit_name || "Unidad EstÃ¡ndar",
+              unit_name: r.unit_name || null,
               // --- GPS VIVO ---
-              unit_lat: r.unit_lat, 
-              unit_lng: r.unit_lng, 
-              price_one_way: String(r.price_one_way),
-              price_round_trip: String(r.price_round_trip),
+              unit_lat: r.unit_lat ?? null, 
+              unit_lng: r.unit_lng ?? null, 
+              price_one_way: String(r.price_one_way || '0'),
+              price_round_trip: String(r.price_round_trip || '0'),
               is_active: r.is_active,
-              stops: r.stops.map((s: any) => ({
+              stops: (r.stops || []).map((s: any) => ({
                 id: s.id,
                 name: s.name,
                 latitude: parseFloat(s.latitude),
