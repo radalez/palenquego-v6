@@ -274,6 +274,8 @@ fetchRecommendations: () => Promise<void>
   guardians: Guardian[]
   fetchGuardians: () => Promise<void>
   addGuardian: (name: string, phone: string, email: string) => Promise<boolean>
+  updateGuardian: (guardianId: number, name: string, phone: string, email: string) => Promise<boolean>
+  deleteGuardian: (guardianId: number) => Promise<boolean>
   toggleGuardianActive: (guardianId: number, isActive: boolean) => Promise<void>
   scanQRCode: (token: string) => Promise<any>
   scanCheckpoint: (tripId: number, stopId: string, lat: number, lng: number) => Promise<any>
