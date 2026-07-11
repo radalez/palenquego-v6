@@ -146,22 +146,83 @@ useEffect(() => {
               {/* Paradas */}
               <div className="space-y-3">
                 <p className="font-semibold text-sm">Paradas de la ruta:</p>
-                {(trackedRoute?.stops || []).map((stop) => (
-                  <div key={stop.order} className="flex items-center gap-3 p-2 bg-muted/50 rounded-lg">
-                    <div className={cn(
-                      "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0",
-                      "bg-primary/10 text-primary"
-                    )}>
-                      {stop.order}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{stop.name || `Parada ${stop.order}`}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {stop.minutes_from_start ? `~${stop.minutes_from_start} min desde el inicio` : ""}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                {(() => {
+                  const stops = trackedRoute?.stops || [];
+                  const unitLat = routeAny.unit_lat;
+                  const unitLng = routeAny.unit_lng;
+
+                  // Función para calcular distancia (Haversine) en metros
+                  const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+                    const R = 6371e3; // Radio de la tierra en metros
+                    const p1 = lat1 * Math.PI/180;
+                    const p2 = lat2 * Math.PI/180;
+                    const dp = (lat2-lat1) * Math.PI/180;
+                    const dl = (lon2-lon1) * Math.PI/180;
+                    const a = Math.sin(dp/2) * Math.sin(dp/2) +
+                              Math.cos(p1) * Math.cos(p2) *
+                              Math.sin(dl/2) * Math.sin(dl/2);
+                    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                    return R * c;
+                  };
+
+                  let closestStopOrder = -1;
+                  let minDistance = Infinity;
+
+                  if (hasGPS) {
+                    stops.forEach(stop => {
+                      const dist = getDistance(unitLat, unitLng, stop.latitude, stop.longitude);
+                      if (dist < minDistance) {
+                        minDistance = dist;
+                        closestStopOrder = stop.order;
+                      }
+                    });
+                  }
+
+                  return stops.map((stop) => {
+                    // Si el GPS está activo, evaluamos.
+                    // Si está a < 50m de la parada actual, o si la parada es anterior a la más cercana, está "pasada"
+                    let isPassed = false;
+                    let isCurrent = false;
+
+                    if (hasGPS) {
+                      const dist = getDistance(unitLat, unitLng, stop.latitude, stop.longitude);
+                      if (dist <= 50) {
+                        isPassed = true; // Está justo en la parada o pasó hace poco (dentro de 50m)
+                        isCurrent = true;
+                      } else if (stop.order < closestStopOrder) {
+                        isPassed = true; // Ya la pasó porque la más cercana es una posterior
+                      }
+                    }
+
+                    return (
+                      <div key={stop.order} className={cn(
+                        "flex items-center gap-3 p-2 rounded-lg transition-colors",
+                        isPassed ? "bg-green-50 dark:bg-green-950/30" : "bg-muted/50"
+                      )}>
+                        <div className={cn(
+                          "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0",
+                          isPassed ? "bg-green-500 text-white" : "bg-primary/10 text-primary"
+                        )}>
+                          {isPassed ? "✓" : stop.order}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={cn(
+                            "text-sm font-medium truncate",
+                            isPassed ? "text-green-700 dark:text-green-400" : ""
+                          )}>
+                            {stop.name || `Parada ${stop.order}`}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {isCurrent 
+                              ? <span className="text-green-600 font-semibold">¡Autobús aquí! (A menos de 50m)</span>
+                              : stop.minutes_from_start ? `~${stop.minutes_from_start} min desde el inicio` : ""
+                            }
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
               </div>
 
             </div>
