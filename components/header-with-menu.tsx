@@ -53,9 +53,13 @@ export function HeaderWithMenu({ title, onProfileClick, onNavigate }: HeaderWith
             {/* Profile Avatar Button */}
             <button
               onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-              className="relative w-12 h-12 rounded-full bg-primary-foreground/20 hover:bg-primary-foreground/30 transition-colors flex items-center justify-center border-2 border-primary-foreground/30 font-bold text-primary-foreground text-lg"
+              className="relative w-12 h-12 rounded-full bg-primary-foreground/20 hover:bg-primary-foreground/30 transition-colors flex items-center justify-center border-2 border-primary-foreground/30 font-bold text-primary-foreground text-lg overflow-hidden"
             >
-              {currentUser.avatar}
+              {currentUser.avatar?.startsWith('http') ? (
+                <img src={currentUser.avatar} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                currentUser.avatar || "U"
+              )}
             </button>
           </div>
         </div>
@@ -66,8 +70,12 @@ export function HeaderWithMenu({ title, onProfileClick, onNavigate }: HeaderWith
             {/* User Info */}
             <div className="p-4 border-b border-border">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center font-bold text-primary-foreground">
-                  {currentUser.avatar}
+                <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center font-bold text-primary-foreground overflow-hidden">
+                  {currentUser.avatar?.startsWith('http') ? (
+                    <img src={currentUser.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    currentUser.avatar || "U"
+                  )}
                 </div>
                 <div>
                   <p className="font-bold text-foreground">{currentUser.name}</p>

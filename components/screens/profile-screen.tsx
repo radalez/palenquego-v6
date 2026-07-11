@@ -91,8 +91,12 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
           {/* User Card */}
           <div className="bg-card rounded-2xl p-4 shadow-lg">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
-                <span className="text-xl font-bold text-primary">{currentUser.avatar}</span>
+              <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
+                {currentUser.avatar?.startsWith('http') ? (
+                  <img src={currentUser.avatar} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-xl font-bold text-primary">{currentUser.avatar || "U"}</span>
+                )}
               </div>
               <div className="flex-1">
                 <h2 className="text-lg font-semibold text-foreground">{currentUser.name}</h2>
