@@ -70,12 +70,19 @@ export default function Home() {
 
   // Restaurar la pestaña previa o redirigir al chofer
   useEffect(() => {
+    if (currentUser?.tipo === 'CHOFER') {
+      const gpsActive = sessionStorage.getItem('chofer-gps-active');
+      if (!gpsActive) {
+        // Obligar a ir al panel del chofer si el GPS está apagado
+        setActiveTab('conductor' as ActiveTab);
+        return;
+      }
+    }
+    
+    // Si no es chofer, o si es chofer pero el GPS ya está activo, respetamos la pestaña guardada
     const savedTab = sessionStorage.getItem("palenque-active-tab") as ActiveTab;
     if (savedTab) {
       setActiveTab(savedTab);
-    } else if (currentUser?.tipo === 'CHOFER') {
-      const gpsActive = sessionStorage.getItem('chofer-gps-active');
-      setActiveTab(gpsActive ? 'rutas-classic' as ActiveTab : 'conductor' as ActiveTab);
     }
   }, [currentUser]);
 

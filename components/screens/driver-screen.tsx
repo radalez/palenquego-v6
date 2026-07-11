@@ -132,6 +132,7 @@ export function DriverScreen({ onNavigate }: DriverScreenProps) {
   const stopTracking = () => {
     if (intervalRef.current) clearInterval(intervalRef.current)
     setIsTracking(false)
+    sessionStorage.removeItem('chofer-gps-active')
   }
 
   useEffect(() => {
