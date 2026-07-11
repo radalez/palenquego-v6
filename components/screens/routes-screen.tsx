@@ -330,7 +330,9 @@ useEffect(() => {
             </div>
           </div>
         </div>
-       <div className="px-4 py-4 border-b border-border">
+      )}
+
+      <div className="px-4 py-4 border-b border-border">
         <p className="text-muted-foreground text-sm">Transporte seguro a tus servicios favoritos</p>
       </div>
 
