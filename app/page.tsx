@@ -25,7 +25,7 @@ import { RegisterScreen } from "@/components/screens/register-screen"
 import { OnboardingScreen } from "@/components/screens/onboarding-screen"
 import { FavoritesScreen } from "@/components/screens/favorites-screen"
 import { RecommendationsScreen } from "@/components/screens/recommendations-screen"
-import { DriverScreen } from "@/components/screens/driver-screen"
+import { DriverGPSWidget } from "@/components/driver-gps-widget"
 import { ShareInviteModal } from "@/components/share-invite-modal"
 import { PoolPaymentModal } from "@/components/pool-payment-modal"
 import { InstallPWABanner } from "@/components/install-pwa-banner"
@@ -129,11 +129,6 @@ export default function Home() {
     return <OnboardingScreen onComplete={handleOnboardingComplete} />
   }
 
-  // Si el usuario es CHOFER, mostrar siempre el panel del conductor
-  if (currentUser?.tipo === 'CHOFER') {
-    return <DriverScreen onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />
-  }
-
   const isMainTab =
     activeTab === "marketplace" || activeTab === "businesses" || activeTab === "pool" || activeTab === "safeflow" || activeTab === "profile" || activeTab === "rutas"
 
@@ -147,7 +142,9 @@ export default function Home() {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col relative h-screen overflow-hidden w-full lg:max-w-none max-w-md mx-auto shadow-2xl lg:shadow-none bg-background lg:border-l lg:border-border">
         <InstallPWABanner />
-        
+
+        {/* Widget GPS flotante para choferes */}
+        {currentUser?.tipo === 'CHOFER' && <DriverGPSWidget />}
         {/* Mobile Sidebar Menu (hamburger) */}
         <div className="lg:hidden">
           <SidebarMenu activeTab={activeTab} onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />
