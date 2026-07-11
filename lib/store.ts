@@ -1299,10 +1299,52 @@ export const useAppStore = create<AppState>()(
             body: JSON.stringify({ is_active: isActive })
           });
           if (response.ok) {
-            await get().fetchGuardians(); // Refrescamos la lista para que el UI se actualice
+            await get().fetchGuardians();
+            return true;
           }
+          return false;
         } catch (error) {
-          console.error("Error al actualizar guardiÃ¡n:", error);
+          return false;
+        }
+      },
+
+      updateGuardian: async (guardianId: number, name: string, phone: string, email: string) => {
+        const { accessToken } = get();
+        try {
+          const response = await fetch(`${API_BASE}/safeflow/guardians/${guardianId}/`, {
+            method: 'PUT',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}` 
+            },
+            body: JSON.stringify({ name: name, phone_number: phone, email: email })
+          });
+          if (response.ok) {
+            await get().fetchGuardians();
+            return true;
+          }
+          return false;
+        } catch (error) {
+          return false;
+        }
+      },
+
+      deleteGuardian: async (guardianId: number) => {
+        const { accessToken } = get();
+        try {
+          const response = await fetch(`${API_BASE}/safeflow/guardians/${guardianId}/`, {
+            method: 'DELETE',
+            headers: { 
+              'Authorization': `Bearer ${accessToken}` 
+            }
+          });
+          if (response.ok) {
+            await get().fetchGuardians();
+            return true;
+          }
+          return false;
+        } catch (error) {
+          return false;
         }
       },
 

@@ -25,6 +25,7 @@ export function SafeFlowScreen({ onNavigate }: SafeFlowScreenProps) {
   const [isScanning, setIsScanning] = useState(false)
   const [scanResult, setScanResult] = useState<"success" | "error" | null>(null)
   const [showAddContact, setShowAddContact] = useState(false)
+  const [editingContact, setEditingContact] = useState<{id: number, name: string, phone: string, email: string} | null>(null)
   const { guardians, fetchGuardians } = useAppStore()
   const [contacts, setContacts] = useState<Contact[]>([
     { id: 1, name: "Mamá", phone: "+503 7890 1234", avatar: "M", notifyOnArrival: true },
@@ -180,7 +181,10 @@ export function SafeFlowScreen({ onNavigate }: SafeFlowScreenProps) {
             variant="ghost" 
             size="sm" 
             className="text-primary"
-            onClick={() => setShowAddContact(true)}
+            onClick={() => {
+              setEditingContact(null)
+              setShowAddContact(true)
+            }}
           >
             + Añadir
           </Button>
@@ -213,6 +217,22 @@ export function SafeFlowScreen({ onNavigate }: SafeFlowScreenProps) {
                     }} 
                   />
                 </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-muted-foreground hover:text-primary px-2"
+                  onClick={() => {
+                    setEditingContact({
+                      id: guardian.id,
+                      name: guardian.name,
+                      phone: guardian.phone_number,
+                      email: guardian.email || ''
+                    })
+                    setShowAddContact(true)
+                  }}
+                >
+                  Editar
+                </Button>
               </div>
             </div>
           ))}
@@ -271,7 +291,13 @@ export function SafeFlowScreen({ onNavigate }: SafeFlowScreenProps) {
         }
       `}</style>
       {showAddContact && (
-        <AddContactModal onClose={() => setShowAddContact(false)} />
+        <AddContactModal 
+          onClose={() => {
+            setShowAddContact(false)
+            setEditingContact(null)
+          }} 
+          initialData={editingContact || undefined} 
+        />
       )}
     </div>
   )
