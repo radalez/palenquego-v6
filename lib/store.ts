@@ -971,6 +971,7 @@ export const useAppStore = create<AppState>()(
               id: r.id,
               name: r.name,
               colorHex: r.color_hex || '#10b981',
+              unit_id: r.unit_id ?? null,
               unit_name: r.unit_name || null,
               // --- GPS VIVO ---
               unit_lat: r.unit_lat ?? null, 
@@ -978,6 +979,8 @@ export const useAppStore = create<AppState>()(
               price_one_way: String(r.price_one_way || '0'),
               price_round_trip: String(r.price_round_trip || '0'),
               is_active: r.is_active,
+              // Viene del backend: true si el usuario tiene boleto activo para esta ruta
+              user_has_ticket: r.user_has_ticket ?? false,
               stops: (r.stops || []).map((s: any) => ({
                 id: s.id,
                 name: s.name,

@@ -330,151 +330,163 @@ useEffect(() => {
             </div>
           </div>
         </div>
-      )}
-
-      <div className="px-4 py-4 border-b border-border">
+       <div className="px-4 py-4 border-b border-border">
         <p className="text-muted-foreground text-sm">Transporte seguro a tus servicios favoritos</p>
       </div>
 
-      <div className="px-4 py-6 space-y-4">
-        {routes.map((route) => (
-          <div
-            key={route.id}
-            className={cn(
-              "bg-card border border-border rounded-2xl overflow-hidden hover:shadow-lg transition",
-              !route.is_active && "opacity-60",
-              (route as any).user_has_ticket && "ring-2 ring-primary/40"
-            )}
-          >
-            {/* Route Header */}
-            <div className="p-4 border-b border-border">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className={cn("text-lg font-bold", !route.is_active && "text-muted-foreground")}>{route.name}</h3>
-                      {(route as any).user_has_ticket && (
-                        <span className="inline-flex items-center gap-1 bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full">
-                          ⭐ Mi Ruta
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <div
-                        className="w-4 h-4 rounded-full"
-                        style={{ backgroundColor: route.colorHex }}
-                      />
-                      <span className="text-xs text-muted-foreground">
-                        {route.unit_name ? `Unidad: ${route.unit_name}` : 'Sin unidad asignada'}
-                      </span>
-                    </div>
-                  </div>
-                  <Badge className={route.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' : 'bg-muted text-muted-foreground'}>
-                    {route.is_active ? 'ACTIVA' : 'INACTIVA'}
-                  </Badge>
-                </div>
+      <div className="px-4 py-6 space-y-6">
 
-              {/* Route Stats */}
-              <div className="grid grid-cols-2 gap-2">
-                <div className="bg-muted p-2 rounded-lg text-center">
-                  <p className="text-xs text-muted-foreground">Paradas</p>
-                  <p className="font-bold text-sm">{route.stops.length}</p>
-                </div>
-                <div className="bg-muted p-2 rounded-lg text-center">
-                  <p className="text-xs text-muted-foreground">GPS</p>
-                  <p className={`font-bold text-sm ${ (route as any).unit_lat ? 'text-green-600' : 'text-muted-foreground'}`}>
-                    {(route as any).unit_lat ? 'En vivo ●' : 'Sin señal'}
-                  </p>
-                </div>
-              </div>
+        {/* --- MI RUTA (rutas con boleto activo) --- */}
+        {routes.some((r: any) => r.user_has_ticket) && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">⭐</span>
+              <h2 className="font-bold text-base">Mi Ruta</h2>
+              <div className="flex-1 h-px bg-primary/20" />
             </div>
+            {routes.filter((r: any) => r.user_has_ticket).map((route) => (
+              <RouteCardItem
+                key={route.id} route={route}
+                onTrack={handleStartTracking}
+                onServices={handleViewServices}
+                onBuy={handleBuyTicket}
+              />
+            ))}
+          </div>
+        )}
 
-            {/* Paradas */}
-            <div className="px-4 py-3 border-b border-border">
-              <p className="text-sm font-semibold mb-3">Paradas de esta ruta:</p>
-              <div className="space-y-2">
-                {route.stops.map((stop, idx) => (
-                  <div key={idx} className="flex items-center gap-3 text-sm">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-xs">
-                      {stop.order}
-                    </div>
-                    <div className="flex-1">                  
-                    <p className="font-medium">{stop.name || `Parada ${stop.order}`}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {stop.latitude.toFixed(4)}, {stop.longitude.toFixed(4)}
-                    </p>
-                  </div>
-                    <Clock size={16} className="text-muted-foreground" />
-                  </div>
-                ))}
-              </div>
+        {/* --- OTRAS RUTAS --- */}
+        <div className="space-y-3">
+          {routes.some((r: any) => r.user_has_ticket) && (
+            <div className="flex items-center gap-2">
+              <span className="text-lg">🚌</span>
+              <h2 className="font-bold text-base">Otras Rutas</h2>
+              <div className="flex-1 h-px bg-border" />
             </div>
+          )}
+          {routes.filter((r: any) => !r.user_has_ticket).map((route) => (
+            <RouteCardItem
+              key={route.id} route={route}
+              onTrack={handleStartTracking}
+              onServices={handleViewServices}
+              onBuy={handleBuyTicket}
+            />
+          ))}
+        </div>
 
-          {/* Route Map Preview */}
-            <div className="p-4 h-64 border-b border-border">
-              <div className="h-full w-full rounded-xl overflow-hidden border border-border shadow-inner">
-                <MapPreview 
-                  stops={route.stops} 
-                  unitLocation={
-                    route.stops[0] 
-                      ? { lat: route.stops[0].latitude, lng: route.stops[0].longitude } 
-                      : undefined
-                  } 
-                />
-              </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Componente de tarjeta de ruta ───────────────────────────────────────────
+function RouteCardItem({
+  route,
+  onTrack,
+  onServices,
+  onBuy,
+}: {
+  route: Route
+  onTrack: (r: Route) => void
+  onServices: (r: Route) => void
+  onBuy: (r: Route) => void
+}) {
+  const r = route as any
+  const hasGPS = r.unit_lat && r.unit_lng
+
+  return (
+    <div className={cn(
+      "bg-card border border-border rounded-2xl overflow-hidden hover:shadow-lg transition",
+      !route.is_active && "opacity-60",
+      r.user_has_ticket && "ring-2 ring-primary/40"
+    )}>
+      {/* Header */}
+      <div className="p-4 border-b border-border">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className={cn("text-lg font-bold", !route.is_active && "text-muted-foreground")}>
+                {route.name}
+              </h3>
+              {r.user_has_ticket && (
+                <span className="inline-flex items-center gap-1 bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full">
+                  ⭐ Mi Ruta
+                </span>
+              )}
             </div>
-
-            {/* Action Buttons */}
-            <div className="p-4 flex gap-2">
-              <Button
-                onClick={() => handleStartTracking(route)}
-                variant="outline"
-                className="flex-1 gap-2 bg-transparent"
-              >
-                <Navigation2 size={16} />
-                Rastrear
-              </Button>
-              <Button
-                onClick={() => handleViewServices(route)}
-                className="flex-1 bg-primary"
-              >
-                Ver Servicios
-              </Button>
-            </div>
-
-            {/* Quick Ticket Purchase */}
-            <div className="px-4 pb-4">
-              <Button
-                onClick={() => handleBuyTicket(route)}
-                className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground gap-2"
-              >
-                <Ticket size={16} />
-                Comprar Boleto de Ruta
-              </Button>
+            <div className="flex items-center gap-2 mt-1">
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: route.colorHex }} />
+              <span className="text-xs text-muted-foreground">
+                {route.unit_name ? `Unidad: ${route.unit_name}` : 'Sin unidad asignada'}
+              </span>
             </div>
           </div>
-        ))}
+          <Badge className={route.is_active
+            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
+            : 'bg-muted text-muted-foreground'}>
+            {route.is_active ? 'ACTIVA' : 'INACTIVA'}
+          </Badge>
+        </div>
 
-        {/* Info Banner */}
-        <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex gap-3">
-          <AlertCircle size={20} className="text-blue-600 dark:text-blue-400 flex-shrink-0" />
-          <div className="text-sm text-blue-800 dark:text-blue-200">
-            <p className="font-semibold mb-1">Nuestras rutas conectan:</p>
-            <p>
-              Ciudades principales → Paradas intermedias → Servicios turísticos. Transporte seguro, puntual y
-              confortable.
+        {/* Stats */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="bg-muted p-2 rounded-lg text-center">
+            <p className="text-xs text-muted-foreground">Paradas</p>
+            <p className="font-bold text-sm">{route.stops.length}</p>
+          </div>
+          <div className="bg-muted p-2 rounded-lg text-center">
+            <p className="text-xs text-muted-foreground">GPS</p>
+            <p className={cn("font-bold text-sm", hasGPS ? "text-green-600" : "text-muted-foreground")}>
+              {hasGPS ? "En vivo ●" : "Sin señal"}
             </p>
           </div>
         </div>
+      </div>
 
-        {/* Coming Soon */}
-        <div className="bg-muted p-6 rounded-xl text-center space-y-2">
-          <Users size={32} className="mx-auto text-muted-foreground" />
-          <h4 className="font-bold">Más rutas próximamente</h4>
-          <p className="text-sm text-muted-foreground">Estamos expandiendo a más ciudades y regiones</p>
-          <Button size="sm" variant="outline" className="mt-3 bg-transparent">
-            Notificarme
-          </Button>
+      {/* Paradas */}
+      <div className="px-4 py-3 border-b border-border">
+        <p className="text-sm font-semibold mb-2">Paradas de esta ruta:</p>
+        <div className="space-y-2">
+          {route.stops.map((stop, idx) => (
+            <div key={idx} className="flex items-center gap-3 text-sm">
+              <div className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/10 text-primary font-bold text-xs flex-shrink-0">
+                {stop.order}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium truncate">{stop.name || `Parada ${stop.order}`}</p>
+                <p className="text-xs text-muted-foreground">{stop.latitude.toFixed(4)}, {stop.longitude.toFixed(4)}</p>
+              </div>
+            </div>
+          ))}
         </div>
+      </div>
+
+      {/* Mapa */}
+      <div className="p-4 h-56 border-b border-border">
+        <div className="h-full w-full rounded-xl overflow-hidden border border-border">
+          <MapPreview
+            stops={route.stops}
+            unitLocation={hasGPS ? { lat: r.unit_lat, lng: r.unit_lng } : undefined}
+          />
+        </div>
+      </div>
+
+      {/* Botones */}
+      <div className="p-4 flex gap-2">
+        <Button onClick={() => onTrack(route)} variant="outline" className="flex-1 gap-2 bg-transparent">
+          <Navigation2 size={16} /> Rastrear
+        </Button>
+        <Button onClick={() => onServices(route)} className="flex-1 bg-primary">
+          Ver Servicios
+        </Button>
+      </div>
+      <div className="px-4 pb-4">
+        <Button
+          onClick={() => onBuy(route)}
+          className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground gap-2"
+        >
+          <Ticket size={16} /> Comprar Boleto
+        </Button>
       </div>
     </div>
   )
