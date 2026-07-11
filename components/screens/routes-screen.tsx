@@ -340,20 +340,31 @@ useEffect(() => {
         {routes.map((route) => (
           <div
             key={route.id}
-            className="bg-card border border-border rounded-2xl overflow-hidden hover:shadow-lg transition"
+            className={cn(
+              "bg-card border border-border rounded-2xl overflow-hidden hover:shadow-lg transition",
+              !route.is_active && "opacity-60",
+              (route as any).user_has_ticket && "ring-2 ring-primary/40"
+            )}
           >
             {/* Route Header */}
             <div className="p-4 border-b border-border">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
-                    <h3 className="text-lg font-bold">{route.name}</h3>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className={cn("text-lg font-bold", !route.is_active && "text-muted-foreground")}>{route.name}</h3>
+                      {(route as any).user_has_ticket && (
+                        <span className="inline-flex items-center gap-1 bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full">
+                          ⭐ Mi Ruta
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-2 mt-1">
                       <div
                         className="w-4 h-4 rounded-full"
                         style={{ backgroundColor: route.colorHex }}
                       />
                       <span className="text-xs text-muted-foreground">
-                        {route.unit_name ? `Unidad: ${route.unit_name}` : 'Ruta activa'}
+                        {route.unit_name ? `Unidad: ${route.unit_name}` : 'Sin unidad asignada'}
                       </span>
                     </div>
                   </div>
