@@ -347,7 +347,11 @@ export const useAppStore = create<AppState>()(
               body: JSON.stringify({ lat, lng })
             })
             if (res.ok) {
+              const data = await res.json()
               set((state) => ({ driverGpsCount: state.driverGpsCount + 1, driverGpsError: null }))
+              if (data.is_trip_finished) {
+                get().stopDriverTracking()
+              }
             } else {
               set({ driverGpsError: `Error: ${res.status}` })
             }
