@@ -97,12 +97,19 @@ export function DriverScreen({ onNavigate }: DriverScreenProps) {
     setGpsError(null)
     setIsTracking(true)
 
-    // Posición inmediata
+    // Posición inmediata → al tener señal, guardar flag y redirigir a rutas
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords
         setCurrentPos({ lat: latitude, lng: longitude })
         sendLocation(latitude, longitude)
+
+        // Guardar flag para que no le salga la config de nuevo
+        sessionStorage.setItem('chofer-gps-active', 'true')
+        // Redirigir a la vista de rutas después de un breve delay
+        setTimeout(() => {
+          if (onNavigate) onNavigate('rutas-classic')
+        }, 1500)
       },
       (err) => setGpsError("GPS: " + err.message),
       { enableHighAccuracy: true, timeout: 10000 }

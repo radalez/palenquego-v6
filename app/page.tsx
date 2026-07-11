@@ -26,6 +26,7 @@ import { OnboardingScreen } from "@/components/screens/onboarding-screen"
 import { FavoritesScreen } from "@/components/screens/favorites-screen"
 import { RecommendationsScreen } from "@/components/screens/recommendations-screen"
 import { DriverGPSWidget } from "@/components/driver-gps-widget"
+import { DriverScreen } from "@/components/screens/driver-screen"
 import { ShareInviteModal } from "@/components/share-invite-modal"
 import { PoolPaymentModal } from "@/components/pool-payment-modal"
 import { InstallPWABanner } from "@/components/install-pwa-banner"
@@ -40,6 +41,7 @@ type ActiveTab =
   | "profile"
   | "rutas"
   | "rutas-classic"
+  | "conductor"
   | "billing"
   | "planes"
   | "pagos"
@@ -56,19 +58,6 @@ type ActiveTab =
 export default function Home() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("marketplace")
 
-  // Restaurar la pestaña previa si venimos navegando hacia atrás
-  useEffect(() => {
-    const savedTab = sessionStorage.getItem("palenque-active-tab") as ActiveTab;
-    if (savedTab) {
-      setActiveTab(savedTab);
-    }
-  }, []);
-
-  // Guardar la pestaña activa actual en sessionStorage
-  useEffect(() => {
-    sessionStorage.setItem("palenque-active-tab", activeTab);
-  }, [activeTab]);
-
   const isAuthenticated = useAppStore((state) => state.isAuthenticated)
   const hasCompletedOnboarding = useAppStore((state) => state.hasCompletedOnboarding)
   const completeOnboarding = useAppStore((state) => state.completeOnboarding)
@@ -78,6 +67,22 @@ export default function Home() {
   const [authView, setAuthView] = useState<"login" | "register">("register")
   const [showShareModal, setShowShareModal] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
+
+  // Restaurar la pestaña previa o redirigir al chofer
+  useEffect(() => {
+    const savedTab = sessionStorage.getItem("palenque-active-tab") as ActiveTab;
+    if (savedTab) {
+      setActiveTab(savedTab);
+    } else if (currentUser?.tipo === 'CHOFER') {
+      const gpsActive = sessionStorage.getItem('chofer-gps-active');
+      setActiveTab(gpsActive ? 'rutas-classic' as ActiveTab : 'conductor' as ActiveTab);
+    }
+  }, [currentUser]);
+
+  // Guardar la pestaña activa actual en sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem("palenque-active-tab", activeTab);
+  }, [activeTab]);
   const [selectedPoolForShare, setSelectedPoolForShare] = useState<any>(null)
   const [selectedPoolForPayment, setSelectedPoolForPayment] = useState<any>(null)
   
@@ -130,7 +135,7 @@ export default function Home() {
   }
 
   const isMainTab =
-    activeTab === "marketplace" || activeTab === "businesses" || activeTab === "pool" || activeTab === "safeflow" || activeTab === "profile" || activeTab === "rutas"
+    activeTab === "marketplace" || activeTab === "businesses" || activeTab === "pool" || activeTab === "safeflow" || activeTab === "profile" || activeTab === "rutas" || activeTab === "rutas-classic"
 
   return (
     <div className="min-h-screen bg-background flex w-full overflow-hidden">
@@ -143,8 +148,8 @@ export default function Home() {
       <main className="flex-1 flex flex-col relative h-screen overflow-hidden w-full lg:max-w-none max-w-md mx-auto shadow-2xl lg:shadow-none bg-background lg:border-l lg:border-border">
         <InstallPWABanner />
 
-        {/* Widget GPS flotante para choferes */}
-        {currentUser?.tipo === 'CHOFER' && <DriverGPSWidget />}
+        {/* Widget GPS flotante para choferes (solo cuando NO están en su panel) */}
+        {currentUser?.tipo === 'CHOFER' && activeTab !== 'conductor' && <DriverGPSWidget />}
         {/* Mobile Sidebar Menu (hamburger) */}
         <div className="lg:hidden">
           <SidebarMenu activeTab={activeTab} onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />
@@ -165,16 +170,21 @@ export default function Home() {
         
         {/* Nueva vista Tinder-Style para "Go" (rutas) */}
         {activeTab === "rutas" && <SwipeGoScreen onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />}
+
+        {/* Panel del Conductor */}
+        {activeTab === "conductor" && <DriverScreen onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />}
         
         {/* Vista Clásica de Rutas */}
         {activeTab === "rutas-classic" && (
           <div className="w-full h-full relative">
-            <button 
-              onClick={() => setActiveTab("businesses")}
-              className="absolute z-50 top-4 left-4 bg-background/80 backdrop-blur rounded-full p-2"
-            >
-              ← Volver
-            </button>
+            {currentUser?.tipo !== 'CHOFER' && (
+              <button 
+                onClick={() => setActiveTab("businesses")}
+                className="absolute z-50 top-4 left-4 bg-background/80 backdrop-blur rounded-full p-2"
+              >
+                ← Volver
+              </button>
+            )}
             <RoutesScreen onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />
           </div>
         )}
