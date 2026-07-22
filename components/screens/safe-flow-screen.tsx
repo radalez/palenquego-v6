@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { QrCode, Shield, Bell, CheckCircle2, AlertTriangle, Scan } from "lucide-react"
+import { QrCode, Shield, Bell, CheckCircle2, AlertTriangle, Scan, Ticket } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Scanner } from '@yudiel/react-qr-scanner'
 import { HeaderWithMenu } from "@/components/header-with-menu"
 import { useAppStore } from "@/lib/store"
 import { AddContactModal } from "@/components/add-contact-modal"
+import QRCode from "react-qr-code"
 
 interface Contact {
   id: number
@@ -26,36 +27,76 @@ export function SafeFlowScreen({ onNavigate }: SafeFlowScreenProps) {
   const [scanResult, setScanResult] = useState<"success" | "error" | null>(null)
   const [showAddContact, setShowAddContact] = useState(false)
   const [editingContact, setEditingContact] = useState<{id: number, name: string, phone: string, email: string} | null>(null)
-  const { guardians, fetchGuardians } = useAppStore()
-  const [contacts, setContacts] = useState<Contact[]>([
-    { id: 1, name: "Mamá", phone: "+503 7890 1234", avatar: "M", notifyOnArrival: true },
-    { id: 2, name: "Papá", phone: "+503 7890 5678", avatar: "P", notifyOnArrival: true },
-    { id: 3, name: "Ana (Hermana)", phone: "+503 7890 9012", avatar: "A", notifyOnArrival: false },
-  ])
+  const { guardians, fetchGuardians, currentUser, accessToken } = useAppStore()
+  
+  // Passenger state
+  const [myTicketId, setMyTicketId] = useState<string | null>(null)
+  const [isGenerating, setIsGenerating] = useState(false)
 
+  const isDriver = currentUser.tipo === 'CHOFER'
 
   useEffect(() => {
     fetchGuardians()
   }, [])
-
-  const toggleNotify = (id: number) => {
-    setContacts((prev) => prev.map((c) => (c.id === id ? { ...c, notifyOnArrival: !c.notifyOnArrival } : c)))
-  }
 
   const handleRealScan = () => {
     setIsScanning(true)
     setScanResult(null)
   }
 
-  const handleQRScan = async (token: string) => {
+  const fetchMyActiveTicket = async () => {
+    setIsGenerating(true)
+    try {
+      const res = await fetch('/api-proxy/transport/tickets/', {
+        headers: { 'Authorization': `Bearer ${accessToken}` }
+      })
+      if (res.ok) {
+        const data = await res.json()
+        // Buscamos el primer boleto que no haya sido usado
+        const activeTicket = data.find((t: any) => !t.is_used)
+        if (activeTicket) {
+          setMyTicketId(activeTicket.id.toString())
+        } else {
+          setMyTicketId(null)
+        }
+      }
+    } catch (e) {
+      console.error("Error al obtener boletos", e)
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  // Cargar el boleto real al abrir la pantalla si es pasajero
+  useEffect(() => {
+    if (!isDriver && accessToken) {
+      fetchMyActiveTicket()
+    }
+  }, [isDriver, accessToken])
+
+  const handleQRScan = async (ticket_id: string) => {
     setIsScanning(false)
-    const result = await useAppStore.getState().scanQRCode(token)
-    
-    if (result && !result.error) {
-      setScanResult("success")
-    } else {
+    try {
+      const res = await fetch('/api-proxy/safeflow/scan_passenger_ticket/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        },
+        body: JSON.stringify({ ticket_id })
+      })
+      const data = await res.json()
+      
+      if (res.ok) {
+        setScanResult("success")
+        alert(data.message)
+      } else {
+        setScanResult("error")
+        alert(data.error || "Boleto inválido o ya usado")
+      }
+    } catch (e) {
       setScanResult("error")
-      alert(result?.error || "Código QR inválido o viaje no encontrado")
+      alert("Error al comunicarse con el servidor")
     }
   }
 
@@ -74,48 +115,93 @@ export function SafeFlowScreen({ onNavigate }: SafeFlowScreenProps) {
       {/* QR Scanner Section */}
       <div className="px-4 -mt-4 max-w-2xl mx-auto w-full">
         <div className="bg-card rounded-2xl p-5 shadow-lg border border-border">
-          {!isScanning && !scanResult && (
+          
+          {/* VISTA CHOFER */}
+          {isDriver && (
             <>
-              <div className="text-center mb-6">
-                <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
-                  <QrCode className="w-10 h-10 text-primary" />
-                </div>
-                <h2 className="font-semibold text-lg text-foreground mb-2">Escanea al llegar</h2>
-                <p className="text-muted-foreground text-sm">
-                  El código QR confirma tu llegada y notifica a tus contactos de emergencia
-                </p>
-              </div>
+              {!isScanning && !scanResult && (
+                <>
+                  <div className="text-center mb-6">
+                    <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
+                      <Scan className="w-10 h-10 text-primary" />
+                    </div>
+                    <h2 className="font-semibold text-lg text-foreground mb-2">Escanear Pasajero</h2>
+                    <p className="text-muted-foreground text-sm">
+                      Escanea el código QR del boleto del pasajero para registrar su abordaje.
+                    </p>
+                  </div>
 
-              <Button
-                onClick={handleRealScan}
-                className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-lg font-semibold"
-              >
-                <Scan className="w-5 h-5 mr-2" />
-                Abrir escáner QR
-              </Button>
+                  <Button
+                    onClick={handleRealScan}
+                    className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-lg font-semibold"
+                  >
+                    <Scan className="w-5 h-5 mr-2" />
+                    Abrir cámara
+                  </Button>
+                </>
+              )}
+
+              {isScanning && (
+                <div className="py-4">
+                  <div className="relative w-full max-w-sm mx-auto overflow-hidden rounded-2xl mb-4 border-4 border-primary/30">
+                    <Scanner 
+                      onScan={(result) => {
+                        if (result && result.length > 0) {
+                          handleQRScan(result[0].rawValue)
+                        }
+                      }}
+                      formats={['qr_code']}
+                    />
+                  </div>
+                  <p className="text-center text-muted-foreground font-medium mb-4">Apunta la cámara al código QR del pasajero</p>
+                  <Button onClick={resetScan} variant="outline" className="w-full">
+                    Cancelar Escaneo
+                  </Button>
+                </div>
+              )}
             </>
           )}
 
-          {isScanning && (
-            <div className="py-4">
-              <div className="relative w-full max-w-sm mx-auto overflow-hidden rounded-2xl mb-4 border-4 border-primary/30">
-                <Scanner 
-                  onScan={(result) => {
-                    if (result && result.length > 0) {
-                      handleQRScan(result[0].rawValue)
-                    }
-                  }}
-                  formats={['qr_code']}
-                />
+          {/* VISTA PASAJERO */}
+          {!isDriver && (
+            <div className="text-center mb-2">
+              <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <QrCode className="w-10 h-10 text-primary" />
               </div>
-              <p className="text-center text-muted-foreground font-medium mb-4">Apunta la cámara al código QR del pasajero</p>
-              <Button onClick={resetScan} variant="outline" className="w-full">
-                Cancelar Escaneo
-              </Button>
+              <h2 className="font-semibold text-lg text-foreground mb-2">Tu Código de Abordaje</h2>
+              
+              {!myTicketId ? (
+                <div className="py-4">
+                  <p className="text-muted-foreground text-sm mb-6">
+                    No tienes boletos activos en este momento. Compra un pasaje para generar tu código QR.
+                  </p>
+                  <Button
+                    onClick={fetchMyActiveTicket}
+                    disabled={isGenerating}
+                    variant="outline"
+                    className="w-full h-14 rounded-xl text-lg font-semibold"
+                  >
+                    <Ticket className="w-5 h-5 mr-2" />
+                    {isGenerating ? "Buscando boletos..." : "Refrescar boletos"}
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center mt-4">
+                  <div className="bg-white p-4 rounded-xl shadow-sm border border-border inline-block mb-4">
+                    <QRCode value={myTicketId} size={200} />
+                  </div>
+                  <p className="text-primary font-bold text-xl mb-1">Boleto #{myTicketId}</p>
+                  <p className="text-muted-foreground text-sm mb-4">Muéstrale este código al chofer</p>
+                  
+                  <Button onClick={() => setMyTicketId(null)} variant="outline" className="w-full h-12">
+                    Cerrar Boleto
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 
-          {scanResult === "success" && (
+          {isDriver && scanResult === "success" && (
             <div className="py-6 text-center">
               <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-emerald-500/20 flex items-center justify-center">
                 <CheckCircle2 className="w-10 h-10 text-emerald-500" />

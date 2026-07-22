@@ -1256,7 +1256,8 @@ export const useAppStore = create<AppState>()(
       fetchGuardians: async () => {
         const { accessToken } = get();
         if (!accessToken) {
-          console.error("No hay token en el store, por eso sale el 401");
+          // Usamos console.warn en vez de error para no disparar el overlay de Next.js
+          console.warn("No hay token en el store, no se pueden obtener guardianes");
           return;
         }
         try {
