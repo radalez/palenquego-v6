@@ -209,17 +209,14 @@ export function SafeFlowScreen({ onNavigate }: SafeFlowScreenProps) {
               <h3 className="font-semibold text-lg text-foreground mb-2">¡Llegada confirmada!</h3>
               <p className="text-muted-foreground text-sm mb-4">Ubicación registrada exitosamente</p>
 
-              {/* Notificación Dinámica usando tus Guardianes Reales */}
+              {/* Notificación Dinámica */}
               <div className="bg-primary/10 rounded-xl p-4 mb-4">
                 <div className="flex items-center gap-2 text-primary mb-2">
                   <Bell className="w-5 h-5" />
                   <span className="font-medium">Notificación enviada</span>
                 </div>
                 <p className="text-sm text-muted-foreground italic">
-                  {guardians.filter(g => g.is_active).length > 0 
-                    ? `${guardians.filter(g => g.is_active).map(g => g.name).join(" y ")} han sido notificados de tu llegada.`
-                    : "Tus contactos de emergencia han sido notificados."
-                  }
+                  Los contactos de emergencia del pasajero han sido notificados.
                 </p>
               </div>
 
