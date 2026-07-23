@@ -77,7 +77,7 @@ export function SafeFlowScreen({ onNavigate }: SafeFlowScreenProps) {
   const handleQRScan = async (ticket_id: string) => {
     setIsScanning(false)
     try {
-      const res = await fetch('/api-proxy/safeflow/scan_passenger_ticket/', {
+      const res = await fetch('/api-proxy/safeflow/trips/scan_passenger_ticket/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
