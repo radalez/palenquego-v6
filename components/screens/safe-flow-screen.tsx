@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { QrCode, Shield, Bell, CheckCircle2, AlertTriangle, Scan, Ticket } from "lucide-react"
+import { QrCode, Shield, Bell, CheckCircle2, AlertTriangle, Scan, Ticket, Share2, MessageCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Scanner } from '@yudiel/react-qr-scanner'
@@ -28,6 +28,25 @@ export function SafeFlowScreen({ onNavigate }: SafeFlowScreenProps) {
   const [showAddContact, setShowAddContact] = useState(false)
   const [editingContact, setEditingContact] = useState<{id: number, name: string, phone: string, email: string} | null>(null)
   const { guardians, fetchGuardians, currentUser, accessToken } = useAppStore()
+
+  const handleShareTelegram = async (guardian: any) => {
+    const link = `https://t.me/PalenqueGoSeguridadBot?start=guardian_${guardian.id}`;
+    const message = `¡Hola! Te he agregado como mi contacto de emergencia en Palenque Go para mis viajes. Por favor, haz clic en este enlace para activar las alertas de seguridad por Telegram:\n\n${link}`;
+    
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: "Palenque Go - Alertas de Seguridad",
+          text: message,
+        });
+      } else {
+        await navigator.clipboard.writeText(message);
+        alert("Enlace copiado al portapapeles. ¡Envíalo por WhatsApp!");
+      }
+    } catch (e) {
+      console.log("Error sharing:", e);
+    }
+  };
   
   // Passenger state
   const [myTicketId, setMyTicketId] = useState<string | null>(null)
@@ -277,45 +296,72 @@ export function SafeFlowScreen({ onNavigate }: SafeFlowScreenProps) {
           {guardians.map((guardian) => (
             <div
               key={guardian.id}
-              className="flex items-center justify-between p-4 bg-card rounded-xl border border-border"
+              className="flex flex-col p-4 bg-card rounded-xl border border-border"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-                  <span className="text-primary font-semibold">
-                    {guardian.name.charAt(0).toUpperCase()}
-                  </span>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
+                    <span className="text-primary font-semibold">
+                      {guardian.name.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">{guardian.name}</p>
+                    <p className="text-sm text-muted-foreground">{guardian.phone_number}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium text-foreground">{guardian.name}</p>
-                  <p className="text-sm text-muted-foreground">{guardian.phone_number}</p>
+                <div className="flex items-center gap-3">
+                  <div className="flex flex-col items-end">
+                    <span className="text-xs text-muted-foreground mb-1">Activo</span>
+                    <Switch 
+                      checked={guardian.is_active} 
+                      onCheckedChange={(checked) => {
+                        useAppStore.getState().toggleGuardianActive(guardian.id, checked)
+                      }} 
+                    />
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-muted-foreground hover:text-primary px-2"
+                    onClick={() => {
+                      setEditingContact({
+                        id: guardian.id,
+                        name: guardian.name,
+                        phone: guardian.phone_number,
+                        email: guardian.email || ''
+                      })
+                      setShowAddContact(true)
+                    }}
+                  >
+                    Editar
+                  </Button>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="flex flex-col items-end">
-                  <span className="text-xs text-muted-foreground mb-1">Activo</span>
-                  <Switch 
-                    checked={guardian.is_active} 
-                    onCheckedChange={(checked) => {
-                      useAppStore.getState().toggleGuardianActive(guardian.id, checked)
-                    }} 
-                  />
+
+              {/* Telegram Connection Status */}
+              <div className={`mt-2 p-3 rounded-lg flex items-center justify-between ${guardian.is_telegram_linked ? 'bg-emerald-500/10' : 'bg-amber-500/10 border border-amber-500/30'}`}>
+                <div className="flex items-center gap-2">
+                  <MessageCircle className={`w-5 h-5 ${guardian.is_telegram_linked ? 'text-emerald-500' : 'text-amber-500 animate-pulse'}`} />
+                  <div>
+                    <p className={`text-sm font-medium ${guardian.is_telegram_linked ? 'text-emerald-600' : 'text-amber-600'}`}>
+                      {guardian.is_telegram_linked ? 'Telegram Conectado' : '¡Falta vincular Telegram!'}
+                    </p>
+                    {!guardian.is_telegram_linked && (
+                      <p className="text-xs text-amber-600/80">Obligatorio para recibir alertas.</p>
+                    )}
+                  </div>
                 </div>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="text-muted-foreground hover:text-primary px-2"
-                  onClick={() => {
-                    setEditingContact({
-                      id: guardian.id,
-                      name: guardian.name,
-                      phone: guardian.phone_number,
-                      email: guardian.email || ''
-                    })
-                    setShowAddContact(true)
-                  }}
-                >
-                  Editar
-                </Button>
+                {!guardian.is_telegram_linked && (
+                  <Button 
+                    size="sm" 
+                    onClick={() => handleShareTelegram(guardian)}
+                    className="bg-amber-500 hover:bg-amber-600 text-white shadow-sm"
+                  >
+                    <Share2 className="w-4 h-4 mr-1" />
+                    Invitar
+                  </Button>
+                )}
               </div>
             </div>
           ))}

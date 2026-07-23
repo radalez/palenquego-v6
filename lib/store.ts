@@ -158,6 +158,7 @@ export interface Guardian {
   phone_number: string;
   email?: string;
   is_active: boolean;
+  is_telegram_linked?: boolean;
 }
 
 export interface RecommendationStats {
