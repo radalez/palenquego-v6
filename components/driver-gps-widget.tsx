@@ -89,6 +89,7 @@ export function DriverGPSWidget({ onNavigate }: DriverGPSWidgetProps) {
               {isDriverTracking ? "GPS En vivo" : "GPS Apagado"}
             </p>
           </div>
+          </div>
           <div className="flex items-center gap-2">
             <Button
               size="sm"
