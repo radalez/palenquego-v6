@@ -186,8 +186,8 @@ useEffect(() => {
 
                     if (hasGPS) {
                       const dist = getDistance(unitLat, unitLng, stop.latitude, stop.longitude);
-                      if (dist <= 50) {
-                        isPassed = true; // Está justo en la parada o pasó hace poco (dentro de 50m)
+                      if (dist <= 500) {
+                        isPassed = true; // Está justo en la parada o pasó hace poco (dentro de 500m)
                         isCurrent = true;
                       } else if (stop.order < closestStopOrder) {
                         isPassed = true; // Ya la pasó porque la más cercana es una posterior
