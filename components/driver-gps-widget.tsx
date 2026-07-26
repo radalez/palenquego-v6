@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Navigation2, StopCircle, ChevronUp, ChevronDown, Wifi, WifiOff, Truck } from "lucide-react"
+import { Navigation2, StopCircle, ChevronUp, ChevronDown, Wifi, WifiOff, Truck, LayoutDashboard } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAppStore } from "@/lib/store"
 import { cn } from "@/lib/utils"
@@ -12,7 +12,11 @@ interface MyUnit {
   license_plate: string
 }
 
-export function DriverGPSWidget() {
+interface DriverGPSWidgetProps {
+  onNavigate?: (tab: string) => void
+}
+
+export function DriverGPSWidget({ onNavigate }: DriverGPSWidgetProps) {
   const { routes, fetchRoutes, accessToken } = useAppStore()
   const { isDriverTracking, driverGpsError, driverCurrentPos, startDriverTracking, stopDriverTracking, driverGpsCount } = useAppStore()
   
@@ -92,6 +96,18 @@ export function DriverGPSWidget() {
         {/* Detalles expandidos */}
         {isExpanded && (
           <div className="p-3 bg-muted/30 border-t border-border space-y-3">
+            {/* Botón para ir al panel del chofer (donde están los checks manuales) */}
+            <Button
+              onClick={() => {
+                setIsExpanded(false)
+                if (onNavigate) onNavigate('conductor')
+              }}
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl h-12 shadow-sm"
+            >
+              <LayoutDashboard className="w-5 h-5 mr-2" />
+              Abrir Panel del Chofer (Marcar Paradas)
+            </Button>
+
             {/* Stats en vivo */}
             {driverCurrentPos && isDriverTracking && (
               <div className="flex justify-between items-center text-xs font-mono bg-background p-2 rounded-lg border">

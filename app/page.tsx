@@ -156,7 +156,7 @@ export default function Home() {
         <InstallPWABanner />
 
         {/* Widget GPS flotante para choferes (solo cuando NO están en su panel) */}
-        {currentUser?.tipo === 'CHOFER' && activeTab !== 'conductor' && <DriverGPSWidget />}
+        {currentUser?.tipo === 'CHOFER' && activeTab !== 'conductor' && <DriverGPSWidget onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />}
         {/* Mobile Sidebar Menu (hamburger) */}
         <div className="lg:hidden">
           <SidebarMenu activeTab={activeTab} onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />
