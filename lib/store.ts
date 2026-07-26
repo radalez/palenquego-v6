@@ -289,7 +289,7 @@ fetchRecommendations: () => Promise<void>
   driverCurrentPos: { lat: number; lng: number } | null
   startDriverTracking: (unitId: number) => void
   stopDriverTracking: () => void
-  passStop: (unitId: number, stopId: number) => Promise<boolean>
+  passStop: (unitId: number, stopId: number) => Promise<{ok: boolean, data?: any, error?: string}>
 }
 
 let driverGpsInterval: NodeJS.Timeout | null = null;
@@ -389,7 +389,7 @@ export const useAppStore = create<AppState>()(
 
       passStop: async (unitId: number, stopId: number) => {
         const { accessToken } = get();
-        if (!accessToken) return false;
+        if (!accessToken) return { ok: false, error: "No hay sesión activa" };
         try {
           const res = await fetch(`${API_BASE}/transport/units/${unitId}/pass_stop/`, {
             method: 'POST',
@@ -399,9 +399,14 @@ export const useAppStore = create<AppState>()(
             },
             body: JSON.stringify({ stop_id: stopId })
           });
-          return res.ok;
-        } catch {
-          return false;
+          if (res.ok) {
+            const data = await res.json();
+            return { ok: true, data };
+          } else {
+            return { ok: false, error: `Status ${res.status}` };
+          }
+        } catch (e: any) {
+          return { ok: false, error: e.message || "Error de red" };
         }
       },
 

@@ -177,11 +177,15 @@ export function DriverScreen({ onNavigate }: DriverScreenProps) {
                   className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
                   onClick={() => {
                     if (myUnit) {
-                      useAppStore.getState().passStop(myUnit.id, stop.id).then((ok) => {
-                        if (ok) {
-                          alert("Parada marcada con éxito.");
+                      useAppStore.getState().passStop(myUnit.id, stop.id).then((result) => {
+                        if (result.ok) {
+                          if (result.data?.notified_passengers > 0) {
+                            alert("¡Parada marcada con éxito! Se notificó a los pasajeros.");
+                          } else {
+                            alert("La parada se marcó, pero no había pasajeros activos para notificar (o ya estaba registrada).");
+                          }
                         } else {
-                          alert("Hubo un error al marcar la parada o ya estaba marcada.");
+                          alert(`Error del servidor: ${result.error || 'Desconocido'}`);
                         }
                       });
                     }
