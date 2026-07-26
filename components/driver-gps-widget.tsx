@@ -89,8 +89,21 @@ export function DriverGPSWidget({ onNavigate }: DriverGPSWidgetProps) {
               {isDriverTracking ? "GPS En vivo" : "GPS Apagado"}
             </p>
           </div>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation()
+                if (onNavigate) onNavigate('conductor')
+              }}
+              className="h-8 px-2 font-bold bg-primary text-primary-foreground border-none hover:bg-primary/90"
+            >
+              <LayoutDashboard className="w-4 h-4 mr-1" />
+              Chofer
+            </Button>
+            {isExpanded ? <ChevronDown className="w-5 h-5 text-muted-foreground shrink-0" /> : <ChevronUp className="w-5 h-5 text-muted-foreground shrink-0" />}
           </div>
-          {isExpanded ? <ChevronDown className="w-5 h-5 text-muted-foreground shrink-0" /> : <ChevronUp className="w-5 h-5 text-muted-foreground shrink-0" />}
         </button>
 
         {/* Detalles expandidos */}
