@@ -289,6 +289,7 @@ fetchRecommendations: () => Promise<void>
   driverCurrentPos: { lat: number; lng: number } | null
   startDriverTracking: (unitId: number) => void
   stopDriverTracking: () => void
+  passStop: (unitId: number, stopId: number) => Promise<boolean>
 }
 
 let driverGpsInterval: NodeJS.Timeout | null = null;
@@ -384,6 +385,24 @@ export const useAppStore = create<AppState>()(
         driverGpsInterval = null;
         sessionStorage.removeItem('chofer-gps-active');
         set({ isDriverTracking: false, driverCurrentPos: null, driverGpsCount: 0 });
+      },
+
+      passStop: async (unitId: number, stopId: number) => {
+        const { accessToken } = get();
+        if (!accessToken) return false;
+        try {
+          const res = await fetch(`${API_BASE}/transport/units/${unitId}/pass_stop/`, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`
+            },
+            body: JSON.stringify({ stop_id: stopId })
+          });
+          return res.ok;
+        } catch {
+          return false;
+        }
       },
 
       // --- ACCIONES DE API ---

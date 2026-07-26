@@ -159,18 +159,36 @@ export function DriverScreen({ onNavigate }: DriverScreenProps) {
         {/* Paradas */}
         {myRoute && myRoute.stops.length > 0 && (
           <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
-            <p className="font-semibold text-sm">Paradas de tu ruta</p>
-            {myRoute.stops.map((stop) => (
-              <div key={stop.order} className="flex items-center gap-3">
+            <p className="font-semibold text-sm">Paradas de tu ruta (Registro manual)</p>
+            {myRoute.stops.map((stop: any) => (
+              <div key={stop.order} className="flex items-center gap-3 bg-muted p-3 rounded-xl border border-border">
                 <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">
                   {stop.order}
                 </div>
-                <div>
+                <div className="flex-1">
                   <p className="text-sm font-medium">{stop.name}</p>
                   {stop.minutes_from_start ? (
                     <p className="text-xs text-muted-foreground">~{stop.minutes_from_start} min desde el inicio</p>
                   ) : null}
                 </div>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+                  onClick={() => {
+                    if (myUnit) {
+                      useAppStore.getState().passStop(myUnit.id, stop.id).then((ok) => {
+                        if (ok) {
+                          alert("Parada marcada con éxito.");
+                        } else {
+                          alert("Hubo un error al marcar la parada o ya estaba marcada.");
+                        }
+                      });
+                    }
+                  }}
+                >
+                  ✓ Marcar Llegada
+                </Button>
               </div>
             ))}
           </div>
