@@ -98,7 +98,7 @@ export function DriverGPSWidget({ onNavigate }: DriverGPSWidgetProps) {
                 e.stopPropagation()
                 if (onNavigate) onNavigate('conductor')
               }}
-              className="h-8 px-2 font-bold bg-primary text-primary-foreground border-none hover:bg-primary/90"
+              className="h-8 px-2 font-bold bg-green-100 text-green-800 border-green-200 hover:bg-green-200"
             >
               <LayoutDashboard className="w-4 h-4 mr-1" />
               Chofer
