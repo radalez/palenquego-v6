@@ -112,6 +112,7 @@ export interface Route {
   unit_name?: string;       // Opcional con ?
   unit_license_plate?: string;
   unit_color?: string;
+  unit_capacity?: number;
   driver_name?: string;
   driver_avatar?: string;
   price_one_way?: string;   // Opcional con ?
@@ -628,7 +629,7 @@ export const useAppStore = create<AppState>()(
               currentUser: {
                 id: data.user.id,
                 name: data.user.name,
-                avatar: data.user.avatar,
+                avatar: data.user.avatar ? getProxyImage(data.user.avatar) : "",
                 email: data.user.email || "",
                 telefono: data.user.telefono || "",
                 tipo: data.user.tipo || "",
@@ -665,7 +666,7 @@ export const useAppStore = create<AppState>()(
               currentUser: {
                 id: data.user.id,
                 name: data.user.name,
-                avatar: data.user.avatar || "",
+                avatar: data.user.avatar ? getProxyImage(data.user.avatar) : "",
                 email: data.user.email || "",
                 telefono: data.user.telefono || "",
                 tipo: data.user.tipo || "",
@@ -1102,6 +1103,7 @@ export const useAppStore = create<AppState>()(
               unit_name: r.unit_name || undefined,
               unit_license_plate: r.unit_license_plate || undefined,
               unit_color: r.unit_color || undefined,
+              unit_capacity: r.unit_capacity || undefined,
               driver_name: r.driver_name || undefined,
               driver_avatar: r.driver_avatar ? getProxyImage(r.driver_avatar) : undefined,
               // --- GPS VIVO ---

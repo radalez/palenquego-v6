@@ -94,7 +94,7 @@ useEffect(() => {
       {tracking?.showTracking && (() => {
         const trackedRoute = routes.find(r => r.id === tracking.routeId)
         const routeAny = trackedRoute as any
-        const hasGPS = routeAny?.unit_lat && routeAny?.unit_lng
+        const hasGPS = routeAny?.is_active && routeAny?.unit_lat && routeAny?.unit_lng
         return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-card rounded-2xl max-w-sm w-full max-h-[85vh] shadow-xl overflow-hidden flex flex-col">
@@ -455,7 +455,7 @@ function RouteCardItem({
   onBuy: (r: Route) => void
 }) {
   const r = route as any
-  const hasGPS = r.unit_lat && r.unit_lng
+  const hasGPS = r.is_active && r.unit_lat && r.unit_lng
 
   return (
     <div className={cn(
@@ -515,18 +515,24 @@ function RouteCardItem({
                   <span className="text-xl font-black tracking-widest text-foreground leading-none">
                     {route.unit_license_plate ? route.unit_license_plate : 'SIN PLACA'}
                   </span>
-                  <span className="text-sm text-muted-foreground mt-1.5">
-                    {route.unit_name || 'Unidad'}
+                  <span className="text-sm text-muted-foreground mt-1.5 flex items-center gap-1.5">
+                    <span>{route.unit_name || 'Unidad'}</span>
+                    {route.unit_capacity && (
+                      <>
+                        <span className="text-[10px] opacity-50">•</span>
+                        <span className="font-semibold text-foreground/80">{route.unit_capacity} pasajeros</span>
+                      </>
+                    )}
                   </span>
                 </div>
                 
                 {route.unit_color && (
-                  <div className="flex flex-col items-end shrink-0">
+                  <div className="flex flex-col items-center shrink-0">
                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
                       Color del Vehículo
                     </span>
                     <div 
-                      className="w-16 h-7 rounded-md shadow-sm border border-black/10 mt-1"
+                      className="w-[50px] h-[50px] rounded-full shadow-md border border-black/10 mt-0.5"
                       title={route.unit_color}
                       style={{ 
                         backgroundColor: route.unit_color.startsWith('#') ? route.unit_color : (
