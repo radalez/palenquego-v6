@@ -110,6 +110,10 @@ export interface Route {
   colorHex: string; 
   pathSvg?: string;
   unit_name?: string;       // Opcional con ?
+  unit_license_plate?: string;
+  unit_color?: string;
+  driver_name?: string;
+  driver_avatar?: string;
   price_one_way?: string;   // Opcional con ?
   price_round_trip?: string;// Opcional con ?
   is_active?: boolean;      // Opcional con ?
@@ -240,6 +244,9 @@ interface AppState {
   poolPaymentPending: { poolId: number; options: "FULL" | "PERSONAL" }[]
   isLoading: boolean
 
+  kycRequirements: any[]
+  fetchKycRequirements: () => Promise<void>
+
   fetchServices: (query?: string) => Promise<void>
   fetchBusinesses: () => Promise<void>
   toggleFavorite: (id: number) => void
@@ -313,6 +320,7 @@ export const useAppStore = create<AppState>()(
       recommendations: [],
       plans: [],
       routes: initialRoutes,
+      kycRequirements: [],
       currentUser: { id: 0, name: "", avatar: "", is_ambassador: false },
       isAuthenticated: false,      
       accessToken: null,
@@ -412,6 +420,27 @@ export const useAppStore = create<AppState>()(
       },
 
       // --- ACCIONES DE API ---
+      fetchKycRequirements: async () => {
+        const { accessToken } = get();
+        if (!accessToken) return;
+        set({ isLoading: true });
+        try {
+          const res = await fetch(`${API_BASE}/accounts/kyc-requirements/`, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            set({ kycRequirements: data });
+          } else {
+            console.warn("No se pudieron cargar los requisitos de KYC");
+          }
+        } catch (e) {
+          console.error(e);
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
      fetchServices: async (query = "") => {
         set({ isLoading: true })
         try {

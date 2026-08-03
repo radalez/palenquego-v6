@@ -477,11 +477,31 @@ function RouteCardItem({
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-2 mt-1">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: route.colorHex }} />
-              <span className="text-xs text-muted-foreground">
-                {route.unit_name ? `Unidad: ${route.unit_name}` : 'Sin unidad asignada'}
-              </span>
+            
+            {/* Información del Chofer y Unidad (Estilo Uber) */}
+            <div className="mt-4 flex items-center gap-3">
+              {route.driver_avatar ? (
+                <div className="relative">
+                   <img src={route.driver_avatar} alt="Chofer" className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm" />
+                   <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full" style={{ backgroundColor: route.colorHex, border: '2px solid white' }} />
+                </div>
+              ) : (
+                <div className="relative w-12 h-12 rounded-full bg-muted flex items-center justify-center border-2 border-white shadow-sm">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase">{route.driver_name ? route.driver_name.substring(0, 3) : 'DRV'}</span>
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full" style={{ backgroundColor: route.colorHex, border: '2px solid white' }} />
+                </div>
+              )}
+              <div className="flex flex-col">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  {route.driver_name || 'Sin chofer'}
+                </span>
+                <span className="text-lg font-black tracking-widest text-foreground">
+                  {route.unit_license_plate || route.unit_name || 'Sin placa'}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {route.unit_color ? `${route.unit_color} • ` : ''}{route.unit_name || ''}
+                </span>
+              </div>
             </div>
           </div>
           <Badge className={route.is_active
