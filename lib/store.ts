@@ -1100,6 +1100,10 @@ export const useAppStore = create<AppState>()(
               colorHex: r.color_hex || '#10b981',
               unit_id: r.unit_id ?? null,
               unit_name: r.unit_name || null,
+              unit_license_plate: r.unit_license_plate || null,
+              unit_color: r.unit_color || null,
+              driver_name: r.driver_name || null,
+              driver_avatar: r.driver_avatar ? getProxyImage(r.driver_avatar) : null,
               // --- GPS VIVO ---
               unit_lat: r.unit_lat ?? null, 
               unit_lng: r.unit_lng ?? null, 
