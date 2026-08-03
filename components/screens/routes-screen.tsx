@@ -557,8 +557,6 @@ function RouteCardItem({
                 )}
               </div>
             </div>
-          </div>
-        </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-2">
