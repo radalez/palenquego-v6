@@ -15,6 +15,15 @@ export function HeaderWithMenu({ title, onProfileClick, onNavigate }: HeaderWith
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
   const { currentUser, logout, userFavorites } = useAppStore()
 
+  const getAvatarUrl = (url: string | null | undefined) => {
+    if (!url || url.length < 2) return null;
+    if (url.startsWith('http')) return url;
+    if (url.startsWith('/')) return `https://palenquego.com${url}`;
+    return `https://palenquego.com/${url}`;
+  }
+
+  const avatarUrl = getAvatarUrl(currentUser?.avatar);
+
   const profileMenuItems = [
     { label: 'Mi Perfil', icon: Settings, id: 'profile' },
     { label: 'Planes y Membresías', icon: Layers, id: 'planes' },
@@ -53,12 +62,12 @@ export function HeaderWithMenu({ title, onProfileClick, onNavigate }: HeaderWith
             {/* Profile Avatar Button */}
             <button
               onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-              className="relative w-12 h-12 rounded-full bg-primary-foreground/20 hover:bg-primary-foreground/30 transition-colors flex items-center justify-center border-2 border-primary-foreground/30 font-bold text-primary-foreground text-lg overflow-hidden"
+              className="relative w-12 h-12 rounded-full bg-primary-foreground/20 hover:bg-primary-foreground/30 transition-colors flex items-center justify-center border-2 border-primary-foreground/30 font-bold text-primary-foreground text-lg overflow-hidden shrink-0"
             >
-              {currentUser.avatar?.startsWith('http') ? (
-                <img src={currentUser.avatar} alt="Avatar" className="w-full h-full object-cover" />
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
               ) : (
-                currentUser.avatar || "U"
+                currentUser.name ? currentUser.name.charAt(0).toUpperCase() : "U"
               )}
             </button>
           </div>
@@ -70,11 +79,11 @@ export function HeaderWithMenu({ title, onProfileClick, onNavigate }: HeaderWith
             {/* User Info */}
             <div className="p-4 border-b border-border">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center font-bold text-primary-foreground overflow-hidden">
-                  {currentUser.avatar?.startsWith('http') ? (
+                <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center font-bold text-primary-foreground overflow-hidden shrink-0">
+                  {currentUser.avatar && currentUser.avatar.length > 2 ? (
                     <img src={currentUser.avatar} alt="Avatar" className="w-full h-full object-cover" />
                   ) : (
-                    currentUser.avatar || "U"
+                    currentUser.name ? currentUser.name.charAt(0).toUpperCase() : "U"
                   )}
                 </div>
                 <div>

@@ -472,8 +472,14 @@ function RouteCardItem({
                 {route.name}
               </h3>
               {r.user_has_ticket && (
-                <span className="inline-flex items-center gap-1 bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full">
+                <span className="inline-flex items-center gap-1 bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full shadow-sm">
                   ⭐ Mi Ruta
+                </span>
+              )}
+              {route.unit_capacity && (
+                <span className="inline-flex items-center gap-1 bg-muted text-muted-foreground text-xs font-bold px-2 py-0.5 rounded-full border border-border shadow-sm">
+                  <Users className="w-3.5 h-3.5" />
+                  {route.unit_capacity} PAX
                 </span>
               )}
             </div>
@@ -515,14 +521,8 @@ function RouteCardItem({
                   <span className="text-xl font-black tracking-widest text-foreground leading-none">
                     {route.unit_license_plate ? route.unit_license_plate : 'SIN PLACA'}
                   </span>
-                  <span className="text-sm text-muted-foreground mt-1.5 flex items-center gap-1.5">
-                    <span>{route.unit_name || 'Unidad'}</span>
-                    {route.unit_capacity && (
-                      <>
-                        <span className="text-[10px] opacity-50">•</span>
-                        <span className="font-semibold text-foreground/80">{route.unit_capacity} pasajeros</span>
-                      </>
-                    )}
+                  <span className="text-sm text-muted-foreground mt-1.5">
+                    {route.unit_name || 'Unidad'}
                   </span>
                 </div>
                 
