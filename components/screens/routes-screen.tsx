@@ -478,81 +478,70 @@ function RouteCardItem({
               )}
             </div>
             
-            {/* Información del Chofer y Unidad (Estilo Uber Premium) */}
-            <div className="mt-4 p-4 rounded-xl bg-gradient-to-br from-background/50 to-muted/20 border border-border/50 shadow-inner flex flex-col gap-4">
-              
-              <div className="flex items-center justify-between">
-                {/* Chofer Profile */}
-                <div className="flex items-center gap-3">
-                  {route.driver_avatar ? (
-                    <div className="relative group cursor-pointer">
-                      <div className="absolute -inset-0.5 bg-gradient-to-r from-primary to-primary/50 rounded-full blur opacity-30 group-hover:opacity-70 transition duration-500"></div>
-                      <img src={route.driver_avatar} alt="Chofer" className="relative w-12 h-12 rounded-full object-cover border-2 border-background shadow-md" />
-                      <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full shadow-sm" style={{ backgroundColor: route.colorHex, border: '2px solid hsl(var(--background))' }} />
-                    </div>
-                  ) : (
-                    <div className="relative w-12 h-12 rounded-full bg-muted flex items-center justify-center border-2 border-background shadow-md group cursor-pointer">
-                      <div className="absolute -inset-0.5 bg-gradient-to-r from-muted-foreground/30 to-muted-foreground/10 rounded-full blur opacity-30 group-hover:opacity-70 transition duration-500"></div>
-                      <span className="relative text-[11px] font-black text-muted-foreground uppercase">{route.driver_name ? route.driver_name.substring(0, 3) : 'DRV'}</span>
-                      <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full shadow-sm" style={{ backgroundColor: route.colorHex, border: '2px solid hsl(var(--background))' }} />
-                    </div>
-                  )}
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-bold text-muted-foreground/80 uppercase tracking-widest">
-                      Conductor Asignado
-                    </span>
-                    <span className="text-sm font-bold text-foreground">
-                      {route.driver_name || 'Pendiente'}
-                    </span>
+            {/* Información del Chofer y Unidad */}
+            <div className="mt-4 flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                {route.driver_avatar ? (
+                  <div className="relative">
+                     <img src={route.driver_avatar} alt="Chofer" className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm" />
+                     <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full" style={{ backgroundColor: route.colorHex, border: '2px solid white' }} />
                   </div>
-                </div>
-
-                {/* Status Badge */}
-                <Badge className={cn(
-                  "px-3 py-1 shadow-sm font-bold tracking-wide",
-                  route.is_active
-                    ? 'bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/25 border-emerald-500/20'
-                    : 'bg-destructive/10 text-destructive hover:bg-destructive/20 border-destructive/20'
-                )} variant="outline">
-                  {route.is_active ? 'EN SERVICIO' : 'INACTIVA'}
-                </Badge>
-              </div>
-
-              <div className="h-px w-full bg-gradient-to-r from-transparent via-border to-transparent opacity-50"></div>
-
-              {/* Vehicle Identity Badge */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="relative overflow-hidden rounded-lg bg-zinc-900 border border-zinc-800 shadow-lg px-4 py-1.5 flex items-center justify-center group cursor-default">
-                    {/* Dynamic vehicle color glow */}
-                    <div 
-                      className="absolute inset-0 opacity-20 group-hover:opacity-40 transition-opacity duration-700 blur-xl"
-                      style={{ backgroundColor: route.unit_color ? (route.unit_color.startsWith('#') ? route.unit_color : {'Blanco':'#fff','Negro':'#111','Gris':'#808080','Plata':'#c0c0c0','Azul':'#3b82f6','Rojo':'#ef4444','Verde':'#22c55e','Amarillo':'#eab308','Naranja':'#f97316','Beige':'#f5f5dc','Marrón':'#8b4513'}[route.unit_color] || '#ccc') : 'transparent' }}
-                    />
-                    {/* Solid color stripe on the left */}
-                    <div 
-                      className="absolute left-0 top-0 bottom-0 w-1.5 shadow-[1px_0_5px_rgba(0,0,0,0.5)]"
-                      style={{ backgroundColor: route.unit_color ? (route.unit_color.startsWith('#') ? route.unit_color : {'Blanco':'#fff','Negro':'#111','Gris':'#808080','Plata':'#c0c0c0','Azul':'#3b82f6','Rojo':'#ef4444','Verde':'#22c55e','Amarillo':'#eab308','Naranja':'#f97316','Beige':'#f5f5dc','Marrón':'#8b4513'}[route.unit_color] || '#ccc') : '#444' }}
-                    />
-                    <span className="relative text-base font-black tracking-[0.2em] text-zinc-100 uppercase font-mono drop-shadow-md ml-1">
-                      {route.unit_license_plate || 'SIN PLACA'}
+                ) : (
+                  <div className="relative w-12 h-12 rounded-full bg-muted flex items-center justify-center border-2 border-white shadow-sm">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase">{route.driver_name ? route.driver_name.substring(0, 3) : 'DRV'}</span>
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full" style={{ backgroundColor: route.colorHex, border: '2px solid white' }} />
+                  </div>
+                )}
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex flex-col leading-tight">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                      Conductor
+                    </span>
+                    <span className="text-sm font-semibold text-foreground">
+                      {route.driver_name || 'Sin chofer'}
                     </span>
                   </div>
                   
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold text-foreground">
-                      {route.unit_name || 'Unidad no asignada'}
+                  <div className="flex flex-col leading-tight">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                      Placa del Vehículo
                     </span>
-                    {route.unit_color && (
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                          Color: {route.unit_color}
-                        </span>
-                      </div>
-                    )}
+                    <span className="text-lg font-black tracking-widest text-foreground">
+                      {route.unit_license_plate ? route.unit_license_plate : 'SIN PLACA'}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {route.unit_name || 'Unidad'}
+                    </span>
                   </div>
                 </div>
               </div>
+
+              {route.unit_color && (
+                <div className="flex flex-col items-center bg-muted/30 px-3 py-1.5 rounded-xl border border-border/50 ml-2">
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Color</span>
+                  <div 
+                    className="w-12 h-6 rounded shadow-sm border border-black/10"
+                    title={route.unit_color}
+                    style={{ 
+                      backgroundColor: route.unit_color.startsWith('#') ? route.unit_color : (
+                        {
+                          'Blanco': '#ffffff',
+                          'Negro': '#111111',
+                          'Gris': '#808080',
+                          'Plata': '#c0c0c0',
+                          'Azul': '#3b82f6',
+                          'Rojo': '#ef4444',
+                          'Verde': '#22c55e',
+                          'Amarillo': '#eab308',
+                          'Naranja': '#f97316',
+                          'Beige': '#f5f5dc',
+                          'Marrón': '#8b4513'
+                        }[route.unit_color] || '#cccccc'
+                      )
+                    }}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>
