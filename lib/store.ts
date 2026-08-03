@@ -1103,7 +1103,7 @@ export const useAppStore = create<AppState>()(
               unit_name: r.unit_name || undefined,
               unit_license_plate: r.unit_license_plate || undefined,
               unit_color: r.unit_color || undefined,
-              unit_capacity: r.unit_capacity || undefined,
+              unit_capacity: r.unit_capacity !== undefined ? r.unit_capacity : undefined,
               driver_name: r.driver_name || undefined,
               driver_avatar: r.driver_avatar ? getProxyImage(r.driver_avatar) : undefined,
               // --- GPS VIVO ---
