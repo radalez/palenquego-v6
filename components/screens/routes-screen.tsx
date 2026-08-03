@@ -1,9 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { MapPin, Navigation2, Clock, Users, AlertCircle, X, Truck, Ticket, ShoppingCart } from "lucide-react"
+import { MapPin, Navigation2, Clock, Users, AlertCircle, X, Truck, Ticket, ShoppingCart, Search } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { useAppStore, type Route, type Service } from "@/lib/store"
 import { HeaderWithMenu } from "@/components/header-with-menu"
 import dynamic from 'next/dynamic';
@@ -40,7 +41,15 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
   const [tracking, setTracking] = useState<RouteTrackingState | null>(null)
   const [serviceView, setServiceView] = useState<ServiceViewState | null>(null)
   const [ticketPurchase, setTicketPurchase] = useState<TicketPurchaseState | null>(null)
+  const [searchQuery, setSearchQuery] = useState("")
 
+  const filteredRoutes = routes.filter((route) => {
+    const query = searchQuery.toLowerCase()
+    return (
+      route.name.toLowerCase().includes(query) ||
+      route.stops.some((stop) => stop.name.toLowerCase().includes(query))
+    )
+  })
 
 useEffect(() => {
     // Primera carga inmediata
@@ -393,21 +402,43 @@ useEffect(() => {
         </div>
       )}
 
-      <div className="px-4 py-4 border-b border-border">
-        <p className="text-muted-foreground text-sm">Transporte seguro a tus servicios favoritos</p>
+      <div className="px-4 py-4 border-b border-border bg-card">
+        <p className="text-muted-foreground text-sm mb-4">Transporte seguro a tus servicios favoritos</p>
+        
+        {/* Search Bar */}
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <Input
+            type="text"
+            placeholder="Buscar por nombre o parada..."
+            className="pl-10 bg-muted/50 border-transparent focus-visible:ring-primary rounded-xl"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button 
+              onClick={() => setSearchQuery("")}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="px-4 py-6 space-y-6">
 
         {/* --- MI RUTA (rutas con boleto activo) --- */}
-        {routes.some((r: any) => r.user_has_ticket) && (
+        {filteredRoutes.some((r: any) => r.user_has_ticket) && (
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <span className="text-lg">⭐</span>
               <h2 className="font-bold text-base">Mi Ruta</h2>
               <div className="flex-1 h-px bg-primary/20" />
             </div>
-            {routes.filter((r: any) => r.user_has_ticket).map((route) => (
+            {filteredRoutes.filter((r: any) => r.user_has_ticket).map((route) => (
               <RouteCardItem
                 key={route.id} route={route}
                 onTrack={handleStartTracking}
@@ -420,14 +451,14 @@ useEffect(() => {
 
         {/* --- OTRAS RUTAS --- */}
         <div className="space-y-3">
-          {routes.some((r: any) => r.user_has_ticket) && (
+          {filteredRoutes.some((r: any) => r.user_has_ticket) && (
             <div className="flex items-center gap-2">
               <span className="text-lg">🚌</span>
               <h2 className="font-bold text-base">Otras Rutas</h2>
               <div className="flex-1 h-px bg-border" />
             </div>
           )}
-          {routes.filter((r: any) => !r.user_has_ticket).map((route) => (
+          {filteredRoutes.filter((r: any) => !r.user_has_ticket).map((route) => (
             <RouteCardItem
               key={route.id} route={route}
               onTrack={handleStartTracking}
@@ -435,6 +466,15 @@ useEffect(() => {
               onBuy={handleBuyTicket}
             />
           ))}
+          {filteredRoutes.length === 0 && (
+            <div className="text-center py-8">
+              <div className="bg-muted w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Search className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <p className="text-muted-foreground font-medium">No se encontraron rutas</p>
+              <p className="text-xs text-muted-foreground mt-1">Intenta con otros términos de búsqueda</p>
+            </div>
+          )}
         </div>
 
       </div>
