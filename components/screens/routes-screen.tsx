@@ -518,7 +518,7 @@ function RouteCardItem({
 
               {route.unit_color && (
                 <div className="flex flex-col items-center bg-muted/30 px-3 py-1.5 rounded-xl border border-border/50 ml-2">
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Color</span>
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground mb-1 text-center leading-tight">Color del<br/>Vehículo</span>
                   <div 
                     className="w-12 h-6 rounded shadow-sm border border-black/10"
                     title={route.unit_color}
