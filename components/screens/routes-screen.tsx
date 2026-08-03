@@ -47,7 +47,7 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
     const query = searchQuery.toLowerCase()
     return (
       route.name.toLowerCase().includes(query) ||
-      route.stops.some((stop) => stop.name.toLowerCase().includes(query))
+      route.stops.some((stop) => stop.name?.toLowerCase().includes(query))
     )
   })
 
