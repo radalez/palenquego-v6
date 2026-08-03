@@ -479,69 +479,74 @@ function RouteCardItem({
             </div>
             
             {/* Información del Chofer y Unidad */}
-            <div className="mt-4 flex items-start justify-between">
+            <div className="mt-4 flex flex-col gap-3 p-3 bg-muted/10 rounded-xl border border-border/50 shadow-sm">
+              
+              {/* Chofer */}
               <div className="flex items-center gap-3">
                 {route.driver_avatar ? (
-                  <div className="relative">
+                  <div className="relative shrink-0">
                      <img src={route.driver_avatar} alt="Chofer" className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm" />
                      <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full" style={{ backgroundColor: route.colorHex, border: '2px solid white' }} />
                   </div>
                 ) : (
-                  <div className="relative w-12 h-12 rounded-full bg-muted flex items-center justify-center border-2 border-white shadow-sm">
+                  <div className="relative shrink-0 w-12 h-12 rounded-full bg-muted flex items-center justify-center border-2 border-white shadow-sm">
                     <span className="text-[10px] font-bold text-muted-foreground uppercase">{route.driver_name ? route.driver_name.substring(0, 3) : 'DRV'}</span>
                     <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full" style={{ backgroundColor: route.colorHex, border: '2px solid white' }} />
                   </div>
                 )}
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex flex-col leading-tight">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                      Conductor
-                    </span>
-                    <span className="text-sm font-semibold text-foreground">
-                      {route.driver_name || 'Sin chofer'}
-                    </span>
-                  </div>
-                  
-                  <div className="flex flex-col leading-tight">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                      Placa del Vehículo
-                    </span>
-                    <span className="text-lg font-black tracking-widest text-foreground">
-                      {route.unit_license_plate ? route.unit_license_plate : 'SIN PLACA'}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {route.unit_name || 'Unidad'}
-                    </span>
-                  </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">
+                    Conductor
+                  </span>
+                  <span className="text-sm font-semibold text-foreground leading-none">
+                    {route.driver_name || 'Sin chofer'}
+                  </span>
                 </div>
               </div>
 
-              {route.unit_color && (
-                <div className="flex flex-col items-center bg-muted/30 px-3 py-1.5 rounded-xl border border-border/50 ml-2">
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground mb-1 text-center leading-tight">Color del<br/>Vehículo</span>
-                  <div 
-                    className="w-12 h-6 rounded shadow-sm border border-black/10"
-                    title={route.unit_color}
-                    style={{ 
-                      backgroundColor: route.unit_color.startsWith('#') ? route.unit_color : (
-                        {
-                          'Blanco': '#ffffff',
-                          'Negro': '#111111',
-                          'Gris': '#808080',
-                          'Plata': '#c0c0c0',
-                          'Azul': '#3b82f6',
-                          'Rojo': '#ef4444',
-                          'Verde': '#22c55e',
-                          'Amarillo': '#eab308',
-                          'Naranja': '#f97316',
-                          'Beige': '#f5f5dc',
-                          'Marrón': '#8b4513'
-                        }[route.unit_color] || '#cccccc'
-                      )
-                    }}
-                  />
+              <div className="h-px bg-border/40 w-full" />
+
+              {/* Unidad */}
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">
+                    Placa del Vehículo
+                  </span>
+                  <span className="text-lg font-black tracking-widest text-foreground leading-none">
+                    {route.unit_license_plate ? route.unit_license_plate : 'SIN PLACA'}
+                  </span>
+                  <span className="text-xs text-muted-foreground mt-0.5">
+                    {route.unit_name || 'Unidad'}
+                  </span>
                 </div>
-              )}
+                
+                {route.unit_color && (
+                  <div className="flex flex-col items-center shrink-0 bg-muted/30 px-3 py-1.5 rounded-lg border border-border/50">
+                    <span className="text-[9px] uppercase font-bold text-muted-foreground mb-1">Color</span>
+                    <div 
+                      className="w-12 h-5 rounded shadow-sm border border-black/10"
+                      title={route.unit_color}
+                      style={{ 
+                        backgroundColor: route.unit_color.startsWith('#') ? route.unit_color : (
+                          {
+                            'Blanco': '#ffffff',
+                            'Negro': '#111111',
+                            'Gris': '#808080',
+                            'Plata': '#c0c0c0',
+                            'Azul': '#3b82f6',
+                            'Rojo': '#ef4444',
+                            'Verde': '#22c55e',
+                            'Amarillo': '#eab308',
+                            'Naranja': '#f97316',
+                            'Beige': '#f5f5dc',
+                            'Marrón': '#8b4513'
+                          }[route.unit_color] || '#cccccc'
+                        )
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
