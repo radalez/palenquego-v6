@@ -80,8 +80,8 @@ export function HeaderWithMenu({ title, onProfileClick, onNavigate }: HeaderWith
             <div className="p-4 border-b border-border">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center font-bold text-primary-foreground overflow-hidden shrink-0">
-                  {currentUser.avatar && currentUser.avatar.length > 2 ? (
-                    <img src={currentUser.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                   ) : (
                     currentUser.name ? currentUser.name.charAt(0).toUpperCase() : "U"
                   )}
