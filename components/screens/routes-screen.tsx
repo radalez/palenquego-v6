@@ -496,7 +496,7 @@ function RouteCardItem({
                   {route.driver_name || 'Sin chofer'}
                 </span>
                 <span className="text-lg font-black tracking-widest text-foreground">
-                  {route.unit_license_plate || route.unit_name || 'Sin placa'}
+                  {route.unit_license_plate ? route.unit_license_plate : 'SIN PLACA'}
                 </span>
                 <span className="text-xs text-muted-foreground">
                   {route.unit_color ? `${route.unit_color} • ` : ''}{route.unit_name || ''}

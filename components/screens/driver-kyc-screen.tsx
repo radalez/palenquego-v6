@@ -11,8 +11,23 @@ export function DriverKycScreen({ user }: { user: any }) {
   const [currentStep, setCurrentStep] = useState(0)
 
   useEffect(() => {
-    fetchKycRequirements()
-  }, [fetchKycRequirements])
+    // Si ya está aprobado, no necesitamos cargar los requisitos
+    if (user?.kyc_status !== 'APPROVED') {
+      fetchKycRequirements()
+    }
+  }, [fetchKycRequirements, user?.kyc_status])
+
+  if (user?.kyc_status === 'APPROVED') {
+    return (
+      <div className="flex flex-col min-h-screen bg-background items-center justify-center p-4 text-center pb-24">
+        <CheckCircle2 className="w-20 h-20 text-green-500 mb-6 mx-auto animate-in zoom-in duration-500" />
+        <h2 className="text-3xl font-black mb-3 text-foreground">¡Estás Aprobado!</h2>
+        <p className="text-muted-foreground max-w-sm mx-auto text-lg">
+          Tus documentos han sido verificados. Ya estás listo para operar tus rutas con PalenqueGo.
+        </p>
+      </div>
+    )
+  }
 
   if (isLoading) {
     return (
