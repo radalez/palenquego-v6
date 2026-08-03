@@ -476,14 +476,15 @@ function RouteCardItem({
                   ⭐ Mi Ruta
                 </span>
               )}
-              {route.unit_capacity && (
-                <span className="inline-flex items-center gap-1 bg-muted text-muted-foreground text-xs font-bold px-2 py-0.5 rounded-full border border-border shadow-sm">
-                  <Users className="w-3.5 h-3.5" />
-                  {route.unit_capacity} PAX
-                </span>
-              )}
             </div>
-            
+          </div>
+          {route.unit_capacity && (
+            <span className="inline-flex items-center gap-1 bg-muted text-muted-foreground text-xs font-bold px-2.5 py-1 rounded-full border border-border shadow-sm shrink-0 ml-2">
+              <Users className="w-3.5 h-3.5" />
+              {route.unit_capacity} PAX
+            </span>
+          )}
+        </div>
             {/* Información del Chofer y Unidad */}
             <div className="mt-4 flex flex-col gap-4 p-4 bg-muted/10 rounded-xl border border-border/50 shadow-sm">
               
