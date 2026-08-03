@@ -4,24 +4,17 @@ import { useState, useEffect } from "react"
 import { AlertCircle, Camera, CheckCircle2, ChevronRight, UploadCloud, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
+import { useAppStore } from "@/lib/store"
+
 export function DriverKycScreen({ user }: { user: any }) {
-  const [requirements, setRequirements] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const { kycRequirements, fetchKycRequirements, isLoading } = useAppStore()
   const [currentStep, setCurrentStep] = useState(0)
 
   useEffect(() => {
-    // Simulamos cargar requisitos del backend
-    setTimeout(() => {
-      setRequirements([
-        { id: 1, title: 'DNI Frontal', description: 'Toma una foto clara del frente de tu DNI.' },
-        { id: 2, title: 'DNI Reverso', description: 'Toma una foto clara del reverso de tu DNI.' },
-        { id: 3, title: 'Licencia de Conducir', description: 'Foto de tu licencia de conducir vigente.' }
-      ])
-      setLoading(false)
-    }, 800)
-  }, [user])
+    fetchKycRequirements()
+  }, [fetchKycRequirements])
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex flex-col min-h-screen bg-background items-center justify-center p-4">
         <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
@@ -30,7 +23,19 @@ export function DriverKycScreen({ user }: { user: any }) {
     )
   }
 
-  const isCompleted = currentStep >= requirements.length
+  if (!kycRequirements || kycRequirements.length === 0) {
+    return (
+      <div className="flex flex-col min-h-screen bg-background items-center justify-center p-4 text-center">
+        <AlertCircle className="w-12 h-12 text-amber-500 mb-4 mx-auto" />
+        <h2 className="text-xl font-bold mb-2">Sin Requisitos</h2>
+        <p className="text-muted-foreground">
+          No se han configurado requisitos de identidad para tu país aún. Contacta a soporte.
+        </p>
+      </div>
+    )
+  }
+
+  const isCompleted = currentStep >= kycRequirements.length
 
   return (
     <div className="flex flex-col min-h-screen bg-background pb-20">
@@ -48,13 +53,13 @@ export function DriverKycScreen({ user }: { user: any }) {
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm font-semibold">Progreso</span>
             <span className="text-sm text-muted-foreground">
-              {Math.min(currentStep, requirements.length)} / {requirements.length} pasos
+              {Math.min(currentStep, kycRequirements.length)} / {kycRequirements.length} pasos
             </span>
           </div>
           <div className="w-full bg-muted rounded-full h-2.5">
             <div 
               className="bg-primary h-2.5 rounded-full transition-all duration-500" 
-              style={{ width: `${(Math.min(currentStep, requirements.length) / requirements.length) * 100}%` }}
+              style={{ width: `${(Math.min(currentStep, kycRequirements.length) / kycRequirements.length) * 100}%` }}
             ></div>
           </div>
         </div>
@@ -67,9 +72,9 @@ export function DriverKycScreen({ user }: { user: any }) {
               <Camera className="w-8 h-8 text-primary" />
             </div>
             
-            <h2 className="text-xl font-bold mb-2">{requirements[currentStep].title}</h2>
+            <h2 className="text-xl font-bold mb-2">{kycRequirements[currentStep].title}</h2>
             <p className="text-muted-foreground mb-8 text-sm">
-              {requirements[currentStep].description}
+              {kycRequirements[currentStep].description}
             </p>
 
             <div className="w-full h-48 border-2 border-dashed border-primary/40 bg-primary/5 rounded-xl flex flex-col items-center justify-center mb-6 cursor-pointer hover:bg-primary/10 transition-colors">
