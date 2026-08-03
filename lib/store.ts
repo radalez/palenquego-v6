@@ -227,6 +227,7 @@ interface AppState {
     telefono?: string; 
     tipo?: string;
     is_ambassador?: boolean;
+    kyc_status?: string;
   }
   accessToken: string | null
   refreshToken: string | null
