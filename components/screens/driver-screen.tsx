@@ -19,8 +19,10 @@ interface MyUnit {
   current_lng: number | null
 }
 
+import { DriverKycScreen } from "./driver-kyc-screen"
+
 export function DriverScreen({ onNavigate }: DriverScreenProps) {
-  const { routes, fetchRoutes, accessToken } = useAppStore()
+  const { routes, fetchRoutes, accessToken, currentUser } = useAppStore()
   const { isDriverTracking, driverGpsError, driverCurrentPos, startDriverTracking, stopDriverTracking, driverGpsCount } = useAppStore()
   
   const [myUnit, setMyUnit] = useState<MyUnit | null>(null)
@@ -66,6 +68,11 @@ export function DriverScreen({ onNavigate }: DriverScreenProps) {
         if (onNavigate) onNavigate('rutas-classic')
       }, 1500)
     }
+  }
+
+  // Verificar si el chofer necesita KYC
+  if (currentUser?.tipo === "CHOFER" && currentUser?.kyc_status !== 'APPROVED') {
+    return <DriverKycScreen user={currentUser} />
   }
 
   return (

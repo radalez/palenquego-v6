@@ -17,6 +17,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAppStore } from "@/lib/store"
+import { cn } from "@/lib/utils"
 
 interface ProfileScreenProps {
   onNavigateToBilling: () => void
@@ -101,10 +102,14 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
               <div className="flex-1">
                 <h2 className="text-lg font-semibold text-foreground">{currentUser.name}</h2>
                 <p className="text-sm text-muted-foreground">{currentUser.tipo}</p>
-                <div className="flex items-center gap-1 mt-1">
-                  <div className="w-2 h-2 rounded-full bg-green-500" />
-                  <span className="text-xs text-green-600">Verificado</span>
-                </div>
+                {currentUser.tipo === "CHOFER" && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <div className={cn("w-2 h-2 rounded-full", currentUser.kyc_status === 'APPROVED' ? "bg-green-500" : "bg-amber-500")} />
+                    <span className={cn("text-xs font-semibold", currentUser.kyc_status === 'APPROVED' ? "text-green-600" : "text-amber-600")}>
+                      {currentUser.kyc_status === 'APPROVED' ? 'Verificado' : 'No Verificado'}
+                    </span>
+                  </div>
+                )}
               </div>
               <Button variant="outline" size="sm" className="bg-transparent">
                 <Settings className="w-4 h-4" />
