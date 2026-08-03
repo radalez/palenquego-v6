@@ -479,26 +479,26 @@ function RouteCardItem({
             </div>
             
             {/* Información del Chofer y Unidad */}
-            <div className="mt-4 flex flex-col gap-3 p-3 bg-muted/10 rounded-xl border border-border/50 shadow-sm">
+            <div className="mt-4 flex flex-col gap-4 p-4 bg-muted/10 rounded-xl border border-border/50 shadow-sm">
               
               {/* Chofer */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-4">
                 {route.driver_avatar ? (
                   <div className="relative shrink-0">
-                     <img src={route.driver_avatar} alt="Chofer" className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm" />
-                     <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full" style={{ backgroundColor: route.colorHex, border: '2px solid white' }} />
+                     <img src={route.driver_avatar} alt="Chofer" className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm" />
+                     <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full" style={{ backgroundColor: route.colorHex, border: '2px solid white' }} />
                   </div>
                 ) : (
-                  <div className="relative shrink-0 w-12 h-12 rounded-full bg-muted flex items-center justify-center border-2 border-white shadow-sm">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase">{route.driver_name ? route.driver_name.substring(0, 3) : 'DRV'}</span>
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full" style={{ backgroundColor: route.colorHex, border: '2px solid white' }} />
+                  <div className="relative shrink-0 w-16 h-16 rounded-full bg-muted flex items-center justify-center border-2 border-white shadow-sm">
+                    <span className="text-sm font-bold text-muted-foreground uppercase">{route.driver_name ? route.driver_name.substring(0, 3) : 'DRV'}</span>
+                    <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full" style={{ backgroundColor: route.colorHex, border: '2px solid white' }} />
                   </div>
                 )}
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
                     Conductor
                   </span>
-                  <span className="text-sm font-semibold text-foreground leading-none">
+                  <span className="text-base font-semibold text-foreground leading-none">
                     {route.driver_name || 'Sin chofer'}
                   </span>
                 </div>
@@ -507,24 +507,26 @@ function RouteCardItem({
               <div className="h-px bg-border/40 w-full" />
 
               {/* Unidad */}
-              <div className="flex items-center justify-between">
+              <div className="flex items-start justify-between">
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
                     Placa del Vehículo
                   </span>
-                  <span className="text-lg font-black tracking-widest text-foreground leading-none">
+                  <span className="text-xl font-black tracking-widest text-foreground leading-none">
                     {route.unit_license_plate ? route.unit_license_plate : 'SIN PLACA'}
                   </span>
-                  <span className="text-xs text-muted-foreground mt-0.5">
+                  <span className="text-sm text-muted-foreground mt-1.5">
                     {route.unit_name || 'Unidad'}
                   </span>
                 </div>
                 
                 {route.unit_color && (
-                  <div className="flex flex-col items-center shrink-0 bg-muted/30 px-3 py-1.5 rounded-lg border border-border/50">
-                    <span className="text-[9px] uppercase font-bold text-muted-foreground mb-1">Color</span>
+                  <div className="flex flex-col items-end shrink-0">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
+                      Color del Vehículo
+                    </span>
                     <div 
-                      className="w-12 h-5 rounded shadow-sm border border-black/10"
+                      className="w-16 h-7 rounded-md shadow-sm border border-black/10 mt-1"
                       title={route.unit_color}
                       style={{ 
                         backgroundColor: route.unit_color.startsWith('#') ? route.unit_color : (
