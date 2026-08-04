@@ -597,7 +597,7 @@ function RouteCardItem({
             </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 gap-2">
+        <div className="mt-4 grid grid-cols-2 gap-2">
           <div className="bg-muted p-2 rounded-lg text-center">
             <p className="text-xs text-muted-foreground">Paradas</p>
             <p className="font-bold text-sm">{route.stops.length}</p>
