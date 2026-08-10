@@ -14,7 +14,7 @@ const containerStyle = {
   height: '100%',
 }
 
-const API_BASE = "https://palenquego.fly.dev/api"
+const API_BASE = "/api-proxy"
 
 interface ExploreMapScreenProps {
   onBack: () => void
