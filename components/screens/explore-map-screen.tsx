@@ -7,7 +7,6 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import * as LucideIcons from 'lucide-react'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { useAppStore } from "@/lib/store"
 
 const containerStyle = {
