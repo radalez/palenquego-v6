@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { GoogleMap, useJsApiLoader, Marker, Polyline, OverlayView } from '@react-google-maps/api'
-import { Search, ChevronLeft, MapPin, Navigation2, Bookmark, SlidersHorizontal, Menu, LayoutGrid } from 'lucide-react'
+import { Search, MapPin, Navigation2, SlidersHorizontal, Menu, LayoutGrid, ChevronDown, ChevronUp } from 'lucide-react'
 import * as LucideIcons from 'lucide-react'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -31,6 +31,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
   const [categories, setCategories] = useState<any[]>([])
   const [routes, setRoutes] = useState<any[]>([])
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
+  const [categoryPanelOpen, setCategoryPanelOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedRoute, setSelectedRoute] = useState<any | null>(null)
   
@@ -138,50 +139,115 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
         </div>
       </div>
 
-      {/* BARRA DE CATEGORÍAS FLOTANTE */}
+      {/* BOTÓN CATEGORÍAS + PANEL DESPLEGABLE */}
       <div className="absolute top-[160px] left-0 right-0 z-30 px-4">
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-2">
-          <ScrollArea className="w-full">
-            <div className="flex gap-4 px-2 items-center">
-              {/* Botón TODAS */}
-              <button 
-                onClick={() => { setActiveCategory(null); setSelectedRoute(null); }}
-                className={`flex flex-col items-center gap-1 min-w-[60px] p-2 rounded-xl transition-all ${
-                  activeCategory === null ? 'bg-gray-100 border border-gray-200 shadow-sm' : 'hover:bg-gray-50'
-                }`}
-              >
-                <div className={`p-2 rounded-full ${activeCategory === null ? 'text-[#0B1F15]' : 'text-gray-500'}`}>
-                  <LayoutGrid className="h-6 w-6" />
-                </div>
-                <span className={`text-[10px] font-medium ${activeCategory === null ? 'text-[#0B1F15]' : 'text-gray-500'}`}>
-                  Todas
-                </span>
-              </button>
+        
+        {/* Botón compacto que abre/cierra el panel */}
+        <button
+          onClick={() => setCategoryPanelOpen(!categoryPanelOpen)}
+          className="w-full bg-white rounded-2xl shadow-xl border border-gray-100 px-4 py-3 flex items-center justify-between transition-all active:scale-[0.98]"
+        >
+          <div className="flex items-center gap-3">
+            <div 
+              className="w-9 h-9 rounded-xl flex items-center justify-center"
+              style={{ 
+                backgroundColor: activeCategory 
+                  ? (categories.find(c => c.slug === activeCategory)?.color || '#0B1F15') + '20'
+                  : '#0B1F1520'
+              }}
+            >
+              {activeCategory ? (
+                <DynamicIcon 
+                  name={categories.find(c => c.slug === activeCategory)?.icon || 'MapPin'} 
+                  className="h-5 w-5"
+                  //@ts-ignore
+                  style={{ color: categories.find(c => c.slug === activeCategory)?.color || '#0B1F15' }}
+                />
+              ) : (
+                <LayoutGrid className="h-5 w-5 text-[#0B1F15]" />
+              )}
+            </div>
+            <div className="text-left">
+              <p className="text-xs text-gray-400 leading-none mb-0.5">Categoría</p>
+              <p className="text-sm font-bold text-gray-800 leading-none">
+                {activeCategory 
+                  ? categories.find(c => c.slug === activeCategory)?.name || 'Todas'
+                  : 'Todas las rutas'
+                }
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs bg-[#0B1F15]/10 text-[#0B1F15] font-bold px-2 py-1 rounded-full">
+              {categories.length + 1}
+            </span>
+            {categoryPanelOpen 
+              ? <ChevronUp className="h-5 w-5 text-gray-500" />
+              : <ChevronDown className="h-5 w-5 text-gray-500" />
+            }
+          </div>
+        </button>
 
-              {/* Categorías Dinámicas */}
+        {/* Panel desplegable con GRILLA responsiva */}
+        {categoryPanelOpen && (
+          <div className="mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 p-3 animate-in slide-in-from-top-2 duration-200">
+            
+            {/* Opción TODAS */}
+            <button
+              onClick={() => { setActiveCategory(null); setSelectedRoute(null); setCategoryPanelOpen(false); }}
+              className={`w-full flex items-center gap-3 p-3 rounded-xl mb-2 transition-all ${
+                activeCategory === null 
+                  ? 'bg-[#0B1F15] text-white shadow-md' 
+                  : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
+              }`}
+            >
+              <LayoutGrid className="h-5 w-5 shrink-0" />
+              <span className="font-semibold text-sm">Todas las rutas</span>
+              <span className={`ml-auto text-xs font-bold px-2 py-0.5 rounded-full ${
+                activeCategory === null ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-600'
+              }`}>
+                {routes.length}
+              </span>
+            </button>
+
+            <div className="h-px bg-gray-100 mb-2" />
+
+            {/* Grilla responsiva: 3 columnas en móvil pequeño, 4 en móvil grande */}
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
               {categories.map(cat => (
                 <button
                   key={cat.id}
-                  onClick={() => { setActiveCategory(cat.slug); setSelectedRoute(null); }}
-                  className={`flex flex-col items-center gap-1 min-w-[70px] p-2 rounded-xl transition-all ${
-                    activeCategory === cat.slug ? 'bg-gray-100 border border-gray-200 shadow-sm' : 'hover:bg-gray-50'
+                  onClick={() => { setActiveCategory(cat.slug); setSelectedRoute(null); setCategoryPanelOpen(false); }}
+                  className={`flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all active:scale-95 ${
+                    activeCategory === cat.slug 
+                      ? 'shadow-md scale-[1.02]' 
+                      : 'bg-gray-50 hover:bg-gray-100'
                   }`}
+                  style={activeCategory === cat.slug ? { 
+                    backgroundColor: (cat.color || '#059669') + '15',
+                    borderWidth: 1.5,
+                    borderColor: cat.color || '#059669',
+                  } : {}}
                 >
                   <div 
-                    className="p-2 rounded-full" 
-                    style={{ color: activeCategory === cat.slug ? (cat.color || '#0B1F15') : '#6B7280' }}
+                    className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm"
+                    style={{ backgroundColor: (cat.color || '#059669') + '20' }}
                   >
-                    <DynamicIcon name={cat.icon || 'MapPin'} className="h-6 w-6" />
+                    <DynamicIcon 
+                      name={cat.icon || 'MapPin'} 
+                      className="h-5 w-5"
+                      //@ts-ignore
+                      style={{ color: cat.color || '#059669' }}
+                    />
                   </div>
-                  <span className={`text-[10px] font-medium ${activeCategory === cat.slug ? 'text-[#0B1F15]' : 'text-gray-500'}`}>
+                  <span className="text-[10px] font-semibold text-gray-700 text-center leading-tight">
                     {cat.name}
                   </span>
                 </button>
               ))}
             </div>
-            <ScrollBar orientation="horizontal" className="invisible" />
-          </ScrollArea>
-        </div>
+          </div>
+        )}
       </div>
 
       {/* MAPA */}
