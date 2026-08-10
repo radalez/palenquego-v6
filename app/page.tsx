@@ -20,6 +20,7 @@ import { SupportScreen } from "@/components/screens/support-screen"
 import { SupportExtendedScreen } from "@/components/screens/support-extended-screen"
 import { RoutesScreen } from "@/components/screens/routes-screen"
 import { SwipeGoScreen } from "@/components/screens/swipe-go-screen"
+import { ExploreMapScreen } from "@/components/screens/explore-map-screen"
 import { LoginScreen } from "@/components/screens/login-screen"
 import { RegisterScreen } from "@/components/screens/register-screen"
 import { OnboardingScreen } from "@/components/screens/onboarding-screen"
@@ -54,6 +55,7 @@ type ActiveTab =
   | "soporte-extended"
   | "favoritos"
   | "recomendaciones"
+  | "map-explorer"
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("marketplace")
@@ -142,7 +144,7 @@ export default function Home() {
   }
 
   const isMainTab =
-    activeTab === "marketplace" || activeTab === "businesses" || activeTab === "pool" || activeTab === "safeflow" || activeTab === "profile" || activeTab === "rutas" || activeTab === "rutas-classic"
+    activeTab === "marketplace" || activeTab === "businesses" || activeTab === "pool" || activeTab === "safeflow" || activeTab === "profile" || activeTab === "rutas" || activeTab === "rutas-classic" || activeTab === "map-explorer"
 
   return (
     <div className="min-h-screen bg-background flex w-full overflow-hidden">
@@ -177,6 +179,14 @@ export default function Home() {
         
         {/* Nueva vista Tinder-Style para "Go" (rutas) */}
         {activeTab === "rutas" && <SwipeGoScreen onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />}
+
+        {/* Vista Exploración Mapa Rutas */}
+        {activeTab === "map-explorer" && (
+          <ExploreMapScreen
+             onBack={() => setActiveTab("businesses")}
+             onNavigate={(tab) => setActiveTab(tab as ActiveTab)}
+          />
+        )}
 
         {/* Panel del Conductor */}
         {activeTab === "conductor" && <DriverScreen onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />}

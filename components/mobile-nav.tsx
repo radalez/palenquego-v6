@@ -1,6 +1,6 @@
 "use client"
 
-import { Home, Briefcase, Users, QrCode } from "lucide-react"
+import { Home, Briefcase, Users, QrCode, User } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface MobileNavProps {
@@ -12,9 +12,9 @@ export function MobileNav({ activeTab, setActiveTab }: MobileNavProps) {
   const tabs = [
     { id: "marketplace", label: "Inicio", icon: Home },
     { id: "businesses", label: "Servicios", icon: Briefcase },
-    { id: "rutas", label: "Go", isCenter: true },
-    { id: "pool", label: "Pools", icon: Users },
-    { id: "safeflow", label: "SafeFlow", icon: QrCode },
+    { id: "map-explorer", label: "Go", isCenter: true },
+    { id: "pool", label: "Pool", icon: Users },
+    { id: "profile", label: "Perfil", icon: User },
   ]
 
   return (

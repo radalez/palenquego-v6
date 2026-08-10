@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Store, Users, QrCode, Map, Briefcase, Crown, Zap, Star, Gem, LogOut, ChevronRight, CreditCard, Bell, Shield, HelpCircle, User } from "lucide-react"
+import { Store, Users, QrCode, Map, Briefcase, Crown, Zap, Star, Gem, LogOut, ChevronRight, CreditCard, Bell, Shield, HelpCircle, User, Home, ShieldCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAppStore } from "@/lib/store"
 import { cn } from "@/lib/utils"
@@ -27,11 +27,11 @@ export function DesktopSidebar({ activeTab, onNavigate }: DesktopSidebarProps) {
   ]
 
   const mainTabs = [
-    { id: "marketplace", label: "Inicio", icon: Store },
+    { id: "marketplace", label: "Inicio", icon: Home },
     { id: "businesses", label: "Servicios", icon: Briefcase },
     { id: "pool", label: "Pool", icon: Users },
-    { id: "safeflow", label: "Safe-Flow", icon: QrCode },
-    { id: "rutas", label: "Go", icon: Map },
+    { id: "safeflow", label: "Safe-Flow", icon: ShieldCheck },
+    { id: "map-explorer", label: "Go", icon: Map },
   ]
 
   const secondaryTabs = [
