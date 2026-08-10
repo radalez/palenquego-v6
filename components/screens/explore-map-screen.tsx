@@ -1,12 +1,12 @@
 "use client"
 
-import React, { useState, useEffect, useCallback } from 'react'
-import { GoogleMap, useJsApiLoader, Marker, Polyline } from '@react-google-maps/api'
-import { Search, ChevronLeft, MapPin, Navigation2, MoreVertical, Bookmark } from 'lucide-react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import { GoogleMap, useJsApiLoader, Marker, Polyline, OverlayView } from '@react-google-maps/api'
+import { Search, ChevronLeft, MapPin, Navigation2, Bookmark, SlidersHorizontal, Menu, LayoutGrid } from 'lucide-react'
+import * as LucideIcons from 'lucide-react'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
-import { Badge } from "@/components/ui/badge"
 import { useAppStore } from "@/lib/store"
 
 const containerStyle = {
@@ -14,11 +14,17 @@ const containerStyle = {
   height: '100%',
 }
 
-const API_BASE = "https://palenquego.fly.dev/api" // Default
+const API_BASE = "https://palenquego.fly.dev/api"
 
 interface ExploreMapScreenProps {
   onBack: () => void
   onNavigate: (tab: string) => void
+}
+
+// Helper para renderizar iconos dinámicos
+const DynamicIcon = ({ name, className }: { name: string, className?: string }) => {
+  const IconComponent = (LucideIcons as any)[name] || LucideIcons.MapPin
+  return <IconComponent className={className} />
 }
 
 export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) {
@@ -30,7 +36,6 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
   
   const token = useAppStore((state) => state.accessToken)
   
-  // Use window location to infer backend URL in dev if possible, otherwise rely on env
   const getApiBase = () => {
     if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
        return 'http://localhost:8000/api'
@@ -88,18 +93,99 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
     fetchRoutes()
   }, [token, activeCategory, searchQuery])
 
-  const center = { lat: 13.6893, lng: -89.1872 } // Default center El Salvador
+  const center = { lat: 13.6893, lng: -89.1872 } // El Salvador
 
-  // When a route is selected, get its path for the polyline
-  const pathCoordinates = selectedRoute?.stops?.map((stop: any) => ({
-    lat: stop.latitude,
-    lng: stop.longitude
-  })) || []
+  const pathCoordinates = useMemo(() => {
+    return selectedRoute?.stops?.map((stop: any) => ({
+      lat: stop.latitude,
+      lng: stop.longitude
+    })) || []
+  }, [selectedRoute])
 
   return (
     <div className="relative w-full h-full flex flex-col bg-background overflow-hidden">
-      {/* MAP LAYER */}
-      <div className="absolute inset-0 z-0">
+      
+      {/* HEADER DARK VERDE (ESTILO MOCKUP) */}
+      <div className="relative z-20 bg-[#0B1F15] w-full pt-12 pb-16 px-4 rounded-b-[32px] shadow-lg flex flex-col gap-4">
+        {/* Top bar */}
+        <div className="flex items-center justify-between text-white">
+          <Button variant="ghost" size="icon" className="text-white hover:bg-white/10" onClick={onBack}>
+            <Menu className="h-6 w-6" />
+          </Button>
+          <div className="text-center">
+            <h1 className="text-lg font-bold flex items-center gap-1 justify-center">
+              Explora <span className="text-[#4ade80]">El Salvador</span>
+            </h1>
+            <p className="text-xs text-gray-300">Descubre todas las rutas disponibles</p>
+          </div>
+          <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
+            <SlidersHorizontal className="h-5 w-5" />
+          </Button>
+        </div>
+
+        {/* Search bar */}
+        <div className="relative w-full">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <Input
+            placeholder="Buscar rutas..."
+            className="w-full bg-white/10 border-none text-white placeholder:text-gray-400 rounded-2xl h-12 pl-12 pr-4 focus-visible:ring-1 focus-visible:ring-[#4ade80]"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value)
+              setSelectedRoute(null)
+            }}
+          />
+        </div>
+      </div>
+
+      {/* BARRA DE CATEGORÍAS FLOTANTE */}
+      <div className="absolute top-[160px] left-0 right-0 z-30 px-4">
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-2">
+          <ScrollArea className="w-full">
+            <div className="flex gap-4 px-2 items-center">
+              {/* Botón TODAS */}
+              <button 
+                onClick={() => { setActiveCategory(null); setSelectedRoute(null); }}
+                className={`flex flex-col items-center gap-1 min-w-[60px] p-2 rounded-xl transition-all ${
+                  activeCategory === null ? 'bg-gray-100 border border-gray-200 shadow-sm' : 'hover:bg-gray-50'
+                }`}
+              >
+                <div className={`p-2 rounded-full ${activeCategory === null ? 'text-[#0B1F15]' : 'text-gray-500'}`}>
+                  <LayoutGrid className="h-6 w-6" />
+                </div>
+                <span className={`text-[10px] font-medium ${activeCategory === null ? 'text-[#0B1F15]' : 'text-gray-500'}`}>
+                  Todas
+                </span>
+              </button>
+
+              {/* Categorías Dinámicas */}
+              {categories.map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => { setActiveCategory(cat.slug); setSelectedRoute(null); }}
+                  className={`flex flex-col items-center gap-1 min-w-[70px] p-2 rounded-xl transition-all ${
+                    activeCategory === cat.slug ? 'bg-gray-100 border border-gray-200 shadow-sm' : 'hover:bg-gray-50'
+                  }`}
+                >
+                  <div 
+                    className="p-2 rounded-full" 
+                    style={{ color: activeCategory === cat.slug ? (cat.color || '#0B1F15') : '#6B7280' }}
+                  >
+                    <DynamicIcon name={cat.icon || 'MapPin'} className="h-6 w-6" />
+                  </div>
+                  <span className={`text-[10px] font-medium ${activeCategory === cat.slug ? 'text-[#0B1F15]' : 'text-gray-500'}`}>
+                    {cat.name}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <ScrollBar orientation="horizontal" className="invisible" />
+          </ScrollArea>
+        </div>
+      </div>
+
+      {/* MAPA */}
+      <div className="absolute inset-0 z-0 pt-[100px]">
         {isLoaded ? (
           <GoogleMap
             mapContainerStyle={containerStyle}
@@ -113,11 +199,22 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
                   featureType: "poi",
                   elementType: "labels",
                   stylers: [{ visibility: "off" }]
+                },
+                // Un estilo más claro/natural acorde al mockup
+                {
+                  featureType: "water",
+                  elementType: "geometry",
+                  stylers: [{ color: "#A8D8F8" }] // Azul agua estilo mockup
+                },
+                {
+                  featureType: "landscape",
+                  elementType: "geometry",
+                  stylers: [{ color: "#E8F5E9" }] // Verde claro tierra
                 }
               ]
             }}
           >
-            {/* Draw polyline if route selected */}
+            {/* Si hay una ruta seleccionada, dibujamos su trazo */}
             {selectedRoute && (
               <Polyline
                 path={pathCoordinates}
@@ -129,9 +226,10 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
               />
             )}
 
-            {/* If route is selected, show stops, otherwise show route starting points */}
+            {/* Marcadores */}
             {selectedRoute ? (
-              selectedRoute.stops.map((stop: any, index: number) => (
+              // Modo Detalle de Ruta: Mostramos los números (1, 2, 3...)
+              selectedRoute.stops?.map((stop: any, index: number) => (
                 <Marker
                   key={stop.id}
                   position={{ lat: stop.latitude, lng: stop.longitude }}
@@ -140,173 +238,157 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
                     color: "white",
                     fontWeight: "bold"
                   }}
+                  icon={{
+                    path: window.google.maps.SymbolPath.CIRCLE,
+                    fillColor: '#059669',
+                    fillOpacity: 1,
+                    strokeWeight: 2,
+                    strokeColor: 'white',
+                    scale: 14,
+                  }}
                 />
               ))
             ) : (
+              // Modo Exploración: Mostramos marcadores con el color e ícono de la categoría
               routes.map(route => {
-                if (route.stops && route.stops.length > 0) {
-                  return (
-                    <Marker
-                      key={route.id}
-                      position={{ lat: route.stops[0].latitude, lng: route.stops[0].longitude }}
+                if (!route.stops || route.stops.length === 0) return null;
+                
+                const catColor = route.category?.color || '#059669';
+                const catIcon = route.category?.icon || 'MapPin';
+                const position = { lat: route.stops[0].latitude, lng: route.stops[0].longitude };
+
+                return (
+                  <OverlayView
+                    key={route.id}
+                    position={position}
+                    mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+                  >
+                    <div 
+                      className="absolute -translate-x-1/2 -translate-y-full cursor-pointer group"
                       onClick={() => setSelectedRoute(route)}
-                      icon={{
-                        url: "https://maps.google.com/mapfiles/ms/icons/green-dot.png"
-                      }}
-                    />
-                  )
-                }
-                return null
+                    >
+                      <div className="flex items-center gap-1 bg-white rounded-full p-1 pr-3 shadow-lg border border-gray-100 hover:scale-105 transition-transform">
+                        <div 
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-white shadow-inner"
+                          style={{ backgroundColor: catColor }}
+                        >
+                          <DynamicIcon name={catIcon} className="h-4 w-4" />
+                        </div>
+                        <span className="text-xs font-bold text-gray-800 whitespace-nowrap">
+                          {route.name}
+                        </span>
+                      </div>
+                      {/* Triangulito del marcador */}
+                      <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-white absolute left-1/2 -translate-x-1/2 shadow-sm" />
+                    </div>
+                  </OverlayView>
+                )
               })
             )}
           </GoogleMap>
         ) : (
-          <div className="w-full h-full bg-muted animate-pulse flex items-center justify-center">
+          <div className="w-full h-full bg-[#E8F5E9] animate-pulse flex items-center justify-center">
             Cargando Mapa...
           </div>
         )}
       </div>
 
-      {/* TOP CONTROLS LAYER */}
-      <div className="relative z-10 w-full p-4 pointer-events-none flex-1 flex flex-col">
-        <div className="pointer-events-auto flex flex-col gap-3">
-          {/* Header & Search */}
-          <div className="flex items-center gap-2 bg-background/95 backdrop-blur-md p-2 rounded-2xl shadow-lg">
-            <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0 rounded-full">
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por nombre o parada..."
-                className="pl-9 bg-transparent border-none focus-visible:ring-0 shadow-none text-base h-10"
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value)
-                  setSelectedRoute(null) // Clear selection when searching
-                }}
-              />
+      {/* BADGE FLOTANTE DE CANTIDAD (Solo si no hay ruta seleccionada) */}
+      {!selectedRoute && isLoaded && (
+        <div className="absolute bottom-24 left-4 z-10">
+          <div className="bg-[#0B1F15] text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-3">
+            <div className="text-[#4ade80]">
+              <DynamicIcon name="Sparkles" className="h-5 w-5" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm font-bold leading-none">{routes.length}</span>
+              <span className="text-[10px] text-gray-300">Rutas disponibles</span>
             </div>
           </div>
-
-          {/* Categories */}
-          {!selectedRoute && (
-            <ScrollArea className="w-full pointer-events-auto pb-2">
-              <div className="flex gap-2 px-1">
-                <Button
-                  variant={activeCategory === null ? "default" : "secondary"}
-                  className="rounded-full shadow-md bg-white/90 text-black hover:bg-white"
-                  onClick={() => setActiveCategory(null)}
-                >
-                  Todas
-                </Button>
-                {categories.map(cat => (
-                  <Button
-                    key={cat.id}
-                    variant={activeCategory === cat.slug ? "default" : "secondary"}
-                    className="rounded-full shadow-md bg-white/90 text-black hover:bg-white"
-                    onClick={() => setActiveCategory(cat.slug)}
-                  >
-                    {/* Just text for now, ideally Map the cat.icon to Lucide */}
-                    <span className="font-medium text-sm px-1">{cat.name}</span>
-                  </Button>
-                ))}
-              </div>
-              <ScrollBar orientation="horizontal" className="invisible" />
-            </ScrollArea>
-          )}
         </div>
+      )}
 
-        {/* Search Results List (only if searching and no route selected) */}
-        {!selectedRoute && searchQuery && routes.length > 0 && (
-            <div className="mt-4 pointer-events-auto bg-background/95 backdrop-blur-md rounded-2xl shadow-lg p-3 max-h-[50%] overflow-y-auto">
-                <h3 className="text-sm font-semibold mb-2 px-1">Resultados de búsqueda</h3>
-                <div className="flex flex-col gap-2">
-                    {routes.map(route => (
-                        <div 
-                            key={route.id} 
-                            className="flex items-center justify-between p-3 rounded-xl bg-muted/50 active:bg-muted cursor-pointer"
-                            onClick={() => setSelectedRoute(route)}
-                        >
-                            <div>
-                                <h4 className="font-semibold text-sm">{route.name}</h4>
-                                <p className="text-xs text-muted-foreground">{route.stops?.length || 0} paradas • {route.category?.name || 'Ruta'}</p>
-                            </div>
-                            <ChevronLeft className="h-4 w-4 rotate-180 text-muted-foreground" />
-                        </div>
-                    ))}
-                </div>
-            </div>
-        )}
+      {/* CONTROLES DEL MAPA (Zoom, Ubicación) */}
+      <div className="absolute bottom-24 right-4 z-10 flex flex-col gap-2">
+        <Button variant="secondary" size="icon" className="bg-white rounded-full shadow-lg h-12 w-12 text-gray-600">
+          <Navigation2 className="h-5 w-5" />
+        </Button>
+        <div className="bg-white rounded-2xl shadow-lg flex flex-col overflow-hidden">
+          <Button variant="ghost" size="icon" className="rounded-none h-12 w-12 text-gray-600 border-b border-gray-100">
+            <span className="text-xl">+</span>
+          </Button>
+          <Button variant="ghost" size="icon" className="rounded-none h-12 w-12 text-gray-600">
+            <span className="text-xl">-</span>
+          </Button>
+        </div>
       </div>
 
-      {/* BOTTOM SHEET / DETAIL LAYER */}
-      <div className="relative z-10 pointer-events-none mt-auto">
-        {selectedRoute && (
-          <div className="pointer-events-auto bg-background rounded-t-3xl p-5 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col gap-4 animate-in slide-in-from-bottom">
-            {/* Header info */}
+      {/* MODAL / BOTTOM SHEET DE DETALLE DE RUTA */}
+      {selectedRoute && (
+        <div className="absolute bottom-0 left-0 right-0 z-30 bg-white rounded-t-3xl shadow-[0_-20px_40px_rgba(0,0,0,0.1)] flex flex-col max-h-[60vh] animate-in slide-in-from-bottom duration-300">
+          
+          {/* Header del Bottom Sheet */}
+          <div className="p-5 pb-3 border-b border-gray-100">
+            <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-4" />
             <div className="flex justify-between items-start">
-              <div>
-                <h2 className="text-xl font-bold">{selectedRoute.name}</h2>
-                <p className="text-sm text-muted-foreground">
-                  {selectedRoute.category?.name || 'Ruta'} • {selectedRoute.stops?.length || 0} Paradas
-                </p>
+              <div className="flex gap-3 items-center">
+                <div 
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-white"
+                  style={{ backgroundColor: selectedRoute.category?.color || '#059669' }}
+                >
+                  <DynamicIcon name={selectedRoute.category?.icon || 'MapPin'} className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">{selectedRoute.name}</h2>
+                  <p className="text-sm text-gray-500">
+                    {selectedRoute.category?.name || 'Ruta'}
+                  </p>
+                </div>
               </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="icon" className="rounded-full">
-                  <Bookmark className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="flex gap-4 p-3 bg-muted/50 rounded-2xl text-sm">
-              <div className="flex-1 flex flex-col items-center">
-                <span className="font-semibold">{selectedRoute.stops?.length || 0}</span>
-                <span className="text-muted-foreground text-xs">Paradas</span>
-              </div>
-              <div className="w-px bg-border" />
-              <div className="flex-1 flex flex-col items-center">
-                <span className="font-semibold">${selectedRoute.price_one_way}</span>
-                <span className="text-muted-foreground text-xs">Precio</span>
-              </div>
-            </div>
-
-            {/* Stops List (Simplified) */}
-            <ScrollArea className="h-32">
-              <div className="flex flex-col gap-3 relative pl-4 border-l-2 border-primary/20 ml-2 py-2">
-                {selectedRoute.stops?.map((stop: any, idx: number) => (
-                  <div key={stop.id} className="relative">
-                    <div className="absolute -left-[21px] top-1 h-3 w-3 rounded-full bg-primary border-2 border-background" />
-                    <p className="text-sm font-medium">{stop.name}</p>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-
-            {/* Actions */}
-            <div className="grid grid-cols-2 gap-3 mt-2">
-              <Button 
-                variant="outline" 
-                className="w-full rounded-xl h-12"
-                onClick={() => setSelectedRoute(null)}
-              >
-                Volver
-              </Button>
-              <Button 
-                className="w-full rounded-xl h-12 bg-primary hover:bg-primary/90 text-white shadow-lg"
-                onClick={() => {
-                  // The user requested that this leads to the current behavior.
-                  // For now, let's navigate to the classic route screen or pool.
-                  onNavigate('rutas-classic')
-                }}
-              >
-                Comprar Boleto
+              <Button variant="ghost" size="icon" className="rounded-full text-gray-400" onClick={() => setSelectedRoute(null)}>
+                <Menu className="h-5 w-5 rotate-90" />
               </Button>
             </div>
           </div>
-        )}
-      </div>
+
+          {/* Lista de paradas (Scrollable) */}
+          <ScrollArea className="flex-1 p-5">
+            <div className="flex flex-col gap-0 relative">
+              {/* Línea conectora */}
+              <div className="absolute left-[15px] top-4 bottom-4 w-0.5 bg-gray-200 z-0" />
+              
+              {selectedRoute.stops?.map((stop: any, idx: number) => (
+                <div key={stop.id} className="relative z-10 flex gap-4 items-start py-3 bg-white">
+                  <div className="w-8 h-8 rounded-full bg-[#059669] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-md">
+                    {idx + 1}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-bold text-gray-900">{stop.name}</span>
+                    <span className="text-xs text-gray-500">
+                      {idx === 0 ? "Punto de inicio" : `Aprox. ${idx * 15} min`}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+
+          {/* Footer del Bottom Sheet (Botones) */}
+          <div className="p-5 pt-3 bg-white border-t border-gray-100 grid grid-cols-[1fr_auto] gap-3">
+            <Button 
+              className="w-full rounded-2xl h-14 bg-[#059669] hover:bg-[#047857] text-white shadow-lg shadow-green-900/20 text-lg font-bold"
+              onClick={() => onNavigate('rutas-classic')}
+            >
+              <Navigation2 className="mr-2 h-5 w-5" />
+              Iniciar ruta
+            </Button>
+            <Button variant="outline" size="icon" className="w-14 h-14 rounded-2xl border-gray-200 text-gray-600">
+              <DynamicIcon name="Share2" className="h-5 w-5" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
+
