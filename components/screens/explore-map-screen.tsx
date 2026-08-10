@@ -114,7 +114,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
       <div className="relative w-full h-full flex flex-col bg-background overflow-hidden">
 
         {/* HEADER VERDE */}
-        <div className="relative z-20 bg-[#0B1F15] w-full pt-12 pb-16 px-4 rounded-b-[32px] shadow-lg">
+        <div className="relative z-20 bg-[#0B1F15] w-full pt-6 pb-14 px-4 rounded-b-[32px] shadow-lg">
           <div className="flex items-center justify-between text-white">
             <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 shrink-0" onClick={onBack}>
               <ChevronLeft className="h-6 w-6" />
@@ -133,7 +133,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
         </div>
 
         {/* BARRA DE CATEGORÍAS */}
-        <div className="absolute top-[120px] left-0 right-0 z-30 px-4">
+        <div className="absolute top-[80px] left-0 right-0 z-30 px-4">
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-2">
             <div className="flex items-center gap-1">
               {/* Todas */}
