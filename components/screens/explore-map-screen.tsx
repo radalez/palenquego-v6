@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { GoogleMap, useJsApiLoader, Marker, Polyline, OverlayView } from '@react-google-maps/api'
-import { Search, MapPin, Navigation2, SlidersHorizontal, ChevronLeft, LayoutGrid, ChevronDown, ChevronUp } from 'lucide-react'
+import { Search, MapPin, Navigation2, SlidersHorizontal, ChevronLeft, LayoutGrid, ChevronDown, ChevronUp, X } from 'lucide-react'
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import * as LucideIcons from 'lucide-react'
 import { Input } from "@/components/ui/input"
@@ -396,7 +396,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
                 </div>
               </div>
               <Button variant="ghost" size="icon" className="rounded-full text-gray-400" onClick={() => setSelectedRoute(null)}>
-                <Menu className="h-5 w-5 rotate-90" />
+                <X className="h-5 w-5" />
               </Button>
             </div>
           </div>
