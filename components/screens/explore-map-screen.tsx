@@ -38,9 +38,9 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
   
   const getApiBase = () => {
     if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-       return 'http://localhost:8000/api'
+       return 'http://localhost:8000/api/v1'
     }
-    return process.env.NEXT_PUBLIC_API_URL || API_BASE
+    return API_BASE
   }
 
   const { isLoaded } = useJsApiLoader({
