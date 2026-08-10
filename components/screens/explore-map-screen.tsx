@@ -53,7 +53,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
     const fetchCategories = async () => {
       try {
         const res = await fetch(`${getApiBase()}/transport/categories/`, {
-          headers: token ? { Authorization: `Token ${token}` } : {}
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
         })
         if (res.ok) {
           const data = await res.json()
@@ -80,7 +80,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
         }
 
         const res = await fetch(url, {
-          headers: token ? { Authorization: `Token ${token}` } : {}
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
         })
         if (res.ok) {
           const data = await res.json()
