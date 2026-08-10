@@ -144,7 +144,9 @@ export default function Home() {
   }
 
   const isMainTab =
-    activeTab === "marketplace" || activeTab === "businesses" || activeTab === "pool" || activeTab === "safeflow" || activeTab === "profile" || activeTab === "rutas" || activeTab === "rutas-classic" || activeTab === "map-explorer"
+    activeTab === "marketplace" || activeTab === "businesses" || activeTab === "pool" || activeTab === "safeflow" || activeTab === "profile" || activeTab === "rutas" || activeTab === "rutas-classic"
+
+  const isMapExplorer = activeTab === "map-explorer"
 
   return (
     <div className="min-h-screen bg-background flex w-full overflow-hidden">
@@ -159,13 +161,15 @@ export default function Home() {
 
         {/* Widget GPS flotante para choferes (solo cuando NO están en su panel) */}
         {currentUser?.tipo === 'CHOFER' && activeTab !== 'conductor' && <DriverGPSWidget onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />}
-        {/* Mobile Sidebar Menu (hamburger) */}
-        <div className="lg:hidden">
-          <SidebarMenu activeTab={activeTab} onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />
-        </div>
+        {/* Mobile Sidebar Menu (hamburger) — hidden on map explorer */}
+        {!isMapExplorer && (
+          <div className="lg:hidden">
+            <SidebarMenu activeTab={activeTab} onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />
+          </div>
+        )}
 
         {/* Screen Content */}
-        <div className="flex-1 overflow-y-auto pb-20 lg:pb-0">
+        <div className={`flex-1 overflow-y-auto ${isMapExplorer ? '' : 'pb-20 lg:pb-0'}`}>
         {activeTab === "marketplace" && (
           <MarketplaceScreen
             onNavigate={(tab) => setActiveTab(tab as ActiveTab)}

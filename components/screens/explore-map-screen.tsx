@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { GoogleMap, useJsApiLoader, Marker, Polyline, OverlayView } from '@react-google-maps/api'
-import { Search, MapPin, Navigation2, SlidersHorizontal, Menu, LayoutGrid, ChevronDown, ChevronUp } from 'lucide-react'
+import { Search, MapPin, Navigation2, SlidersHorizontal, ChevronLeft, LayoutGrid, ChevronDown, ChevronUp } from 'lucide-react'
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import * as LucideIcons from 'lucide-react'
 import { Input } from "@/components/ui/input"
@@ -106,36 +106,40 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
   return (
     <div className="relative w-full h-full flex flex-col bg-background overflow-hidden">
       
-      {/* HEADER DARK VERDE (ESTILO MOCKUP) */}
-      <div className="relative z-20 bg-[#0B1F15] w-full pt-12 pb-16 px-4 rounded-b-[32px] shadow-lg flex flex-col gap-4">
-        {/* Top bar */}
-        <div className="flex items-center justify-between text-white">
-          <Button variant="ghost" size="icon" className="text-white hover:bg-white/10" onClick={onBack}>
-            <Menu className="h-6 w-6" />
+      {/* HEADER VERDE LIMPIO */}
+      <div className="relative z-20 bg-[#0B1F15] w-full pt-10 pb-16 px-4 rounded-b-[32px] shadow-lg flex flex-col gap-3">
+        {/* Barra superior: flecha atrás + título */}
+        <div className="flex items-center gap-3 text-white">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-white hover:bg-white/10 shrink-0"
+            onClick={onBack}
+          >
+            <ChevronLeft className="h-6 w-6" />
           </Button>
-          <div className="text-center">
-            <h1 className="text-lg font-bold flex items-center gap-1 justify-center">
+          <div className="flex-1">
+            <h1 className="text-base font-bold text-white leading-tight">
               Explora <span className="text-[#4ade80]">El Salvador</span>
             </h1>
-            <p className="text-xs text-gray-300">Descubre todas las rutas disponibles</p>
           </div>
-          <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
-            <SlidersHorizontal className="h-5 w-5" />
-          </Button>
         </div>
 
-        {/* Search bar */}
+        {/* Input de búsqueda con filtro adentro */}
         <div className="relative w-full">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
           <Input
-            placeholder="Buscar rutas..."
-            className="w-full bg-white/10 border-none text-white placeholder:text-gray-400 rounded-2xl h-12 pl-12 pr-4 focus-visible:ring-1 focus-visible:ring-[#4ade80]"
+            placeholder="Buscar rutas, destinos..."
+            className="w-full bg-white/10 border-none text-white placeholder:text-gray-400 rounded-2xl h-12 pl-12 pr-12 focus-visible:ring-1 focus-visible:ring-[#4ade80]"
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value)
               setSelectedRoute(null)
             }}
           />
+          <button className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors">
+            <SlidersHorizontal className="h-5 w-5" />
+          </button>
         </div>
       </div>
 
