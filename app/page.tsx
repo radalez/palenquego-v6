@@ -194,14 +194,6 @@ export default function Home() {
         {/* Vista Clásica de Rutas */}
         {activeTab === "rutas-classic" && (
           <div className="w-full h-full relative">
-            {currentUser?.tipo !== 'CHOFER' && (
-              <button 
-                onClick={() => setActiveTab("businesses")}
-                className="absolute z-50 top-4 left-4 bg-background/80 backdrop-blur rounded-full p-2"
-              >
-                ← Volver
-              </button>
-            )}
             <RoutesScreen onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />
           </div>
         )}
