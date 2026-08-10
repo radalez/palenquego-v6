@@ -37,14 +37,13 @@ interface RoutesScreenProps {
 }
 
 export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
-  const { routes, services, fetchRoutes, isLoading } = useAppStore() 
+  const { routes, services, fetchRoutes, isLoading, routeSearchQuery, setRouteSearchQuery } = useAppStore() 
   const [tracking, setTracking] = useState<RouteTrackingState | null>(null)
   const [serviceView, setServiceView] = useState<ServiceViewState | null>(null)
   const [ticketPurchase, setTicketPurchase] = useState<TicketPurchaseState | null>(null)
-  const [searchQuery, setSearchQuery] = useState("")
 
   const filteredRoutes = routes.filter((route) => {
-    const query = searchQuery.toLowerCase()
+    const query = routeSearchQuery.toLowerCase()
     return (
       route.name.toLowerCase().includes(query) ||
       route.stops.some((stop) => stop.name?.toLowerCase().includes(query))
@@ -52,14 +51,6 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
   })
 
 useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedQuery = sessionStorage.getItem('palenque-route-search')
-      if (storedQuery) {
-        setSearchQuery(storedQuery)
-        sessionStorage.removeItem('palenque-route-search')
-      }
-    }
-
     // Primera carga inmediata
     fetchRoutes();
 
@@ -415,20 +406,17 @@ useEffect(() => {
         
         {/* Search Bar */}
         <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <Input
-            type="text"
-            placeholder="Buscar por nombre o parada..."
-            className="pl-10 bg-muted/50 border-transparent focus-visible:ring-primary rounded-xl"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input 
+            placeholder="Buscar por nombre o parada..." 
+            className="pl-9 h-11 bg-white border-gray-200 rounded-full text-[15px]"
+            value={routeSearchQuery}
+            onChange={(e) => setRouteSearchQuery(e.target.value)}
           />
-          {searchQuery && (
+          {routeSearchQuery && (
             <button 
-              onClick={() => setSearchQuery("")}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground"
+              onClick={() => setRouteSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
             >
               <X className="h-4 w-4" />
             </button>

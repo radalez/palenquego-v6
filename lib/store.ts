@@ -245,6 +245,9 @@ interface AppState {
   poolPaymentPending: { poolId: number; options: "FULL" | "PERSONAL" }[]
   isLoading: boolean
 
+  routeSearchQuery: string
+  setRouteSearchQuery: (query: string) => void
+
   kycRequirements: any[]
   fetchKycRequirements: () => Promise<void>
 
@@ -321,6 +324,8 @@ export const useAppStore = create<AppState>()(
       recommendations: [],
       plans: [],
       routes: initialRoutes,
+      routeSearchQuery: "",
+      setRouteSearchQuery: (query: string) => set({ routeSearchQuery: query }),
       kycRequirements: [],
       currentUser: { id: 0, name: "", avatar: "", is_ambassador: false },
       isAuthenticated: false,      

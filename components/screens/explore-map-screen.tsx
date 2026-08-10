@@ -459,7 +459,12 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
         <div className="px-5 py-4 pb-6 sm:pb-4 border-t border-gray-100 flex gap-3 shrink-0 bg-white">
           <Button
             className="flex-1 rounded-2xl h-14 bg-[#059669] hover:bg-[#047857] text-white font-bold text-base shadow-lg"
-            onClick={() => onNavigate('rutas-classic')}
+            onClick={() => {
+              if (selectedRoute) {
+                useAppStore.getState().setRouteSearchQuery(selectedRoute.name);
+              }
+              onNavigate('rutas-classic')
+            }}
           >
             <Navigation2 className="mr-2 h-5 w-5" />
             Iniciar ruta
