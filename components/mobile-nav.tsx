@@ -12,7 +12,7 @@ export function MobileNav({ activeTab, setActiveTab }: MobileNavProps) {
   const tabs = [
     { id: "rutas-classic", label: "Inicio", icon: Home },
     { id: "businesses", label: "Servicios", icon: Briefcase },
-    { id: "map-explorer", label: "Go", isCenter: true },
+    { id: "rutas", label: "Go", isCenter: true },
     { id: "pool", label: "Pool", icon: Users },
     { id: "profile", label: "Perfil", icon: User },
   ]

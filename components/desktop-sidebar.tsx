@@ -31,7 +31,7 @@ export function DesktopSidebar({ activeTab, onNavigate }: DesktopSidebarProps) {
     { id: "businesses", label: "Servicios", icon: Briefcase },
     { id: "pool", label: "Pool", icon: Users },
     { id: "safeflow", label: "Safe-Flow", icon: ShieldCheck },
-    { id: "map-explorer", label: "Go", icon: Map },
+    { id: "rutas", label: "Go", icon: Map },
   ]
 
   const secondaryTabs = [
