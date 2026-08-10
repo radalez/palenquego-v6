@@ -27,7 +27,7 @@ export function DesktopSidebar({ activeTab, onNavigate }: DesktopSidebarProps) {
   ]
 
   const mainTabs = [
-    { id: "marketplace", label: "Inicio", icon: Home },
+    { id: "rutas-classic", label: "Inicio", icon: Home },
     { id: "businesses", label: "Servicios", icon: Briefcase },
     { id: "pool", label: "Pool", icon: Users },
     { id: "safeflow", label: "Safe-Flow", icon: ShieldCheck },

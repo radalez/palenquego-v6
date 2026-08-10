@@ -159,6 +159,27 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
         />
       </div>
 
+      {/* Botón de Mapa Interactivo */}
+      <div className="px-4 pb-4">
+        <div 
+          onClick={() => onNavigate?.("map-explorer")}
+          className="group bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-2xl p-4 flex items-center gap-4 cursor-pointer hover:border-primary/40 hover:shadow-md transition-all duration-300"
+        >
+          <div className="relative">
+            {/* Animación delicada de "onda" (ping) detrás del icono */}
+            <div className="absolute inset-0 bg-primary/30 rounded-full animate-ping opacity-75" style={{ animationDuration: '2s' }}></div>
+            {/* Contenedor del icono que se eleva suavemente al pasar el mouse */}
+            <div className="relative bg-primary/20 p-3 rounded-full flex-shrink-0 group-hover:-translate-y-1 transition-transform duration-300">
+              <MapPin className="w-6 h-6 text-primary drop-shadow-sm" />
+            </div>
+          </div>
+          <div className="flex-1">
+            <h3 className="font-bold text-foreground text-base group-hover:text-primary transition-colors duration-300">Ver rutas en mapa</h3>
+            <p className="text-sm text-muted-foreground leading-tight mt-0.5">Explora destinos, descubre rutas y encuéntralas cerca de ti.</p>
+          </div>
+        </div>
+      </div>
+
       {/* Sección de Remates Flow */}
       <div className="px-4 mb-4">
         <div className="flex items-center justify-between mb-3">

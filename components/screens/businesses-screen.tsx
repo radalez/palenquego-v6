@@ -153,7 +153,7 @@ export function BusinessesScreen({ onNavigate }: BusinessesScreenProps) {
       {/* Botón para ir a las rutas clásicas */}
       <div className="px-4 pb-4">
         <div 
-          onClick={() => onNavigate?.("rutas-classic")}
+          onClick={() => onNavigate?.("map-explorer")}
           className="group bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-2xl p-4 flex items-center gap-4 cursor-pointer hover:border-primary/40 hover:shadow-md transition-all duration-300"
         >
           <div className="relative">

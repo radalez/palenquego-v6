@@ -58,7 +58,7 @@ type ActiveTab =
   | "map-explorer"
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>("marketplace")
+  const [activeTab, setActiveTab] = useState<ActiveTab>("rutas-classic")
 
   const isAuthenticated = useAppStore((state) => state.isAuthenticated)
   const hasCompletedOnboarding = useAppStore((state) => state.hasCompletedOnboarding)
