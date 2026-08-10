@@ -423,7 +423,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
       </div>
 
       {/* BOTTOM SHEET — lista de paradas + botones */}
-      <div className="absolute bottom-0 left-0 right-0 z-20 bg-white rounded-t-3xl shadow-2xl flex flex-col" style={{ maxHeight: '42vh' }}>
+      <div className="absolute bottom-0 left-0 right-0 z-20 bg-white rounded-t-3xl shadow-2xl flex flex-col" style={{ maxHeight: '55vh' }}>
         <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mt-3 mb-1 shrink-0" />
 
         <ScrollArea className="flex-1 px-5 pb-2">
@@ -456,16 +456,15 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
         </ScrollArea>
 
         {/* Botones */}
-        <div className="px-5 py-4 border-t border-gray-100 flex gap-3 shrink-0">
+        <div className="px-5 py-4 pb-6 sm:pb-4 border-t border-gray-100 flex gap-3 shrink-0 bg-white">
           <Button
-            className="flex-1 rounded-2xl h-14 text-white font-bold text-base shadow-lg"
-            style={{ backgroundColor: catColor }}
+            className="flex-1 rounded-2xl h-14 bg-[#059669] hover:bg-[#047857] text-white font-bold text-base shadow-lg"
             onClick={() => onNavigate('rutas-classic')}
           >
             <Navigation2 className="mr-2 h-5 w-5" />
             Iniciar ruta
           </Button>
-          <Button variant="outline" size="icon" className="w-14 h-14 rounded-2xl border-gray-200 text-gray-600">
+          <Button variant="outline" size="icon" className="w-14 h-14 rounded-2xl bg-gray-100 hover:bg-gray-200 border-transparent text-gray-700 transition-colors">
             <Share2 className="h-5 w-5" />
           </Button>
         </div>
