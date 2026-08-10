@@ -52,6 +52,14 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
   })
 
 useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedQuery = sessionStorage.getItem('palenque-route-search')
+      if (storedQuery) {
+        setSearchQuery(storedQuery)
+        sessionStorage.removeItem('palenque-route-search')
+      }
+    }
+
     // Primera carga inmediata
     fetchRoutes();
 
