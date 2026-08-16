@@ -247,16 +247,22 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
               options={{ disableDefaultUI: true, zoomControl: false, styles: MAP_STYLES }}
               onLoad={(map) => { mapRef.current = map }}
             >
-              {routes.map(route => {
+              {routes.map((route, idx) => {
                 if (!route.stops?.length) return null
                 const rColor = route.category?.color || '#059669'
                 const rIcon  = route.category?.icon  || 'MapPin'
                 const pos    = { lat: route.stops[0].latitude, lng: route.stops[0].longitude }
+                
+                // Desplazamiento visual para evitar que pines en la misma ciudad se tapen entre sí
+                const offsetX = (idx % 3) * 20 - 20; 
+                const offsetY = Math.floor(idx / 3) * 20 - 20;
+
                 return (
                   <OverlayView key={route.id} position={pos} mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}>
-                    <div className="absolute -translate-x-1/2 -translate-y-full cursor-pointer"
+                    <div className="absolute -translate-x-1/2 -translate-y-full cursor-pointer transition-transform hover:scale-110 hover:z-50 z-10"
+                      style={{ marginLeft: `${offsetX}px`, marginTop: `${offsetY}px` }}
                       onClick={() => { setSelectedRoute(route); setView('detail') }}>
-                      <div className="flex items-center gap-1 bg-white rounded-full p-1 pr-3 shadow-lg border border-gray-100 hover:scale-105 transition-transform">
+                      <div className="flex items-center gap-1 bg-white rounded-full p-1 pr-3 shadow-lg border border-gray-100">
                         <div className="w-8 h-8 rounded-full flex items-center justify-center text-white" style={{ backgroundColor: rColor }}>
                           <DynamicIcon name={rIcon} className="h-4 w-4" />
                         </div>
