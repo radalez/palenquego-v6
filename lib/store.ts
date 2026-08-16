@@ -247,6 +247,8 @@ interface AppState {
 
   routeSearchQuery: string
   setRouteSearchQuery: (query: string) => void
+  returnToMapRoute: string | null
+  setReturnToMapRoute: (route: string | null) => void
 
   kycRequirements: any[]
   fetchKycRequirements: () => Promise<void>
@@ -326,6 +328,8 @@ export const useAppStore = create<AppState>()(
       routes: initialRoutes,
       routeSearchQuery: "",
       setRouteSearchQuery: (query: string) => set({ routeSearchQuery: query }),
+      returnToMapRoute: null,
+      setReturnToMapRoute: (route: string | null) => set({ returnToMapRoute: route }),
       kycRequirements: [],
       currentUser: { id: 0, name: "", avatar: "", is_ambassador: false },
       isAuthenticated: false,      

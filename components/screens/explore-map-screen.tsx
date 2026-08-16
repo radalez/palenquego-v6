@@ -518,6 +518,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
                 onClick={() => {
                   if (selectedRoute) {
                     useAppStore.getState().setRouteSearchQuery(selectedRoute.name);
+                    useAppStore.getState().setReturnToMapRoute(selectedRoute.name);
                   }
                   onNavigate('rutas-classic')
                 }}
