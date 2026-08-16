@@ -135,52 +135,71 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
 
         {/* BARRA DE CATEGORÍAS */}
         <div className="absolute top-[80px] left-0 right-0 z-30 px-4">
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-2">
-            <div className="flex items-center gap-1">
-              {/* Todas */}
-              <button
-                onClick={() => { setCategoryPanelOpen(!categoryPanelOpen); setActiveCategory(null) }}
-                className={`flex flex-col items-center gap-1 min-w-[60px] p-2 rounded-xl transition-all shrink-0 ${
-                  activeCategory === null ? 'bg-gray-100 border border-gray-200 shadow-sm' : 'hover:bg-gray-50'
-                }`}
-              >
-                <div className={`p-1.5 rounded-full ${activeCategory === null ? 'text-[#0B1F15]' : 'text-gray-500'}`}>
-                  {categoryPanelOpen ? <ChevronUp className="h-6 w-6" /> : <LayoutGrid className="h-6 w-6" />}
-                </div>
-                <span className={`text-[10px] font-medium ${activeCategory === null ? 'text-[#0B1F15]' : 'text-gray-500'}`}>
-                  Todas
-                </span>
-              </button>
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-2 transition-all duration-300">
+            
+            {/* Vista 1: Scroll Horizontal */}
+            {!categoryPanelOpen && (
+              <div className="flex items-center gap-1 animate-in fade-in duration-200">
+                {/* Botón Todas (Abre Modal) */}
+                <button
+                  onClick={() => { setCategoryPanelOpen(true); setActiveCategory(null) }}
+                  className={`flex flex-col items-center gap-1 min-w-[60px] p-2 rounded-xl transition-all shrink-0 ${
+                    activeCategory === null ? 'bg-gray-100 border border-gray-200 shadow-sm' : 'hover:bg-gray-50'
+                  }`}
+                >
+                  <div className={`p-1.5 rounded-full ${activeCategory === null ? 'text-[#0B1F15]' : 'text-gray-500'}`}>
+                    <LayoutGrid className="h-6 w-6" />
+                  </div>
+                  <span className={`text-[10px] font-medium ${activeCategory === null ? 'text-[#0B1F15]' : 'text-gray-500'}`}>
+                    Todas
+                  </span>
+                </button>
 
-              <div className="w-px h-10 bg-gray-100 shrink-0" />
+                <div className="w-px h-10 bg-gray-100 shrink-0" />
 
-              {/* Scroll horizontal */}
-              <div className="flex-1 overflow-x-auto scrollbar-hide">
-                <div className="flex gap-2 px-1" style={{ width: 'max-content' }}>
-                  {categories.map(cat => (
-                    <button
-                      key={cat.id}
-                      onClick={() => { setActiveCategory(cat.slug); setCategoryPanelOpen(false) }}
-                      className={`flex flex-col items-center gap-1 min-w-[62px] p-2 rounded-xl transition-all ${
-                        activeCategory === cat.slug ? 'bg-gray-100 border border-gray-200 shadow-sm' : 'hover:bg-gray-50'
-                      }`}
-                    >
-                      <div className="p-1.5 rounded-full" style={{ color: activeCategory === cat.slug ? (cat.color || '#0B1F15') : '#6B7280' }}>
-                        <DynamicIcon name={cat.icon || 'MapPin'} className="h-6 w-6" />
-                      </div>
-                      <span className={`text-[10px] font-medium text-center leading-tight ${activeCategory === cat.slug ? 'text-[#0B1F15]' : 'text-gray-500'}`}>
-                        {cat.name}
-                      </span>
-                    </button>
-                  ))}
+                {/* Scroll horizontal */}
+                <div className="flex-1 overflow-x-auto scrollbar-hide">
+                  <div className="flex gap-2 px-1" style={{ width: 'max-content' }}>
+                    {categories.map(cat => (
+                      <button
+                        key={cat.id}
+                        onClick={() => { setActiveCategory(cat.slug); setCategoryPanelOpen(false) }}
+                        className={`flex flex-col items-center gap-1 min-w-[62px] p-2 rounded-xl transition-all ${
+                          activeCategory === cat.slug ? 'bg-gray-100 border border-gray-200 shadow-sm' : 'hover:bg-gray-50'
+                        }`}
+                      >
+                        <div className="p-1.5 rounded-full" style={{ color: activeCategory === cat.slug ? (cat.color || '#0B1F15') : '#6B7280' }}>
+                          <DynamicIcon name={cat.icon || 'MapPin'} className="h-6 w-6" />
+                        </div>
+                        <span className={`text-[10px] font-medium text-center leading-tight ${activeCategory === cat.slug ? 'text-[#0B1F15]' : 'text-gray-500'}`}>
+                          {cat.name}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
-            {/* Grilla expandible */}
+            {/* Vista 2: Grilla Expandible */}
             {categoryPanelOpen && (
-              <div className="mt-2 pt-2 border-t border-gray-100 animate-in slide-in-from-top-1 duration-200">
+              <div className="animate-in fade-in slide-in-from-top-2 duration-200 p-1">
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                  {/* Botón Todas (Cierra Modal) integrado en la grilla */}
+                  <button
+                    onClick={() => { setCategoryPanelOpen(false); setActiveCategory(null) }}
+                    className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 active:scale-95 transition-all"
+                    style={activeCategory === null ? {
+                      backgroundColor: '#05966915',
+                      borderWidth: 1.5, borderStyle: 'solid', borderColor: '#059669',
+                    } : {}}
+                  >
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm" style={{ backgroundColor: '#05966920' }}>
+                      <ChevronUp className="h-5 w-5" style={{ color: '#059669' }} />
+                    </div>
+                    <span className="text-[10px] font-semibold text-gray-700 text-center leading-tight">Ocultar Todas</span>
+                  </button>
+
                   {categories.map(cat => (
                     <button
                       key={cat.id}
