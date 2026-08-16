@@ -187,7 +187,7 @@ export default function Home() {
         {/* Vista Exploración Mapa Rutas */}
         {activeTab === "map-explorer" && (
           <ExploreMapScreen
-             onBack={() => setActiveTab("businesses")}
+             onBack={() => setActiveTab("rutas")}
              onNavigate={(tab) => setActiveTab(tab as ActiveTab)}
           />
         )}
