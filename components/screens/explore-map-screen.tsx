@@ -309,14 +309,50 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
 
         {/* Zoom controls */}
         <div className="absolute bottom-6 right-4 z-10 flex flex-col gap-2">
-          <Button variant="secondary" size="icon" className="bg-white rounded-full shadow-lg h-12 w-12 text-gray-600">
+          <Button 
+            variant="secondary" 
+            size="icon" 
+            className="bg-white rounded-full shadow-lg h-12 w-12 text-gray-600"
+            onClick={() => {
+              if (navigator.geolocation && mapRef.current) {
+                navigator.geolocation.getCurrentPosition(
+                  (position) => {
+                    mapRef.current?.panTo({
+                      lat: position.coords.latitude,
+                      lng: position.coords.longitude,
+                    });
+                    mapRef.current?.setZoom(14);
+                  },
+                  (error) => console.error("Error getting location:", error)
+                );
+              }
+            }}
+          >
             <Navigation2 className="h-5 w-5" />
           </Button>
           <div className="bg-white rounded-2xl shadow-lg flex flex-col overflow-hidden">
-            <Button variant="ghost" size="icon" className="rounded-none h-12 w-12 text-gray-600 border-b border-gray-100">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="rounded-none h-12 w-12 text-gray-600 border-b border-gray-100"
+              onClick={() => {
+                if (mapRef.current) {
+                  mapRef.current.setZoom((mapRef.current.getZoom() || 9) + 1)
+                }
+              }}
+            >
               <span className="text-xl font-light">+</span>
             </Button>
-            <Button variant="ghost" size="icon" className="rounded-none h-12 w-12 text-gray-600">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="rounded-none h-12 w-12 text-gray-600"
+              onClick={() => {
+                if (mapRef.current) {
+                  mapRef.current.setZoom((mapRef.current.getZoom() || 9) - 1)
+                }
+              }}
+            >
               <span className="text-xl font-light">−</span>
             </Button>
           </div>
