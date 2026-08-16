@@ -95,7 +95,22 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
         const res = await fetch(url, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         })
-        if (res.ok) setRoutes(await res.json())
+        if (res.ok) {
+          const data = await res.json()
+          setRoutes(data)
+          
+          // Restaurar la ruta si venimos de la pantalla clásica
+          const returnRouteName = useAppStore.getState().returnToMapRoute;
+          if (returnRouteName) {
+            const found = data.find((r: any) => r.name === returnRouteName);
+            if (found) {
+              setSelectedRoute(found);
+              setView('detail');
+            }
+            // Limpiamos el estado para que no se vuelva a abrir automáticamente en el futuro
+            useAppStore.getState().setReturnToMapRoute(null);
+          }
+        }
       } catch (err) { console.error("Error fetching routes:", err) }
     }
     fetchRoutes()

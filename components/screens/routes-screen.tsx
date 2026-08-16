@@ -428,9 +428,6 @@ useEffect(() => {
       <div className="px-4 pt-4">
         <div 
           onClick={() => {
-            if (returnToMapRoute) {
-              setReturnToMapRoute(null);
-            }
             onNavigate?.("map-explorer")
           }}
           className={cn("group border rounded-2xl p-4 flex items-center gap-4 cursor-pointer transition-all duration-300", 
