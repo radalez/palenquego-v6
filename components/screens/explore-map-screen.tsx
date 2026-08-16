@@ -42,6 +42,19 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedRoute, setSelectedRoute] = useState<any | null>(null)
   const [isSheetExpanded, setIsSheetExpanded] = useState(true)
+  const [locationAlert, setLocationAlert] = useState<{ type: 'near' | 'far', distance: number, route: any } | null>(null)
+
+  // Función para calcular distancia (Haversine formula)
+  const getDistanceInKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371; // Radio de la Tierra en km
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
 
   const token = useAppStore((state) => state.accessToken)
   const mapRef = useRef<google.maps.Map | null>(null)
@@ -296,6 +309,53 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
           )}
         </div>
 
+        {/* Location Alert */}
+        {locationAlert && (
+          <div className="absolute top-32 left-1/2 -translate-x-1/2 z-50 w-11/12 max-w-sm">
+            <div className="bg-white rounded-2xl shadow-2xl p-4 border border-gray-100 flex items-start gap-3 animate-in slide-in-from-top-4 duration-300">
+              <div className="bg-[#059669]/10 p-2.5 rounded-full text-[#059669] flex-shrink-0">
+                 <MapPin className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <h4 className="text-sm font-bold text-gray-900">
+                  {locationAlert.type === 'near' ? 'Ruta cerca de ti' : 'Estás un poco lejos'}
+                </h4>
+                <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                  {locationAlert.type === 'near' 
+                    ? `La ruta "${locationAlert.route.name}" está a solo ${locationAlert.distance.toFixed(1)}km. ¿Quieres explorarla?`
+                    : `No hay rutas cerca de tu zona. La más cercana es "${locationAlert.route.name}" a ${locationAlert.distance.toFixed(0)}km.`}
+                </p>
+                <div className="flex gap-2 mt-3">
+                  <Button 
+                    className="flex-1 bg-[#059669] hover:bg-[#047857] text-white rounded-xl h-9 text-xs font-semibold"
+                    onClick={() => {
+                      if (mapRef.current && locationAlert.route.stops?.length > 0) {
+                        mapRef.current.panTo({
+                          lat: locationAlert.route.stops[0].latitude,
+                          lng: locationAlert.route.stops[0].longitude
+                        });
+                        mapRef.current.setZoom(13);
+                      }
+                      setSelectedRoute(locationAlert.route);
+                      setView('detail');
+                      setLocationAlert(null);
+                    }}
+                  >
+                     {locationAlert.type === 'near' ? 'Ver ruta' : 'Llévame allí'}
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    className="flex-1 h-9 text-xs font-semibold text-gray-500 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-xl"
+                    onClick={() => setLocationAlert(null)}
+                  >
+                    Ignorar
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Badge */}
         <div className="absolute bottom-6 left-4 z-10">
           <div className="bg-[#0B1F15] text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-3">
@@ -317,11 +377,40 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
               if (navigator.geolocation && mapRef.current) {
                 navigator.geolocation.getCurrentPosition(
                   (position) => {
-                    mapRef.current?.panTo({
-                      lat: position.coords.latitude,
-                      lng: position.coords.longitude,
-                    });
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    
+                    mapRef.current?.panTo({ lat, lng });
                     mapRef.current?.setZoom(14);
+
+                    // Buscar la ruta más cercana
+                    if (filteredRoutes.length > 0) {
+                      let closestRoute = null;
+                      let minDistance = Infinity;
+
+                      filteredRoutes.forEach(route => {
+                        if (route.stops && route.stops.length > 0) {
+                          const stopLat = route.stops[0].latitude;
+                          const stopLng = route.stops[0].longitude;
+                          const dist = getDistanceInKm(lat, lng, stopLat, stopLng);
+                          if (dist < minDistance) {
+                            minDistance = dist;
+                            closestRoute = route;
+                          }
+                        }
+                      });
+
+                      if (closestRoute) {
+                        if (minDistance <= 10) {
+                          setLocationAlert({ type: 'near', distance: minDistance, route: closestRoute });
+                        } else {
+                          setLocationAlert({ type: 'far', distance: minDistance, route: closestRoute });
+                        }
+                        
+                        // Ocultar alerta después de 10 segundos automáticamente
+                        setTimeout(() => setLocationAlert(null), 10000);
+                      }
+                    }
                   },
                   (error) => console.error("Error getting location:", error)
                 );
