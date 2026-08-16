@@ -10,7 +10,7 @@ interface MobileNavProps {
 
 export function MobileNav({ activeTab, setActiveTab }: MobileNavProps) {
   const tabs = [
-    { id: "rutas-classic", label: "Inicio", icon: Home },
+    { id: "map-explorer", label: "Inicio", icon: Home },
     { id: "businesses", label: "Servicios", icon: Briefcase },
     { id: "rutas", label: "Go", isCenter: true },
     { id: "pool", label: "Pool", icon: Users },
