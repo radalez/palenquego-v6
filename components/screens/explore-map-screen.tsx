@@ -46,6 +46,19 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
   const token = useAppStore((state) => state.accessToken)
   const mapRef = useRef<google.maps.Map | null>(null)
 
+
+  const getApiBase = () => {
+    if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+      return 'http://localhost:8000/api/v1'
+    }
+    return API_BASE
+  }
+
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
+  })
+
   useEffect(() => {
     if (mapRef.current && routes.length > 0 && isLoaded) {
       const bounds = new window.google.maps.LatLngBounds()
@@ -61,17 +74,6 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
       }
     }
   }, [routes, isLoaded, view])
-  const getApiBase = () => {
-    if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-      return 'http://localhost:8000/api/v1'
-    }
-    return API_BASE
-  }
-
-  const { isLoaded } = useJsApiLoader({
-    id: 'google-map-script',
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
-  })
 
   useEffect(() => {
     const fetchCategories = async () => {
