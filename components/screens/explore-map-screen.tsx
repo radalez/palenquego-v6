@@ -401,14 +401,24 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
                       });
 
                       if (closestRoute) {
-                        if (minDistance <= 10) {
+                        if (minDistance <= 1) {
+                          // OPCIÓN 2: Auto-abrir si está muy cerca (< 1km)
+                          mapRef.current?.panTo({
+                            lat: closestRoute.stops[0].latitude,
+                            lng: closestRoute.stops[0].longitude
+                          });
+                          mapRef.current?.setZoom(15);
+                          setSelectedRoute(closestRoute);
+                          setView('detail');
+                        } else if (minDistance <= 10) {
+                          // OPCIÓN 1: Preguntar si quiere verla si está a menos de 10km
                           setLocationAlert({ type: 'near', distance: minDistance, route: closestRoute });
+                          setTimeout(() => setLocationAlert(null), 10000);
                         } else {
+                          // OPCIÓN 3: Lejos, ofrecer llevarlo
                           setLocationAlert({ type: 'far', distance: minDistance, route: closestRoute });
+                          setTimeout(() => setLocationAlert(null), 10000);
                         }
-                        
-                        // Ocultar alerta después de 10 segundos automáticamente
-                        setTimeout(() => setLocationAlert(null), 10000);
                       }
                     }
                   },
