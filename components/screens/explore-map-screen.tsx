@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { GoogleMap, useJsApiLoader, Marker, Polyline, OverlayView } from '@react-google-maps/api'
 import {
   Search, MapPin, Navigation2, SlidersHorizontal, ChevronLeft,
@@ -44,7 +44,23 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
   const [isSheetExpanded, setIsSheetExpanded] = useState(true)
 
   const token = useAppStore((state) => state.accessToken)
+  const mapRef = useRef<google.maps.Map | null>(null)
 
+  useEffect(() => {
+    if (mapRef.current && routes.length > 0 && isLoaded) {
+      const bounds = new window.google.maps.LatLngBounds()
+      let hasValidStops = false
+      routes.forEach(route => {
+        if (route.stops?.length) {
+          bounds.extend({ lat: route.stops[0].latitude, lng: route.stops[0].longitude })
+          hasValidStops = true
+        }
+      })
+      if (hasValidStops) {
+        mapRef.current.fitBounds(bounds, { top: 120, bottom: 80, left: 40, right: 40 })
+      }
+    }
+  }, [routes, isLoaded, view])
   const getApiBase = () => {
     if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
       return 'http://localhost:8000/api/v1'
@@ -227,6 +243,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
           {isLoaded ? (
             <GoogleMap mapContainerStyle={containerStyle} center={{ lat: 13.6893, lng: -89.1872 }} zoom={9}
               options={{ disableDefaultUI: true, zoomControl: false, styles: MAP_STYLES }}
+              onLoad={(map) => { mapRef.current = map }}
             >
               {routes.map(route => {
                 if (!route.stops?.length) return null
