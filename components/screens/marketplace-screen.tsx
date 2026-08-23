@@ -6,6 +6,7 @@ import {
   Search,
   MapPin,
   Star,
+  X,
   Heart,
   Filter,
   Flame,
@@ -46,6 +47,7 @@ interface MarketplaceScreenProps {
 export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: MarketplaceScreenProps) {
   const router = useRouter()
   const [selectedService, setSelectedService] = useState<Service | null>(null)
+  const [serviceForRoutes, setServiceForRoutes] = useState<Service | null>(null)
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
   const [serviceToRate, setServiceToRate] = useState<Service | null>(null)
@@ -290,26 +292,16 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
                       <span className="text-muted-foreground text-sm font-medium"> / persona</span>
                     </div>
 
-                    {/* Associated Routes */}
+                    {/* Associated Routes Button */}
                     {service.routes && service.routes.length > 0 && (
                       <div className="mt-3 border-t border-border pt-3">
-                        <span className="text-xs font-semibold text-muted-foreground mb-2 block flex items-center gap-1">
-                          <MapPin className="w-3 h-3" /> Disponible en rutas:
-                        </span>
-                        <div className="flex flex-wrap gap-2">
-                          {service.routes.map((route: any) => (
-                            <button 
-                              key={route.id}
-                              onClick={() => {
-                                useAppStore.getState().setReturnToMapRoute(route.name);
-                                onNavigate?.('map-explorer');
-                              }}
-                              className="text-xs bg-[#059669]/10 text-[#059669] hover:bg-[#059669]/20 font-medium px-2 py-1 rounded-md transition-colors"
-                            >
-                              {route.name}
-                            </button>
-                          ))}
-                        </div>
+                        <button 
+                          onClick={() => setServiceForRoutes(service)}
+                          className="w-full flex items-center justify-center gap-2 text-xs font-semibold bg-[#059669]/10 text-[#059669] hover:bg-[#059669]/20 px-3 py-2 rounded-lg transition-colors border border-[#059669]/20"
+                        >
+                          <MapPin className="w-3.5 h-3.5" /> 
+                          Ver {service.routes.length} ruta{service.routes.length !== 1 ? 's' : ''} disponible{service.routes.length !== 1 ? 's' : ''}
+                        </button>
                       </div>
                     )}
                   </div>
@@ -363,6 +355,49 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
           services={filteredServices}
           onClose={() => setShowComparisonModal(false)}
         />
+      )}
+
+      {/* Routes Modal */}
+      {serviceForRoutes && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-card w-full max-w-sm rounded-3xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center p-4 border-b border-border bg-muted/30">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-primary" />
+                <h3 className="font-bold text-foreground">Rutas Disponibles</h3>
+              </div>
+              <button 
+                onClick={() => setServiceForRoutes(null)}
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            
+            <div className="p-5 max-h-[60vh] overflow-y-auto">
+              <p className="text-sm text-muted-foreground mb-4">
+                "{typeof serviceForRoutes.name === 'object' ? (serviceForRoutes.name as any).nombre : serviceForRoutes.name}" está disponible en las siguientes rutas turísticas:
+              </p>
+              
+              <div className="flex flex-col gap-3">
+                {serviceForRoutes.routes?.map((route: any) => (
+                  <button 
+                    key={route.id}
+                    onClick={() => {
+                      setServiceForRoutes(null);
+                      useAppStore.getState().setReturnToMapRoute(route.name);
+                      onNavigate?.('map-explorer');
+                    }}
+                    className="flex items-center justify-between p-3 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors group text-left"
+                  >
+                    <span className="font-semibold text-primary">{route.name}</span>
+                    <MapPin className="w-4 h-4 text-primary/50 group-hover:text-primary transition-colors" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
