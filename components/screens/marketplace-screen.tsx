@@ -302,7 +302,7 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
                               key={route.id}
                               onClick={() => {
                                 useAppStore.getState().setReturnToMapRoute(route.name);
-                                onNavigate('map-explorer');
+                                onNavigate?.('map-explorer');
                               }}
                               className="text-xs bg-[#059669]/10 text-[#059669] hover:bg-[#059669]/20 font-medium px-2 py-1 rounded-md transition-colors"
                             >
