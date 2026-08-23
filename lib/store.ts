@@ -308,6 +308,48 @@ fetchRecommendations: () => Promise<void>
 
 let driverGpsInterval: NodeJS.Timeout | null = null;
 
+// --- REFRESH TOKEN INTERCEPTOR ---
+export const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
+  const state = useAppStore.getState();
+  const { accessToken, refreshToken, logout } = state;
+  
+  if (!accessToken) {
+    return fetch(url, options);
+  }
+
+  const headers = new Headers(options.headers || {});
+  if (!headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${accessToken}`);
+  }
+
+  let response = await fetch(url, { ...options, headers });
+
+  if (response.status === 401 && refreshToken) {
+    try {
+      const refreshRes = await fetch(`${API_BASE}/auth/refresh/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh: refreshToken }),
+      });
+
+      if (refreshRes.ok) {
+        const data = await refreshRes.json();
+        useAppStore.setState({ 
+          accessToken: data.access,
+          refreshToken: data.refresh || refreshToken
+        });
+        headers.set('Authorization', `Bearer ${data.access}`);
+        response = await fetch(url, { ...options, headers });
+      } else {
+        logout();
+      }
+    } catch (e) {
+      console.error("Error refreshing token:", e);
+    }
+  }
+  return response;
+};
+
 const initialServices: Service[] = []
 const initialBusinesses: Business[] = []
 const initialPools: Pool[] = []
@@ -1081,11 +1123,9 @@ export const useAppStore = create<AppState>()(
      fetchRoutes: async () => {
         set({ isLoading: true });
         try {
-          const { accessToken } = get();
-          const response = await fetch(`${API_BASE}/transport/routes/`, {
+          const response = await fetchWithAuth(`${API_BASE}/transport/routes/`, {
             headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${accessToken}`
+              'Content-Type': 'application/json'
             }
           });
 

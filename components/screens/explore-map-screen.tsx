@@ -10,7 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import * as LucideIcons from 'lucide-react'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { useAppStore } from "@/lib/store"
+import { useAppStore, fetchWithAuth } from "@/lib/store"
 
 const containerStyle = { width: '100%', height: '100%' }
 const API_BASE = "/api-proxy"
@@ -91,9 +91,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch(`${getApiBase()}/transport/categories/`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        })
+        const res = await fetchWithAuth(`${getApiBase()}/transport/categories/`)
         if (res.ok) setCategories(await res.json())
       } catch (err) { console.error("Error fetching categories:", err) }
     }
@@ -105,9 +103,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
       try {
         let url = `${getApiBase()}/transport/routes/`
         if (activeCategory) url += `?category=${activeCategory}`
-        const res = await fetch(url, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        })
+        const res = await fetchWithAuth(url)
         if (res.ok) {
           const data = await res.json()
           setRoutes(data)
