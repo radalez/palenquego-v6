@@ -43,6 +43,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
   const [selectedRoute, setSelectedRoute] = useState<any | null>(null)
   const [isSheetExpanded, setIsSheetExpanded] = useState(true)
   const [closestRoutesMenu, setClosestRoutesMenu] = useState<{ city: string, routes: any[] } | null>(null)
+  const [locationAlert, setLocationAlert] = useState<{ type: 'near' | 'far', distance: number, route: any, city: string, topRoutes: any[] } | null>(null)
 
   // Función para calcular distancia (Haversine formula)
   const getDistanceInKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
@@ -305,6 +306,55 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
           )}
         </div>
 
+        {/* Closest Routes Menu */}
+        {closestRoutesMenu && (
+          <div className="absolute inset-x-0 bottom-0 z-50 bg-white rounded-t-3xl shadow-[0_-8px_30px_rgba(0,0,0,0.12)] p-5 animate-in slide-in-from-bottom-full duration-300">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Rutas cerca de ti</h3>
+                <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                  <MapPin className="h-3 w-3" /> {closestRoutesMenu.city}
+                </p>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setClosestRoutesMenu(null)} className="h-8 w-8 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200">
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <div className="space-y-3">
+              {closestRoutesMenu.routes.map((route, idx) => (
+                <div 
+                  key={idx} 
+                  className="flex items-center gap-4 p-3 rounded-2xl bg-gray-50 hover:bg-[#059669]/10 cursor-pointer transition-colors border border-gray-100 hover:border-[#059669]/30"
+                  onClick={() => {
+                    if (mapRef.current && route.stops?.length > 0) {
+                      mapRef.current.panTo({
+                        lat: route.stops[0].latitude,
+                        lng: route.stops[0].longitude
+                      });
+                      mapRef.current.setZoom(14);
+                    }
+                    setSelectedRoute(route);
+                    setView('detail');
+                    setClosestRoutesMenu(null);
+                  }}
+                >
+                  <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm shrink-0">
+                    <Navigation2 className="h-5 w-5 text-[#059669]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-sm font-bold text-gray-900 truncate">{route.name}</h4>
+                    <p className="text-xs text-gray-500 mt-0.5">A {(route.__dist).toFixed(1)} km de distancia</p>
+                  </div>
+                  <div className="text-xs font-semibold text-[#059669] shrink-0 bg-white px-2 py-1 rounded-lg shadow-sm border border-gray-100">
+                    Ver <ChevronLeft className="inline h-3 w-3 rotate-180" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Location Alert */}
         {locationAlert && (
           <div className="absolute top-32 left-1/2 -translate-x-1/2 z-50 w-11/12 max-w-sm">
@@ -342,9 +392,12 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
                   <Button 
                     variant="ghost" 
                     className="flex-1 h-9 text-xs font-semibold text-gray-500 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-xl"
-                    onClick={() => setLocationAlert(null)}
+                    onClick={() => {
+                      setClosestRoutesMenu({ city: locationAlert.city, routes: locationAlert.topRoutes });
+                      setLocationAlert(null);
+                    }}
                   >
-                    Ignorar
+                    Ver más rutas
                   </Button>
                 </div>
               </div>
@@ -372,49 +425,44 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
             onClick={() => {
               if (navigator.geolocation && mapRef.current) {
                 navigator.geolocation.getCurrentPosition(
-                  (position) => {
+                  async (position) => {
                     const lat = position.coords.latitude;
                     const lng = position.coords.longitude;
                     
                     mapRef.current?.panTo({ lat, lng });
                     mapRef.current?.setZoom(14);
 
-                    // Buscar la ruta más cercana
-                    if (filteredRoutes.length > 0) {
-                      let closestRoute: any = null;
-                      let minDistance = Infinity;
+                    let cityName = "tu ubicación";
+                    try {
+                      const geocoder = new window.google.maps.Geocoder();
+                      const res = await geocoder.geocode({ location: { lat, lng } });
+                      if (res.results[0]) {
+                        const addressComponents = res.results[0].address_components;
+                        const locality = addressComponents.find((c: any) => c.types.includes('locality'));
+                        const sublocality = addressComponents.find((c: any) => c.types.includes('sublocality'));
+                        cityName = locality?.long_name || sublocality?.long_name || "tu ubicación";
+                      }
+                    } catch (e) { console.error("Geocoder failed", e); }
 
-                      filteredRoutes.forEach(route => {
-                        if (route.stops && route.stops.length > 0) {
-                          const stopLat = route.stops[0].latitude;
-                          const stopLng = route.stops[0].longitude;
-                          const dist = getDistanceInKm(lat, lng, stopLat, stopLng);
-                          if (dist < minDistance) {
-                            minDistance = dist;
-                            closestRoute = route;
-                          }
-                        }
-                      });
+                    const routesWithDist = filteredRoutes.map(route => {
+                      let dist = Infinity;
+                      if (route.stops && route.stops.length > 0) {
+                        dist = getDistanceInKm(lat, lng, route.stops[0].latitude, route.stops[0].longitude);
+                      }
+                      return { ...route, __dist: dist };
+                    }).filter(r => r.__dist !== Infinity);
 
-                      if (closestRoute) {
-                        if (minDistance <= 1) {
-                          // OPCIÓN 2: Auto-abrir si está muy cerca (< 1km)
-                          mapRef.current?.panTo({
-                            lat: closestRoute.stops[0].latitude,
-                            lng: closestRoute.stops[0].longitude
-                          });
-                          mapRef.current?.setZoom(15);
-                          setSelectedRoute(closestRoute);
-                          setView('detail');
-                        } else if (minDistance <= 10) {
-                          // OPCIÓN 1: Preguntar si quiere verla si está a menos de 10km
-                          setLocationAlert({ type: 'near', distance: minDistance, route: closestRoute });
-                          setTimeout(() => setLocationAlert(null), 10000);
-                        } else {
-                          // OPCIÓN 3: Lejos, ofrecer llevarlo
-                          setLocationAlert({ type: 'far', distance: minDistance, route: closestRoute });
-                          setTimeout(() => setLocationAlert(null), 10000);
-                        }
+                    routesWithDist.sort((a, b) => a.__dist - b.__dist);
+                    const topRoutes = routesWithDist.slice(0, 3);
+
+                    if (topRoutes.length > 0) {
+                      const closestRoute = topRoutes[0];
+                      const minDistance = closestRoute.__dist;
+                      
+                      if (minDistance <= 10) {
+                        setLocationAlert({ type: 'near', distance: minDistance, route: closestRoute, city: cityName, topRoutes });
+                      } else {
+                        setLocationAlert({ type: 'far', distance: minDistance, route: closestRoute, city: cityName, topRoutes });
                       }
                     }
                   },
