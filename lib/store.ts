@@ -51,6 +51,7 @@ export interface Service {
   capacityMax?: number
   extras?: { name: string; price: number }[]
   ratings?: Rating[]
+  routes?: { id: number; name: string }[]
   linkTypes?: ("oferta" | "descuento" | "feriado")[]
   businessId?: number
   businessName?: string

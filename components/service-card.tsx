@@ -11,9 +11,10 @@ import { RatingModal } from "@/components/rating-modal"
 interface ServiceCardProps {
   service: Service
   onBook?: (service: Service) => void
+  onRouteClick?: (routeId: number) => void
 }
 
-export function ServiceCard({ service, onBook }: ServiceCardProps) {
+export function ServiceCard({ service, onBook, onRouteClick }: ServiceCardProps) {
   const [showRatingModal, setShowRatingModal] = useState(false)
   const { toggleFavorite, favorites, payService, isLoading } = useAppStore()
   const isFavorite = favorites.includes(service.id)
@@ -98,6 +99,26 @@ export function ServiceCard({ service, onBook }: ServiceCardProps) {
               </div>
             )}
           </div>
+
+          {/* Associated Routes */}
+          {service.routes && service.routes.length > 0 && (
+            <div className="mt-3 mb-3 border-t border-border pt-3">
+              <span className="text-xs font-semibold text-muted-foreground mb-2 block flex items-center gap-1">
+                <MapPin className="w-3 h-3" /> Disponible en rutas:
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {service.routes.map(route => (
+                  <button 
+                    key={route.id}
+                    onClick={() => onRouteClick && onRouteClick(route.id)}
+                    className="text-xs bg-[#059669]/10 text-[#059669] hover:bg-[#059669]/20 font-medium px-2 py-1 rounded-md transition-colors"
+                  >
+                    {route.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Action Button */}
           <Button

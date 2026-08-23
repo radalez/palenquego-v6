@@ -289,6 +289,29 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
                       )}
                       <span className="text-muted-foreground text-sm font-medium"> / persona</span>
                     </div>
+
+                    {/* Associated Routes */}
+                    {service.routes && service.routes.length > 0 && (
+                      <div className="mt-3 border-t border-border pt-3">
+                        <span className="text-xs font-semibold text-muted-foreground mb-2 block flex items-center gap-1">
+                          <MapPin className="w-3 h-3" /> Disponible en rutas:
+                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          {service.routes.map((route: any) => (
+                            <button 
+                              key={route.id}
+                              onClick={() => {
+                                useAppStore.getState().setReturnToMapRoute(route.name);
+                                onNavigate('map-explorer');
+                              }}
+                              className="text-xs bg-[#059669]/10 text-[#059669] hover:bg-[#059669]/20 font-medium px-2 py-1 rounded-md transition-colors"
+                            >
+                              {route.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div className="flex gap-2">
                     <Button
