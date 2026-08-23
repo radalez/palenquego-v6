@@ -42,7 +42,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedRoute, setSelectedRoute] = useState<any | null>(null)
   const [isSheetExpanded, setIsSheetExpanded] = useState(true)
-  const [locationAlert, setLocationAlert] = useState<{ type: 'near' | 'far', distance: number, route: any } | null>(null)
+  const [closestRoutesMenu, setClosestRoutesMenu] = useState<{ city: string, routes: any[] } | null>(null)
 
   // Función para calcular distancia (Haversine formula)
   const getDistanceInKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
