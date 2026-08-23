@@ -30,6 +30,26 @@ interface TicketPurchaseState {
   serviceId?: number
   showPayment: boolean
   step: "selection" | "payment" | "success"
+  closestStopId?: number
+}
+
+// Distance helper functions
+function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371; // Radius of the earth in km
+  const dLat = deg2rad(lat2-lat1);
+  const dLon = deg2rad(lon2-lon1); 
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2)
+    ; 
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+  const d = R * c; // Distance in km
+  return d;
+}
+
+function deg2rad(deg: number) {
+  return deg * (Math.PI/180)
 }
 
 interface RoutesScreenProps {
@@ -75,13 +95,61 @@ useEffect(() => {
     setServiceView({ routeId: route.id, showServices: true })
   }
 
+  const getTicketPrices = () => {
+    if (!ticketPurchase) return { oneWay: "0.00", roundTrip: "0.00", stopName: null };
+    
+    const route = routes.find(r => r.id === ticketPurchase.routeId);
+    if (!route) return { oneWay: "0.00", roundTrip: "0.00", stopName: null };
+    
+    if (ticketPurchase.closestStopId) {
+      const stop = route.stops?.find(s => s.id === ticketPurchase.closestStopId);
+      if (stop) {
+        return {
+          oneWay: stop.effective_price_one_way || route.price_one_way || "0.00",
+          roundTrip: stop.effective_price_round_trip || route.price_round_trip || "0.00",
+          stopName: stop.name
+        };
+      }
+    }
+    
+    return {
+      oneWay: route.price_one_way || "0.00",
+      roundTrip: route.price_round_trip || "0.00",
+      stopName: null
+    };
+  };
+
   const handleBuyTicket = (route: Route, service?: Service) => {
+    // Initial state
     setTicketPurchase({
       routeId: route.id,
       serviceId: service?.id,
       showPayment: true,
       step: "selection",
     })
+
+    // Find closest stop asynchronously
+    if (navigator.geolocation && route.stops && route.stops.length > 0) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        const userLat = position.coords.latitude;
+        const userLng = position.coords.longitude;
+        
+        let closestStopId: number | undefined;
+        let minDistance = 1; // 1km threshold
+        
+        route.stops.forEach(stop => {
+          const distance = getDistanceFromLatLonInKm(userLat, userLng, stop.latitude, stop.longitude);
+          if (distance < minDistance) {
+            minDistance = distance;
+            closestStopId = stop.id;
+          }
+        });
+        
+        if (closestStopId) {
+          setTicketPurchase(prev => prev ? { ...prev, closestStopId } : null);
+        }
+      });
+    }
   }
 
   const handleConfirmTicketPayment = () => {
@@ -329,6 +397,11 @@ useEffect(() => {
                     </div>
 
                     <div className="space-y-3">
+                      {getTicketPrices().stopName && (
+                        <p className="text-xs text-[#059669] bg-[#059669]/10 p-2 rounded-lg mb-2">
+                          📍 Precio ajustado desde tu parada más cercana: <strong>{getTicketPrices().stopName}</strong>
+                        </p>
+                      )}
                         <label className="flex items-center gap-3 p-3 border border-border rounded-xl cursor-pointer hover:bg-muted/50 transition">
                           <input type="radio" name="ticket" defaultChecked className="w-4 h-4" />
                           <div className="flex-1">
@@ -336,7 +409,7 @@ useEffect(() => {
                             <p className="text-xs text-muted-foreground">Ida a tu destino</p>
                           </div>
                           {/* PRECIO REAL IDA */}
-                          <p className="font-bold">${routes.find(r => r.id === ticketPurchase.routeId)?.price_one_way}</p>
+                          <p className="font-bold">${getTicketPrices().oneWay}</p>
                         </label>
 
                         <label className="flex items-center gap-3 p-3 border border-border rounded-xl cursor-pointer hover:bg-muted/50 transition">
@@ -346,7 +419,7 @@ useEffect(() => {
                             <p className="text-xs text-muted-foreground">Ida y vuelta incluido</p>
                           </div>
                           {/* PRECIO REAL REDONDO */}
-                          <p className="font-bold">${routes.find(r => r.id === ticketPurchase.routeId)?.price_round_trip}</p>
+                          <p className="font-bold">${getTicketPrices().roundTrip}</p>
                         </label>
                       </div>
 
