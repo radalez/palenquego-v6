@@ -381,7 +381,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
 
                     // Buscar la ruta más cercana
                     if (filteredRoutes.length > 0) {
-                      let closestRoute = null;
+                      let closestRoute: any = null;
                       let minDistance = Infinity;
 
                       filteredRoutes.forEach(route => {
