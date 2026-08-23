@@ -201,6 +201,30 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
           </div>
         </div>
 
+        {/* Associated Routes */}
+        {service.routes && service.routes.length > 0 && (
+          <div className="bg-card border border-border rounded-xl p-4">
+            <span className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-primary" /> Disponible en rutas:
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {service.routes.map((route: any) => (
+                <button 
+                  key={route.id}
+                  onClick={() => {
+                  useAppStore.getState().setReturnToMapRoute(route.name);
+                  sessionStorage.setItem("palenque-active-tab", "map-explorer");
+                  router.push('/');
+                }}
+                  className="text-sm font-semibold bg-primary/10 text-primary hover:bg-primary/20 px-3 py-1.5 rounded-lg transition-colors border border-primary/20"
+                >
+                  {route.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Business Card */}
         {service.businessName && (
           <button
