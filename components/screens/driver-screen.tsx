@@ -17,6 +17,7 @@ interface MyUnit {
   license_plate: string
   current_lat: number | null
   current_lng: number | null
+  capacity?: number
 }
 
 import { DriverKycScreen } from "./driver-kyc-screen"
