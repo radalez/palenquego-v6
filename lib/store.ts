@@ -796,6 +796,13 @@ export const useAppStore = create<AppState>()(
         set({ accessToken: null, refreshToken: null });
       },
       addActiveTicket: (ticket: any) => set((state) => ({ activeTickets: [...state.activeTickets, ticket] })),
+      fetchData: async () => {
+        get().fetchRoutes();
+        get().fetchPools();
+        get().fetchRecommendations();
+        get().fetchPlans();
+        get().fetchGuardians();
+      },
       upgradePlan: async (planId: number) => {
         const state = get();
         const token = state.accessToken;
