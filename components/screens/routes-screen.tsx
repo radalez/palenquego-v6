@@ -118,8 +118,8 @@ useEffect(() => {
         let roundTripTotal = 0;
         const segment = route.stops.filter(s => s.order >= startStop.order && s.order <= endStop.order);
         segment.forEach(s => {
-            oneWayTotal += parseFloat(s.price_one_way || "0");
-            roundTripTotal += parseFloat(s.price_round_trip || "0");
+            oneWayTotal += parseFloat(s.effective_price_one_way || "0");
+            roundTripTotal += parseFloat(s.effective_price_round_trip || "0");
         });
         return {
             oneWay: oneWayTotal.toFixed(2),
