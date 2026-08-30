@@ -126,6 +126,8 @@ export interface Route {
     longitude: number;
     order: number;
     minutes_from_start?: number;
+    price_one_way?: string;
+    price_round_trip?: string;
     effective_price_one_way?: string;
     effective_price_round_trip?: string;
   }[];
