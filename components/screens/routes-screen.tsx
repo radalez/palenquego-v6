@@ -30,7 +30,8 @@ interface TicketPurchaseState {
   serviceId?: number
   showPayment: boolean
   step: "selection" | "payment" | "success"
-  closestStopId?: number
+  startStopId?: number
+  endStopId?: number
 }
 
 // Distance helper functions
@@ -61,6 +62,7 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
   const [tracking, setTracking] = useState<RouteTrackingState | null>(null)
   const [serviceView, setServiceView] = useState<ServiceViewState | null>(null)
   const [ticketPurchase, setTicketPurchase] = useState<TicketPurchaseState | null>(null)
+  const [ticketModalOpen, setTicketModalOpen] = useState(false)
 
   const filteredRoutes = routes.filter((route) => {
     const query = routeSearchQuery.toLowerCase()
@@ -96,36 +98,57 @@ useEffect(() => {
   }
 
   const getTicketPrices = () => {
-    if (!ticketPurchase) return { oneWay: "0.00", roundTrip: "0.00", stopName: null };
+    if (!ticketPurchase) return { oneWay: "0.00", roundTrip: "0.00", startName: null, endName: null };
     
     const route = routes.find(r => r.id === ticketPurchase.routeId);
-    if (!route) return { oneWay: "0.00", roundTrip: "0.00", stopName: null };
+    if (!route || !route.stops || route.stops.length === 0) return { oneWay: route?.price_one_way || "0.00", roundTrip: route?.price_round_trip || "0.00", startName: null, endName: null };
     
-    if (ticketPurchase.closestStopId) {
-      const stop = route.stops?.find(s => s.id === ticketPurchase.closestStopId);
-      if (stop) {
+    let startStop = route.stops[0];
+    let endStop = route.stops[route.stops.length - 1];
+
+    if (ticketPurchase.startStopId) {
+        startStop = route.stops.find(s => s.id === ticketPurchase.startStopId) || startStop;
+    }
+    if (ticketPurchase.endStopId) {
+        endStop = route.stops.find(s => s.id === ticketPurchase.endStopId) || endStop;
+    }
+
+    if (startStop && endStop && startStop.order < endStop.order) {
+        let oneWayTotal = 0;
+        let roundTripTotal = 0;
+        const segment = route.stops.filter(s => s.order >= startStop.order && s.order <= endStop.order);
+        segment.forEach(s => {
+            oneWayTotal += parseFloat(s.price_one_way || "0");
+            roundTripTotal += parseFloat(s.price_round_trip || "0");
+        });
         return {
-          oneWay: stop.effective_price_one_way || route.price_one_way || "0.00",
-          roundTrip: stop.effective_price_round_trip || route.price_round_trip || "0.00",
-          stopName: stop.name
+            oneWay: oneWayTotal.toFixed(2),
+            roundTrip: roundTripTotal.toFixed(2),
+            startName: startStop.name,
+            endName: endStop.name
         };
-      }
     }
     
     return {
       oneWay: route.price_one_way || "0.00",
       roundTrip: route.price_round_trip || "0.00",
-      stopName: null
+      startName: null,
+      endName: null
     };
   };
 
   const handleBuyTicket = (route: Route, service?: Service) => {
-    // Initial state
+    // Initial state with defaults
+    let initialStart = route.stops?.[0]?.id;
+    let initialEnd = route.stops?.[route.stops.length - 1]?.id;
+
     setTicketPurchase({
       routeId: route.id,
       serviceId: service?.id,
       showPayment: true,
       step: "selection",
+      startStopId: initialStart,
+      endStopId: initialEnd,
     })
 
     // Find closest stop asynchronously
@@ -146,7 +169,7 @@ useEffect(() => {
         });
         
         if (closestStopId) {
-          setTicketPurchase(prev => prev ? { ...prev, closestStopId } : null);
+          setTicketPurchase(prev => prev ? { ...prev, startStopId: closestStopId } : null);
         }
       });
     }
@@ -156,6 +179,20 @@ useEffect(() => {
     setTicketPurchase((prev) => (prev ? { ...prev, step: "payment" } : null))
     setTimeout(() => {
       setTicketPurchase((prev) => (prev ? { ...prev, step: "success" } : null))
+      // Add to store
+      const route = routes.find(r => r.id === ticketPurchase?.routeId)
+      if (route && ticketPurchase) {
+        useAppStore.getState().addActiveTicket({
+          id: Date.now(),
+          route_name: route.name,
+          start_stop_name: getTicketPrices().startName,
+          end_stop_name: getTicketPrices().endName,
+          ticket_type: "ONE_WAY",
+          total_paid: getTicketPrices().oneWay,
+          purchase_date: new Date().toISOString(),
+          is_used: false
+        })
+      }
     }, 2000)
     setTimeout(() => {
       setTicketPurchase(null)
@@ -396,12 +433,47 @@ useEffect(() => {
                       <p className="font-bold">{routes.find((r) => r.id === ticketPurchase.routeId)?.name}</p>
                     </div>
 
-                    <div className="space-y-3">
-                      {getTicketPrices().stopName && (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-semibold mb-2">Parada de Origen</label>
+                        <select 
+                          className="w-full p-3 rounded-xl border border-border bg-background"
+                          value={ticketPurchase.startStopId || ''}
+                          onChange={(e) => setTicketPurchase(prev => prev ? { ...prev, startStopId: Number(e.target.value) } : null)}
+                        >
+                          {routes.find((r) => r.id === ticketPurchase.routeId)?.stops?.filter(s => {
+                             const endStop = routes.find((r) => r.id === ticketPurchase.routeId)?.stops?.find(es => es.id === ticketPurchase.endStopId);
+                             return !endStop || s.order < endStop.order;
+                          }).map(stop => (
+                            <option key={stop.id} value={stop.id}>{stop.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-semibold mb-2">Parada de Destino</label>
+                        <select 
+                          className="w-full p-3 rounded-xl border border-border bg-background"
+                          value={ticketPurchase.endStopId || ''}
+                          onChange={(e) => setTicketPurchase(prev => prev ? { ...prev, endStopId: Number(e.target.value) } : null)}
+                        >
+                          {routes.find((r) => r.id === ticketPurchase.routeId)?.stops?.filter(s => {
+                             const startStop = routes.find((r) => r.id === ticketPurchase.routeId)?.stops?.find(ss => ss.id === ticketPurchase.startStopId);
+                             return startStop && s.order > startStop.order;
+                          }).map(stop => (
+                            <option key={stop.id} value={stop.id}>{stop.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {getTicketPrices().startName && getTicketPrices().endName && (
                         <p className="text-xs text-[#059669] bg-[#059669]/10 p-2 rounded-lg mb-2">
-                          📍 Precio ajustado desde tu parada más cercana: <strong>{getTicketPrices().stopName}</strong>
+                          📍 Viaje: <strong>{getTicketPrices().startName}</strong> ➔ <strong>{getTicketPrices().endName}</strong>
                         </p>
                       )}
+                    </div>
+
+                    <div className="space-y-3">
                         <label className="flex items-center gap-3 p-3 border border-border rounded-xl cursor-pointer hover:bg-muted/50 transition">
                           <input type="radio" name="ticket" defaultChecked className="w-4 h-4" />
                           <div className="flex-1">
@@ -574,6 +646,54 @@ useEffect(() => {
         </div>
 
       </div>
+
+      {/* Floating Ticket Button */}
+      {useAppStore.getState().activeTickets?.length > 0 && (
+        <button
+          onClick={() => setTicketModalOpen(true)}
+          className="fixed bottom-20 right-4 bg-primary text-primary-foreground p-4 rounded-full shadow-2xl hover:scale-105 transition-transform flex items-center justify-center z-40"
+        >
+          <Ticket className="w-6 h-6 mr-2" />
+          <span className="font-bold">Ver Ticket</span>
+        </button>
+      )}
+
+      {/* Ticket Modal */}
+      {ticketModalOpen && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl relative border border-border">
+            <button
+              onClick={() => setTicketModalOpen(false)}
+              className="absolute top-4 right-4 text-primary-foreground/80 hover:text-primary-foreground z-10"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <div className="p-8 text-center bg-primary border-b border-border">
+               <Ticket className="w-16 h-16 mx-auto text-primary-foreground mb-4" />
+               <h2 className="text-2xl font-bold text-primary-foreground">Ticket Inteligente</h2>
+               <p className="text-sm text-primary-foreground/80 mt-2">Muestra esta pantalla al chofer</p>
+            </div>
+            
+            <div className="p-6 space-y-4 bg-card max-h-[60vh] overflow-y-auto">
+               {useAppStore.getState().activeTickets?.map((t: any) => (
+                 <div key={t.id} className="border-2 border-primary/20 rounded-xl p-4 bg-background shadow-sm">
+                   <h3 className="font-bold text-lg mb-2 text-primary">{t.route_name}</h3>
+                   <div className="flex justify-between items-center text-sm mb-4">
+                     <span className="font-semibold">{t.start_stop_name || 'Origen'}</span>
+                     <span className="text-muted-foreground mx-2">➔</span>
+                     <span className="font-semibold">{t.end_stop_name || 'Destino'}</span>
+                   </div>
+                   <div className="flex justify-between items-center border-t border-border pt-4">
+                     <span className="text-xs font-medium text-green-600 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded-md">Pago Confirmado</span>
+                     <span className="font-black text-lg">${t.total_paid}</span>
+                   </div>
+                 </div>
+               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }

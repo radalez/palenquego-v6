@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Navigation2, StopCircle, Truck, Wifi, WifiOff, AlertCircle } from "lucide-react"
+import { Navigation2, StopCircle, Truck, Wifi, WifiOff, AlertCircle, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAppStore } from "@/lib/store"
 import { HeaderWithMenu } from "@/components/header-with-menu"
@@ -141,6 +141,58 @@ export function DriverScreen({ onNavigate }: DriverScreenProps) {
           )}
           {driverGpsError && <p className="text-xs text-red-500">{driverGpsError}</p>}
         </div>
+
+        {/* Panel Anti-Fraude (Control de Pasajeros) */}
+        {myRoute && (
+          <div className="bg-card border border-border rounded-2xl overflow-hidden mt-4 shadow-sm">
+            <div className="bg-primary px-4 py-3 border-b border-primary/20 flex justify-between items-center">
+              <div className="flex items-center gap-2 text-primary-foreground">
+                <Users className="w-5 h-5" />
+                <h3 className="font-bold">Control de Pasajeros</h3>
+              </div>
+              <div className="bg-primary-foreground/20 text-primary-foreground px-3 py-1 rounded-full text-xs font-bold">
+                Plazas Disponibles: {myUnit?.capacity || 20}
+              </div>
+            </div>
+            
+            <div className="divide-y divide-border max-h-96 overflow-y-auto">
+              {myRoute.stops.map((stop, index) => {
+                // Mock data for demonstration
+                const suben = index % 3 === 0 ? 2 : (index % 2 === 0 ? 1 : 0);
+                const bajan = index % 4 === 0 && index > 0 ? 2 : (index % 3 === 0 && index > 0 ? 1 : 0);
+                const isNext = index === 1; // dummy next stop
+
+                return (
+                  <div key={stop.id} className={cn("p-4", isNext ? "bg-primary/5 dark:bg-primary/10" : "")}>
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className={cn("w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold", isNext ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
+                          {stop.order}
+                        </div>
+                        <p className={cn("font-medium", isNext ? "text-primary font-bold" : "")}>{stop.name}</p>
+                      </div>
+                      {isNext && <span className="text-xs font-bold text-primary animate-pulse">Próxima Parada</span>}
+                    </div>
+                    
+                    <div className="flex gap-4 ml-8 text-sm mt-1">
+                      {suben > 0 ? (
+                        <div className="flex items-center gap-1 text-green-600 dark:text-green-500">
+                          <span className="font-bold bg-green-100 dark:bg-green-900/40 px-1.5 rounded text-xs">+{suben}</span> Suben
+                        </div>
+                      ) : <div className="text-muted-foreground/50 text-xs mt-1">Nadie sube</div>}
+                      
+                      {bajan > 0 ? (
+                        <div className="flex items-center gap-1 text-amber-600 dark:text-amber-500">
+                          <span className="font-bold bg-amber-100 dark:bg-amber-900/40 px-1.5 rounded text-xs">-{bajan}</span> Bajan
+                        </div>
+                      ) : <div className="text-muted-foreground/50 text-xs mt-1">Nadie baja</div>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Botón principal */}
         {!isDriverTracking ? (

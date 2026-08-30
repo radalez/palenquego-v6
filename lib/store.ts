@@ -227,6 +227,7 @@ interface AppState {
   userFavorites: UserFavorite[]
   recommendations: Recommendation[]
   routes: Route[]
+  activeTickets: any[]
   currentUser: { 
     id: number; 
     name: string; 
@@ -283,9 +284,12 @@ interface AppState {
   updateRecommendationStats: (recommendationId: string, stats: Partial<RecommendationStats>) => void
   markRecommendationAsPaid: (recommendationId: string) => void
   payPool: (poolId: number, paymentType: "FULL" | "PERSONAL") => void
+  clearAuth: () => void
+  addActiveTicket: (ticket: any) => void
+  fetchData: () => Promise<void>
   fetchRoutes: () => Promise<void>
   fetchPools: () => Promise<void>
-fetchRecommendations: () => Promise<void>
+  fetchRecommendations: () => Promise<void>
   plans: any[]
   fetchPlans: () => Promise<void>
   createPool: (serviceId: number, targetMembers: number, date: string, totalPrice: number) => Promise<boolean>
@@ -371,6 +375,7 @@ export const useAppStore = create<AppState>()(
       recommendations: [],
       plans: [],
       routes: initialRoutes,
+      activeTickets: [],
       routeSearchQuery: "",
       setRouteSearchQuery: (query: string) => set({ routeSearchQuery: query }),
       returnToMapRoute: null,
@@ -782,6 +787,13 @@ export const useAppStore = create<AppState>()(
           is_ambassador: false
         },
       }),
+      setTokens: (access: string, refresh: string) => {
+        set({ accessToken: access, refreshToken: refresh });
+      },
+      clearAuth: () => {
+        set({ accessToken: null, refreshToken: null });
+      },
+      addActiveTicket: (ticket: any) => set((state) => ({ activeTickets: [...state.activeTickets, ticket] })),
       upgradePlan: async (planId: number) => {
         const state = get();
         const token = state.accessToken;
