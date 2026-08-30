@@ -288,6 +288,7 @@ interface AppState {
   payPool: (poolId: number, paymentType: "FULL" | "PERSONAL") => void
   clearAuth: () => void
   addActiveTicket: (ticket: any) => void
+  fetchActiveTickets: () => Promise<void>
   fetchData: () => Promise<void>
   fetchRoutes: () => Promise<void>
   fetchPools: () => Promise<void>
@@ -796,12 +797,33 @@ export const useAppStore = create<AppState>()(
         set({ accessToken: null, refreshToken: null });
       },
       addActiveTicket: (ticket: any) => set((state) => ({ activeTickets: [...state.activeTickets, ticket] })),
+      fetchActiveTickets: async () => {
+        try {
+          const token = get().accessToken;
+          if (!token) return;
+          const response = await fetch(`${API_BASE}/transport/tickets/`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          if (response.ok) {
+            const data = await response.json();
+            // Filter only unused tickets
+            const active = data.filter((t: any) => !t.is_used);
+            set({ activeTickets: active });
+          }
+        } catch (error) {
+          console.error("Error fetching active tickets:", error);
+        }
+      },
       fetchData: async () => {
         get().fetchRoutes();
         get().fetchPools();
         get().fetchRecommendations();
         get().fetchPlans();
         get().fetchGuardians();
+        get().fetchActiveTickets();
       },
       upgradePlan: async (planId: number) => {
         const state = get();
