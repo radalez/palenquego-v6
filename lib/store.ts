@@ -1193,7 +1193,9 @@ export const useAppStore = create<AppState>()(
                 latitude: parseFloat(s.latitude),
                 longitude: parseFloat(s.longitude),
                 order: s.order,
-                minutes_from_start: s.minutes_from_start
+                minutes_from_start: s.minutes_from_start,
+                effective_price_one_way: s.effective_price_one_way,
+                effective_price_round_trip: s.effective_price_round_trip
               }))
             }));
           
