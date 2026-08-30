@@ -156,7 +156,7 @@ export function DriverScreen({ onNavigate }: DriverScreenProps) {
               </div>
             </div>
             
-            <div className="divide-y divide-border max-h-96 overflow-y-auto">
+            <div className="divide-y divide-border max-h-96 overflow-y-auto custom-scrollbar">
               {myRoute.stops.map((stop, index) => {
                 // Mock data for demonstration
                 const suben = index % 3 === 0 ? 2 : (index % 2 === 0 ? 1 : 0);

@@ -424,7 +424,7 @@ useEffect(() => {
             </div>
 
             {/* Content */}
-            <div className="p-6 space-y-6 overflow-y-auto flex-1">
+            <div className="p-6 space-y-6 overflow-y-auto flex-1 custom-scrollbar">
               {ticketPurchase.step === "selection" && (
                 <>
                   <div className="space-y-4">
