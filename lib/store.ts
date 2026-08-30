@@ -695,7 +695,8 @@ export const useAppStore = create<AppState>()(
                 email: data.user.email || "",
                 telefono: data.user.telefono || "",
                 tipo: data.user.tipo || "",
-                is_ambassador: Boolean(data.user.is_ambassador)
+                is_ambassador: Boolean(data.user.is_ambassador),
+                kyc_status: data.user.kyc_status || "UNVERIFIED"
               },
               isLoading: false 
             });
@@ -732,7 +733,8 @@ export const useAppStore = create<AppState>()(
                 email: data.user.email || "",
                 telefono: data.user.telefono || "",
                 tipo: data.user.tipo || "",
-                is_ambassador: Boolean(data.user.is_ambassador)
+                is_ambassador: Boolean(data.user.is_ambassador),
+                kyc_status: data.user.kyc_status || "UNVERIFIED"
               },
               isLoading: false 
             });
