@@ -791,6 +791,7 @@ export const useAppStore = create<AppState>()(
           tipo: "",
           is_ambassador: false
         },
+        activeTickets: []
       }),
       setTokens: (access: string, refresh: string) => {
         set({ accessToken: access, refreshToken: refresh });
