@@ -290,6 +290,8 @@ interface AppState {
   addActiveTicket: (ticket: any) => void
   fetchActiveTickets: () => Promise<void>
   buyTicket: (routeId: number, startStopId: number, endStopId: number, ticketType: "ONE_WAY" | "ROUND_TRIP") => Promise<boolean>
+  buyTicketWompi: (routeId: number, startStopId: number, endStopId: number, ticketType: "ONE_WAY" | "ROUND_TRIP", redirectUrl: string) => Promise<string | null>
+  confirmTicketWompi: (ticketId: number, idTransaccion: string, esAprobada: boolean) => Promise<boolean>
   fetchData: () => Promise<void>
   fetchRoutes: () => Promise<void>
   fetchPools: () => Promise<void>
