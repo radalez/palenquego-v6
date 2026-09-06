@@ -177,30 +177,26 @@ useEffect(() => {
 
   const handleConfirmTicketPayment = () => {
     setTicketPurchase((prev) => (prev ? { ...prev, step: "payment" } : null))
-    setTimeout(() => {
-      // Call API
-      const route = routes.find(r => r.id === ticketPurchase?.routeId)
-      if (route && ticketPurchase) {
-        useAppStore.getState().buyTicket(
-          ticketPurchase.routeId,
-          ticketPurchase.startStopId!,
-          ticketPurchase.endStopId!,
-          "ONE_WAY"
-        ).then((success) => {
-          if (success) {
-            setTicketPurchase((prev) => (prev ? { ...prev, step: "success" } : null))
-            setTimeout(() => {
-              setTicketPurchase(null)
-            }, 3500)
-          } else {
-            alert("Error al procesar el pago simulado. Inténtalo de nuevo.");
-            setTicketPurchase(null)
-          }
-        });
-      } else {
-        setTicketPurchase(null)
-      }
-    }, 2000)
+    const route = routes.find(r => r.id === ticketPurchase?.routeId)
+    if (route && ticketPurchase) {
+      const redirectUrl = window.location.origin + "/checkout-success";
+      useAppStore.getState().buyTicketWompi(
+        ticketPurchase.routeId,
+        ticketPurchase.startStopId!,
+        ticketPurchase.endStopId!,
+        "ONE_WAY",
+        redirectUrl
+      ).then((wompiUrl) => {
+        if (wompiUrl) {
+          window.location.href = wompiUrl;
+        } else {
+          alert("Error al iniciar el pago con Wompi. Inténtalo de nuevo.");
+          setTicketPurchase(null)
+        }
+      });
+    } else {
+      setTicketPurchase(null)
+    }
   }
 
   return (

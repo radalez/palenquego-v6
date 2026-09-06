@@ -822,10 +822,14 @@ export const useAppStore = create<AppState>()(
         }
       },
       buyTicket: async (routeId: number, startStopId: number, endStopId: number, ticketType: "ONE_WAY" | "ROUND_TRIP") => {
+        // Fallback or deprecated direct buy
+        return false;
+      },
+      buyTicketWompi: async (routeId: number, startStopId: number, endStopId: number, ticketType: "ONE_WAY" | "ROUND_TRIP", redirectUrl: string) => {
         const token = get().accessToken;
-        if (!token) return false;
+        if (!token) return null;
         try {
-          const response = await fetch(`${API_BASE}/transport/tickets/`, {
+          const response = await fetch(`${API_BASE}/transport/tickets/buy_wompi/`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -835,18 +839,45 @@ export const useAppStore = create<AppState>()(
               route: routeId,
               start_stop: startStopId,
               end_stop: endStopId,
-              ticket_type: ticketType
+              ticket_type: ticketType,
+              redirect_url: redirectUrl
+            })
+          });
+          if (response.ok) {
+            const data = await response.json();
+            return data.url; // The wompi URL to redirect to
+          }
+          const errData = await response.json();
+          console.error("Error init wompi:", errData);
+          return null;
+        } catch (error) {
+          console.error("Error init wompi:", error);
+          return null;
+        }
+      },
+      confirmTicketWompi: async (ticketId: number, idTransaccion: string, esAprobada: boolean) => {
+        const token = get().accessToken;
+        if (!token) return false;
+        try {
+          const response = await fetch(`${API_BASE}/transport/tickets/confirm_wompi/`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              ticket_id: ticketId,
+              idTransaccion: idTransaccion,
+              esAprobada: esAprobada
             })
           });
           if (response.ok) {
             get().fetchActiveTickets();
             return true;
           }
-          const errData = await response.json();
-          console.error("Error comprando boleto:", errData);
           return false;
         } catch (error) {
-          console.error("Error comprando boleto:", error);
+          console.error("Error confirm wompi:", error);
           return false;
         }
       },
