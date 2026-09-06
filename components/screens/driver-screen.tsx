@@ -157,11 +157,12 @@ export function DriverScreen({ onNavigate }: DriverScreenProps) {
             </div>
             
             <div className="divide-y divide-border max-h-96 overflow-y-auto custom-scrollbar">
-              {myRoute.stops.map((stop, index) => {
-                // Mock data for demonstration
-                const suben = index % 3 === 0 ? 2 : (index % 2 === 0 ? 1 : 0);
-                const bajan = index % 4 === 0 && index > 0 ? 2 : (index % 3 === 0 && index > 0 ? 1 : 0);
-                const isNext = index === 1; // dummy next stop
+              {myRoute.stops.map((stop: any, index: number) => {
+                // Leer datos reales desde la API (calculados en el backend)
+                const suben = stop.boarding_count || 0;
+                const bajan = stop.alighting_count || 0;
+                // Dejamos esto fijo por ahora hasta que se enlace con el GPS real
+                const isNext = index === 1; 
 
                 return (
                   <div key={stop.id} className={cn("p-4", isNext ? "bg-primary/5 dark:bg-primary/10" : "")}>
