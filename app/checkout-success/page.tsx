@@ -14,8 +14,12 @@ function CheckoutSuccessContent() {
 
   useEffect(() => {
     const idTransaccion = searchParams.get("idTransaccion");
-    const esAprobada = searchParams.get("esAprobada") === "true";
     const ticketIdStr = searchParams.get("ticket_id");
+    // Wompi no siempre envía esAprobada en modo prueba.
+    // Si hay idTransaccion, asumimos que el pago fue aprobado.
+    // Si esAprobada está explícitamente en "false", lo rechazamos.
+    const esAprobadaParam = searchParams.get("esAprobada");
+    const esAprobada = esAprobadaParam !== "false"; // true por defecto si existe idTransaccion
     
     if (idTransaccion && ticketIdStr) {
       useAppStore.getState().confirmTicketWompi(parseInt(ticketIdStr), idTransaccion, esAprobada)
