@@ -289,6 +289,7 @@ interface AppState {
   clearAuth: () => void
   addActiveTicket: (ticket: any) => void
   fetchActiveTickets: () => Promise<void>
+  buyTicket: (routeId: number, startStopId: number, endStopId: number, ticketType: "ONE_WAY" | "ROUND_TRIP") => Promise<boolean>
   fetchData: () => Promise<void>
   fetchRoutes: () => Promise<void>
   fetchPools: () => Promise<void>
@@ -818,6 +819,35 @@ export const useAppStore = create<AppState>()(
           }
         } catch (error) {
           console.error("Error fetching active tickets:", error);
+        }
+      },
+      buyTicket: async (routeId: number, startStopId: number, endStopId: number, ticketType: "ONE_WAY" | "ROUND_TRIP") => {
+        const token = get().accessToken;
+        if (!token) return false;
+        try {
+          const response = await fetch(`${API_BASE}/transport/tickets/`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              route: routeId,
+              start_stop: startStopId,
+              end_stop: endStopId,
+              ticket_type: ticketType
+            })
+          });
+          if (response.ok) {
+            get().fetchActiveTickets();
+            return true;
+          }
+          const errData = await response.json();
+          console.error("Error comprando boleto:", errData);
+          return false;
+        } catch (error) {
+          console.error("Error comprando boleto:", error);
+          return false;
         }
       },
       fetchData: async () => {

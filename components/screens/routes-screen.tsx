@@ -178,25 +178,29 @@ useEffect(() => {
   const handleConfirmTicketPayment = () => {
     setTicketPurchase((prev) => (prev ? { ...prev, step: "payment" } : null))
     setTimeout(() => {
-      setTicketPurchase((prev) => (prev ? { ...prev, step: "success" } : null))
-      // Add to store
+      // Call API
       const route = routes.find(r => r.id === ticketPurchase?.routeId)
       if (route && ticketPurchase) {
-        useAppStore.getState().addActiveTicket({
-          id: Date.now(),
-          route_name: route.name,
-          start_stop_name: getTicketPrices().startName,
-          end_stop_name: getTicketPrices().endName,
-          ticket_type: "ONE_WAY",
-          total_paid: getTicketPrices().oneWay,
-          purchase_date: new Date().toISOString(),
-          is_used: false
-        })
+        useAppStore.getState().buyTicket(
+          ticketPurchase.routeId,
+          ticketPurchase.startStopId!,
+          ticketPurchase.endStopId!,
+          "ONE_WAY"
+        ).then((success) => {
+          if (success) {
+            setTicketPurchase((prev) => (prev ? { ...prev, step: "success" } : null))
+            setTimeout(() => {
+              setTicketPurchase(null)
+            }, 3500)
+          } else {
+            alert("Error al procesar el pago simulado. Inténtalo de nuevo.");
+            setTicketPurchase(null)
+          }
+        });
+      } else {
+        setTicketPurchase(null)
       }
     }, 2000)
-    setTimeout(() => {
-      setTicketPurchase(null)
-    }, 3500)
   }
 
   return (
