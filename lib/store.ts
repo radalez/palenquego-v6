@@ -263,6 +263,7 @@ interface AppState {
   isAuthenticated: boolean
   hasCompletedOnboarding: boolean
   userPlan: "FREE" | "ORO" | "PLATINO" | "PRO"
+  registerPoolInterest: (serviceId: number) => Promise<boolean>
   paymentMethods: Array<{ id: string; type: string; last4: string; isDefault: boolean }>
   notifications: { email: boolean; sms: boolean; push: boolean }
   poolPaymentPending: { poolId: number; options: "FULL" | "PERSONAL" }[]
@@ -1117,17 +1118,35 @@ export const useAppStore = create<AppState>()(
           }
         }),
 
-      addSwipeLike: (serviceId) =>
-        set((state) => {
-          const exists = state.userFavorites.some((f) => f.serviceId === serviceId)
-          if (exists) return state
-          return {
+      registerPoolInterest: async (serviceId) => {
+        const state = get();
+        // Agregar localmente a favoritos si no estaba
+        const exists = state.userFavorites.some((f) => f.serviceId === serviceId)
+        if (!exists) {
+          set({
             userFavorites: [
               ...state.userFavorites,
               { serviceId, preference: "me_gusta" as const, selectedForTrip: false, addedAt: new Date() },
             ],
+          });
+        }
+        try {
+          if (state.accessToken) {
+            await fetch(`${API_BASE}/services/services/${serviceId}/swipe/`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${state.accessToken}`,
+              },
+              body: JSON.stringify({ es_like: true, es_pool: true }),
+            });
           }
-        }),
+          return true;
+        } catch (e) {
+          console.error("Error al registrar intencion de pool:", e);
+          return false;
+        }
+      },
 
       addBusinessSwipeLike: (business) =>
         set((state) => {

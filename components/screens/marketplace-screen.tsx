@@ -60,11 +60,20 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
     searchQuery: "",
   })
 
+  const [visibleCount, setVisibleCount] = useState(16)
+  const [activePoolTooltipId, setActivePoolTooltipId] = useState<number | null>(null)
+
+  // Reset pagination when category or search changes
+  useEffect(() => {
+    setVisibleCount(16)
+  }, [selectedCategory, searchQuery, filters])
+
   // --- CONEXIÓN A TU API REAL ---
   const { 
     services, 
     businesses, 
     toggleFavoritePreference, 
+    registerPoolInterest,
     userFavorites,
     fetchServices,
     fetchBusinesses,
@@ -208,43 +217,98 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
       {/* Listado de Tarjetas */}
       <div className="px-4 pb-24 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {isLoading ? (
-          <div className="py-10 text-center">
+          <div className="col-span-full py-10 text-center">
             <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
             <p className="text-muted-foreground italic">Sincronizando con Palenque...</p>
           </div>
         ) : (
-          filteredServices.map((service) => (
-            <div key={service.id} className="bg-card rounded-2xl overflow-hidden shadow-sm border border-border">
-              <div className="relative h-40">
-                <img
-                  src={service.image || "/placeholder.svg"}
-                  alt={service.name}
-                  className="w-full h-full object-cover"
-                />
-                <button
-                  onClick={() => toggleFavoritePreference(service.id)}
-                  className="absolute top-3 right-3 w-8 h-8 rounded-full bg-card/80 backdrop-blur-sm flex items-center justify-center"
-                >
-                  <Heart
-                    className={cn(
-                      "w-5 h-5 transition-colors",
-                      userFavorites.some((f) => f.serviceId === service.id)
-                        ? "fill-red-500 text-red-500"
-                        : "text-foreground",
-                    )}
+          <>
+            {filteredServices.slice(0, visibleCount).map((service) => (
+              <div key={service.id} className="bg-card rounded-2xl overflow-hidden shadow-sm border border-border flex flex-col">
+                <div className="relative h-40">
+                  <img
+                    src={service.image || "/placeholder.svg"}
+                    alt={service.name}
+                    className="w-full h-full object-cover"
                   />
-                </button>
-                {service.isRemate && (
-                  <Badge className="absolute top-3 left-3 bg-secondary text-secondary-foreground">
-                    <Flame className="w-3 h-3 mr-1" />-{service.discount}%
-                  </Badge>
-                )}
-                {service.allowsPool && (
-                  <Badge className="absolute bottom-3 left-3 bg-primary text-primary-foreground">
-                    <span className="text-xs">Pool disponible • {service.spotsLeft} cupos</span>
-                  </Badge>
-                )}
-              </div>
+                  <button
+                    onClick={() => toggleFavoritePreference(service.id)}
+                    className="absolute top-3 right-3 w-8 h-8 rounded-full bg-card/80 backdrop-blur-sm flex items-center justify-center shadow-sm"
+                  >
+                    <Heart
+                      className={cn(
+                        "w-5 h-5 transition-colors",
+                        userFavorites.some((f) => f.serviceId === service.id)
+                          ? "fill-red-500 text-red-500"
+                          : "text-foreground",
+                      )}
+                    />
+                  </button>
+                  {service.isRemate && (
+                    <Badge className="absolute top-3 left-3 bg-secondary text-secondary-foreground">
+                      <Flame className="w-3 h-3 mr-1" />-{service.discount}%
+                    </Badge>
+                  )}
+
+                  {/* Badge de Pool en Tarjeta */}
+                  <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-1 z-20">
+                    <Badge className="bg-primary/95 text-primary-foreground backdrop-blur-sm shadow-md py-1 px-2.5 flex items-center gap-1.5 max-w-full">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                      <span className="text-[10px] font-bold truncate">
+                        {service.hasActivePool
+                          ? `Pool disponible • ${service.spotsLeft || 3} cupos`
+                          : "Ahorra desde 10% en tu viaje"}
+                      </span>
+                    </Badge>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActivePoolTooltipId(activePoolTooltipId === service.id ? null : service.id);
+                      }}
+                      className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[11px] font-bold shadow-md hover:bg-primary/90 shrink-0"
+                    >
+                      ?
+                    </button>
+                  </div>
+
+                  {/* Tooltip Popover despegable superpuesto */}
+                  {activePoolTooltipId === service.id && (
+                    <div 
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute inset-0 bg-primary/95 text-primary-foreground p-4 flex flex-col justify-between z-30 animate-in fade-in zoom-in-95 duration-150"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-bold text-xs flex items-center gap-1">
+                            <Users className="w-4 h-4" /> ¿Qué es un Pool?
+                          </span>
+                          <button 
+                            onClick={() => setActivePoolTooltipId(null)}
+                            className="text-xs bg-white/20 px-2 py-0.5 rounded-full hover:bg-white/30"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                        <p className="text-xs leading-relaxed opacity-95">
+                          Un pool es un pago grupal. Si aceptas, serás invitado al pool de este servicio cuando esté disponible.
+                        </p>
+                      </div>
+
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="w-full text-xs font-bold mt-2"
+                        onClick={() => {
+                          registerPoolInterest(service.id);
+                          setActivePoolTooltipId(null);
+                        }}
+                      >
+                        Avisarme e invitarme
+                      </Button>
+                    </div>
+                  )}
+                </div>
 
               <div className="p-4">
                 <div className="flex items-start justify-between mb-2">
@@ -323,9 +387,22 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
                 </div>
               </div>
             </div>
-          ))
-        )}
-      </div>
+          ))}
+
+          {visibleCount < filteredServices.length && (
+            <div className="col-span-full text-center py-6">
+              <Button 
+                variant="outline" 
+                onClick={() => setVisibleCount((prev) => prev + 16)}
+                className="px-8 py-3 font-bold rounded-xl shadow-sm border-primary/30 text-primary hover:bg-primary/5 text-sm"
+              >
+                Cargar más experiencias ({filteredServices.length - visibleCount} restantes)
+              </Button>
+            </div>
+          )}
+        </>
+      )}
+    </div>
 
       {/* Modales */}
       {selectedService && (

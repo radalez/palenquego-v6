@@ -14,11 +14,12 @@ interface SwipeGoScreenProps {
 
 export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
   const router = useRouter()
-  const { services, pools, addSwipeLike, accessToken, fetchServices, fetchPools } = useAppStore()
+  const { services, pools, addSwipeLike, registerPoolInterest, accessToken, fetchServices, fetchPools } = useAppStore()
   // Maintain deck state — ahora con SERVICIOS, no tiendas
   const [deck, setDeck] = useState<Service[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
- 
+  const [registeredPools, setRegisteredPools] = useState<Set<number>>(new Set())
+
   // Modales/Tooltips
   const [showPoolTooltip, setShowPoolTooltip] = useState(false)
  
@@ -309,16 +310,18 @@ function SwipeableServiceCard({ service, isFront, onSwipe, onInfoClick, showPool
         </div>
  
         {/* Pool Gamification Status */}
-        {activePool && spotsRemaining > 0 && (
-          <div className="mt-auto relative z-30" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center gap-2 bg-primary/5 border border-primary/25 p-2 rounded-xl relative overflow-visible">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
-              <span className="text-[11px] font-bold text-primary flex-1">
-                {spotsRemaining === 1 || spotsRemaining === 2
-                  ? `Falta${spotsRemaining === 1 ? "" : "n"} ${spotsRemaining} ¡Únete ya!`
-                  : "Pool Activo Disponible"}
-              </span>
+        <div className="mt-auto relative z-30" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-2 bg-primary/5 border border-primary/25 p-2 rounded-xl relative overflow-visible">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
+            <span className="text-[11px] font-bold text-primary flex-1">
+              {activePool && spotsRemaining > 0
+                ? (spotsRemaining === 1 || spotsRemaining === 2
+                    ? `Falta${spotsRemaining === 1 ? "" : "n"} ${spotsRemaining} ¡Únete ya!`
+                    : "Pool Activo Disponible")
+                : "Ahorra desde 10% en tu viaje"}
+            </span>
 
+            {activePool && spotsRemaining > 0 ? (
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
@@ -328,39 +331,57 @@ function SwipeableServiceCard({ service, isFront, onSwipe, onInfoClick, showPool
               >
                 {spotsRemaining === 1 || spotsRemaining === 2 ? "Únete ya" : "Únete aquí"}
               </button>
-
+            ) : (
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
-                  setShowPoolTooltip(!showPoolTooltip);
+                  if (currentService) {
+                    registerPoolInterest(currentService.id);
+                    setRegisteredPools((prev) => new Set(prev).add(currentService.id));
+                  }
                 }}
-                className="p-1 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors shrink-0"
-              >
-                <HelpCircle className="w-3.5 h-3.5 text-primary" />
-              </button>
- 
-              {/* Tooltip Gamificado */}
-              <AnimatePresence>
-                {showPoolTooltip && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 5, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 3, scale: 0.95 }}
-                    className="absolute bottom-full mb-2 right-0 w-[220px] bg-primary text-primary-foreground p-3 rounded-2xl shadow-xl z-50 text-xs"
-                  >
-                    <div className="absolute -bottom-1 right-4 w-3 h-3 bg-primary rotate-45" />
-                    <p className="font-bold mb-1 flex items-center gap-1.5">
-                      <Users className="w-3.5 h-3.5"/> ¡Ahorra en Grupo!
-                    </p>
-                    <p className="opacity-90 leading-snug">
-                      Darle LIKE aumenta tus chances de unirte a un Pool con descuentos si hace match con otros recientes.
-                    </p>
-                  </motion.div>
+                className={cn(
+                  "px-2 py-1 text-[10px] font-bold rounded-lg transition-all shadow-sm shrink-0",
+                  currentService && registeredPools.has(currentService.id)
+                    ? "bg-emerald-600 text-white"
+                    : "bg-primary text-primary-foreground hover:bg-primary/90"
                 )}
-              </AnimatePresence>
-            </div>
+              >
+                {currentService && registeredPools.has(currentService.id) ? "✓ Avisarme" : "Avisarme"}
+              </button>
+            )}
+
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowPoolTooltip(!showPoolTooltip);
+              }}
+              className="p-1 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors shrink-0"
+            >
+              <HelpCircle className="w-3.5 h-3.5 text-primary" />
+            </button>
+
+            {/* Tooltip Gamificado */}
+            <AnimatePresence>
+              {showPoolTooltip && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 5, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 3, scale: 0.95 }}
+                  className="absolute bottom-full mb-2 right-0 w-[240px] bg-primary text-primary-foreground p-3 rounded-2xl shadow-xl z-50 text-xs"
+                >
+                  <div className="absolute -bottom-1 right-4 w-3 h-3 bg-primary rotate-45" />
+                  <p className="font-bold mb-1 flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5"/> ¿Qué es un Pool?
+                  </p>
+                  <p className="opacity-90 leading-snug">
+                    Un pool es un pago grupal. Si aceptas, serás invitado al pool de este servicio cuando esté disponible.
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-        )}
+        </div>
       </div>
     </motion.div>
   )
