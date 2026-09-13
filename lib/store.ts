@@ -8,15 +8,32 @@ const MEDIA_BASE = "/media-proxy";
 const getProxyImage = (url: string) => {
   if (!url) return "";
   let cleanUrl = url.trim();
-  
+
+  // 1. Si viene URL-encoded (ej: https%3A/res.cloudinary.com...)
+  if (cleanUrl.includes("%3A") || cleanUrl.includes("%2F")) {
+    try {
+      cleanUrl = decodeURIComponent(cleanUrl);
+    } catch (e) {}
+  }
+
+  // 2. Si viene concatenado con palenquego.com o cualquier prefijo antes de res.cloudinary.com
+  if (cleanUrl.includes("res.cloudinary.com")) {
+    const idx = cleanUrl.indexOf("res.cloudinary.com");
+    const protoIdx = cleanUrl.lastIndexOf("http", idx);
+    if (protoIdx !== -1) {
+      return cleanUrl.substring(protoIdx);
+    }
+    return `https://${cleanUrl.substring(idx)}`;
+  }
+
   // Siempre forzar https para el dominio de producción
   cleanUrl = cleanUrl.replace("http://palenquego.com", "https://palenquego.com");
-  
+
   // REGLA DE ORO: Si ya tiene el proxy o es una URL externa segura, NO LA TOQUES
   if (cleanUrl.includes(MEDIA_BASE) || (cleanUrl.startsWith('https://') && !cleanUrl.includes('209.97.146.210'))) {
     return cleanUrl;
   }
-  
+
   // Si viene con la IP prohibida, la cambiamos por el túnel
   return cleanUrl
     .replace("http://209.97.146.210/media", MEDIA_BASE)
