@@ -16,15 +16,15 @@ const getProxyImage = (url: string) => {
     } catch (e) {}
   }
 
-  // 2. Si viene concatenado con palenquego.com o cualquier prefijo antes de res.cloudinary.com
+  // 2. Si contiene res.cloudinary.com, reconstruir SIEMPRE la URL con https:// (eliminando prefijos y arreglando un solo slash)
   if (cleanUrl.includes("res.cloudinary.com")) {
     const idx = cleanUrl.indexOf("res.cloudinary.com");
-    const protoIdx = cleanUrl.lastIndexOf("http", idx);
-    if (protoIdx !== -1) {
-      return cleanUrl.substring(protoIdx);
-    }
-    return `https://${cleanUrl.substring(idx)}`;
+    const path = cleanUrl.substring(idx + "res.cloudinary.com".length);
+    return `https://res.cloudinary.com${path}`;
   }
+
+  // 3. Corregir cualquier URL que tenga un solo slash después de http: o https:
+  cleanUrl = cleanUrl.replace(/^(https?):\/([^\/])/, "$1://$2");
 
   // Siempre forzar https para el dominio de producción
   cleanUrl = cleanUrl.replace("http://palenquego.com", "https://palenquego.com");
