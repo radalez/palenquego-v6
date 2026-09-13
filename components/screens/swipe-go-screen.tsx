@@ -222,7 +222,7 @@ function SwipeableServiceCard({ service, isFront, onSwipe, onInfoClick, showPool
       className={`absolute w-full max-w-[360px] h-full max-h-[600px] bg-white rounded-3xl shadow-xl overflow-hidden cursor-grab active:cursor-grabbing border border-border/50 ${isFront ? 'z-20' : 'z-10'}`}
     >
       {/* Photo Gallery Area */}
-      <div className="relative w-full h-[55%] bg-zinc-900 group" onClick={onInfoClick}>
+      <div className="relative w-full h-[48%] bg-zinc-900 group" onClick={onInfoClick}>
         <img 
           src={gallery[photoIndex]} 
           alt={service.name} 
@@ -295,7 +295,7 @@ function SwipeableServiceCard({ service, isFront, onSwipe, onInfoClick, showPool
       </div>
  
       {/* Info Card Content Bottom */}
-      <div className="p-4 h-[45%] flex flex-col justify-between">
+      <div className="p-3.5 h-[52%] flex flex-col justify-between">
         <div className="space-y-2">
           <p className="text-muted-foreground text-xs md:text-sm line-clamp-2 leading-relaxed">
             {service.description || service.descripcion || "Sin descripción disponible"}
