@@ -508,7 +508,10 @@ export const useAppStore = create<AppState>()(
       },
 
      fetchServices: async (query = "") => {
-        set({ isLoading: true })
+        const currentServices = get().services;
+        if (!currentServices || currentServices.length === 0) {
+          set({ isLoading: true });
+        }
         try {
           const response = await fetch(`${API_BASE}/catalog/${query}`)
           if (!response.ok) {
