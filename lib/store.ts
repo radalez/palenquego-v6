@@ -533,7 +533,7 @@ export const useAppStore = create<AppState>()(
             description: s.descripcion || s.description || "Sin descripciÃ³n disponible",
             location: s.ubicacion || s.location || "Palenque, El Salvador",
             price: parseFloat(s.precio_base) || parseFloat(s.price) || 0,
-            image: getProxyImage(s.imagen_principal || s.image || ""),
+            image: getProxyImage(s.imagen_principal || s.imagen_url || s.image || ""),
             allowsPool: s.permite_pool || s.allows_pool || s.allowsPool || true,
             rating: parseFloat(s.calificacion) || s.rating || 5.0,
             reviews: parseInt(s.numero_resenas) || s.reviews || 0,
@@ -548,7 +548,7 @@ export const useAppStore = create<AppState>()(
             capacityMax: s.capacidad_max || s.capacityMax,
             // GalerÃ­a: mapear images[] del API a galleryImages[]
             galleryImages: s.images && s.images.length > 0
-              ? s.images.map((img: any) => getProxyImage(img.imagen || ""))
+              ? s.images.map((img: any) => getProxyImage(img.imagen || img.url || img.cloudinary_url || ""))
               : s.galleryImages || [],
             // Normalizar features a un array de strings para evitar errores de renderizado de objetos en React
             features: s.features && s.features.length > 0
@@ -1316,7 +1316,7 @@ export const useAppStore = create<AppState>()(
               avatar: "/avatars/default.png"
             },
             location: p.servicio_detalle?.ubicacion || "El Salvador",
-            image: getProxyImage(p.servicio_detalle?.imagen_principal || p.servicio_detalle?.imagen || "/placeholder.svg"),
+            image: getProxyImage(p.servicio_detalle?.imagen_principal || p.servicio_detalle?.imagen_url || p.servicio_detalle?.imagen || "/placeholder.svg"),
             deadline: "24h restantes",
             createdAt: p.creado_el,
             members: [],
