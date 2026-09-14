@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import {
   Search,
@@ -63,11 +63,33 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
 
   const [visibleCount, setVisibleCount] = useState(16)
   const [activePoolTooltipId, setActivePoolTooltipId] = useState<number | null>(null)
+  const observerRef = useRef<HTMLDivElement | null>(null)
 
   // Reset pagination when category or search changes
   useEffect(() => {
     setVisibleCount(16)
   }, [selectedCategory, searchQuery, filters])
+
+  // Automatic Infinite Scroll with IntersectionObserver
+  useEffect(() => {
+    const el = observerRef.current
+    if (!el) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisibleCount((prev) => prev + 16)
+        }
+      },
+      { rootMargin: "300px" } // Carga 300px antes de llegar al final para que el usuario no sienta esperas
+    )
+
+    observer.observe(el)
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [visibleCount])
 
   // --- CONEXIÓN A TU API REAL ---
   const { 
@@ -391,14 +413,8 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
           ))}
 
           {visibleCount < filteredServices.length && (
-            <div className="col-span-full text-center py-6">
-              <Button 
-                variant="outline" 
-                onClick={() => setVisibleCount((prev) => prev + 16)}
-                className="px-8 py-3 font-bold rounded-xl shadow-sm border-primary/30 text-primary hover:bg-primary/5 text-sm"
-              >
-                Cargar más experiencias ({filteredServices.length - visibleCount} restantes)
-              </Button>
+            <div ref={observerRef} className="col-span-full py-8 text-center flex justify-center items-center">
+              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
           )}
         </>
