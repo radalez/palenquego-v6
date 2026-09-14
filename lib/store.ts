@@ -61,6 +61,7 @@ export interface Service {
   isRemate?: boolean
   discount?: number
   allowsPool: boolean
+  hasActivePool?: boolean
   spotsLeft: number
   description?: string
   descripcion?: string // <-- AÃ‘ADIR ESTO
@@ -1115,6 +1116,18 @@ export const useAppStore = create<AppState>()(
                 { serviceId, preference, selectedForTrip: false, addedAt: new Date() },
               ],
             }
+          }
+        }),
+
+      addSwipeLike: (serviceId) =>
+        set((state) => {
+          const exists = state.userFavorites.some((f) => f.serviceId === serviceId)
+          if (exists) return state
+          return {
+            userFavorites: [
+              ...state.userFavorites,
+              { serviceId, preference: "me_gusta" as const, selectedForTrip: false, addedAt: new Date() },
+            ],
           }
         }),
 

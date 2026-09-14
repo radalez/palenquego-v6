@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { motion, useMotionValue, useTransform, AnimatePresence } from "framer-motion"
 import { X, Heart, Info, MapPin, Users, HelpCircle, ChevronLeft, ChevronRight, Share2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import { useAppStore, type Service, type Pool } from "@/lib/store"
 import { HeaderWithMenu } from "@/components/header-with-menu"
 
@@ -116,6 +117,9 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
                 setShowPoolTooltip={setShowPoolTooltip}
                 pools={pools}
                 onNavigate={onNavigate}
+                registerPoolInterest={registerPoolInterest}
+                registeredPools={registeredPools}
+                setRegisteredPools={setRegisteredPools}
               />
             )
           })}
@@ -160,9 +164,12 @@ interface SwipeableServiceCardProps {
   setShowPoolTooltip: (val: boolean) => void
   pools: Pool[]
   onNavigate?: (tab: string) => void
+  registerPoolInterest: (serviceId: number) => Promise<boolean>
+  registeredPools: Set<number>
+  setRegisteredPools: React.Dispatch<React.SetStateAction<Set<number>>>
 }
 
-function SwipeableServiceCard({ service, isFront, onSwipe, onInfoClick, showPoolTooltip, setShowPoolTooltip, pools, onNavigate }: SwipeableServiceCardProps) {
+function SwipeableServiceCard({ service, isFront, onSwipe, onInfoClick, showPoolTooltip, setShowPoolTooltip, pools, onNavigate, registerPoolInterest, registeredPools, setRegisteredPools }: SwipeableServiceCardProps) {
   const x = useMotionValue(0)
   const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 375
 
@@ -335,19 +342,19 @@ function SwipeableServiceCard({ service, isFront, onSwipe, onInfoClick, showPool
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (currentService) {
-                    registerPoolInterest(currentService.id);
-                    setRegisteredPools((prev) => new Set(prev).add(currentService.id));
+                  if (service) {
+                    registerPoolInterest(service.id);
+                    setRegisteredPools((prev: Set<number>) => new Set(prev).add(service.id));
                   }
                 }}
                 className={cn(
                   "px-2 py-1 text-[10px] font-bold rounded-lg transition-all shadow-sm shrink-0",
-                  currentService && registeredPools.has(currentService.id)
+                  service && registeredPools.has(service.id)
                     ? "bg-emerald-600 text-white"
                     : "bg-primary text-primary-foreground hover:bg-primary/90"
                 )}
               >
-                {currentService && registeredPools.has(currentService.id) ? "✓ Avisarme" : "Avisarme"}
+                {service && registeredPools.has(service.id) ? "✓ Avisarme" : "Avisarme"}
               </button>
             )}
 
