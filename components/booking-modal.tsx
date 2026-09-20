@@ -1,13 +1,13 @@
 "use client"
 
-import { useState } from "react"
-import { X, MapPin, Star, Users, Calendar, Clock, Plus, Minus, Check, ChevronRight } from "lucide-react"
+import { useState, useEffect } from "react"
+import { X, MapPin, Star, Users, Calendar, Clock, Plus, Minus, Check, ChevronRight, Phone, MessageCircle, CreditCard } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { useAppStore, type Service, type Pool } from "@/lib/store"
 import { PoolsForServiceModal } from "./pools-for-service-modal"
-import { useEffect } from "react"
 
 interface BookingModalProps {
   service: Service
@@ -27,8 +27,17 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
   const [showPoolsModal, setShowPoolsModal] = useState(false)
   const [joinedPool, setJoinedPool] = useState<Pool | null>(null)
 
-  const { addBooking, pools, joinPool, payService, isLoading } = useAppStore()
+  const { addBooking, pools, joinPool, createServiceBooking, payServiceWompi, currentUser, isLoading } = useAppStore()
+  const [userPhone, setUserPhone] = useState(currentUser?.telefono || "")
+  const [phoneError, setPhoneError] = useState("")
+  const [isPayingWompi, setIsPayingWompi] = useState(false)
+  const [tiendaInfo, setTiendaInfo] = useState<{ nombre?: string; telefono?: string }>({})
 
+  useEffect(() => {
+    if (currentUser?.telefono && !userPhone) {
+      setUserPhone(currentUser.telefono)
+    }
+  }, [currentUser?.telefono])
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -88,31 +97,79 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
     setStep("confirm")
   }
 
- const handleConfirmBooking = async () => {
+  const formatWhatsappLink = (phone?: string) => {
+    if (!phone) return ""
+    const clean = phone.replace(/[^0-9]/g, "")
+    const msg = encodeURIComponent(
+      `¡Hola! Acabo de hacer la reserva #${bookingResult?.qrCode || ""} para "${service.name}" el ${selectedDate || "15 Ene"} a las ${selectedTime || "10:00"} (${guests} personas). Quisiera coordinar los detalles.`
+    )
+    return `https://wa.me/${clean}?text=${msg}`
+  }
+
+  const handlePayWompi = async () => {
+    if (!bookingResult?.qrCode) return
+    setIsPayingWompi(true)
+    const total = joinedPool 
+      ? Math.round((Number(joinedPool.totalPrice) ?? 0) / (Number(joinedPool.targetMembers) ?? 1)) 
+      : calculateTotal()
+    
+    const url = await payServiceWompi(service.id, total, bookingResult.qrCode)
+    setIsPayingWompi(false)
+    if (url) {
+      window.location.href = url
+    } else {
+      alert("No se pudo iniciar la pasarela Wompi en este momento. Puedes coordinar directamente por WhatsApp con el comercio.")
+    }
+  }
+
+  const handleConfirmBooking = async () => {
+    const phoneToUse = userPhone.trim() || currentUser?.telefono || ""
+    if (!phoneToUse) {
+      setPhoneError("Por favor ingresa tu número de WhatsApp para confirmar.")
+      return
+    }
+    setPhoneError("")
+
     // 1. Cálculo del total real
     const total = joinedPool 
       ? Math.round((Number(joinedPool.totalPrice) ?? 0) / (Number(joinedPool.targetMembers) ?? 1)) 
-      : calculateTotal();
+      : calculateTotal()
 
-    // 2. Disparamos el pago (Esto es lo que te redirigirá a Stripe)
-    await payService(service.id, total);
-
-    // 3. Generar el resumen de extras (Esto es lo que faltaba y daba error)
+    // 2. Generar el resumen de extras
     const extrasSummary = Object.entries(selectedExtras)
       .filter(([_, qty]) => Number(qty) > 0)
-      .map(([name, qty]) => `${qty}x ${name}`);
+      .map(([name, qty]) => `${qty}x ${name}`)
 
-    // 4. Registro local (Ahora con todos los campos obligatorios)
+    // 3. Disparar al backend (y registrar inmediatamente en el CRM Invictus)
+    const res = await createServiceBooking(service.id, {
+      date: selectedDate || "15 Ene",
+      time: selectedTime || "10:00",
+      guests: guests,
+      extras: extrasSummary,
+      amount: total,
+      telefono: phoneToUse,
+    })
+
+    const reservaId = res.reserva_id || `PGO-${Math.random().toString(36).toUpperCase().substring(2, 10)}`
+    setBookingResult({ qrCode: reservaId })
+    setTiendaInfo({
+      nombre: res.tienda_nombre || service.businessName,
+      telefono: res.tienda_telefono || service.socialLinks?.whatsapp
+    })
+
+    // 4. Registro local
     addBooking({
       service,
       date: selectedDate || "15 Ene",
       time: selectedTime || "10:00",
       guests: guests,
-      extras: extrasSummary, // <--- Propiedad obligatoria añadida
+      extras: extrasSummary,
       totalPrice: total,
       status: "PENDIENTE",
       poolId: joinedPool?.id,
-    });
+    })
+
+    setStep("success")
   }
 
   if (showPoolsModal) {
@@ -396,6 +453,31 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
               </div>
             </div>
 
+            {/* Phone/WhatsApp input to ensure contactability & CRM sync */}
+            <div className="bg-muted/70 rounded-xl p-3.5 border border-border space-y-1.5 text-left">
+              <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <Phone className="w-3.5 h-3.5 text-primary" />
+                WhatsApp / Celular para coordinar tu reserva
+              </label>
+              <Input
+                type="tel"
+                placeholder="Ej: +503 7000-0000"
+                value={userPhone}
+                onChange={(e) => {
+                  setUserPhone(e.target.value)
+                  if (phoneError) setPhoneError("")
+                }}
+                className="h-11 rounded-lg bg-background border-border text-sm"
+              />
+              {phoneError ? (
+                <p className="text-xs text-destructive font-medium">{phoneError}</p>
+              ) : (
+                <p className="text-[11px] text-muted-foreground">
+                  El comercio aliado y el equipo comercial te contactarán por este medio.
+                </p>
+              )}
+            </div>
+
             <div className="flex gap-3">
               <Button
                 variant="outline"
@@ -418,7 +500,7 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
                 onClick={handleConfirmBooking}
                 disabled={isLoading}
               >
-                {isLoading ? "Procesando pago..." : joinedPool ? "Unirme al Pool" : "Confirmar y Pagar ahora"}
+                {isLoading ? "Procesando reserva..." : joinedPool ? "Unirme al Pool" : "Confirmar Reserva"}
               </Button>
             </div>
           </div>
@@ -426,7 +508,7 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
 
         {/* Step: Success */}
         {step === "success" && bookingResult && (
-          <div className="p-4 space-y-6 text-center">
+          <div className="p-4 space-y-5 text-center">
             <div
               className={cn(
                 "w-20 h-20 rounded-full flex items-center justify-center mx-auto",
@@ -437,20 +519,20 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
             </div>
 
             <div>
-              <h3 className="text-xl font-bold text-foreground mb-2">
-                {joinedPool ? "Te Uniste al Pool" : "Reserva Confirmada"}
+              <h3 className="text-xl font-bold text-foreground mb-1">
+                {joinedPool ? "¡Te Uniste al Pool!" : "¡Reserva Solicitada con Éxito!"}
               </h3>
-              <p className="text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 {joinedPool
-                  ? "Ahora eres parte del grupo. El lider coordinara los detalles."
-                  : "Tu reserva ha sido procesada exitosamente"}
+                  ? "Ahora eres parte del grupo. El líder coordinará los detalles."
+                  : "Tu solicitud ha sido enviada al comercio aliado. Te contactarán a la brevedad por WhatsApp."}
               </p>
             </div>
 
             {/* QR Code Placeholder */}
-            <div className="bg-card border border-border rounded-xl p-6">
-              <div className="w-40 h-40 bg-foreground mx-auto rounded-lg flex items-center justify-center mb-4">
-                <div className="w-32 h-32 bg-background rounded grid grid-cols-5 gap-1 p-2">
+            <div className="bg-card border border-border rounded-xl p-5">
+              <div className="w-36 h-36 bg-foreground mx-auto rounded-lg flex items-center justify-center mb-3">
+                <div className="w-28 h-28 bg-background rounded grid grid-cols-5 gap-1 p-2">
                   {Array.from({ length: 25 }).map((_, i) => (
                     <div
                       key={i}
@@ -459,38 +541,64 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
                   ))}
                 </div>
               </div>
-              <p className="text-lg font-mono font-bold text-foreground">{bookingResult.qrCode}</p>
-              <p className="text-sm text-muted-foreground mt-1">Muestra este codigo al llegar</p>
+              <p className="text-base font-mono font-bold text-foreground">{bookingResult.qrCode}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Código de reserva asignado</p>
             </div>
 
-            <div className="bg-muted rounded-xl p-4 text-left">
-              <div className="flex justify-between text-sm mb-2">
+            <div className="bg-muted rounded-xl p-4 text-left space-y-2">
+              <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Servicio</span>
                 <span className="text-foreground font-medium">{service.name}</span>
               </div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-muted-foreground">Fecha</span>
-                <span className="text-foreground font-medium">{selectedDate || "15 Ene"}</span>
-              </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Total pagado</span>
+                <span className="text-muted-foreground">Fecha y Hora</span>
+                <span className="text-foreground font-medium">{selectedDate || "15 Ene"} - {selectedTime || "10:00"}</span>
+              </div>
+              {tiendaInfo.nombre && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Aliado / Tienda</span>
+                  <span className="text-foreground font-medium">{tiendaInfo.nombre}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-sm pt-1 border-t border-border">
+                <span className="text-muted-foreground font-medium">Monto estimado</span>
                 <span className="text-primary font-bold">
                   ${joinedPool ? Math.round((joinedPool.totalPrice ?? 0) / (joinedPool.targetMembers ?? 1)) : calculateTotal()}
                 </span>
               </div>
             </div>
 
-            <Button
-              className={cn(
-                "w-full h-14 rounded-xl text-lg font-semibold",
-                joinedPool
-                  ? "bg-secondary hover:bg-secondary/90 text-secondary-foreground"
-                  : "bg-primary hover:bg-primary/90 text-primary-foreground",
+            {/* Opciones de pago o contacto */}
+            <div className="space-y-2.5 pt-1">
+              {(tiendaInfo.telefono || service.socialLinks?.whatsapp) && (
+                <a
+                  href={formatWhatsappLink(tiendaInfo.telefono || service.socialLinks?.whatsapp)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold shadow-sm transition-all text-sm"
+                >
+                  <MessageCircle className="w-5 h-5" />
+                  Escribir al WhatsApp del Aliado
+                </a>
               )}
-              onClick={onClose}
-            >
-              Listo
-            </Button>
+
+              <Button
+                onClick={handlePayWompi}
+                disabled={isPayingWompi}
+                variant="outline"
+                className="w-full h-12 rounded-xl font-semibold border-primary text-primary hover:bg-primary/5 flex items-center justify-center gap-2"
+              >
+                <CreditCard className="w-4 h-4" />
+                {isPayingWompi ? "Generando pasarela Wompi..." : "Pagar en línea con Wompi"}
+              </Button>
+
+              <Button
+                className="w-full h-12 rounded-xl text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
+                onClick={onClose}
+              >
+                Listo
+              </Button>
+            </div>
           </div>
         )}
       </div>

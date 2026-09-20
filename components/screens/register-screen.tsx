@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Leaf, Lock, User, Mail, UserPlus, AlertCircle, ArrowLeft, Eye, EyeOff } from "lucide-react"
+import { Leaf, Lock, User, Mail, UserPlus, AlertCircle, ArrowLeft, Eye, EyeOff, Phone } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -14,7 +14,7 @@ interface RegisterScreenProps {
 }
 
 export function RegisterScreen({ onRegisterSuccess, onBackToLogin }: RegisterScreenProps) {
-  const [formData, setFormData] = useState({ password: "", email: "", first_name: "" })
+  const [formData, setFormData] = useState({ password: "", email: "", first_name: "", telefono: "" })
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -63,6 +63,20 @@ export function RegisterScreen({ onRegisterSuccess, onBackToLogin }: RegisterScr
                 placeholder="ejemplo@correo.com"
                 value={formData.email}
                 onChange={(e) => setFormData({...formData, email: e.target.value})}
+                className="pl-10 h-12 rounded-xl border-border bg-muted/50"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-muted-foreground text-sm">WhatsApp / Celular</Label>
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Input
+                type="tel"
+                placeholder="Ej: +503 7000-0000"
+                value={formData.telefono}
+                onChange={(e) => setFormData({...formData, telefono: e.target.value})}
                 className="pl-10 h-12 rounded-xl border-border bg-muted/50"
               />
             </div>

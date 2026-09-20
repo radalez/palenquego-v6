@@ -291,6 +291,8 @@ interface AppState {
   logout: () => void
   upgradePlan: (planId: number) => Promise<void>
   payService: (serviceId: number, amount: number) => Promise<void>
+  createServiceBooking: (serviceId: number, bookingData: any) => Promise<{ success: boolean; reserva_id?: string; tienda_nombre?: string; tienda_telefono?: string; crm_synced?: boolean; error?: string }>
+  payServiceWompi: (serviceId: number, amount: number, reservaId?: string, redirectUrl?: string) => Promise<string | null>
   sendNotification: (title: string, message: string) => void
   addPaymentMethod: (method: { type: string; last4: string }) => void
   updateNotifications: (settings: { email?: boolean; sms?: boolean; push?: boolean }) => void
@@ -995,7 +997,80 @@ export const useAppStore = create<AppState>()(
         } catch (error) {
           console.error("Error de conexiÃ³n con Stripe:", error);
           set({ isLoading: false });
-          alert("Fallo de conexiÃ³n. Revisa tu internet o el estado del servidor.");
+          alert("Fallo de conexión. Revisa tu internet o el estado del servidor.");
+        }
+      },
+
+      createServiceBooking: async (serviceId: number, bookingData: any) => {
+        const { accessToken, currentUser } = get();
+        set({ isLoading: true });
+        try {
+          const phone = bookingData.telefono || currentUser.telefono || "";
+          const response = await fetch(`${API_BASE}/catalog/${serviceId}/reservar/`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {})
+            },
+            body: JSON.stringify({
+              ...bookingData,
+              telefono: phone,
+            }),
+          });
+          const data = await response.json();
+          set({ isLoading: false });
+
+          if (response.ok) {
+            if (phone && (!currentUser.telefono || currentUser.telefono !== phone)) {
+              set((state) => ({
+                currentUser: { ...state.currentUser, telefono: phone }
+              }));
+            }
+            return {
+              success: true,
+              reserva_id: data.reserva_id,
+              tienda_nombre: data.tienda_nombre,
+              tienda_telefono: data.tienda_telefono,
+              crm_synced: data.crm_synced,
+            };
+          } else {
+            return {
+              success: false,
+              error: data.error || data.detail || "No se pudo procesar la reserva",
+            };
+          }
+        } catch (err: any) {
+          set({ isLoading: false });
+          return { success: false, error: err.message || "Error de red" };
+        }
+      },
+
+      payServiceWompi: async (serviceId: number, amount: number, reservaId?: string, redirectUrl?: string) => {
+        const { accessToken } = get();
+        set({ isLoading: true });
+        try {
+          const targetUrl = redirectUrl || (typeof window !== "undefined" ? `${window.location.origin}/dashboard?payment=success&reserva_id=${reservaId || ''}` : '');
+          const response = await fetch(`${API_BASE}/catalog/${serviceId}/pagar_wompi/`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {})
+            },
+            body: JSON.stringify({
+              amount,
+              reserva_id: reservaId,
+              redirect_url: targetUrl
+            }),
+          });
+          set({ isLoading: false });
+          if (response.ok) {
+            const data = await response.json();
+            return data.url || null;
+          }
+          return null;
+        } catch (err) {
+          set({ isLoading: false });
+          return null;
         }
       },
 
