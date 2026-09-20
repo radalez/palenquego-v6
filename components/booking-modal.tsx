@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { X, MapPin, Star, Users, Calendar, Clock, Plus, Minus, Check, ChevronRight, Phone, MessageCircle, CreditCard } from "lucide-react"
+import QRCode from "react-qr-code"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -529,20 +530,17 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
               </p>
             </div>
 
-            {/* QR Code Placeholder */}
-            <div className="bg-card border border-border rounded-xl p-5">
-              <div className="w-36 h-36 bg-foreground mx-auto rounded-lg flex items-center justify-center mb-3">
-                <div className="w-28 h-28 bg-background rounded grid grid-cols-5 gap-1 p-2">
-                  {Array.from({ length: 25 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className={cn("rounded-sm", Math.random() > 0.5 ? "bg-foreground" : "bg-transparent")}
-                    />
-                  ))}
-                </div>
+            {/* QR Code Real y Escaneable */}
+            <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
+              <div className="bg-white p-3.5 rounded-xl border border-border inline-flex items-center justify-center mx-auto mb-3 shadow-sm">
+                <QRCode
+                  value={bookingResult.qrCode || `RES-${service.id}`}
+                  size={150}
+                  level="M"
+                />
               </div>
-              <p className="text-base font-mono font-bold text-foreground">{bookingResult.qrCode}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Código de reserva asignado</p>
+              <p className="text-base font-mono font-bold text-foreground tracking-wide">{bookingResult.qrCode}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Voucher de Reserva Oficial</p>
             </div>
 
             <div className="bg-muted rounded-xl p-4 text-left space-y-2">
