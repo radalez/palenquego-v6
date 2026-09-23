@@ -345,30 +345,66 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
                 </label>
 
                 {/* Visible Future Date Picker Button in Header */}
-                <button
-                  type="button"
-                  onClick={openDatePicker}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/30 hover:bg-primary/20 transition-all cursor-pointer shadow-xs group"
-                >
+                <div className="relative inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/30 hover:bg-primary/20 transition-all cursor-pointer shadow-xs group">
                   <Calendar className="w-3.5 h-3.5 text-primary group-hover:scale-110 transition-transform" />
                   <span className="text-xs font-bold text-primary">
                     {upcomingDates.some((d) => d.formatted === selectedDate) ? "Elegir otra fecha" : `📅 ${selectedDate}`}
                   </span>
-                </button>
+                  <input
+                    type="date"
+                    min={new Date().toISOString().split("T")[0]}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        const [year, month, day] = e.target.value.split("-")
+                        const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+                        const monthName = months[parseInt(month, 10) - 1]
+                        const formatted = `${parseInt(day, 10)} ${monthName}`
+                        setSelectedDate(formatted)
+                      }
+                    }}
+                    onClick={(e) => {
+                      try {
+                        if ("showPicker" in e.currentTarget) {
+                          e.currentTarget.showPicker()
+                        }
+                      } catch (err) {}
+                    }}
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-30 block"
+                    title="Haz clic para abrir el calendario y elegir cualquier fecha futura"
+                  />
+                </div>
               </div>
 
               {/* Quick Date Pills Horizontal Slider */}
               <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none items-center">
                 {/* Custom Future Date Pill placed FIRST so it's always immediately visible */}
-                <button
-                  type="button"
-                  onClick={openDatePicker}
-                  className="min-w-[76px] h-[72px] flex flex-col items-center justify-center p-2 rounded-xl border-2 border-dashed border-primary/50 bg-primary/10 hover:bg-primary/20 transition-all text-center cursor-pointer group shrink-0"
-                >
+                <div className="relative min-w-[76px] h-[72px] flex flex-col items-center justify-center p-2 rounded-xl border-2 border-dashed border-primary/50 bg-primary/10 hover:bg-primary/20 transition-all text-center cursor-pointer group shrink-0">
                   <Calendar className="w-5 h-5 text-primary mb-0.5 group-hover:scale-110 transition-transform" />
                   <span className="text-[10px] font-black text-primary leading-tight uppercase">Otra fecha</span>
                   <span className="text-[9px] text-primary/80 font-medium">Calendario</span>
-                </button>
+                  <input
+                    type="date"
+                    min={new Date().toISOString().split("T")[0]}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        const [year, month, day] = e.target.value.split("-")
+                        const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+                        const monthName = months[parseInt(month, 10) - 1]
+                        const formatted = `${parseInt(day, 10)} ${monthName}`
+                        setSelectedDate(formatted)
+                      }
+                    }}
+                    onClick={(e) => {
+                      try {
+                        if ("showPicker" in e.currentTarget) {
+                          e.currentTarget.showPicker()
+                        }
+                      } catch (err) {}
+                    }}
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-30 block"
+                    title="Seleccionar cualquier fecha futura"
+                  />
+                </div>
 
                 {upcomingDates.map((d, i) => (
                   <button
