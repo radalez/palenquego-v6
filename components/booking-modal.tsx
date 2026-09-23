@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { X, MapPin, Star, Users, Calendar, Clock, Plus, Minus, Check, ChevronRight, Phone, MessageCircle, CreditCard } from "lucide-react"
 import QRCode from "react-qr-code"
 import { Button } from "@/components/ui/button"
@@ -55,6 +55,7 @@ const timeSlots = [
 ]
 
 export function BookingModal({ service, onClose }: BookingModalProps) {
+  const datePickerRef = useRef<HTMLInputElement>(null)
   const [step, setStep] = useState<BookingStep>("details")
   const [guests, setGuests] = useState(1)
   const [selectedDate, setSelectedDate] = useState(upcomingDates[0]?.formatted || "")
@@ -209,6 +210,20 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
     )
   }
 
+  const openDatePicker = () => {
+    if (datePickerRef.current) {
+      try {
+        if (typeof datePickerRef.current.showPicker === "function") {
+          datePickerRef.current.showPicker()
+        } else {
+          datePickerRef.current.click()
+        }
+      } catch (e) {
+        datePickerRef.current.click()
+      }
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-end justify-center">
       <div className="bg-background w-full max-w-md rounded-t-3xl max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom duration-300">
@@ -224,6 +239,23 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
             <X className="w-5 h-5 text-muted-foreground" />
           </button>
         </div>
+
+        {/* Hidden Native Date Input Triggered via showPicker() */}
+        <input
+          ref={datePickerRef}
+          type="date"
+          min={new Date().toISOString().split("T")[0]}
+          onChange={(e) => {
+            if (e.target.value) {
+              const [year, month, day] = e.target.value.split("-")
+              const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+              const monthName = months[parseInt(month, 10) - 1]
+              const formatted = `${parseInt(day, 10)} ${monthName}`
+              setSelectedDate(formatted)
+            }
+          }}
+          className="sr-only hidden"
+        />
 
         {/* Step: Details */}
         {step === "details" && (
@@ -307,21 +339,43 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
             {/* Date Selection */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium text-foreground flex items-center">
-                  <Calendar className="w-4 h-4 inline mr-2 text-primary" />
+                <label className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                  <Calendar className="w-4 h-4 text-primary" />
                   Seleccionar fecha
                 </label>
-                <span className="text-xs text-primary font-medium flex items-center gap-1">
-                  {selectedDate ? `Seleccionado: ${selectedDate}` : "Elige una fecha"}
-                </span>
+
+                {/* Visible Future Date Picker Button in Header */}
+                <button
+                  type="button"
+                  onClick={openDatePicker}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/30 hover:bg-primary/20 transition-all cursor-pointer shadow-xs group"
+                >
+                  <Calendar className="w-3.5 h-3.5 text-primary group-hover:scale-110 transition-transform" />
+                  <span className="text-xs font-bold text-primary">
+                    {upcomingDates.some((d) => d.formatted === selectedDate) ? "Elegir otra fecha" : `📅 ${selectedDate}`}
+                  </span>
+                </button>
               </div>
+
+              {/* Quick Date Pills Horizontal Slider */}
               <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none items-center">
+                {/* Custom Future Date Pill placed FIRST so it's always immediately visible */}
+                <button
+                  type="button"
+                  onClick={openDatePicker}
+                  className="min-w-[76px] h-[72px] flex flex-col items-center justify-center p-2 rounded-xl border-2 border-dashed border-primary/50 bg-primary/10 hover:bg-primary/20 transition-all text-center cursor-pointer group shrink-0"
+                >
+                  <Calendar className="w-5 h-5 text-primary mb-0.5 group-hover:scale-110 transition-transform" />
+                  <span className="text-[10px] font-black text-primary leading-tight uppercase">Otra fecha</span>
+                  <span className="text-[9px] text-primary/80 font-medium">Calendario</span>
+                </button>
+
                 {upcomingDates.map((d, i) => (
                   <button
                     key={i}
                     onClick={() => setSelectedDate(d.formatted)}
                     className={cn(
-                      "flex flex-col items-center px-4 py-3 rounded-xl min-w-[72px] border transition-all shadow-sm",
+                      "flex flex-col items-center px-4 py-3 rounded-xl min-w-[72px] border transition-all shadow-sm shrink-0",
                       selectedDate === d.formatted
                         ? "bg-primary text-primary-foreground border-primary font-semibold ring-2 ring-primary/30"
                         : "bg-card text-foreground border-border hover:bg-muted/80",
@@ -336,28 +390,6 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
                     </span>
                   </button>
                 ))}
-
-                {/* Custom Future Date Selector Pill */}
-                <div className="relative min-w-[80px] h-[72px] flex flex-col items-center justify-center p-2 rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 hover:bg-primary/10 transition-all text-center cursor-pointer group shrink-0">
-                  <input
-                    type="date"
-                    min={new Date().toISOString().split("T")[0]}
-                    onChange={(e) => {
-                      if (e.target.value) {
-                        const [year, month, day] = e.target.value.split("-")
-                        const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
-                        const monthName = months[parseInt(month, 10) - 1]
-                        const formatted = `${parseInt(day, 10)} ${monthName}`
-                        setSelectedDate(formatted)
-                      }
-                    }}
-                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
-                    title="Seleccionar cualquier fecha futura"
-                  />
-                  <Calendar className="w-5 h-5 text-primary mb-1 group-hover:scale-110 transition-transform" />
-                  <span className="text-[11px] font-extrabold text-primary leading-tight">Más fechas</span>
-                  <span className="text-[9px] text-muted-foreground">Calendario</span>
-                </div>
               </div>
             </div>
 
