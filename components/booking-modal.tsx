@@ -225,8 +225,8 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-end justify-center">
-      <div className="bg-background w-full max-w-md rounded-t-3xl max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom duration-300">
+    <div className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-xs flex items-end justify-center">
+      <div className="bg-background w-full max-w-md rounded-t-3xl max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom duration-300 shadow-2xl pb-6">
         {/* Header */}
         <div className="sticky top-0 bg-background z-10 px-4 py-4 border-b border-border flex items-center justify-between">
           <h2 className="text-lg font-semibold text-foreground">

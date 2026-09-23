@@ -18,7 +18,7 @@ export function MobileNav({ activeTab, setActiveTab }: MobileNavProps) {
   ]
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border safe-area-inset max-w-md mx-auto z-50">
+    <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border safe-area-inset max-w-md mx-auto z-40">
       <div className="flex items-end justify-around py-2 px-2 relative h-16">
         
         {/* Curva de fondo para que parezca que el nav envuelve al botón */}

@@ -24,8 +24,8 @@ export function PoolsForServiceModal({ service, onClose, onJoinPool }: PoolsForS
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-end justify-center">
-      <div className="bg-background w-full max-w-md rounded-t-3xl max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-300">
+    <div className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-xs flex items-end justify-center">
+      <div className="bg-background w-full max-w-md rounded-t-3xl max-h-[88vh] overflow-y-auto animate-in slide-in-from-bottom duration-300 shadow-2xl pb-6">
         {/* Header */}
         <div className="sticky top-0 bg-background z-10 px-4 py-4 border-b border-border">
           <div className="flex items-center justify-between">
