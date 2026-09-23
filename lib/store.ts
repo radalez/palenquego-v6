@@ -70,6 +70,7 @@ export interface Service {
   capacityMax?: number
   extras?: { name: string; price: number }[]
   blocked_dates?: string[]
+  stock_unidades?: number
   ratings?: Rating[]
   routes?: { id: number; name: string }[]
   linkTypes?: ("oferta" | "descuento" | "feriado")[]

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { X, MapPin, Star, Users, Calendar, Clock, Plus, Minus, Check, ChevronRight, Phone, MessageCircle, CreditCard } from "lucide-react"
+import { X, MapPin, Star, Users, Calendar, Clock, Plus, Minus, Check, ChevronRight, Phone, MessageCircle, CreditCard, Building2 } from "lucide-react"
 import QRCode from "react-qr-code"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -127,7 +127,7 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
 
   const calculateTotal = () => {
     let basePrice = Number(service.price)
-    let total = isHotelService ? (basePrice * nightsCount) : (basePrice * Number(guests))
+    let total = isHotelService ? (basePrice * nightsCount * Number(guests)) : (basePrice * Number(guests))
     
     if (service.extras) {
       service.extras.forEach((extra: any) => {
@@ -309,7 +309,15 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
                   <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
                   <span className="text-sm font-medium">{service.rating}</span>
                 </div>
-                <p className="text-lg font-bold text-primary mt-1">${service.price}/persona</p>
+                <p className="text-lg font-bold text-primary mt-1">
+                  ${service.price} {isHotelService ? "/ persona / noche" : "/ persona"}
+                </p>
+
+                {/* Stock Badge */}
+                <div className="inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 text-xs font-bold">
+                  <Building2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Stock disponible: <strong>{service.stock_unidades ?? service.spotsLeft ?? 1}</strong> {((service.stock_unidades ?? service.spotsLeft ?? 1) === 1) ? "unidad" : "unidades"}</span>
+                </div>
               </div>
             </div>
 
@@ -550,7 +558,7 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
               </div>
               <div className="text-right text-xs text-muted-foreground font-medium">
                 {isHotelService ? (
-                  <span>{nightsCount} {nightsCount === 1 ? "noche" : "noches"} × ${service.price}</span>
+                  <span>{guests} {guests === 1 ? "persona" : "personas"} × {nightsCount} {nightsCount === 1 ? "noche" : "noches"} × ${service.price}</span>
                 ) : (
                   <span>{guests} {guests === 1 ? "persona" : "personas"} × ${service.price}</span>
                 )}
@@ -657,14 +665,21 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
               </div>
 
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Fecha</span>
-                <span className="text-foreground font-medium">{selectedDate || "15 Ene"}</span>
+                <span className="text-muted-foreground">{isHotelService ? "Estancia" : "Fecha"}</span>
+                <span className="text-foreground font-medium">{isHotelService ? `${checkIn} al ${checkOut}` : (selectedDate || "Hoy")}</span>
               </div>
 
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Hora</span>
-                <span className="text-foreground font-medium">{selectedTime || "10:00"}</span>
-              </div>
+              {isHotelService ? (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Noches</span>
+                  <span className="text-foreground font-medium">{nightsCount} {nightsCount === 1 ? "noche" : "noches"}</span>
+                </div>
+              ) : (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Hora</span>
+                  <span className="text-foreground font-medium">{selectedTime || "10:00"}</span>
+                </div>
+              )}
 
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Personas</span>
