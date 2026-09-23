@@ -58,6 +58,22 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
   const datePickerRef = useRef<HTMLInputElement>(null)
   const [step, setStep] = useState<BookingStep>("details")
   const [guests, setGuests] = useState(1)
+
+  // Detect whether category allows multi-day range bookings (e.g. Hotelería)
+  const isHotelService = Boolean(
+    service.categoria?.permite_rango_fechas ||
+    service.category?.toLowerCase().includes("hotel") ||
+    service.category?.toLowerCase().includes("hospedaje")
+  )
+
+  const todayIso = new Date().toISOString().split("T")[0]
+  const tomorrowDate = new Date()
+  tomorrowDate.setDate(tomorrowDate.getDate() + 1)
+  const tomorrowIso = tomorrowDate.toISOString().split("T")[0]
+
+  const [checkIn, setCheckIn] = useState(todayIso)
+  const [checkOut, setCheckOut] = useState(tomorrowIso)
+
   const [selectedDate, setSelectedDate] = useState(upcomingDates[0]?.formatted || "")
   const [selectedTime, setSelectedTime] = useState("10:00")
   
@@ -71,6 +87,16 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
   const [phoneError, setPhoneError] = useState("")
   const [isPayingWompi, setIsPayingWompi] = useState(false)
   const [tiendaInfo, setTiendaInfo] = useState<{ nombre?: string; telefono?: string }>({})
+
+  const calculateNights = () => {
+    if (!checkIn || !checkOut) return 1
+    const start = new Date(checkIn).getTime()
+    const end = new Date(checkOut).getTime()
+    const diff = Math.round((end - start) / (1000 * 3600 * 24))
+    return diff > 0 ? diff : 1
+  }
+
+  const nightsCount = calculateNights()
 
   useEffect(() => {
     if (currentUser?.telefono && !userPhone) {
@@ -100,8 +126,8 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
   }
 
   const calculateTotal = () => {
-    // Forzamos Number() para evitar que "90" + "30" sea "9030"
-    let total = Number(service.price) * Number(guests)
+    let basePrice = Number(service.price)
+    let total = isHotelService ? (basePrice * nightsCount) : (basePrice * Number(guests))
     
     if (service.extras) {
       service.extras.forEach((extra: any) => {
@@ -130,8 +156,12 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
     if (!phone) return ""
     const clean = phone.replace(/[^0-9]/g, "")
     const defaultDate = upcomingDates[0]?.formatted || "Hoy"
+    const effectiveDateStr = isHotelService
+      ? `Check-in: ${checkIn} / Check-out: ${checkOut} (${nightsCount} noches)`
+      : `${selectedDate || defaultDate} a las ${selectedTime || "10:00"}`
+
     const msg = encodeURIComponent(
-      `¡Hola! Acabo de hacer la reserva #${bookingResult?.qrCode || ""} para "${service.name}" el ${selectedDate || defaultDate} a las ${selectedTime || "10:00"} (${guests} personas). Quisiera coordinar los detalles.`
+      `¡Hola! Acabo de hacer la reserva #${bookingResult?.qrCode || ""} para "${service.name}" (${effectiveDateStr}, ${guests} personas). Quisiera coordinar los detalles.`
     )
     return `https://wa.me/${clean}?text=${msg}`
   }
@@ -161,6 +191,8 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
     setPhoneError("")
 
     const defaultDate = upcomingDates[0]?.formatted || "Hoy"
+    const effectiveDateStr = isHotelService ? `${checkIn} al ${checkOut}` : (selectedDate || defaultDate)
+    const timeStr = isHotelService ? `Check-in / Check-out (${nightsCount} noches)` : (selectedTime || "10:00")
 
     // 1. Cálculo del total real
     const total = joinedPool 
@@ -174,8 +206,8 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
 
     // 3. Disparar al backend (y registrar inmediatamente en el CRM Invictus)
     const res = await createServiceBooking(service.id, {
-      date: selectedDate || defaultDate,
-      time: selectedTime || "10:00",
+      date: effectiveDateStr,
+      time: timeStr,
       guests: guests,
       extras: extrasSummary,
       amount: total,
@@ -192,8 +224,8 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
     // 4. Registro local
     addBooking({
       service,
-      date: selectedDate || defaultDate,
-      time: selectedTime || "10:00",
+      date: effectiveDateStr,
+      time: timeStr,
       guests: guests,
       extras: extrasSummary,
       totalPrice: total,
@@ -336,133 +368,192 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
               </div>
             </div>
 
-            {/* Date Selection */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                  <Calendar className="w-4 h-4 text-primary" />
-                  Seleccionar fecha
-                </label>
-
-                {/* Visible Future Date Picker Button in Header */}
-                <div className="relative inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/30 hover:bg-primary/20 transition-all cursor-pointer shadow-xs group">
-                  <Calendar className="w-3.5 h-3.5 text-primary group-hover:scale-110 transition-transform" />
-                  <span className="text-xs font-bold text-primary">
-                    {upcomingDates.some((d) => d.formatted === selectedDate) ? "Elegir otra fecha" : `📅 ${selectedDate}`}
-                  </span>
-                  <input
-                    type="date"
-                    min={new Date().toISOString().split("T")[0]}
-                    onChange={(e) => {
-                      if (e.target.value) {
-                        const [year, month, day] = e.target.value.split("-")
-                        const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
-                        const monthName = months[parseInt(month, 10) - 1]
-                        const formatted = `${parseInt(day, 10)} ${monthName}`
-                        setSelectedDate(formatted)
-                      }
-                    }}
-                    onClick={(e) => {
-                      try {
-                        if ("showPicker" in e.currentTarget) {
-                          e.currentTarget.showPicker()
-                        }
-                      } catch (err) {}
-                    }}
-                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-30 block"
-                    title="Haz clic para abrir el calendario y elegir cualquier fecha futura"
-                  />
-                </div>
-              </div>
-
-              {/* Quick Date Pills Horizontal Slider */}
-              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none items-center">
-                {/* Custom Future Date Pill placed FIRST so it's always immediately visible */}
-                <div className="relative min-w-[76px] h-[72px] flex flex-col items-center justify-center p-2 rounded-xl border-2 border-dashed border-primary/50 bg-primary/10 hover:bg-primary/20 transition-all text-center cursor-pointer group shrink-0">
-                  <Calendar className="w-5 h-5 text-primary mb-0.5 group-hover:scale-110 transition-transform" />
-                  <span className="text-[10px] font-black text-primary leading-tight uppercase">Otra fecha</span>
-                  <span className="text-[9px] text-primary/80 font-medium">Calendario</span>
-                  <input
-                    type="date"
-                    min={new Date().toISOString().split("T")[0]}
-                    onChange={(e) => {
-                      if (e.target.value) {
-                        const [year, month, day] = e.target.value.split("-")
-                        const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
-                        const monthName = months[parseInt(month, 10) - 1]
-                        const formatted = `${parseInt(day, 10)} ${monthName}`
-                        setSelectedDate(formatted)
-                      }
-                    }}
-                    onClick={(e) => {
-                      try {
-                        if ("showPicker" in e.currentTarget) {
-                          e.currentTarget.showPicker()
-                        }
-                      } catch (err) {}
-                    }}
-                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-30 block"
-                    title="Seleccionar cualquier fecha futura"
-                  />
+            {/* Date and Range Selection */}
+            {isHotelService ? (
+              <div className="space-y-3 bg-muted/50 p-4 rounded-2xl border border-border">
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                    <Calendar className="w-4 h-4 text-primary" />
+                    Estancia (Check-in / Check-out)
+                  </label>
+                  <Badge variant="secondary" className="text-xs font-extrabold text-primary bg-primary/10 border border-primary/20">
+                    {nightsCount} {nightsCount === 1 ? "Noche" : "Noches"}
+                  </Badge>
                 </div>
 
-                {upcomingDates.map((d, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setSelectedDate(d.formatted)}
-                    className={cn(
-                      "flex flex-col items-center px-4 py-3 rounded-xl min-w-[72px] border transition-all shadow-sm shrink-0",
-                      selectedDate === d.formatted
-                        ? "bg-primary text-primary-foreground border-primary font-semibold ring-2 ring-primary/30"
-                        : "bg-card text-foreground border-border hover:bg-muted/80",
-                    )}
-                  >
-                    <span className={cn("text-xs font-medium uppercase", selectedDate === d.formatted ? "text-primary-foreground/90" : "text-muted-foreground")}>
-                      {d.day}
-                    </span>
-                    <span className="text-lg font-bold my-0.5">{d.date}</span>
-                    <span className={cn("text-xs font-medium", selectedDate === d.formatted ? "text-primary-foreground/90" : "text-muted-foreground")}>
-                      {d.month}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] font-medium text-muted-foreground block mb-1">Entrada (Check-in)</label>
+                    <input
+                      type="date"
+                      min={todayIso}
+                      value={checkIn}
+                      onChange={(e) => {
+                        const newIn = e.target.value
+                        setCheckIn(newIn)
+                        if (new Date(checkOut) <= new Date(newIn)) {
+                          const nextDay = new Date(newIn)
+                          nextDay.setDate(nextDay.getDate() + 1)
+                          setCheckOut(nextDay.toISOString().split("T")[0])
+                        }
+                      }}
+                      className="w-full h-11 px-3 rounded-xl bg-card border border-border text-xs font-semibold text-foreground focus:ring-2 focus:ring-primary outline-none"
+                    />
+                  </div>
 
-            {/* Time Selection */}
-            <div>
-              <label className="text-sm font-medium text-foreground mb-2 block">
-                <Clock className="w-4 h-4 inline mr-2 text-primary" />
-                Seleccionar hora
-              </label>
-              <div className="grid grid-cols-4 gap-2">
-                {timeSlots.map((slot) => (
-                  <button
-                    key={slot.value}
-                    onClick={() => setSelectedTime(slot.value)}
-                    className={cn(
-                      "py-2.5 px-2 rounded-xl text-xs font-semibold border transition-all shadow-sm text-center",
-                      selectedTime === slot.value
-                        ? "bg-primary text-primary-foreground border-primary ring-2 ring-primary/30"
-                        : "bg-card text-foreground border-border hover:bg-muted/80",
-                    )}
-                  >
-                    {slot.label}
-                  </button>
-                ))}
+                  <div>
+                    <label className="text-[11px] font-medium text-muted-foreground block mb-1">Salida (Check-out)</label>
+                    <input
+                      type="date"
+                      min={checkIn}
+                      value={checkOut}
+                      onChange={(e) => setCheckOut(e.target.value)}
+                      className="w-full h-11 px-3 rounded-xl bg-card border border-border text-xs font-semibold text-foreground focus:ring-2 focus:ring-primary outline-none"
+                    />
+                  </div>
+                </div>
+
+                {service.blocked_dates && service.blocked_dates.length > 0 && (
+                  <p className="text-[11px] text-amber-600 font-medium pt-1">
+                    ⚠️ Este hospedaje cuenta con {service.blocked_dates.length} fecha(s) no disponibles bloqueadas por el hotelero.
+                  </p>
+                )}
               </div>
-            </div>
+            ) : (
+              <>
+                {/* Date Selection */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                      <Calendar className="w-4 h-4 text-primary" />
+                      Seleccionar fecha
+                    </label>
+
+                    {/* Visible Future Date Picker Button in Header */}
+                    <div className="relative inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/30 hover:bg-primary/20 transition-all cursor-pointer shadow-xs group">
+                      <Calendar className="w-3.5 h-3.5 text-primary group-hover:scale-110 transition-transform" />
+                      <span className="text-xs font-bold text-primary">
+                        {upcomingDates.some((d) => d.formatted === selectedDate) ? "Elegir otra fecha" : `📅 ${selectedDate}`}
+                      </span>
+                      <input
+                        type="date"
+                        min={new Date().toISOString().split("T")[0]}
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            const [year, month, day] = e.target.value.split("-")
+                            const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+                            const monthName = months[parseInt(month, 10) - 1]
+                            const formatted = `${parseInt(day, 10)} ${monthName}`
+                            setSelectedDate(formatted)
+                          }
+                        }}
+                        onClick={(e) => {
+                          try {
+                            if ("showPicker" in e.currentTarget) {
+                              e.currentTarget.showPicker()
+                            }
+                          } catch (err) {}
+                        }}
+                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-30 block"
+                        title="Haz clic para abrir el calendario y elegir cualquier fecha futura"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Quick Date Pills Horizontal Slider */}
+                  <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none items-center">
+                    {/* Custom Future Date Pill placed FIRST so it's always immediately visible */}
+                    <div className="relative min-w-[76px] h-[72px] flex flex-col items-center justify-center p-2 rounded-xl border-2 border-dashed border-primary/50 bg-primary/10 hover:bg-primary/20 transition-all text-center cursor-pointer group shrink-0">
+                      <Calendar className="w-5 h-5 text-primary mb-0.5 group-hover:scale-110 transition-transform" />
+                      <span className="text-[10px] font-black text-primary leading-tight uppercase">Otra fecha</span>
+                      <span className="text-[9px] text-primary/80 font-medium">Calendario</span>
+                      <input
+                        type="date"
+                        min={new Date().toISOString().split("T")[0]}
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            const [year, month, day] = e.target.value.split("-")
+                            const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+                            const monthName = months[parseInt(month, 10) - 1]
+                            const formatted = `${parseInt(day, 10)} ${monthName}`
+                            setSelectedDate(formatted)
+                          }
+                        }}
+                        onClick={(e) => {
+                          try {
+                            if ("showPicker" in e.currentTarget) {
+                              e.currentTarget.showPicker()
+                            }
+                          } catch (err) {}
+                        }}
+                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-30 block"
+                        title="Seleccionar cualquier fecha futura"
+                      />
+                    </div>
+
+                    {upcomingDates.map((d, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setSelectedDate(d.formatted)}
+                        className={cn(
+                          "flex flex-col items-center px-4 py-3 rounded-xl min-w-[72px] border transition-all shadow-sm shrink-0",
+                          selectedDate === d.formatted
+                            ? "bg-primary text-primary-foreground border-primary font-semibold ring-2 ring-primary/30"
+                            : "bg-card text-foreground border-border hover:bg-muted/80",
+                        )}
+                      >
+                        <span className={cn("text-xs font-medium uppercase", selectedDate === d.formatted ? "text-primary-foreground/90" : "text-muted-foreground")}>
+                          {d.day}
+                        </span>
+                        <span className="text-lg font-bold my-0.5">{d.date}</span>
+                        <span className={cn("text-xs font-medium", selectedDate === d.formatted ? "text-primary-foreground/90" : "text-muted-foreground")}>
+                          {d.month}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Time Selection */}
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-2 block">
+                    <Clock className="w-4 h-4 inline mr-2 text-primary" />
+                    Seleccionar hora
+                  </label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {timeSlots.map((slot) => (
+                      <button
+                        key={slot.value}
+                        onClick={() => setSelectedTime(slot.value)}
+                        className={cn(
+                          "py-2.5 px-2 rounded-xl text-xs font-semibold border transition-all shadow-sm text-center",
+                          selectedTime === slot.value
+                            ? "bg-primary text-primary-foreground border-primary ring-2 ring-primary/30"
+                            : "bg-card text-foreground border-border hover:bg-muted/80",
+                        )}
+                      >
+                        {slot.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
 
             {/* Total Preview Summary */}
             <div className="bg-primary/5 border border-primary/20 rounded-xl p-3.5 flex items-center justify-between shadow-xs">
               <div>
                 <span className="text-xs text-muted-foreground font-medium block">Total a reservar</span>
                 <span className="text-2xl font-black text-primary">
-                  ${(Number(service.price) * guests).toFixed(2)}
+                  ${calculateTotal().toFixed(2)}
                 </span>
               </div>
               <div className="text-right text-xs text-muted-foreground font-medium">
-                {guests} {guests === 1 ? "persona" : "personas"} × ${service.price}
+                {isHotelService ? (
+                  <span>{nightsCount} {nightsCount === 1 ? "noche" : "noches"} × ${service.price}</span>
+                ) : (
+                  <span>{guests} {guests === 1 ? "persona" : "personas"} × ${service.price}</span>
+                )}
               </div>
             </div>
 

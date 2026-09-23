@@ -50,13 +50,14 @@ export interface Rating {
 export interface Service {
   id: number
   name: string
-  nombre?: string // <-- AÃ‘ADIR ESTO
+  nombre?: string // <-- AÑADIR ESTO
   category: string
+  categoria?: { id: number; nombre: string; permite_rango_fechas?: boolean }
   location: string
   rating: number
   reviews: number
   price: number
-  precio_base?: string // <-- AÃ‘ADIR ESTO
+  precio_base?: string // <-- AÑADIR ESTO
   image: string
   isRemate?: boolean
   discount?: number
@@ -64,10 +65,11 @@ export interface Service {
   hasActivePool?: boolean
   spotsLeft: number
   description?: string
-  descripcion?: string // <-- AÃ‘ADIR ESTO
+  descripcion?: string // <-- AÑADIR ESTO
   capacityMin?: number
   capacityMax?: number
   extras?: { name: string; price: number }[]
+  blocked_dates?: string[]
   ratings?: Rating[]
   routes?: { id: number; name: string }[]
   linkTypes?: ("oferta" | "descuento" | "feriado")[]
