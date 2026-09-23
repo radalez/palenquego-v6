@@ -306,11 +306,16 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
 
             {/* Date Selection */}
             <div>
-              <label className="text-sm font-medium text-foreground mb-2 block">
-                <Calendar className="w-4 h-4 inline mr-2 text-primary" />
-                Seleccionar fecha
-              </label>
-              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium text-foreground flex items-center">
+                  <Calendar className="w-4 h-4 inline mr-2 text-primary" />
+                  Seleccionar fecha
+                </label>
+                <span className="text-xs text-primary font-medium flex items-center gap-1">
+                  {selectedDate ? `Seleccionado: ${selectedDate}` : "Elige una fecha"}
+                </span>
+              </div>
+              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none items-center">
                 {upcomingDates.map((d, i) => (
                   <button
                     key={i}
@@ -331,6 +336,28 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
                     </span>
                   </button>
                 ))}
+
+                {/* Custom Future Date Selector Pill */}
+                <div className="relative min-w-[80px] h-[72px] flex flex-col items-center justify-center p-2 rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 hover:bg-primary/10 transition-all text-center cursor-pointer group shrink-0">
+                  <input
+                    type="date"
+                    min={new Date().toISOString().split("T")[0]}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        const [year, month, day] = e.target.value.split("-")
+                        const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+                        const monthName = months[parseInt(month, 10) - 1]
+                        const formatted = `${parseInt(day, 10)} ${monthName}`
+                        setSelectedDate(formatted)
+                      }
+                    }}
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
+                    title="Seleccionar cualquier fecha futura"
+                  />
+                  <Calendar className="w-5 h-5 text-primary mb-1 group-hover:scale-110 transition-transform" />
+                  <span className="text-[11px] font-extrabold text-primary leading-tight">Más fechas</span>
+                  <span className="text-[9px] text-muted-foreground">Calendario</span>
+                </div>
               </div>
             </div>
 
