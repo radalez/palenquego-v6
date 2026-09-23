@@ -59,12 +59,17 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
   const [step, setStep] = useState<BookingStep>("details")
   const [guests, setGuests] = useState(1)
 
-  // Detect whether category allows multi-day range bookings (e.g. Hotelería)
+  // Detect whether category is an actual Hotel / Hospedaje category that allows multi-day range bookings
+  const catName = (service.category || service.categoria?.nombre || "").toLowerCase()
+  const isHotelCategory = catName.includes("hotel") || catName.includes("hospedaj") || catName.includes("cabaña") || catName.includes("villa")
   const isHotelService = Boolean(
-    service.categoria?.permite_rango_fechas ||
-    service.category?.toLowerCase().includes("hotel") ||
-    service.category?.toLowerCase().includes("hospedaje")
+    (service.categoria?.permite_rango_fechas && isHotelCategory) || isHotelCategory
   )
+
+  const unitSingular = service.categoria?.unidad_singular || "Unidad"
+  const unitPlural = service.categoria?.unidad_plural || "Unidades"
+  const stockQty = service.stock_unidades ?? service.spotsLeft ?? 1
+  const stockLabel = stockQty === 1 ? unitSingular : unitPlural
 
   const todayIso = new Date().toISOString().split("T")[0]
   const tomorrowDate = new Date()
@@ -310,13 +315,13 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
                   <span className="text-sm font-medium">{service.rating}</span>
                 </div>
                 <p className="text-lg font-bold text-primary mt-1">
-                  ${service.price} {isHotelService ? "/ persona / noche" : "/ persona"}
+                  ${service.price} {isHotelService ? "/ persona / noche" : service.categoria?.unidad_singular ? `/ ${service.categoria.unidad_singular.toLowerCase()}` : "/ persona"}
                 </p>
 
                 {/* Stock Badge */}
                 <div className="inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 text-xs font-bold">
                   <Building2 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Stock disponible: <strong>{service.stock_unidades ?? service.spotsLeft ?? 1}</strong> {((service.stock_unidades ?? service.spotsLeft ?? 1) === 1) ? "unidad" : "unidades"}</span>
+                  <span>Stock disponible: <strong>{stockQty}</strong> {stockLabel}</span>
                 </div>
               </div>
             </div>
@@ -346,10 +351,10 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
               <div className="flex items-center justify-between mb-2">
                 <label className="text-sm font-medium text-foreground flex items-center">
                   <Users className="w-4 h-4 inline mr-2 text-primary" />
-                  Número de personas
+                  {isHotelService ? "Número de huéspedes / personas" : `Cantidad (${unitPlural.toLowerCase()})`}
                 </label>
                 {service.capacityMax && (
-                  <span className="text-xs text-muted-foreground">Máx. {service.capacityMax} personas</span>
+                  <span className="text-xs text-muted-foreground">Máx. {service.capacityMax}</span>
                 )}
               </div>
               <div className="flex items-center gap-4 bg-muted/70 border border-border rounded-xl p-3">
@@ -363,7 +368,7 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
                 <div className="flex-1 text-center">
                   <span className="text-2xl font-extrabold text-foreground block">{guests}</span>
                   <span className="text-[11px] text-muted-foreground font-medium">
-                    {guests === 1 ? "persona" : "personas"}
+                    {guests === 1 ? (isHotelService ? "persona" : unitSingular.toLowerCase()) : (isHotelService ? "personas" : unitPlural.toLowerCase())}
                   </span>
                 </div>
                 <button

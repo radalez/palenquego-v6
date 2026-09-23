@@ -52,7 +52,7 @@ export interface Service {
   name: string
   nombre?: string // <-- AÑADIR ESTO
   category: string
-  categoria?: { id: number; nombre: string; permite_rango_fechas?: boolean }
+  categoria?: { id: number; nombre: string; permite_rango_fechas?: boolean; unidad_singular?: string; unidad_plural?: string }
   location: string
   rating: number
   reviews: number
