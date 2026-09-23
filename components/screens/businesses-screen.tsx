@@ -33,10 +33,25 @@ const categories = [
   { id: "hotel", label: "Hoteles", icon: Bed },
   { id: "surf", label: "Surf", icon: Waves },
   { id: "cafe", label: "Café", icon: Coffee },
-  { id: "eco", label: "Eco Tours", icon: TreePine },
-  { id: "food", label: "Comida", icon: Utensils },
+  { id: "eco", label: "Ecoturismo", icon: TreePine },
+  { id: "food", label: "Gastronomía", icon: Utensils },
+  { id: "playa", label: "Playa", icon: Waves },
   { id: "events", label: "Eventos", icon: Ticket },
 ]
+
+function matchesBusinessCategory(businessCategory: string = "", selectedCategory: string): boolean {
+  if (selectedCategory === "all") return true
+  const cat = businessCategory.toLowerCase()
+  switch (selectedCategory) {
+    case "hotel": return cat.includes("hotel") || cat.includes("hospedaj")
+    case "surf": return cat.includes("surf")
+    case "cafe": return cat.includes("café") || cat.includes("cafe")
+    case "eco": return cat.includes("eco") || cat.includes("tour")
+    case "food": return cat.includes("gastro") || cat.includes("restauran") || cat.includes("comida")
+    case "playa": return cat.includes("playa")
+    default: return cat.includes(selectedCategory.toLowerCase())
+  }
+}
 
 interface BusinessesScreenProps {
   onNavigate?: (tab: string) => void
@@ -58,7 +73,7 @@ export function BusinessesScreen({ onNavigate }: BusinessesScreenProps) {
 
   const filteredBusinesses = businesses.filter((business) => {
     // Category filter
-    if (selectedCategory !== "all" && business.category !== selectedCategory) {
+    if (selectedCategory !== "all" && !matchesBusinessCategory(business.category, selectedCategory)) {
       return false
     }
 

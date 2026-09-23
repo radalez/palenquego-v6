@@ -287,6 +287,7 @@ interface AppState {
   addPool: (pool: Omit<Pool, "id" | "createdAt">) => Pool
   joinPool: (poolId: number) => Promise<boolean>
   addBooking: (booking: Omit<Booking, "id" | "qrCode">) => Booking
+  updateBookingStatus: (bookingId: number, status: "PENDIENTE" | "CONFIRMADO" | "COMPLETADO") => void
   updatePoolStatus: (poolId: number, status: Pool["status"]) => void  
   login: (username: string, password: string) => Promise<boolean>   
   loginWithGoogle: (token: string) => Promise<boolean>
@@ -680,6 +681,11 @@ export const useAppStore = create<AppState>()(
         set((state) => ({ bookings: [...state.bookings, newBooking] }))
         return newBooking
       },
+
+      updateBookingStatus: (bookingId, status) =>
+        set((state) => ({
+          bookings: state.bookings.map((b) => (b.id === bookingId ? { ...b, status } : b)),
+        })),
 
       updatePoolStatus: (poolId, status) =>
         set((state) => ({

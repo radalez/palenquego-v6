@@ -35,10 +35,40 @@ const categories = [
   { id: "hotel", label: "Hoteles", icon: Bed },
   { id: "surf", label: "Surf", icon: Waves },
   { id: "cafe", label: "Café", icon: Coffee },
-  { id: "eco", label: "Eco Tours", icon: TreePine },
-  { id: "food", label: "Comida", icon: Utensils },
-  { id: "events", label: "Eventos", icon: Ticket },
+  { id: "eco", label: "Ecoturismo", icon: TreePine },
+  { id: "food", label: "Gastronomía", icon: Utensils },
+  { id: "playa", label: "Playa", icon: Waves },
+  { id: "spa", label: "Spa", icon: Heart },
+  { id: "aventura", label: "Aventura", icon: Ticket },
 ]
+
+function matchesCategory(service: Service, selectedCategory: string): boolean {
+  if (selectedCategory === "all") return true
+
+  const catName = (service.category || service.categoria?.nombre || "").toLowerCase()
+  const catId = service.categoria?.id
+
+  switch (selectedCategory) {
+    case "hotel":
+      return catName.includes("hotel") || catName.includes("hospedaj") || catId === 5
+    case "surf":
+      return catName.includes("surf") || catId === 7
+    case "cafe":
+      return catName.includes("café") || catName.includes("cafe") || catId === 10
+    case "eco":
+      return catName.includes("eco") || catName.includes("tour") || catId === 4 || catId === 3
+    case "food":
+      return catName.includes("gastro") || catName.includes("restauran") || catName.includes("comida") || catId === 6 || catId === 1
+    case "playa":
+      return catName.includes("playa") || catId === 8
+    case "spa":
+      return catName.includes("spa") || catId === 2
+    case "aventura":
+      return catName.includes("aventura") || catId === 9
+    default:
+      return catName.includes(selectedCategory.toLowerCase())
+  }
+}
 
 interface MarketplaceScreenProps {
   onNavigate?: (tab: string) => void
@@ -100,7 +130,8 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
     userFavorites,
     fetchServices,
     fetchBusinesses,
-    isLoading
+    isLoading,
+    bookings,
   } = useAppStore()
 
   useEffect(() => {
@@ -108,9 +139,11 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
     fetchBusinesses() // Jala tiendas de tu servidor
   }, [])
 
+  const pendingBookings = bookings.filter((b) => b.status === "PENDIENTE")
+
   const filteredServices = services.filter((service) => {
-    // Filtro de categoría
-    if (selectedCategory !== "all" && service.category !== selectedCategory) {
+    // Filtro de categoría flexible
+    if (selectedCategory !== "all" && !matchesCategory(service, selectedCategory)) {
       return false
     }
 
@@ -136,6 +169,32 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
   return (
     <div className="flex flex-col">
       <HeaderWithMenu title="Palenque Go" onNavigate={onNavigate} />
+
+      {/* Banner de Reservas Pendientes de Pago */}
+      {pendingBookings.length > 0 && (
+        <div className="mx-4 mt-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-between gap-3 shadow-sm animate-in fade-in duration-300">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-600 font-bold shrink-0">
+              <Ticket className="w-5 h-5 text-amber-600" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-foreground">
+                Tienes {pendingBookings.length} reserva{pendingBookings.length > 1 ? "s" : ""} pendiente{pendingBookings.length > 1 ? "s" : ""} de pago
+              </p>
+              <p className="text-[11px] text-muted-foreground line-clamp-1">
+                {pendingBookings[0].service?.name || "Servicio"} (${pendingBookings[0].totalPrice})
+              </p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            className="bg-amber-600 hover:bg-amber-700 text-white text-xs h-8 px-3 rounded-lg font-semibold shrink-0"
+            onClick={() => onNavigate?.("profile")}
+          >
+            Pagar / Ver
+          </Button>
+        </div>
+      )}
 
       <div className="flex justify-between items-center px-4 py-4">
         <div className="w-10 h-10 rounded-full bg-primary-foreground/20 flex items-center justify-center">
