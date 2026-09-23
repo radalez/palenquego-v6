@@ -17,11 +17,48 @@ interface BookingModalProps {
 
 type BookingStep = "details" | "extras" | "confirm" | "success"
 
+// Helper to generate dynamic upcoming dates starting from today
+const generateUpcomingDates = (count = 7) => {
+  const daysOfWeek = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
+  const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+  const result = []
+  const today = new Date()
+
+  for (let i = 0; i < count; i++) {
+    const dateObj = new Date(today)
+    dateObj.setDate(today.getDate() + i)
+    const dayName = i === 0 ? "Hoy" : daysOfWeek[dateObj.getDay()]
+    const dateNum = String(dateObj.getDate())
+    const monthName = months[dateObj.getMonth()]
+    const formatted = `${dateNum} ${monthName}`
+    result.push({
+      day: dayName,
+      date: dateNum,
+      month: monthName,
+      formatted,
+      isToday: i === 0,
+    })
+  }
+  return result
+}
+
+const upcomingDates = generateUpcomingDates(7)
+
+const timeSlots = [
+  { value: "09:00", label: "09:00 AM" },
+  { value: "10:00", label: "10:00 AM" },
+  { value: "11:00", label: "11:00 AM" },
+  { value: "14:00", label: "02:00 PM" },
+  { value: "15:00", label: "03:00 PM" },
+  { value: "16:00", label: "04:00 PM" },
+  { value: "17:00", label: "05:00 PM" },
+]
+
 export function BookingModal({ service, onClose }: BookingModalProps) {
   const [step, setStep] = useState<BookingStep>("details")
   const [guests, setGuests] = useState(1)
-  const [selectedDate, setSelectedDate] = useState("")
-  const [selectedTime, setSelectedTime] = useState("")
+  const [selectedDate, setSelectedDate] = useState(upcomingDates[0]?.formatted || "")
+  const [selectedTime, setSelectedTime] = useState("10:00")
   
   const [selectedExtras, setSelectedExtras] = useState<Record<string, number>>({})
   const [bookingResult, setBookingResult] = useState<{ qrCode: string } | null>(null)
@@ -52,16 +89,6 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
   
   // Check for available pools for this service
   const availablePools = pools.filter((p) => p.serviceId === service.id && p.status === "ABIERTO")
-
-  const dates = [
-    { day: "Hoy", date: "15", month: "Ene" },
-    { day: "Mar", date: "16", month: "Ene" },
-    { day: "Mie", date: "17", month: "Ene" },
-    { day: "Jue", date: "18", month: "Ene" },
-    { day: "Vie", date: "19", month: "Ene" },
-  ]
-
-  const times = ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00"]
 
   const updateExtraQuantity = (extraName: string, delta: number) => {
     setSelectedExtras((prev) => {
@@ -101,8 +128,9 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
   const formatWhatsappLink = (phone?: string) => {
     if (!phone) return ""
     const clean = phone.replace(/[^0-9]/g, "")
+    const defaultDate = upcomingDates[0]?.formatted || "Hoy"
     const msg = encodeURIComponent(
-      `¡Hola! Acabo de hacer la reserva #${bookingResult?.qrCode || ""} para "${service.name}" el ${selectedDate || "15 Ene"} a las ${selectedTime || "10:00"} (${guests} personas). Quisiera coordinar los detalles.`
+      `¡Hola! Acabo de hacer la reserva #${bookingResult?.qrCode || ""} para "${service.name}" el ${selectedDate || defaultDate} a las ${selectedTime || "10:00"} (${guests} personas). Quisiera coordinar los detalles.`
     )
     return `https://wa.me/${clean}?text=${msg}`
   }
@@ -131,6 +159,8 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
     }
     setPhoneError("")
 
+    const defaultDate = upcomingDates[0]?.formatted || "Hoy"
+
     // 1. Cálculo del total real
     const total = joinedPool 
       ? Math.round((Number(joinedPool.totalPrice) ?? 0) / (Number(joinedPool.targetMembers) ?? 1)) 
@@ -143,7 +173,7 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
 
     // 3. Disparar al backend (y registrar inmediatamente en el CRM Invictus)
     const res = await createServiceBooking(service.id, {
-      date: selectedDate || "15 Ene",
+      date: selectedDate || defaultDate,
       time: selectedTime || "10:00",
       guests: guests,
       extras: extrasSummary,
@@ -161,7 +191,7 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
     // 4. Registro local
     addBooking({
       service,
-      date: selectedDate || "15 Ene",
+      date: selectedDate || defaultDate,
       time: selectedTime || "10:00",
       guests: guests,
       extras: extrasSummary,
@@ -241,25 +271,35 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
 
             {/* Guests */}
             <div>
-              <label className="text-sm font-medium text-foreground mb-2 block">
-                <Users className="w-4 h-4 inline mr-2" />
-                Numero de personas
-              </label>
-              <div className="flex items-center gap-4 bg-muted rounded-xl p-3">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium text-foreground flex items-center">
+                  <Users className="w-4 h-4 inline mr-2 text-primary" />
+                  Número de personas
+                </label>
+                {service.capacityMax && (
+                  <span className="text-xs text-muted-foreground">Máx. {service.capacityMax} personas</span>
+                )}
+              </div>
+              <div className="flex items-center gap-4 bg-muted/70 border border-border rounded-xl p-3">
                 <button
                   onClick={() => setGuests(Math.max(1, guests - 1))}
-                  className="w-10 h-10 rounded-full bg-card flex items-center justify-center"
+                  className="w-10 h-10 rounded-lg bg-card border border-border flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-40"
                   disabled={guests <= 1}
                 >
                   <Minus className="w-5 h-5 text-foreground" />
                 </button>
-                <span className="text-2xl font-bold text-foreground flex-1 text-center">{guests}</span>
+                <div className="flex-1 text-center">
+                  <span className="text-2xl font-extrabold text-foreground block">{guests}</span>
+                  <span className="text-[11px] text-muted-foreground font-medium">
+                    {guests === 1 ? "persona" : "personas"}
+                  </span>
+                </div>
                 <button
                   onClick={() => setGuests(Math.min(service.capacityMax || 10, guests + 1))}
-                  className="w-10 h-10 rounded-full bg-card flex items-center justify-center"
+                  className="w-10 h-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors disabled:opacity-40"
                   disabled={guests >= (service.capacityMax || 10)}
                 >
-                  <Plus className="w-5 h-5 text-foreground" />
+                  <Plus className="w-5 h-5" />
                 </button>
               </div>
             </div>
@@ -267,24 +307,28 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
             {/* Date Selection */}
             <div>
               <label className="text-sm font-medium text-foreground mb-2 block">
-                <Calendar className="w-4 h-4 inline mr-2" />
+                <Calendar className="w-4 h-4 inline mr-2 text-primary" />
                 Seleccionar fecha
               </label>
-              <div className="flex gap-2 overflow-x-auto pb-2">
-                {dates.map((d, i) => (
+              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+                {upcomingDates.map((d, i) => (
                   <button
                     key={i}
-                    onClick={() => setSelectedDate(`${d.date} ${d.month}`)}
+                    onClick={() => setSelectedDate(d.formatted)}
                     className={cn(
-                      "flex flex-col items-center px-4 py-3 rounded-xl min-w-[70px] transition-all",
-                      selectedDate === `${d.date} ${d.month}`
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground",
+                      "flex flex-col items-center px-4 py-3 rounded-xl min-w-[72px] border transition-all shadow-sm",
+                      selectedDate === d.formatted
+                        ? "bg-primary text-primary-foreground border-primary font-semibold ring-2 ring-primary/30"
+                        : "bg-card text-foreground border-border hover:bg-muted/80",
                     )}
                   >
-                    <span className="text-xs">{d.day}</span>
-                    <span className="text-lg font-bold">{d.date}</span>
-                    <span className="text-xs">{d.month}</span>
+                    <span className={cn("text-xs font-medium uppercase", selectedDate === d.formatted ? "text-primary-foreground/90" : "text-muted-foreground")}>
+                      {d.day}
+                    </span>
+                    <span className="text-lg font-bold my-0.5">{d.date}</span>
+                    <span className={cn("text-xs font-medium", selectedDate === d.formatted ? "text-primary-foreground/90" : "text-muted-foreground")}>
+                      {d.month}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -293,28 +337,43 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
             {/* Time Selection */}
             <div>
               <label className="text-sm font-medium text-foreground mb-2 block">
-                <Clock className="w-4 h-4 inline mr-2" />
+                <Clock className="w-4 h-4 inline mr-2 text-primary" />
                 Seleccionar hora
               </label>
-              <div className="grid grid-cols-3 gap-2">
-                {times.map((time) => (
+              <div className="grid grid-cols-4 gap-2">
+                {timeSlots.map((slot) => (
                   <button
-                    key={time}
-                    onClick={() => setSelectedTime(time)}
+                    key={slot.value}
+                    onClick={() => setSelectedTime(slot.value)}
                     className={cn(
-                      "py-3 rounded-xl text-sm font-medium transition-all",
-                      selectedTime === time ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+                      "py-2.5 px-2 rounded-xl text-xs font-semibold border transition-all shadow-sm text-center",
+                      selectedTime === slot.value
+                        ? "bg-primary text-primary-foreground border-primary ring-2 ring-primary/30"
+                        : "bg-card text-foreground border-border hover:bg-muted/80",
                     )}
                   >
-                    {time}
+                    {slot.label}
                   </button>
                 ))}
               </div>
             </div>
 
+            {/* Total Preview Summary */}
+            <div className="bg-primary/5 border border-primary/20 rounded-xl p-3.5 flex items-center justify-between shadow-xs">
+              <div>
+                <span className="text-xs text-muted-foreground font-medium block">Total a reservar</span>
+                <span className="text-2xl font-black text-primary">
+                  ${(Number(service.price) * guests).toFixed(2)}
+                </span>
+              </div>
+              <div className="text-right text-xs text-muted-foreground font-medium">
+                {guests} {guests === 1 ? "persona" : "personas"} × ${service.price}
+              </div>
+            </div>
+
             {/* Continue Button */}
             <Button
-              className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-lg font-semibold"
+              className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-lg font-semibold shadow-md transition-all"
               disabled={!selectedDate || !selectedTime}
               onClick={() => setStep(service.extras?.length ? "extras" : "confirm")}
             >
