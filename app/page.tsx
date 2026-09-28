@@ -73,9 +73,9 @@ export default function Home() {
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [showChoferModal, setShowChoferModal] = useState(false)
 
-  // Mostrar modal de bienvenida explicativo a choferes con KYC pendiente
+  // Mostrar modal de bienvenida explicativo únicamente a choferes con KYC sin verificar (UNVERIFIED)
   useEffect(() => {
-    if (currentUser?.tipo === 'CHOFER' && currentUser?.kyc_status !== 'APPROVED') {
+    if (currentUser?.tipo === 'CHOFER' && (currentUser?.kyc_status === 'UNVERIFIED' || !currentUser?.kyc_status)) {
       const dismissed = sessionStorage.getItem('chofer-modal-dismissed')
       if (!dismissed) {
         setShowChoferModal(true)

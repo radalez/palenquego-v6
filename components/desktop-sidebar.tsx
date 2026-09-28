@@ -61,9 +61,12 @@ export function DesktopSidebar({ activeTab, onNavigate }: DesktopSidebarProps) {
               <span className="text-[11px] font-black uppercase tracking-wider text-[#105238]">Modo Chofer</span>
               <span className={cn(
                 "text-[10px] font-black px-2 py-0.5 rounded-full uppercase",
-                currentUser.kyc_status === 'APPROVED' ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
+                currentUser.kyc_status === 'APPROVED' ? "bg-emerald-100 text-emerald-800" :
+                currentUser.kyc_status === 'PENDING' ? "bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300" :
+                "bg-amber-100 text-amber-800"
               )}>
-                {currentUser.kyc_status === 'APPROVED' ? 'Aprobado' : 'KYC Requerido'}
+                {currentUser.kyc_status === 'APPROVED' ? 'Aprobado' :
+                 currentUser.kyc_status === 'PENDING' ? 'En Revisión' : 'KYC Requerido'}
               </span>
             </div>
             <button

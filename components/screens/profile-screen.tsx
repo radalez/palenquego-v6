@@ -143,10 +143,19 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
                 <h2 className="text-lg font-semibold text-foreground">{currentUser.name}</h2>
                 <p className="text-sm text-muted-foreground">{currentUser.tipo}</p>
                 {currentUser.tipo === "CHOFER" && (
-                  <div className="flex items-center gap-1 mt-1">
-                    <div className={cn("w-2 h-2 rounded-full", currentUser.kyc_status === 'APPROVED' ? "bg-green-500" : "bg-amber-500")} />
-                    <span className={cn("text-xs font-semibold", currentUser.kyc_status === 'APPROVED' ? "text-green-600" : "text-amber-600")}>
-                      {currentUser.kyc_status === 'APPROVED' ? 'Verificado' : 'No Verificado'}
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <div className={cn(
+                      "w-2 h-2 rounded-full",
+                      currentUser.kyc_status === 'APPROVED' ? "bg-emerald-500" :
+                      currentUser.kyc_status === 'PENDING' ? "bg-blue-500 animate-pulse" : "bg-red-500"
+                    )} />
+                    <span className={cn(
+                      "text-xs font-bold",
+                      currentUser.kyc_status === 'APPROVED' ? "text-emerald-600" :
+                      currentUser.kyc_status === 'PENDING' ? "text-blue-600 dark:text-blue-400" : "text-red-500"
+                    )}>
+                      {currentUser.kyc_status === 'APPROVED' ? 'Verificado' :
+                       currentUser.kyc_status === 'PENDING' ? 'En Revisión' : 'No Verificado'}
                     </span>
                   </div>
                 )}
@@ -159,12 +168,17 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
 
           {/* Banner de Modo Conductor */}
           {currentUser.tipo === "CHOFER" && (
-            <div className="mt-4 bg-white/95 dark:bg-card/95 backdrop-blur-sm rounded-2xl p-4 md:p-5 border-2 border-emerald-500/30 shadow-md">
+            <div className={cn(
+              "mt-4 bg-white/95 dark:bg-card/95 backdrop-blur-sm rounded-2xl p-4 md:p-5 border-2 shadow-md transition-all",
+              currentUser.kyc_status === 'APPROVED' ? "border-emerald-500/40" :
+              currentUser.kyc_status === 'PENDING' ? "border-blue-500/40 bg-blue-50/20 dark:bg-blue-950/20" : "border-amber-500/30"
+            )}>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-start gap-3.5">
                   <div className={cn(
                     "w-12 h-12 rounded-xl flex items-center justify-center shrink-0",
-                    currentUser.kyc_status === 'APPROVED' ? "bg-[#105238] text-white" : "bg-amber-100 text-amber-700"
+                    currentUser.kyc_status === 'APPROVED' ? "bg-[#105238] text-white" :
+                    currentUser.kyc_status === 'PENDING' ? "bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300" : "bg-amber-100 text-amber-700"
                   )}>
                     <Truck className="w-6 h-6" />
                   </div>
@@ -173,14 +187,18 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
                       <h3 className="font-extrabold text-foreground text-sm md:text-base">Panel de Conductor Oficial</h3>
                       <span className={cn(
                         "text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider",
-                        currentUser.kyc_status === 'APPROVED' ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
+                        currentUser.kyc_status === 'APPROVED' ? "bg-emerald-100 text-emerald-800" :
+                        currentUser.kyc_status === 'PENDING' ? "bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300" : "bg-red-100 text-red-800"
                       )}>
-                        {currentUser.kyc_status === 'APPROVED' ? 'Aprobado' : 'KYC Requerido'}
+                        {currentUser.kyc_status === 'APPROVED' ? 'Aprobado' :
+                         currentUser.kyc_status === 'PENDING' ? 'En Revisión' : 'KYC Requerido'}
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
                       {currentUser.kyc_status === 'APPROVED' 
                         ? "Tu cuenta está aprobada. Ingresa a tu panel de conductor para operar tu vehículo asignado y activar el GPS."
+                        : currentUser.kyc_status === 'PENDING'
+                        ? "Tus documentos han sido recibidos con éxito y están en proceso de validación por tu empresa de transporte o aliado."
                         : "Para comenzar a conducir y recibir rutas, debes completar la verificación de tus documentos (Licencia y Cédula)."}
                     </p>
                   </div>
@@ -189,10 +207,12 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
                   onClick={() => onNavigateToSettings?.("conductor")}
                   className={cn(
                     "w-full sm:w-auto font-bold px-5 py-2.5 rounded-xl text-white shadow-sm shrink-0 text-xs md:text-sm",
-                    currentUser.kyc_status === 'APPROVED' ? "bg-[#105238] hover:bg-[#0c3e2b]" : "bg-amber-600 hover:bg-amber-700"
+                    currentUser.kyc_status === 'APPROVED' ? "bg-[#105238] hover:bg-[#0c3e2b]" :
+                    currentUser.kyc_status === 'PENDING' ? "bg-blue-600 hover:bg-blue-700" : "bg-amber-600 hover:bg-amber-700"
                   )}
                 >
-                  {currentUser.kyc_status === 'APPROVED' ? "Abrir Panel de Chofer →" : "Subir Documentos Ahora →"}
+                  {currentUser.kyc_status === 'APPROVED' ? "Abrir Panel de Chofer →" :
+                   currentUser.kyc_status === 'PENDING' ? "Ver Estado de Documentos →" : "Subir Documentos Ahora →"}
                 </Button>
               </div>
             </div>

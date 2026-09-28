@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Menu, X, Crown, Zap, Star, Gem, LogOut, ChevronRight, CreditCard, Bell, Shield, HelpCircle, Truck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAppStore } from "@/lib/store"
+import { cn } from "@/lib/utils"
 
 interface SidebarMenuProps {
   activeTab: string
@@ -79,8 +80,14 @@ export function SidebarMenu({ activeTab, onNavigate }: SidebarMenuProps) {
             <div className="mb-6 p-3.5 bg-gradient-to-br from-[#105238]/10 to-[#105238]/5 rounded-2xl border-2 border-[#105238]/30 shadow-sm">
               <div className="flex items-center justify-between mb-2 px-1">
                 <span className="text-[11px] font-black uppercase tracking-wider text-[#105238]">Modo Chofer</span>
-                <span className="text-[10px] font-black px-2 py-0.5 rounded-full uppercase bg-emerald-100 text-emerald-800">
-                  {currentUser.kyc_status === 'APPROVED' ? 'Aprobado' : 'KYC Requerido'}
+                <span className={cn(
+                  "text-[10px] font-black px-2 py-0.5 rounded-full uppercase",
+                  currentUser.kyc_status === 'APPROVED' ? "bg-emerald-100 text-emerald-800" :
+                  currentUser.kyc_status === 'PENDING' ? "bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300" :
+                  "bg-amber-100 text-amber-800"
+                )}>
+                  {currentUser.kyc_status === 'APPROVED' ? 'Aprobado' :
+                   currentUser.kyc_status === 'PENDING' ? 'En Revisión' : 'KYC Requerido'}
                 </span>
               </div>
               <button
