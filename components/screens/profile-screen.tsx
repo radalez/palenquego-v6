@@ -23,6 +23,7 @@ import {
   Clock,
   Truck,
   AlertCircle,
+  Store,
 } from "lucide-react"
 import QRCode from "react-qr-code"
 import { Button } from "@/components/ui/button"
@@ -36,15 +37,23 @@ interface ProfileScreenProps {
 }
 
 export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: ProfileScreenProps) {
-  const { currentUser, logout, bookings, pools, userFavorites, recommendations, payServiceWompi } = useAppStore()
+  const { currentUser, logout, bookings, pools, userFavorites, recommendations, payServiceWompi, accessToken } = useAppStore()
   const [selectedQrBooking, setSelectedQrBooking] = useState<Booking | null>(null)
   const [payingWompiId, setPayingWompiId] = useState<number | null>(null)
 
-  const totalSpent = bookings.reduce((acc, b) => acc + b.totalPrice, 0)
+  // Filtrar reservas que pertenecen estrictamente al usuario actual autenticado
+  const userBookings = bookings.filter((b) => {
+    if (!currentUser?.id && !currentUser?.email) return false
+    if (b.userId && currentUser.id && String(b.userId) === String(currentUser.id)) return true
+    if (b.userEmail && currentUser.email && b.userEmail.toLowerCase() === currentUser.email.toLowerCase()) return true
+    return false
+  })
+
+  const totalSpent = userBookings.reduce((acc, b) => acc + b.totalPrice, 0)
   const poolsJoined = pools.filter((p) => (p.members ?? []).some((m) => m.name === currentUser.name)).length
 
   // Sort bookings so PENDIENTE appears first
-  const sortedBookings = [...bookings].sort((a, b) => {
+  const sortedBookings = [...userBookings].sort((a, b) => {
     if (a.status === "PENDIENTE" && b.status !== "PENDIENTE") return -1
     if (a.status !== "PENDIENTE" && b.status === "PENDIENTE") return 1
     return b.id - a.id
@@ -217,6 +226,41 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
               </div>
             </div>
           )}
+
+          {/* Banner de Modo Aliado / Comercio */}
+          {currentUser.tipo === "ALIADO" && (
+            <div className="mt-4 bg-card rounded-2xl p-4 md:p-5 border-2 border-[#105238]/30 shadow-lg">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-start gap-3.5">
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-[#105238] text-white">
+                    <Store className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-extrabold text-foreground text-sm md:text-base">Panel de Aliado Comercial</h3>
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider bg-emerald-100 text-emerald-800">
+                        Aliado Activo
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                      Gestiona tus servicios turísticos, inventario, reservas recibidas y configuración de tu tienda oficial.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => {
+                    const ssoUrl = accessToken 
+                      ? `https://palenquego.com/admin/sso/?token=${accessToken}`
+                      : "https://palenquego.com/admin/";
+                    window.open(ssoUrl, "_blank");
+                  }}
+                  className="w-full sm:w-auto font-bold px-5 py-2.5 rounded-xl text-white shadow-sm shrink-0 text-xs md:text-sm bg-[#105238] hover:bg-[#0c3e2b]"
+                >
+                  Abrir Panel de Negocios →
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -224,7 +268,7 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
       <div className="px-4 -mt-4 w-full max-w-3xl mx-auto">
         <div className="bg-card rounded-2xl p-4 shadow-md border border-border grid grid-cols-3 gap-4">
           <div className="text-center">
-            <p className="text-2xl font-bold text-primary">{bookings.length}</p>
+            <p className="text-2xl font-bold text-primary">{userBookings.length}</p>
             <p className="text-xs text-muted-foreground">Reservas</p>
           </div>
           <div className="text-center border-x border-border">
@@ -243,7 +287,7 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-bold text-muted-foreground tracking-wide">MIS RESERVAS Y ESTANCIAS</h3>
           <Badge variant="outline" className="text-xs bg-muted text-foreground">
-            {bookings.length} {bookings.length === 1 ? "reserva" : "reservas"}
+            {userBookings.length} {userBookings.length === 1 ? "reserva" : "reservas"}
           </Badge>
         </div>
 

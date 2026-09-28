@@ -73,6 +73,30 @@ export default function Home() {
     fetchCurrentUser()
   }, [fetchCurrentUser])
 
+  // Intercepción y cambio infalible de sesión cuando se llega con tokens en la URL (?auth_token=...&refresh_token=...)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const urlParams = new URLSearchParams(window.location.search);
+    const authToken = urlParams.get("auth_token");
+    const refreshToken = urlParams.get("refresh_token");
+
+    if (authToken) {
+      // 1. Purgar completamente la sesión anterior para evitar mezclar usuarios, reservas o estados de chofer
+      useAppStore.getState().logout();
+
+      // 2. Establecer nuevos tokens
+      useAppStore.getState().setTokens(authToken, refreshToken || "");
+
+      // 3. Obtener el perfil del nuevo usuario y limpiar la URL
+      useAppStore.getState().fetchCurrentUser().then(() => {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("auth_token");
+        url.searchParams.delete("refresh_token");
+        window.history.replaceState({}, document.title, url.pathname + (url.search ? url.search : ""));
+      });
+    }
+  }, []);
+
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [authView, setAuthView] = useState<"login" | "register">("register")
   const [showShareModal, setShowShareModal] = useState(false)

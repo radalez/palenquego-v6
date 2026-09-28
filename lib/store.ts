@@ -164,6 +164,8 @@ export interface Transportation {
 
 export interface Booking {
   id: number
+  userId?: number | string
+  userEmail?: string
   service: Service
   date: string
   time: string
@@ -542,9 +544,14 @@ export const useAppStore = create<AppState>()(
           });
           if (res.ok) {
             const data = await res.json();
+            const prevUser = get().currentUser;
+            const isDifferentUser = Boolean(prevUser?.id && Number(prevUser.id) !== Number(data.id));
+
             set(state => ({
+              isAuthenticated: true,
               currentUser: {
                 ...state.currentUser,
+                id: data.id || state.currentUser?.id,
                 name: data.name || state.currentUser?.name,
                 email: data.email || state.currentUser?.email,
                 telefono: data.telefono || state.currentUser?.telefono,
@@ -552,7 +559,11 @@ export const useAppStore = create<AppState>()(
                 kyc_status: data.kyc_status || state.currentUser?.kyc_status,
                 avatar: data.avatar || state.currentUser?.avatar,
                 is_ambassador: Boolean(data.is_ambassador),
-              }
+              },
+              bookings: isDifferentUser ? [] : state.bookings.filter(b => b.userId === data.id || (!b.userId && b.userEmail === data.email)),
+              favorites: isDifferentUser ? [] : state.favorites,
+              userFavorites: isDifferentUser ? [] : state.userFavorites,
+              activeTickets: isDifferentUser ? [] : state.activeTickets,
             }));
           }
         } catch (e) {
@@ -701,9 +712,12 @@ export const useAppStore = create<AppState>()(
       },
 
       addBooking: (bookingData) => {
+        const { currentUser } = get();
         const newBooking: Booking = {
           ...bookingData,
           id: Date.now(),
+          userId: currentUser?.id,
+          userEmail: currentUser?.email,
           qrCode: `PGO-${Date.now().toString(36).toUpperCase()}`,
         }
         set((state) => ({ bookings: [...state.bookings, newBooking] }))
@@ -747,8 +761,10 @@ export const useAppStore = create<AppState>()(
 
           if (response.ok) {
             const data = await response.json();
-            // Guardamos el ID REAL que viene de la base de datos de Django
-            set({ 
+            const prevUser = get().currentUser;
+            const isDifferentUser = Boolean(prevUser?.id && Number(prevUser.id) !== Number(data.user.id));
+
+            set(state => ({ 
               isAuthenticated: true, 
               accessToken: data.access, 
               refreshToken: data.refresh,
@@ -762,8 +778,12 @@ export const useAppStore = create<AppState>()(
                 is_ambassador: Boolean(data.user.is_ambassador),
                 kyc_status: data.user.kyc_status || "UNVERIFIED"
               },
+              bookings: isDifferentUser ? [] : state.bookings.filter(b => b.userId === data.user.id || (!b.userId && b.userEmail === data.user.email)),
+              favorites: isDifferentUser ? [] : state.favorites,
+              userFavorites: isDifferentUser ? [] : state.userFavorites,
+              activeTickets: isDifferentUser ? [] : state.activeTickets,
               isLoading: false 
-            });
+            }));
             return true;
           }
           set({ isLoading: false });
@@ -786,7 +806,10 @@ export const useAppStore = create<AppState>()(
 
           if (response.ok) {
             const data = await response.json();
-            set({ 
+            const prevUser = get().currentUser;
+            const isDifferentUser = Boolean(prevUser?.id && Number(prevUser.id) !== Number(data.user.id));
+
+            set(state => ({ 
               isAuthenticated: true, 
               accessToken: data.access, 
               refreshToken: data.refresh,
@@ -800,8 +823,12 @@ export const useAppStore = create<AppState>()(
                 is_ambassador: Boolean(data.user.is_ambassador),
                 kyc_status: data.user.kyc_status || "UNVERIFIED"
               },
+              bookings: isDifferentUser ? [] : state.bookings.filter(b => b.userId === data.user.id || (!b.userId && b.userEmail === data.user.email)),
+              favorites: isDifferentUser ? [] : state.favorites,
+              userFavorites: isDifferentUser ? [] : state.userFavorites,
+              activeTickets: isDifferentUser ? [] : state.activeTickets,
               isLoading: false 
-            });
+            }));
             return true;
           }
           set({ isLoading: false });
@@ -832,36 +859,60 @@ export const useAppStore = create<AppState>()(
             return { success: true };
           } else {
             const data = await response.json();
-            return { success: false, error: data.error || "Error al cambiar contraseÃ±a" };
+            return { success: false, error: data.error || "Error al cambiar contraseña" };
           }
         } catch (error) {
           set({ isLoading: false });
-          return { success: false, error: "Fallo de conexiÃ³n" };
+          return { success: false, error: "Fallo de conexión" };
         }
       },
 
       completeOnboarding: () => set({ hasCompletedOnboarding: true }),
       logout: () => set({ 
-          isAuthenticated: false, 
-          hasCompletedOnboarding: false,
-          accessToken: null,
-          refreshToken: null,
-          currentUser: { 
+        isAuthenticated: false, 
+        hasCompletedOnboarding: false,
+        accessToken: null,
+        refreshToken: null,
+        currentUser: { 
           id: 0, 
           name: "", 
           avatar: "",
           email: "",
           telefono: "",
           tipo: "",
-          is_ambassador: false
+          is_ambassador: false,
+          kyc_status: "UNVERIFIED"
         },
+        bookings: [],
+        favorites: [],
+        userFavorites: [],
+        recommendations: [],
         activeTickets: []
       }),
       setTokens: (access: string, refresh: string) => {
         set({ accessToken: access, refreshToken: refresh });
       },
       clearAuth: () => {
-        set({ accessToken: null, refreshToken: null });
+        set({ 
+          accessToken: null, 
+          refreshToken: null,
+          isAuthenticated: false,
+          currentUser: { 
+            id: 0, 
+            name: "", 
+            avatar: "", 
+            email: "", 
+            telefono: "", 
+            tipo: "", 
+            is_ambassador: false, 
+            kyc_status: "UNVERIFIED" 
+          },
+          bookings: [],
+          favorites: [],
+          userFavorites: [],
+          recommendations: [],
+          activeTickets: []
+        });
       },
       addActiveTicket: (ticket: any) => set((state) => ({ activeTickets: [...state.activeTickets, ticket] })),
       fetchActiveTickets: async () => {
