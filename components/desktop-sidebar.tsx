@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Store, Users, QrCode, Map, Briefcase, Crown, Zap, Star, Gem, LogOut, ChevronRight, CreditCard, Bell, Shield, HelpCircle, User, Home, ShieldCheck } from "lucide-react"
+import { Store, Users, QrCode, Map, Briefcase, Crown, Zap, Star, Gem, LogOut, ChevronRight, CreditCard, Bell, Shield, HelpCircle, User, Home, ShieldCheck, Truck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAppStore } from "@/lib/store"
 import { cn } from "@/lib/utils"
@@ -53,6 +53,34 @@ export function DesktopSidebar({ activeTab, onNavigate }: DesktopSidebarProps) {
           </div>
           <h1 className="text-xl font-bold text-primary tracking-tight">Palenque Go</h1>
         </div>
+
+        {/* Sección de Chofer / Conductor */}
+        {currentUser?.tipo === "CHOFER" && (
+          <div className="mb-6 p-3.5 bg-gradient-to-br from-[#105238]/10 to-[#105238]/5 rounded-2xl border-2 border-[#105238]/30 shadow-sm">
+            <div className="flex items-center justify-between mb-2 px-1">
+              <span className="text-[11px] font-black uppercase tracking-wider text-[#105238]">Modo Chofer</span>
+              <span className={cn(
+                "text-[10px] font-black px-2 py-0.5 rounded-full uppercase",
+                currentUser.kyc_status === 'APPROVED' ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
+              )}>
+                {currentUser.kyc_status === 'APPROVED' ? 'Aprobado' : 'KYC Requerido'}
+              </span>
+            </div>
+            <button
+              onClick={() => onNavigate("conductor")}
+              className={cn(
+                "w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all font-bold text-sm shadow-sm",
+                activeTab === "conductor" ? "bg-[#105238] text-white" : "bg-white dark:bg-card text-[#105238] hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
+              )}
+            >
+              <div className="flex items-center gap-2.5">
+                <Truck className={cn("w-5 h-5", activeTab === "conductor" ? "text-white" : "text-[#105238]")} />
+                <span>Panel de Chofer</span>
+              </div>
+              <ChevronRight className="w-4 h-4 opacity-70" />
+            </button>
+          </div>
+        )}
 
         {/* Main Navigation */}
         <div className="mb-6">

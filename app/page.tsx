@@ -33,6 +33,8 @@ import { PoolPaymentModal } from "@/components/pool-payment-modal"
 import { InstallPWABanner } from "@/components/install-pwa-banner"
 import { DesktopSidebar } from "@/components/desktop-sidebar"
 import { useAppStore } from "@/lib/store"
+import { Truck, X } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 type ActiveTab =
   | "marketplace"
@@ -69,6 +71,17 @@ export default function Home() {
   const [authView, setAuthView] = useState<"login" | "register">("register")
   const [showShareModal, setShowShareModal] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [showChoferModal, setShowChoferModal] = useState(false)
+
+  // Mostrar modal de bienvenida explicativo a choferes con KYC pendiente
+  useEffect(() => {
+    if (currentUser?.tipo === 'CHOFER' && currentUser?.kyc_status !== 'APPROVED') {
+      const dismissed = sessionStorage.getItem('chofer-modal-dismissed')
+      if (!dismissed) {
+        setShowChoferModal(true)
+      }
+    }
+  }, [currentUser])
 
   // Restaurar la pestaña previa o redirigir al chofer
   useEffect(() => {
@@ -242,6 +255,62 @@ export default function Home() {
             console.log("[v0] Pool payment successful")
           }}
         />
+      )}
+
+      {/* Modal de Bienvenida para Choferes */}
+      {showChoferModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-card border-2 border-[#105238]/30 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative">
+            <button 
+              onClick={() => {
+                sessionStorage.setItem('chofer-modal-dismissed', 'true');
+                setShowChoferModal(false);
+              }}
+              className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="text-center">
+              <div className="w-16 h-16 bg-[#105238]/10 text-[#105238] rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Truck className="w-8 h-8" />
+              </div>
+
+              <span className="inline-block px-3 py-1 bg-[#105238]/10 text-[#105238] text-[11px] font-black rounded-full uppercase tracking-wider mb-2">
+                Equipo Oficial de Transporte
+              </span>
+              
+              <h3 className="text-xl font-black text-foreground mb-2">¡Bienvenido a PalenqueGo!</h3>
+              <p className="text-muted-foreground text-xs leading-relaxed mb-6">
+                Has sido registrado como conductor de transporte. Para comenzar a recibir rutas asignadas y operar el GPS de tu vehículo, necesitamos que completes tu <strong>verificación de identidad (KYC)</strong> subiendo las fotos de tu licencia y documento de identidad.
+              </p>
+
+              <div className="space-y-3">
+                <Button
+                  onClick={() => {
+                    sessionStorage.setItem('chofer-modal-dismissed', 'true');
+                    setShowChoferModal(false);
+                    setActiveTab('conductor');
+                  }}
+                  className="w-full h-12 bg-[#105238] hover:bg-[#0c3e2b] text-white font-bold rounded-xl shadow-md text-sm"
+                >
+                  Subir Mis Documentos Ahora &rarr;
+                </Button>
+                <div>
+                  <button
+                    onClick={() => {
+                      sessionStorage.setItem('chofer-modal-dismissed', 'true');
+                      setShowChoferModal(false);
+                    }}
+                    className="text-xs text-muted-foreground hover:text-foreground font-semibold py-1.5 transition-colors"
+                  >
+                    Lo haré más tarde
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Bottom Navigation - only show on main tabs for mobile */}

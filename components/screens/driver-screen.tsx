@@ -73,7 +73,7 @@ export function DriverScreen({ onNavigate }: DriverScreenProps) {
 
   // Verificar si el chofer necesita KYC
   if (currentUser?.tipo === "CHOFER" && currentUser?.kyc_status !== 'APPROVED') {
-    return <DriverKycScreen user={currentUser} />
+    return <DriverKycScreen user={currentUser} onNavigate={onNavigate} />
   }
 
   return (

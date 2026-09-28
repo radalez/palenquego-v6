@@ -21,6 +21,8 @@ import {
   X,
   CheckCircle2,
   Clock,
+  Truck,
+  AlertCircle,
 } from "lucide-react"
 import QRCode from "react-qr-code"
 import { Button } from "@/components/ui/button"
@@ -154,6 +156,47 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
               </Button>
             </div>
           </div>
+
+          {/* Banner de Modo Conductor */}
+          {currentUser.tipo === "CHOFER" && (
+            <div className="mt-4 bg-white/95 dark:bg-card/95 backdrop-blur-sm rounded-2xl p-4 md:p-5 border-2 border-emerald-500/30 shadow-md">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-start gap-3.5">
+                  <div className={cn(
+                    "w-12 h-12 rounded-xl flex items-center justify-center shrink-0",
+                    currentUser.kyc_status === 'APPROVED' ? "bg-[#105238] text-white" : "bg-amber-100 text-amber-700"
+                  )}>
+                    <Truck className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-extrabold text-foreground text-sm md:text-base">Panel de Conductor Oficial</h3>
+                      <span className={cn(
+                        "text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider",
+                        currentUser.kyc_status === 'APPROVED' ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
+                      )}>
+                        {currentUser.kyc_status === 'APPROVED' ? 'Aprobado' : 'KYC Requerido'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                      {currentUser.kyc_status === 'APPROVED' 
+                        ? "Tu cuenta está aprobada. Ingresa a tu panel de conductor para operar tu vehículo asignado y activar el GPS."
+                        : "Para comenzar a conducir y recibir rutas, debes completar la verificación de tus documentos (Licencia y Cédula)."}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => onNavigateToSettings?.("conductor")}
+                  className={cn(
+                    "w-full sm:w-auto font-bold px-5 py-2.5 rounded-xl text-white shadow-sm shrink-0 text-xs md:text-sm",
+                    currentUser.kyc_status === 'APPROVED' ? "bg-[#105238] hover:bg-[#0c3e2b]" : "bg-amber-600 hover:bg-amber-700"
+                  )}
+                >
+                  {currentUser.kyc_status === 'APPROVED' ? "Abrir Panel de Chofer →" : "Subir Documentos Ahora →"}
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
