@@ -280,6 +280,7 @@ interface AppState {
 
   kycRequirements: any[]
   fetchKycRequirements: () => Promise<void>
+  fetchCurrentUser: () => Promise<void>
 
   fetchServices: (query?: string) => Promise<void>
   fetchBusinesses: () => Promise<void>
@@ -529,6 +530,33 @@ export const useAppStore = create<AppState>()(
           console.error(e);
         } finally {
           set({ isLoading: false });
+        }
+      },
+
+      fetchCurrentUser: async () => {
+        const { accessToken } = get();
+        if (!accessToken) return;
+        try {
+          const res = await fetch(`${API_BASE}/accounts/me/`, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            set(state => ({
+              currentUser: {
+                ...state.currentUser,
+                name: data.name || state.currentUser?.name,
+                email: data.email || state.currentUser?.email,
+                telefono: data.telefono || state.currentUser?.telefono,
+                tipo: data.tipo || state.currentUser?.tipo,
+                kyc_status: data.kyc_status || state.currentUser?.kyc_status,
+                avatar: data.avatar || state.currentUser?.avatar,
+                is_ambassador: Boolean(data.is_ambassador),
+              }
+            }));
+          }
+        } catch (e) {
+          console.error("Error refreshing current user:", e);
         }
       },
 

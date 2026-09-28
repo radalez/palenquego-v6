@@ -33,20 +33,22 @@ export const formatImageUrl = (url: string | null | undefined): string => {
 }
 
 export function DriverKycScreen({ user, onNavigate }: { user: any; onNavigate?: (tab: string) => void }) {
-  const { kycRequirements, fetchKycRequirements, accessToken } = useAppStore()
+  const { kycRequirements, fetchKycRequirements, fetchCurrentUser, accessToken } = useAppStore()
   const [currentStep, setCurrentStep] = useState(0)
   const [uploadedPhotos, setUploadedPhotos] = useState<Record<number, string>>({})
   const [selectedFiles, setSelectedFiles] = useState<Record<number, File>>({})
   const [isUploading, setIsUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
+  const [isCheckingStatus, setIsCheckingStatus] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
+    fetchCurrentUser()
     if (user?.kyc_status !== "APPROVED") {
       fetchKycRequirements()
     }
-  }, [fetchKycRequirements, user?.kyc_status])
+  }, [fetchKycRequirements, fetchCurrentUser, user?.kyc_status])
 
   useEffect(() => {
     if (kycRequirements && kycRequirements.length > 0) {
@@ -178,6 +180,20 @@ export function DriverKycScreen({ user, onNavigate }: { user: any; onNavigate?: 
                 Volver a Mi Perfil
               </Button>
             )}
+
+            <Button
+              variant="outline"
+              disabled={isCheckingStatus}
+              onClick={async () => {
+                setIsCheckingStatus(true)
+                await fetchCurrentUser()
+                setIsCheckingStatus(false)
+              }}
+              className="w-full h-11 text-xs font-bold border-[#105238]/30 text-[#105238] dark:text-emerald-400 hover:bg-[#105238]/10 rounded-xl flex items-center justify-center gap-2"
+            >
+              <RefreshCw className={cn("w-4 h-4", isCheckingStatus && "animate-spin")} />
+              {isCheckingStatus ? "Consultando aprobación..." : "Comprobar Aprobación Ahora"}
+            </Button>
 
             <button
               type="button"

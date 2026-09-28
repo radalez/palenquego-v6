@@ -66,6 +66,12 @@ export default function Home() {
   const hasCompletedOnboarding = useAppStore((state) => state.hasCompletedOnboarding)
   const completeOnboarding = useAppStore((state) => state.completeOnboarding)
   const currentUser = useAppStore((state) => state.currentUser)
+  const fetchCurrentUser = useAppStore((state) => state.fetchCurrentUser)
+
+  // Refrescar perfil y estado KYC en tiempo real desde el backend
+  useEffect(() => {
+    fetchCurrentUser()
+  }, [fetchCurrentUser])
 
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [authView, setAuthView] = useState<"login" | "register">("register")
