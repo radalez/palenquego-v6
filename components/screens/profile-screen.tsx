@@ -169,9 +169,9 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
           {/* Banner de Modo Conductor */}
           {currentUser.tipo === "CHOFER" && (
             <div className={cn(
-              "mt-4 bg-white/95 dark:bg-card/95 backdrop-blur-sm rounded-2xl p-4 md:p-5 border-2 shadow-md transition-all",
+              "mt-4 bg-card rounded-2xl p-4 md:p-5 border-2 shadow-lg transition-all",
               currentUser.kyc_status === 'APPROVED' ? "border-emerald-500/40" :
-              currentUser.kyc_status === 'PENDING' ? "border-blue-500/40 bg-blue-50/20 dark:bg-blue-950/20" : "border-amber-500/30"
+              currentUser.kyc_status === 'PENDING' ? "border-blue-500/50" : "border-amber-500/40"
             )}>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-start gap-3.5">
