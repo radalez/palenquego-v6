@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useState, useEffect } from "react"
 import { Crown, Star, Zap, Gem, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAppStore } from "@/lib/store"
@@ -11,6 +11,16 @@ interface PlansScreenProps {
 
 export function PlansScreen({ onBack }: PlansScreenProps) {
   const { userPlan, upgradePlan, plans, fetchPlans } = useAppStore()
+  const [loadingPlanId, setLoadingPlanId] = useState<number | null>(null)
+
+  const handleUpgrade = async (planId: number) => {
+    setLoadingPlanId(planId)
+    try {
+      await upgradePlan(planId)
+    } finally {
+      setLoadingPlanId(null)
+    }
+  }
 
   useEffect(() => {
     // Solo cargamos si el array está vacío para no saturar el servidor
@@ -72,7 +82,7 @@ export function PlansScreen({ onBack }: PlansScreenProps) {
           const config = getVisualConfig(plan.nombre)
           const Icon = config.icon
           const isCurrentPlan = userPlan === plan.nombre
-          const { isLoading } = useAppStore()
+          const isProcessingThis = loadingPlanId === plan.id
 
           return (
             <div
@@ -132,10 +142,11 @@ export function PlansScreen({ onBack }: PlansScreenProps) {
                 </Button>
               ) : (
                 <Button
-                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-                  onClick={() => upgradePlan(plan.id)}
+                  disabled={loadingPlanId !== null}
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50"
+                  onClick={() => handleUpgrade(plan.id)}
                 >
-                 {isLoading ? "Procesando..." : `Actualizar a ${plan.nombre}`}
+                 {isProcessingThis ? "Procesando..." : `Actualizar a ${plan.nombre}`}
                 </Button>
               )}
             </div>

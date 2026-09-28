@@ -565,6 +565,10 @@ export const useAppStore = create<AppState>()(
               userFavorites: isDifferentUser ? [] : state.userFavorites,
               activeTickets: isDifferentUser ? [] : state.activeTickets,
             }));
+          } else if (res.status === 401 || res.status === 403 || res.status === 404) {
+            // Usuario borrado de la BD o token expirado: PURGA TOTAL INMEDIATA
+            console.warn("Usuario no encontrado en el servidor. Purgando sesión fantasma.");
+            get().logout();
           }
         } catch (e) {
           console.error("Error refreshing current user:", e);
@@ -868,31 +872,48 @@ export const useAppStore = create<AppState>()(
       },
 
       completeOnboarding: () => set({ hasCompletedOnboarding: true }),
-      logout: () => set({ 
-        isAuthenticated: false, 
-        hasCompletedOnboarding: false,
-        accessToken: null,
-        refreshToken: null,
-        currentUser: { 
-          id: 0, 
-          name: "", 
-          avatar: "",
-          email: "",
-          telefono: "",
-          tipo: "",
-          is_ambassador: false,
-          kyc_status: "UNVERIFIED"
-        },
-        bookings: [],
-        favorites: [],
-        userFavorites: [],
-        recommendations: [],
-        activeTickets: []
-      }),
+      logout: () => {
+        try {
+          if (typeof window !== "undefined") {
+            localStorage.removeItem("palenquego-storage");
+            sessionStorage.clear();
+          }
+        } catch (e) {
+          console.error("Error clearing storage on logout:", e);
+        }
+        set({ 
+          isAuthenticated: false, 
+          hasCompletedOnboarding: false,
+          accessToken: null,
+          refreshToken: null,
+          currentUser: { 
+            id: 0, 
+            name: "", 
+            avatar: "",
+            email: "",
+            telefono: "",
+            tipo: "",
+            is_ambassador: false,
+            kyc_status: "UNVERIFIED"
+          },
+          bookings: [],
+          favorites: [],
+          userFavorites: [],
+          recommendations: [],
+          activeTickets: [],
+          isLoading: false
+        });
+      },
       setTokens: (access: string, refresh: string) => {
         set({ accessToken: access, refreshToken: refresh });
       },
       clearAuth: () => {
+        try {
+          if (typeof window !== "undefined") {
+            localStorage.removeItem("palenquego-storage");
+            sessionStorage.clear();
+          }
+        } catch (e) {}
         set({ 
           accessToken: null, 
           refreshToken: null,
@@ -911,7 +932,8 @@ export const useAppStore = create<AppState>()(
           favorites: [],
           userFavorites: [],
           recommendations: [],
-          activeTickets: []
+          activeTickets: [],
+          isLoading: false
         });
       },
       addActiveTicket: (ticket: any) => set((state) => ({ activeTickets: [...state.activeTickets, ticket] })),
@@ -1008,7 +1030,7 @@ export const useAppStore = create<AppState>()(
         const token = state.accessToken;
         
         if (!token) {
-          alert("SesiÃ³n no encontrada. Por favor, inicia sesiÃ³n de nuevo.");
+          alert("Por favor inicia sesión con tu cuenta antes de elegir un plan.");
           return;
         }
 
@@ -1024,28 +1046,28 @@ export const useAppStore = create<AppState>()(
             body: JSON.stringify({ plan_id: planId }),
           });
 
-          // Si el servidor dice que no estamos autorizados
-          if (response.status === 401) {
+          if (response.status === 401 || response.status === 403) {
             set({ isLoading: false });
-            alert("Tu sesiÃ³n ha expirado. Por favor, sal y vuelve a entrar a tu cuenta.");
+            alert("Tu sesión ha caducado. Por favor, vuelve a iniciar sesión en tu cuenta.");
+            get().logout();
             return;
           }
 
           const data = await response.json();
 
           if (data.url) {
-            // REDIRECCIÃ“N A STRIPE
+            set({ isLoading: false });
             window.location.href = data.url;
           } else {
-            const msg = data.error || data.detail || "Error en la pasarela";
-            console.error("Error de Stripe:", msg);
+            const msg = data.error || data.detail || "Error al procesar el plan seleccionado";
+            console.error("Error en plan:", msg);
             set({ isLoading: false });
-            alert(`AtenciÃ³n: ${msg}`);
+            alert(`Atención: ${msg}`);
           }
         } catch (error) {
-          console.error("Fallo de red:", error);
+          console.error("Fallo de red en plan:", error);
           set({ isLoading: false });
-          alert("Error crÃ­tico de conexiÃ³n.");
+          alert("Error de conexión. Verifica tu internet e intenta nuevamente.");
         }
       },
       payService: async (serviceId: number, amount: number) => {
