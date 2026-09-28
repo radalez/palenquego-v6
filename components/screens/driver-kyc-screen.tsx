@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { AlertCircle, Camera, CheckCircle2, ChevronRight, UploadCloud, FileText, ArrowLeft, RefreshCw, Image as ImageIcon } from "lucide-react"
+import { AlertCircle, Camera, CheckCircle2, ChevronRight, UploadCloud, ArrowLeft, RefreshCw, ChevronLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAppStore } from "@/lib/store"
 
@@ -24,9 +24,12 @@ const DEFAULT_REQUIREMENTS = [
 ]
 
 export function DriverKycScreen({ user, onNavigate }: { user: any; onNavigate?: (tab: string) => void }) {
-  const { kycRequirements, fetchKycRequirements, isLoading } = useAppStore()
+  const { kycRequirements, fetchKycRequirements, accessToken, isLoading } = useAppStore()
   const [currentStep, setCurrentStep] = useState(0)
   const [uploadedPhotos, setUploadedPhotos] = useState<Record<number, string>>({})
+  const [selectedFiles, setSelectedFiles] = useState<Record<number, File>>({})
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -34,6 +37,20 @@ export function DriverKycScreen({ user, onNavigate }: { user: any; onNavigate?: 
       fetchKycRequirements()
     }
   }, [fetchKycRequirements, user?.kyc_status])
+
+  useEffect(() => {
+    if (kycRequirements && kycRequirements.length > 0) {
+      const initialPhotos: Record<number, string> = {}
+      kycRequirements.forEach((req, idx) => {
+        if (req.uploaded_image_url) {
+          initialPhotos[idx] = req.uploaded_image_url
+        }
+      })
+      if (Object.keys(initialPhotos).length > 0) {
+        setUploadedPhotos(prev => ({ ...initialPhotos, ...prev }))
+      }
+    }
+  }, [kycRequirements])
 
   const requirementsList = (kycRequirements && kycRequirements.length > 0) ? kycRequirements : DEFAULT_REQUIREMENTS
 
@@ -62,12 +79,73 @@ export function DriverKycScreen({ user, onNavigate }: { user: any; onNavigate?: 
   const isCompleted = currentStep >= requirementsList.length
   const currentReq = requirementsList[currentStep]
   const currentPhoto = uploadedPhotos[currentStep]
+  const hasPhoto = Boolean(currentPhoto)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
       const url = URL.createObjectURL(file)
+      setSelectedFiles(prev => ({ ...prev, [currentStep]: file }))
       setUploadedPhotos(prev => ({ ...prev, [currentStep]: url }))
+      setUploadError(null)
+    }
+  }
+
+  const handleUploadAndAdvance = async () => {
+    if (!hasPhoto) {
+      setUploadError("Debes tomar o adjuntar una foto del documento para continuar.")
+      return
+    }
+
+    const fileToUpload = selectedFiles[currentStep]
+    if (fileToUpload) {
+      setIsUploading(true)
+      setUploadError(null)
+      try {
+        const formData = new FormData()
+        formData.append("requirement_id", String(currentReq.id))
+        formData.append("image", fileToUpload)
+
+        const token = accessToken || (typeof window !== "undefined" && localStorage.getItem("app-storage") ? JSON.parse(localStorage.getItem("app-storage") as string)?.state?.accessToken : "")
+
+        const res = await fetch("/api-proxy/accounts/kyc-documents/upload/", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`
+          },
+          body: formData
+        })
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}))
+          throw new Error(errData.error || "No se pudo subir la foto del documento al servidor.")
+        }
+
+        const data = await res.json()
+        if (data.image_url) {
+          setUploadedPhotos(prev => ({ ...prev, [currentStep]: data.image_url }))
+        }
+      } catch (err: any) {
+        console.error("KYC upload error:", err)
+        setUploadError(err.message || "Error al conectar con el servidor. Intenta de nuevo.")
+        setIsUploading(false)
+        return
+      }
+      setIsUploading(false)
+    }
+
+    if (currentStep < requirementsList.length - 1) {
+      setCurrentStep(prev => prev + 1)
+      setUploadError(null)
+    } else {
+      useAppStore.setState(state => ({
+        currentUser: {
+          ...state.currentUser,
+          kyc_status: "PENDING"
+        }
+      }))
+      setCurrentStep(requirementsList.length)
+      setUploadError(null)
     }
   }
 
@@ -139,7 +217,11 @@ export function DriverKycScreen({ user, onNavigate }: { user: any; onNavigate?: 
               {/* Área de subida / vista previa */}
               <div 
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full h-52 border-2 border-dashed border-[#105238]/40 bg-[#105238]/5 rounded-2xl flex flex-col items-center justify-center mb-6 cursor-pointer hover:bg-[#105238]/10 transition-colors overflow-hidden relative"
+                className={`w-full h-52 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center mb-4 cursor-pointer transition-colors overflow-hidden relative ${
+                  hasPhoto 
+                    ? "border-emerald-500 bg-emerald-50/20" 
+                    : "border-[#105238]/40 bg-[#105238]/5 hover:bg-[#105238]/10"
+                }`}
               >
                 {currentPhoto ? (
                   <div className="w-full h-full relative group">
@@ -160,16 +242,70 @@ export function DriverKycScreen({ user, onNavigate }: { user: any; onNavigate?: 
                   </>
                 )}
               </div>
+
+              {/* Aviso si falta foto */}
+              {!hasPhoto && (
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 mb-4 text-left flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                  <p className="text-[11px] font-medium text-amber-800 leading-snug">
+                    Foto obligatoria: Toma o adjunta una fotografía clara de tu documento antes de continuar.
+                  </p>
+                </div>
+              )}
+
+              {/* Error si falló el upload */}
+              {uploadError && (
+                <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 mb-4 text-left flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                  <p className="text-[11px] font-semibold text-red-700 leading-snug">
+                    {uploadError}
+                  </p>
+                </div>
+              )}
             </div>
 
-            <div>
+            <div className="pt-2">
               <Button 
-                className="w-full h-12 text-sm font-bold bg-[#105238] hover:bg-[#0c3e2b] text-white rounded-xl shadow-md"
-                onClick={() => setCurrentStep(prev => prev + 1)}
+                disabled={!hasPhoto || isUploading}
+                className={`w-full h-12 text-sm font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 ${
+                  hasPhoto && !isUploading
+                    ? "bg-[#105238] hover:bg-[#0c3e2b] text-white cursor-pointer"
+                    : "bg-gray-300 dark:bg-zinc-800 text-gray-500 dark:text-zinc-500 cursor-not-allowed opacity-70 shadow-none"
+                }`}
+                onClick={handleUploadAndAdvance}
               >
-                {currentStep === requirementsList.length - 1 ? "Finalizar y Enviar Documentos" : "Siguiente Documento"}
-                <ChevronRight className="w-4 h-4 ml-1.5" />
+                {isUploading ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Guardando documento...</span>
+                  </>
+                ) : !hasPhoto ? (
+                  <span>Adjunta la foto para continuar</span>
+                ) : currentStep === requirementsList.length - 1 ? (
+                  <>
+                    <span>Finalizar y Enviar Documentos</span>
+                    <CheckCircle2 className="w-4 h-4" />
+                  </>
+                ) : (
+                  <>
+                    <span>Guardar y Continuar</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </>
+                )}
               </Button>
+
+              {currentStep > 0 && !isUploading && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCurrentStep(prev => prev - 1)
+                    setUploadError(null)
+                  }}
+                  className="w-full text-xs font-semibold text-muted-foreground hover:text-foreground mt-3 py-1 flex items-center justify-center gap-1"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" /> Volver al documento anterior
+                </button>
+              )}
             </div>
           </div>
         ) : (
@@ -179,13 +315,13 @@ export function DriverKycScreen({ user, onNavigate }: { user: any; onNavigate?: 
             </div>
             <h2 className="text-2xl font-black text-foreground mb-2">¡Documentos Registrados!</h2>
             <p className="text-muted-foreground text-xs mb-6 leading-relaxed">
-              Tus documentos han sido registrados en tu perfil para validación de tu empresa de transporte. Te notificaremos en cuanto tu cuenta sea aprobada.
+              Tus documentos han sido subidos exitosamente a tu perfil para validación de tu empresa de transporte. Te notificaremos en cuanto tu cuenta sea aprobada.
             </p>
             
             <div className="w-full bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3 text-left mb-6">
               <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
               <p className="text-xs text-amber-900 leading-relaxed">
-                Estado actual: <strong className="font-bold">Pendiente de Aprobación</strong>. Tu Aliado puede aprobarte digitalmente en su panel o validar físicamente si ya presentaste tus papeles en oficina.
+                Estado actual: <strong className="font-bold">Pendiente de Aprobación</strong>. Tu Aliado puede aprobarte digitalmente desde su panel o validar físicamente si ya presentaste tus papeles en oficina.
               </p>
             </div>
 
