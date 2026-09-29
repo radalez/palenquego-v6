@@ -296,6 +296,7 @@ interface AppState {
   loginWithGoogle: (token: string) => Promise<boolean>
   completeOnboarding: () => void
   logout: () => void
+  setTokens: (access: string, refresh: string) => void
   upgradePlan: (planId: number) => Promise<void>
   payService: (serviceId: number, amount: number) => Promise<void>
   createServiceBooking: (serviceId: number, bookingData: any) => Promise<{ success: boolean; reserva_id?: string; tienda_nombre?: string; tienda_telefono?: string; crm_synced?: boolean; error?: string }>
