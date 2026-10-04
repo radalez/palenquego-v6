@@ -21,30 +21,27 @@ const GOOGLE_MAPS_LIBRARIES: ("places")[] = ["places"]
 
 type ViewState = 'map' | 'list' | 'detail'
 
-const PROMO_SLIDES = [
+const DEFAULT_PROMO_SLIDES = [
   {
     id: 1,
-    title: "¿Buscas una experiencia?",
-    subtitle: "Descubre tours y lugares mágicos de El Salvador.",
-    tag: "Tours y Destinos",
-    category: "TOUR",
-    image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1000&q=80"
+    title: "Rutas Interurbanas & Montañas",
+    subtitle: "Viaja cómodo y seguro entre departamentos y miradores.",
+    category: "INTERURBANO",
+    image: "https://res.cloudinary.com/dacanh1gn/image/upload/v1791135828/palenque_banners/slide_1_interurbano_montanas.webp"
   },
   {
     id: 2,
-    title: "Costa del Bálsamo & Surf",
-    subtitle: "Rutas exprés hacia El Tunco, El Zonte y Punta Roca.",
-    tag: "Playas",
-    category: "TOUR",
-    image: "https://images.unsplash.com/photo-1502680390469-be75c86b636f?auto=format&fit=crop&w=1000&q=80"
+    title: "Taxi & Rutas Urbanas",
+    subtitle: "Muévete por la ciudad a tu propio precio con choferes cercanos.",
+    category: "URBANO",
+    image: "https://res.cloudinary.com/dacanh1gn/image/upload/v1791135830/palenque_banners/slide_2_urbano_ciudad.webp"
   },
   {
     id: 3,
-    title: "Ruta de las Flores & Volcanes",
-    subtitle: "Café de altura, gastronomía típica y pueblos coloniales.",
-    tag: "Aventura y Naturaleza",
+    title: "Costa del Bálsamo & Tours",
+    subtitle: "Disfruta de playas, surf, gastronomía y experiencias inolvidables.",
     category: "TOUR",
-    image: "https://images.unsplash.com/photo-1511497584788-87676104235f?auto=format&fit=crop&w=1000&q=80"
+    image: "https://res.cloudinary.com/dacanh1gn/image/upload/v1791135831/palenque_banners/slide_3_tours_costa.webp"
   }
 ]
 
@@ -90,6 +87,8 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
   const requestedTrips = useAppStore((state) => state.requestedTrips)
   const fetchMyUserRoutes = useAppStore((state) => state.fetchMyUserRoutes)
   const fetchRequestedTrips = useAppStore((state) => state.fetchRequestedTrips)
+  const homeSlides = useAppStore((state) => state.homeSlides)
+  const fetchHomeSlides = useAppStore((state) => state.fetchHomeSlides)
 
   const [isUserRoutesModalOpen, setIsUserRoutesModalOpen] = useState(false)
   const [mapPickMode, setMapPickMode] = useState<'origin' | 'destination' | null>(null)
@@ -98,10 +97,11 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
 
   useEffect(() => {
     fetchMyUserRoutes()
+    fetchHomeSlides()
     if (currentUser?.tipo === 'CHOFER') {
       fetchRequestedTrips()
     }
-  }, [fetchMyUserRoutes, fetchRequestedTrips, currentUser?.tipo])
+  }, [fetchMyUserRoutes, fetchRequestedTrips, fetchHomeSlides, currentUser?.tipo])
 
   const handleMapClick = async (e: google.maps.MapMouseEvent) => {
     if (!mapPickMode || !e.latLng) return
@@ -138,6 +138,23 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
   const [showPromoBanner, setShowPromoBanner] = useState(true)
   const [currentPromoIndex, setCurrentPromoIndex] = useState(0)
 
+  // Slides dinámicos del backend (con fallback a Cloudinary por defecto)
+  const promoSlides = (homeSlides && homeSlides.length > 0) ? homeSlides : DEFAULT_PROMO_SLIDES
+  const currentPromoSlide = promoSlides[currentPromoIndex % promoSlides.length]
+
+  const handlePromoSlideClick = (slide: any) => {
+    if (slide.category === 'TOUR') {
+      setSuperCategory('TOUR')
+      setPanelMode('categories')
+    } else if (slide.category === 'URBANO') {
+      setSuperCategory('URBANO')
+      setPanelMode('categories')
+    } else if (slide.category === 'INTERURBANO') {
+      setSuperCategory('INTERURBANO')
+      setPanelMode('categories')
+    }
+  }
+
   // Ciclo de 3 estados: 'none' (arranca sin nada) -> 'categories' -> 'search' -> 'none'
   const handleToggleClick = () => {
     if (panelMode === 'none') {
@@ -161,10 +178,10 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
   useEffect(() => {
     if (!showPromoBanner) return
     const timer = setInterval(() => {
-      setCurrentPromoIndex((prev) => (prev + 1) % PROMO_SLIDES.length)
+      setCurrentPromoIndex((prev) => (prev + 1) % promoSlides.length)
     }, 6000)
     return () => clearInterval(timer)
-  }, [showPromoBanner])
+  }, [showPromoBanner, promoSlides.length])
 
   // Función para calcular distancia (Haversine formula)
   const getDistanceInKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
@@ -891,20 +908,31 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
         {showPromoBanner && (
           <div className="relative z-10 w-full px-3 py-2 bg-white shrink-0 border-t border-gray-100 shadow-sm animate-in slide-in-from-bottom duration-300">
             <div 
-              onClick={() => {
-                if (PROMO_SLIDES[currentPromoIndex].category === 'TOUR') {
-                  setSuperCategory('TOUR');
-                  setPanelMode('categories');
-                }
-              }}
+              onClick={() => handlePromoSlideClick(currentPromoSlide)}
               className="relative w-full h-[90px] rounded-2xl overflow-hidden shadow-sm border border-gray-100 group cursor-pointer bg-gray-100"
             >
-              {/* Imagen limpia del banner publicitario (sin textos superpuestos) */}
+              {/* Imagen del banner publicitario */}
               <img 
-                src={PROMO_SLIDES[currentPromoIndex].image} 
-                alt="Banner Publicidad"
+                src={currentPromoSlide.image} 
+                alt={currentPromoSlide.title || "Banner Publicidad"}
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
+
+              {/* Título y subtítulo dinámicos configurados en el backend */}
+              {(currentPromoSlide.title || currentPromoSlide.subtitle) && (
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent p-3 flex flex-col justify-end text-white pointer-events-none">
+                  {currentPromoSlide.title && (
+                    <h4 className="text-xs sm:text-sm font-black tracking-tight leading-tight drop-shadow-sm">
+                      {currentPromoSlide.title}
+                    </h4>
+                  )}
+                  {currentPromoSlide.subtitle && (
+                    <p className="text-[10px] sm:text-[11px] text-white/90 line-clamp-1 font-medium drop-shadow-xs">
+                      {currentPromoSlide.subtitle}
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Botón 'X' para descartar el slider */}
               <button
@@ -920,8 +948,8 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
               </button>
 
               {/* Indicadores de slides (puntos) */}
-              <div className="absolute bottom-2 right-3 z-10 flex gap-1 bg-black/30 px-2 py-0.5 rounded-full backdrop-blur-xs">
-                {PROMO_SLIDES.map((_, i) => (
+              <div className="absolute bottom-2 right-3 z-20 flex gap-1 bg-black/40 px-2 py-0.5 rounded-full backdrop-blur-xs">
+                {promoSlides.map((_, i) => (
                   <button 
                     key={i} 
                     type="button"
@@ -930,7 +958,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
                       setCurrentPromoIndex(i); 
                     }}
                     className={`h-1.5 rounded-full transition-all ${
-                      i === currentPromoIndex ? 'w-4 bg-[#a3e635]' : 'w-1.5 bg-white/60'
+                      i === (currentPromoIndex % promoSlides.length) ? 'w-4 bg-[#a3e635]' : 'w-1.5 bg-white/60'
                     }`} 
                   />
                 ))}
@@ -1187,19 +1215,32 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
           <div className="relative z-10 w-full px-3 py-2 bg-white shrink-0 border-t border-gray-100 shadow-sm animate-in slide-in-from-bottom duration-300">
             <div 
               onClick={() => {
-                if (PROMO_SLIDES[currentPromoIndex].category === 'TOUR') {
-                  setSuperCategory('TOUR');
-                  setPanelMode('categories');
-                  setView('map');
-                }
+                handlePromoSlideClick(currentPromoSlide);
+                setView('map');
               }}
               className="relative w-full h-[84px] rounded-2xl overflow-hidden shadow-sm border border-gray-100 group cursor-pointer bg-gray-100"
             >
               <img 
-                src={PROMO_SLIDES[currentPromoIndex].image} 
-                alt="Banner Publicidad"
+                src={currentPromoSlide.image} 
+                alt={currentPromoSlide.title || "Banner Publicidad"}
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
+
+              {/* Título y subtítulo dinámicos configurados en el backend */}
+              {(currentPromoSlide.title || currentPromoSlide.subtitle) && (
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent p-3 flex flex-col justify-end text-white pointer-events-none">
+                  {currentPromoSlide.title && (
+                    <h4 className="text-xs sm:text-sm font-black tracking-tight leading-tight drop-shadow-sm">
+                      {currentPromoSlide.title}
+                    </h4>
+                  )}
+                  {currentPromoSlide.subtitle && (
+                    <p className="text-[10px] sm:text-[11px] text-white/90 line-clamp-1 font-medium drop-shadow-xs">
+                      {currentPromoSlide.subtitle}
+                    </p>
+                  )}
+                </div>
+              )}
 
               <button
                 type="button"
@@ -1213,8 +1254,8 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
                 <X className="w-3.5 h-3.5" />
               </button>
 
-              <div className="absolute bottom-2 right-3 z-10 flex gap-1 bg-black/30 px-2 py-0.5 rounded-full backdrop-blur-xs">
-                {PROMO_SLIDES.map((_, i) => (
+              <div className="absolute bottom-2 right-3 z-20 flex gap-1 bg-black/40 px-2 py-0.5 rounded-full backdrop-blur-xs">
+                {promoSlides.map((_, i) => (
                   <button 
                     key={i} 
                     type="button"
@@ -1223,7 +1264,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
                       setCurrentPromoIndex(i); 
                     }}
                     className={`h-1.5 rounded-full transition-all ${
-                      i === currentPromoIndex ? 'w-4 bg-[#a3e635]' : 'w-1.5 bg-white/60'
+                      i === (currentPromoIndex % promoSlides.length) ? 'w-4 bg-[#a3e635]' : 'w-1.5 bg-white/60'
                     }`} 
                   />
                 ))}

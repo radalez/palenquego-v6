@@ -173,6 +173,16 @@ export interface Route {
   };
 }
 
+export interface HomeBannerSlide {
+  id: number | string;
+  title: string;
+  subtitle: string;
+  category: "INTERURBANO" | "URBANO" | "TOUR";
+  link?: string;
+  image: string;
+  order?: number;
+}
+
 export interface Transportation {
   id: number
   route: Route
@@ -388,6 +398,8 @@ interface AppState {
   contraofertarTrip: (routeId: number, precio: number) => Promise<{ success: boolean; data?: any; error?: string }>
   aceptarContraoferta: (routeId: number) => Promise<{ success: boolean; data?: any; error?: string }>
   rechazarContraoferta: (routeId: number) => Promise<{ success: boolean; data?: any; error?: string }>
+  homeSlides: HomeBannerSlide[]
+  fetchHomeSlides: () => Promise<void>
 }
 
 let driverGpsInterval: NodeJS.Timeout | null = null;
@@ -476,6 +488,34 @@ export const useAppStore = create<AppState>()(
       // --- USER ROUTES & ON-DEMAND TRIPS STATE ---
       myUserRoutes: [],
       requestedTrips: [],
+
+      // --- HOME BANNER SLIDES STATE (CLOUDINARY) ---
+      homeSlides: [
+        {
+          id: 1,
+          title: "Rutas Interurbanas & Montañas",
+          subtitle: "Viaja cómodo y seguro entre departamentos y miradores.",
+          category: "INTERURBANO",
+          image: "https://res.cloudinary.com/dacanh1gn/image/upload/v1791135828/palenque_banners/slide_1_interurbano_montanas.webp",
+          order: 0
+        },
+        {
+          id: 2,
+          title: "Taxi & Rutas Urbanas",
+          subtitle: "Muévete por la ciudad a tu propio precio con choferes cercanos.",
+          category: "URBANO",
+          image: "https://res.cloudinary.com/dacanh1gn/image/upload/v1791135830/palenque_banners/slide_2_urbano_ciudad.webp",
+          order: 1
+        },
+        {
+          id: 3,
+          title: "Costa del Bálsamo & Tours",
+          subtitle: "Disfruta de playas, surf, gastronomía y experiencias inolvidables.",
+          category: "TOUR",
+          image: "https://res.cloudinary.com/dacanh1gn/image/upload/v1791135831/palenque_banners/slide_3_tours_costa.webp",
+          order: 2
+        }
+      ],
 
       // --- GPS INITIAL STATE ---
       isDriverTracking: false,
@@ -2096,6 +2136,20 @@ export const useAppStore = create<AppState>()(
           return { success: false, error: err.error || "No se pudo rechazar la contraoferta" };
         } catch (e: any) {
           return { success: false, error: e.message || "Error al rechazar la contraoferta" };
+        }
+      },
+
+      fetchHomeSlides: async () => {
+        try {
+          const response = await fetch(`${API_BASE}/accounts/home-banner-slides/`);
+          if (response.ok) {
+            const data = await response.json();
+            if (Array.isArray(data) && data.length > 0) {
+              set({ homeSlides: data });
+            }
+          }
+        } catch (e) {
+          console.warn("Error fetching home slides:", e);
         }
       },
     }),
