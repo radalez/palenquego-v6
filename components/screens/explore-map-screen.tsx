@@ -53,6 +53,22 @@ const DEFAULT_TOUR_CATEGORIES = [
   { id: 'cat-naturaleza', name: 'Naturaleza', slug: 'naturaleza', icon: 'Leaf' },
 ]
 
+const POPULAR_SALVADOR_PLACES = [
+  { name: "Aeropuerto Int. San Óscar Romero", category: "Aeropuerto (San Luis Talpa)", icon: "Plane" },
+  { name: "El Tunco / Sunzal", category: "Playa & Surf (La Libertad)", icon: "Palmtree" },
+  { name: "Planes de Renderos / Puerta del Diablo", category: "Montaña & Mirador", icon: "Mountain" },
+  { name: "Metrocentro San Salvador", category: "Centro Comercial", icon: "ShoppingBag" },
+  { name: "Terminal de Occidente", category: "Terminal de Buses Interurbanos", icon: "Bus" },
+  { name: "Terminal de Oriente Fenadesal", category: "Terminal de Buses Interurbanos", icon: "Bus" },
+  { name: "Multiplaza & Las Cascadas", category: "Zona Rosa / Antiguo Cuscatlán", icon: "ShoppingBag" },
+  { name: "Suchitoto", category: "Pueblo Histórico (Cuscatlán)", icon: "Landmark" },
+  { name: "Santa Tecla / El Cafetalón", category: "Ciudad (La Libertad)", icon: "Building2" },
+  { name: "Hospital Rosales / Zona Médica", category: "Salud / Centro SS", icon: "Cross" },
+  { name: "Universidad de El Salvador (UES)", category: "Educación / Campus Central", icon: "GraduationCap" },
+  { name: "Costa del Sol", category: "Playas (La Paz)", icon: "Palmtree" },
+  { name: "Santa Ana / Centro Histórico", category: "Ciudad de Occidente", icon: "Landmark" },
+]
+
 interface ExploreMapScreenProps {
   onBack: () => void
   onNavigate: (tab: string) => void
@@ -138,8 +154,10 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
 
   const [superCategory, setSuperCategory] = useState<'INTERURBANO' | 'URBANO' | 'TOUR' | null>(null)
   const [panelMode, setPanelMode] = useState<'none' | 'categories' | 'search'>('none')
-  const [origin, setOrigin] = useState("San Salvador")
+  const [origin, setOrigin] = useState("")
   const [destination, setDestination] = useState("")
+  const [showOriginSuggestions, setShowOriginSuggestions] = useState(false)
+  const [showDestSuggestions, setShowDestSuggestions] = useState(false)
   const [showPromoBanner, setShowPromoBanner] = useState(true)
   const [currentPromoIndex, setCurrentPromoIndex] = useState(0)
 
@@ -298,6 +316,14 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
       result = result.filter(r => r.company_name === filterLine || r.unit?.plate_number === filterLine)
     }
 
+    if (origin.trim() && origin !== 'Mi ubicación actual') {
+      const orig = origin.toLowerCase()
+      result = result.filter(r =>
+        r.name?.toLowerCase().includes(orig) ||
+        r.stops?.some((s: any) => s.name?.toLowerCase().includes(orig))
+      )
+    }
+
     if (destination.trim()) {
       const dest = destination.toLowerCase()
       result = result.filter(r =>
@@ -315,7 +341,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
     }
 
     return result
-  }, [routes, superCategory, activeCategory, filterService, filterLine, destination, searchQuery])
+  }, [routes, superCategory, activeCategory, filterService, filterLine, destination, origin, searchQuery])
 
   // Parser para extraer número/código corto de ruta y separar origen/destino
   const parseRouteDisplay = (routeName: string) => {
@@ -352,6 +378,75 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
       badge: badge || 'Bus',
       origin: origin || 'Origen',
       destination: destination || 'Destino',
+    }
+  }
+
+  // Sugerencias predictivas en vivo para Origen
+  const originSuggestions = useMemo(() => {
+    if (!origin || origin.trim().length === 0) {
+      return POPULAR_SALVADOR_PLACES.slice(0, 5)
+    }
+    const q = origin.toLowerCase()
+    const matches: any[] = []
+    for (const p of POPULAR_SALVADOR_PLACES) {
+      if (p.name.toLowerCase().includes(q)) matches.push(p)
+    }
+    for (const r of routes) {
+      const disp = parseRouteDisplay(r.name)
+      if (disp.origin.toLowerCase().includes(q) && !matches.some(m => m.name === disp.origin)) {
+        matches.push({ name: disp.origin, category: `Ruta ${disp.badge}`, icon: "Bus", route: r })
+      }
+    }
+    return matches.slice(0, 6)
+  }, [origin, routes])
+
+  // Sugerencias predictivas en vivo para Destino
+  const destSuggestions = useMemo(() => {
+    if (!destination || destination.trim().length === 0) {
+      return POPULAR_SALVADOR_PLACES.slice(0, 5)
+    }
+    const q = destination.toLowerCase()
+    const matches: any[] = []
+    for (const p of POPULAR_SALVADOR_PLACES) {
+      if (p.name.toLowerCase().includes(q)) matches.push(p)
+    }
+    for (const r of routes) {
+      const disp = parseRouteDisplay(r.name)
+      if ((disp.destination.toLowerCase().includes(q) || r.name.toLowerCase().includes(q)) && !matches.some(m => m.name === disp.destination)) {
+        matches.push({ name: disp.destination, category: `Ruta ${disp.badge}`, icon: "Bus", route: r })
+      }
+    }
+    return matches.slice(0, 6)
+  }, [destination, routes])
+
+  const handleUseCurrentLocation = () => {
+    if (typeof window !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude
+          const lng = pos.coords.longitude
+          if (lat >= 13.0 && lat <= 14.5 && lng >= -90.5 && lng <= -87.5) {
+            setOrigin("Mi ubicación actual")
+            if (mapRef.current) {
+              mapRef.current.panTo({ lat, lng })
+              mapRef.current.setZoom(14)
+            }
+          } else {
+            setOrigin("San Salvador (Centro)")
+            if (mapRef.current) {
+              mapRef.current.panTo({ lat: 13.6929, lng: -89.2182 })
+            }
+          }
+          setShowOriginSuggestions(false)
+        },
+        () => {
+          setOrigin("San Salvador (Centro)")
+          setShowOriginSuggestions(false)
+        }
+      )
+    } else {
+      setOrigin("San Salvador (Centro)")
+      setShowOriginSuggestions(false)
     }
   }
 
@@ -644,41 +739,147 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
           )}
 
           {panelMode === 'search' && (
-            /* MODO 2: TARJETA DE BÚSQUEDA Y RESERVA */
+            /* MODO 2: TARJETA DE BÚSQUEDA PREDICTIVA A -> B */
             <div className="bg-white rounded-2xl shadow-xl mt-2.5 p-3.5 border border-gray-100 animate-in fade-in duration-200">
               {/* Origen y Destino */}
               <div className="relative flex items-center">
                 <div className="flex-1 space-y-2">
                   {/* Origen */}
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-2.5 relative">
                     <MapPin className="h-4 w-4 text-[#059669] shrink-0" />
                     <div className="flex-1 min-w-0">
                       <span className="text-[10px] uppercase font-bold text-gray-400 block leading-none">Origen</span>
                       <input 
                         type="text" 
                         value={origin} 
-                        onChange={(e) => setOrigin(e.target.value)}
-                        className="text-xs font-bold text-gray-900 bg-transparent w-full border-none p-0 focus:ring-0 focus:outline-none"
-                        placeholder="San Salvador"
+                        onChange={(e) => {
+                          setOrigin(e.target.value)
+                          setShowOriginSuggestions(true)
+                        }}
+                        onFocus={() => setShowOriginSuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowOriginSuggestions(false), 250)}
+                        className="text-xs font-bold text-gray-900 bg-transparent w-full border-none p-0 focus:ring-0 focus:outline-none placeholder:text-gray-400 placeholder:font-normal"
+                        placeholder="📍 Punto de partida (o Mi ubicación)"
                       />
                     </div>
+                    {/* Botón rápido para usar ubicación */}
+                    <button
+                      type="button"
+                      onClick={handleUseCurrentLocation}
+                      className="p-1 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors"
+                      title="Usar mi ubicación actual"
+                    >
+                      <Navigation2 className="h-3.5 w-3.5" />
+                    </button>
+
+                    {/* Dropdown predictivo de Origen */}
+                    {showOriginSuggestions && originSuggestions.length > 0 && (
+                      <div className="absolute left-0 right-0 top-full mt-1.5 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 overflow-hidden divide-y divide-gray-50 max-h-52 overflow-y-auto">
+                        <button
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault()
+                            handleUseCurrentLocation()
+                          }}
+                          className="w-full text-left px-3 py-2 hover:bg-emerald-50/70 flex items-center gap-2 text-[#059669] font-bold text-xs bg-emerald-50/30"
+                        >
+                          <Navigation2 className="h-3.5 w-3.5" />
+                          <span>Usar mi ubicación actual</span>
+                        </button>
+                        {originSuggestions.map((item, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onMouseDown={(e) => {
+                              e.preventDefault()
+                              setOrigin(item.name)
+                              setShowOriginSuggestions(false)
+                            }}
+                            className="w-full text-left px-3 py-2 hover:bg-emerald-50/70 flex items-center gap-2.5 transition-colors group"
+                          >
+                            <div className="p-1 rounded-md bg-gray-100 text-gray-500 group-hover:text-emerald-600 shrink-0">
+                              <DynamicIcon name={item.icon || 'MapPin'} className="h-3 w-3" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <span className="text-xs font-bold text-gray-800 block truncate group-hover:text-emerald-700">
+                                {item.name}
+                              </span>
+                              <span className="text-[10px] text-gray-400 block truncate">
+                                {item.category}
+                              </span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <div className="h-px bg-gray-100 ml-6" />
 
                   {/* Destino */}
-                  <div className="flex items-center gap-2.5">
-                    <MapPin className="h-4 w-4 text-gray-400 shrink-0" />
+                  <div className="flex items-center gap-2.5 relative">
+                    <MapPin className="h-4 w-4 text-rose-500 shrink-0" />
                     <div className="flex-1 min-w-0">
                       <span className="text-[10px] uppercase font-bold text-gray-400 block leading-none">Destino</span>
                       <input 
                         type="text" 
                         value={destination} 
-                        onChange={(e) => setDestination(e.target.value)}
+                        onChange={(e) => {
+                          setDestination(e.target.value)
+                          setShowDestSuggestions(true)
+                        }}
+                        onFocus={() => setShowDestSuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowDestSuggestions(false), 250)}
                         className="text-xs font-semibold text-gray-800 bg-transparent w-full border-none p-0 focus:ring-0 focus:outline-none placeholder:text-gray-400"
-                        placeholder="¿A dónde quieres ir?"
+                        placeholder="¿A dónde quieres ir? (Ej. El Tunco, Metrocentro)"
                       />
                     </div>
+                    {destination && (
+                      <button
+                        type="button"
+                        onClick={() => setDestination('')}
+                        className="p-1 text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+
+                    {/* Dropdown predictivo de Destino */}
+                    {showDestSuggestions && destSuggestions.length > 0 && (
+                      <div className="absolute left-0 right-0 top-full mt-1.5 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 overflow-hidden divide-y divide-gray-50 max-h-52 overflow-y-auto">
+                        {destSuggestions.map((item, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onMouseDown={(e) => {
+                              e.preventDefault()
+                              setDestination(item.name)
+                              setShowDestSuggestions(false)
+                              if (item.route) {
+                                setPreviewRoute(item.route)
+                                if (mapRef.current && item.route.stops?.length) {
+                                  mapRef.current.panTo({ lat: item.route.stops[0].latitude, lng: item.route.stops[0].longitude })
+                                  mapRef.current.setZoom(13)
+                                }
+                              }
+                            }}
+                            className="w-full text-left px-3 py-2 hover:bg-emerald-50/70 flex items-center gap-2.5 transition-colors group"
+                          >
+                            <div className="p-1 rounded-md bg-gray-100 text-gray-500 group-hover:text-emerald-600 shrink-0">
+                              <DynamicIcon name={item.icon || 'MapPin'} className="h-3 w-3" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <span className="text-xs font-bold text-gray-800 block truncate group-hover:text-emerald-700">
+                                {item.name}
+                              </span>
+                              <span className="text-[10px] text-gray-400 block truncate">
+                                {item.category}
+                              </span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -686,9 +887,9 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
                 <button
                   type="button"
                   onClick={() => {
-                    const temp = origin;
-                    setOrigin(destination || "San Salvador");
-                    setDestination(temp);
+                    const temp = origin
+                    setOrigin(destination)
+                    setDestination(temp)
                   }}
                   className="w-8 h-8 rounded-full border border-gray-200 bg-white hover:bg-gray-50 flex items-center justify-center text-gray-600 shadow-sm ml-2 active:scale-95 transition-transform shrink-0"
                   title="Intercambiar origen y destino"
@@ -697,40 +898,24 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
                 </button>
               </div>
 
-              {/* Fila Fecha y Pasajeros */}
-              <div className="flex items-center justify-between border-t border-gray-100 mt-2.5 pt-2.5 text-xs text-gray-700">
-                <button type="button" className="flex items-center gap-1.5 font-bold hover:text-gray-900">
-                  <Calendar className="h-3.5 w-3.5 text-gray-500" />
-                  <span>Hoy</span>
-                  <ChevronDown className="h-3 w-3 text-gray-400" />
-                </button>
-
-                <div className="h-4 w-px bg-gray-200" />
-
-                <button type="button" className="flex items-center gap-1.5 font-bold hover:text-gray-900">
-                  <Users className="h-3.5 w-3.5 text-gray-500" />
-                  <span>1 pasajero</span>
-                  <ChevronDown className="h-3 w-3 text-gray-400" />
-                </button>
-              </div>
-
               {/* Botón Buscar Rutas */}
               <Button
                 onClick={() => {
-                  if (filteredRoutes.length > 0 && mapRef.current) {
-                    const r = filteredRoutes[0];
-                    if (r.stops?.length) {
-                      mapRef.current.panTo({ lat: r.stops[0].latitude, lng: r.stops[0].longitude });
-                      mapRef.current.setZoom(12);
+                  if (filteredRoutes.length > 0) {
+                    const r = filteredRoutes[0]
+                    setPreviewRoute(r)
+                    if (mapRef.current && r.stops?.length) {
+                      mapRef.current.panTo({ lat: r.stops[0].latitude, lng: r.stops[0].longitude })
+                      mapRef.current.setZoom(13)
                     }
                   } else {
-                    setView('list');
+                    setView('list')
                   }
                 }}
                 className="w-full mt-3 h-10 rounded-xl bg-[#064e3b] hover:bg-[#043324] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md active:scale-[0.99] transition-all"
               >
                 <Search className="h-3.5 w-3.5" />
-                Buscar rutas
+                <span>Buscar rutas ({filteredRoutes.length} disponibles)</span>
               </Button>
             </div>
           )}
