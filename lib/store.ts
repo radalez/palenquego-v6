@@ -3,8 +3,9 @@ import { persist } from "zustand/middleware"
 
 const API_BASE = "/api-proxy";
 const MEDIA_BASE = "/media-proxy";
+export const DEFAULT_STORE_COVER = "https://res.cloudinary.com/dacanh1gn/image/upload/v1791135831/palenque_banners/slide_3_tours_costa.webp";
 
-// --- ESTA ES LA FUNCIÃ“N QUE LIMPIA TODO DE UN SOLO GOLPE ---
+// --- ESTA ES LA FUNCIÓN QUE LIMPIA TODO DE UN SOLO GOLPE ---
 const getProxyImage = (url: string) => {
   if (!url) return "";
   let cleanUrl = url.trim();
@@ -737,20 +738,32 @@ export const useAppStore = create<AppState>()(
 
           const data = await response.json()
           
-          const formattedBusinesses = data.map((b: any) => ({
-            ...b,
-            name: b.nombre_comercial || b.name,
-            description: b.biografia || b.description || "",
-            location: b.ubicacion_gps || b.location || "El Salvador",
-            // Aplicamos el filtro blindado a los dos campos de imagen
-            logo: getProxyImage(b.logo || ""),
-            coverImage: getProxyImage(b.portada || b.coverImage || ""),
-            rating: b.rating || 5.0,
-            reviews: b.reviews || 0,
-            category: b.category || "General",
-            services: b.services || [],
-            socialLinks: b.socialLinks || {},
-          }))
+          const currentServices = get().services || [];
+          const formattedBusinesses = data.map((b: any) => {
+            let cover = b.portada || b.coverImage || "";
+            // Si la portada viene vacía, intentamos rescatar la imagen del servicio
+            if (!cover || cover.includes("placeholder")) {
+              const svcImg = currentServices.find((s: any) => s.businessId === b.id && s.image && !s.image.includes("placeholder"))?.image;
+              if (svcImg) cover = svcImg;
+            }
+            if (!cover || cover.includes("placeholder")) {
+              cover = DEFAULT_STORE_COVER;
+            }
+
+            return {
+              ...b,
+              name: b.nombre_comercial || b.name,
+              description: b.biografia || b.description || "",
+              location: b.ubicacion_gps || b.location || "El Salvador",
+              logo: getProxyImage(b.logo || ""),
+              coverImage: getProxyImage(cover),
+              rating: b.rating || 5.0,
+              reviews: b.reviews || 0,
+              category: b.category || "General",
+              services: b.services || [],
+              socialLinks: b.socialLinks || {},
+            };
+          });
 
           set({ businesses: formattedBusinesses })
         } catch (error) {
@@ -1466,7 +1479,7 @@ export const useAppStore = create<AppState>()(
             rating: business.rating,
             reviews: business.reviews,
             price: 0,
-            image: business.coverImage || business.image || "/placeholder.svg",
+            image: business.coverImage || business.image || DEFAULT_STORE_COVER,
             isRemate: false,
             allowsPool: false,
             spotsLeft: 0,
@@ -1640,7 +1653,7 @@ export const useAppStore = create<AppState>()(
               avatar: "/avatars/default.png"
             },
             location: p.servicio_detalle?.ubicacion || "El Salvador",
-            image: getProxyImage(p.servicio_detalle?.imagen_principal || p.servicio_detalle?.imagen_url || p.servicio_detalle?.imagen || "/placeholder.svg"),
+            image: getProxyImage(p.servicio_detalle?.imagen_principal || p.servicio_detalle?.imagen_url || p.servicio_detalle?.imagen || DEFAULT_STORE_COVER),
             deadline: "24h restantes",
             createdAt: p.creado_el,
             members: [],

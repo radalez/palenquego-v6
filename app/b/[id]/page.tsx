@@ -1,13 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { use } from "react"
 import { useRouter } from "next/navigation"
 import { ChevronLeft, MapPin, Star, MessageCircle, Phone, Share2, Heart, Grid } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
-import { useAppStore, type Business } from "@/lib/store"
+import { useAppStore, type Business, DEFAULT_STORE_COVER } from "@/lib/store"
 import { BookingModal } from "@/components/booking-modal"
 
 interface BusinessDetailPageProps {
@@ -17,15 +17,45 @@ interface BusinessDetailPageProps {
 export default function BusinessDetailPage({ params }: BusinessDetailPageProps) {
   const router = useRouter()
   const resolvedParams = use(params)
-  const { businesses, services, isAuthenticated } = useAppStore()
+  const { businesses, services, fetchBusinesses, fetchServices, isAuthenticated } = useAppStore()
   const [showBookingModal, setShowBookingModal] = useState(false)
   const [selectedService, setSelectedService] = useState<any>(null)
+  const [loadingInitial, setLoadingInitial] = useState(businesses.length === 0)
+
+  useEffect(() => {
+    const load = async () => {
+      if (businesses.length === 0) await fetchBusinesses()
+      if (services.length === 0) await fetchServices()
+      setLoadingInitial(false)
+    }
+    load()
+  }, [])
 
   const business = businesses.find((b) => b.id === parseInt(resolvedParams.id))
   // Filtramos los servicios que tengan el mismo businessId que el ID de esta tienda
   const businessServices = business 
     ? services.filter((s) => s.businessId === business.id) 
     : []
+
+  // Imagen de portada con cascada inteligente:
+  // 1. business.coverImage (si no es placeholder)
+  // 2. Imagen del primer servicio asociado a este negocio
+  // 3. Logo del negocio
+  // 4. Banner oficial temático de PalenqueGo en Cloudinary
+  const effectiveCoverImage = 
+    (business?.coverImage && !business.coverImage.includes("placeholder")) 
+      ? business.coverImage 
+      : (businessServices.find(s => s.image && !s.image.includes("placeholder"))?.image || 
+         (business?.logo && !business.logo.includes("placeholder") ? business.logo : DEFAULT_STORE_COVER))
+
+  if (loadingInitial && !business) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center max-w-md mx-auto p-4">
+        <div className="w-10 h-10 rounded-full border-4 border-[#a3e635] border-t-transparent animate-spin mb-4" />
+        <p className="text-sm font-bold text-foreground">Cargando negocio...</p>
+      </div>
+    )
+  }
 
   // Render not found state after all hooks
   if (!business) {
@@ -80,12 +110,19 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
       <div className="flex-1 overflow-y-auto pb-32 relative">
         
         {/* Cover Image: Movido dentro del scroll para que el margen negativo del logo funcione */}
-        <div className="relative h-56 bg-gradient-to-br from-primary/20 to-primary/5 overflow-hidden border-b-2 border-primary/20 z-0">
+        <div className="relative h-56 bg-gradient-to-br from-[#04281a] via-[#064e3b] to-[#043324] overflow-hidden border-b-2 border-emerald-500/20 z-0">
           <img
-            src={business.coverImage || "/placeholder.svg"}
+            src={effectiveCoverImage}
             alt={business.name}
             className="w-full h-full object-cover"
+            onError={(e) => {
+              const target = e.currentTarget
+              if (target.src !== DEFAULT_STORE_COVER) {
+                target.src = DEFAULT_STORE_COVER
+              }
+            }}
           />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
         </div>
 
         {/* Content Section */}
@@ -154,11 +191,17 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
                     className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:border-primary/50 transition-all group"
                   >
                     <div className="flex h-full min-h-[140px]">
-                      <div className="w-32 flex-shrink-0 overflow-hidden relative">
+                      <div className="w-32 flex-shrink-0 overflow-hidden relative bg-[#04281a]/10">
                         <img
-                          src={service.image || "/placeholder.svg"}
-                          alt={service.name}
+                          src={service.image && !service.image.includes("placeholder") ? service.image : effectiveCoverImage}
+                          alt={service.nombre || service.name}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          onError={(e) => {
+                            const target = e.currentTarget
+                            if (target.src !== DEFAULT_STORE_COVER) {
+                              target.src = DEFAULT_STORE_COVER
+                            }
+                          }}
                         />
                         {service.isRemate && (
                           <div className="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">

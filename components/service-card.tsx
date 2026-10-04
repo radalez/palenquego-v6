@@ -5,7 +5,7 @@ import { Heart, Star, MapPin, Users, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { useAppStore, type Service } from "@/lib/store"
+import { useAppStore, type Service, DEFAULT_STORE_COVER } from "@/lib/store"
 import { RatingModal } from "@/components/rating-modal"
 
 interface ServiceCardProps {
@@ -25,12 +25,14 @@ export function ServiceCard({ service, onBook, onRouteClick }: ServiceCardProps)
         {/* Image Container */}
         <div className="relative h-40 bg-muted overflow-hidden">
           <img
-            src={service.image || "/placeholder.svg"}
+            src={service.image || DEFAULT_STORE_COVER}
             alt={service.name}
             className="w-full h-full object-cover"
             onError={(e) => {
               const img = e.target as HTMLImageElement
-              img.src = "/placeholder-service.jpg"
+              if (img.src !== DEFAULT_STORE_COVER) {
+                img.src = DEFAULT_STORE_COVER
+              }
             }}
           />
 

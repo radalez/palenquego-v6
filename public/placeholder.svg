@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#04281a"/>
+      <stop offset="50%" stop-color="#064e3b"/>
+      <stop offset="100%" stop-color="#021c12"/>
+    </linearGradient>
+    <linearGradient id="mountains" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0a5c45" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#04281a" stop-opacity="0.95"/>
+    </linearGradient>
+    <linearGradient id="sun" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#bef264"/>
+      <stop offset="100%" stop-color="#a3e635"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="800" height="500" fill="url(#bg)"/>
+  
+  <!-- Sun / Glow -->
+  <circle cx="400" cy="200" r="70" fill="url(#sun)" opacity="0.3"/>
+  <circle cx="400" cy="200" r="50" fill="url(#sun)" opacity="0.6"/>
+  
+  <!-- Mountains / Volcanoes of El Salvador silhouette -->
+  <path d="M 0,380 L 150,220 L 320,360 L 450,190 L 620,370 L 800,260 L 800,500 L 0,500 Z" fill="url(#mountains)"/>
+  <path d="M 0,420 L 220,310 L 400,430 L 580,290 L 800,410 L 800,500 L 0,500 Z" fill="#031f15" opacity="0.9"/>
+  
+  <!-- Brand watermark / icon -->
+  <g transform="translate(400, 260)" text-anchor="middle">
+    <!-- Camera / Store Icon Outline -->
+    <rect x="-30" y="-30" width="60" height="60" rx="16" fill="#ffffff" fill-opacity="0.08" stroke="#a3e635" stroke-width="2" stroke-dasharray="4 4"/>
+    <circle cx="0" cy="0" r="14" stroke="#a3e635" stroke-width="2" fill="none"/>
+    <text y="60" fill="#ffffff" opacity="0.85" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="700" letter-spacing="1">
+      PalenqueGo Turismo
+    </text>
+  </g>
+</svg>
