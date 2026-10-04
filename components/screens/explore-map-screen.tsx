@@ -338,10 +338,10 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
 
         {/* HEADER PRINCIPAL VERDE / SELVA */}
         <div className="relative z-30 bg-[#063b27] bg-gradient-to-b from-[#04281a] via-[#064e3b] to-[#043324] w-full pt-4 pb-4 px-4 shadow-xl shrink-0 rounded-b-[28px] overflow-hidden">
-          {/* Fondo decorativo con banner-top.png */}
+          {/* Fondo decorativo con banner-panda.png */}
           <div 
-            className="absolute inset-0 bg-cover bg-right-top bg-no-repeat pointer-events-none opacity-80 z-0"
-            style={{ backgroundImage: `url('/banner-top.png')` }}
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none opacity-85 z-0"
+            style={{ backgroundImage: `url('/banner-panda.png')` }}
           />
 
           <div className="relative z-10">
@@ -1005,10 +1005,10 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
       <div className="w-full h-full flex flex-col bg-[#F8FAF9] overflow-hidden">
         {/* HEADER SUPERIOR VERDE CON LOGO Y AVATAR */}
         <div className="relative z-20 bg-[#063b27] bg-gradient-to-b from-[#04281a] via-[#064e3b] to-[#043324] w-full pt-4 pb-4 px-4 shadow-xl shrink-0 rounded-b-[28px] overflow-hidden">
-          {/* Fondo decorativo con banner-top.png */}
+          {/* Fondo decorativo con banner-panda.png */}
           <div 
-            className="absolute inset-0 bg-cover bg-right-top bg-no-repeat pointer-events-none opacity-80 z-0"
-            style={{ backgroundImage: `url('/banner-top.png')` }}
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none opacity-85 z-0"
+            style={{ backgroundImage: `url('/banner-panda.png')` }}
           />
 
           <div className="relative z-10">

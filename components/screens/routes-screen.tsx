@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { MapPin, Navigation2, Clock, Users, AlertCircle, X, Truck, Ticket, ShoppingCart, Search, ArrowLeft } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -58,21 +58,45 @@ interface RoutesScreenProps {
 }
 
 export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
-  const { routes, services, fetchRoutes, isLoading, routeSearchQuery, setRouteSearchQuery, returnToMapRoute, setReturnToMapRoute } = useAppStore() 
+  const { routes, services, fetchRoutes, isLoading, routeSearchQuery, setRouteSearchQuery, returnToMapRoute, setReturnToMapRoute, myUserRoutes, fetchMyUserRoutes } = useAppStore() 
   const [tracking, setTracking] = useState<RouteTrackingState | null>(null)
   const [serviceView, setServiceView] = useState<ServiceViewState | null>(null)
   const [ticketPurchase, setTicketPurchase] = useState<TicketPurchaseState | null>(null)
   const [ticketModalOpen, setTicketModalOpen] = useState(false)
 
-  const filteredRoutes = routes.filter((route) => {
-    const query = routeSearchQuery.toLowerCase()
+  const allRoutes = useMemo(() => {
+    const formattedUserRoutes: Route[] = (myUserRoutes || []).map((ur: any) => ({
+      id: ur.id,
+      name: ur.name,
+      colorHex: '#059669',
+      price_one_way: String(ur.proposed_price || '0'),
+      price_round_trip: String(ur.proposed_price || '0'),
+      is_active: true,
+      driver_name: ur.driver_name,
+      unit_name: ur.driver_name ? 'Taxi / Auto' : 'Sin asignar',
+      stops: (ur.stops || []).map((s: any, idx: number) => ({
+        id: s.id || idx + 1,
+        name: s.name,
+        latitude: Number(s.latitude) || 13.6893,
+        longitude: Number(s.longitude) || -89.1872,
+        order: s.order || idx + 1,
+        minutes_from_start: s.minutes_from_start || (idx * 15)
+      }))
+    }))
+    return [...routes, ...formattedUserRoutes]
+  }, [routes, myUserRoutes])
+
+  const filteredRoutes = allRoutes.filter((route) => {
+    const query = (routeSearchQuery || "").toLowerCase()
     return (
-      route.name.toLowerCase().includes(query) ||
-      route.stops.some((stop) => stop.name?.toLowerCase().includes(query))
+      (route.name || "").toLowerCase().includes(query) ||
+      (route.stops || []).some((stop) => (stop.name || "")?.toLowerCase().includes(query))
     )
   })
 
-useEffect(() => {
+  useEffect(() => {
+    fetchRoutes();
+    fetchMyUserRoutes?.();
     // Primera carga inmediata
     fetchRoutes();
 
@@ -100,7 +124,7 @@ useEffect(() => {
   const getTicketPrices = () => {
     if (!ticketPurchase) return { oneWay: "0.00", roundTrip: "0.00", startName: null, endName: null };
     
-    const route = routes.find(r => r.id === ticketPurchase.routeId);
+    const route = allRoutes.find(r => r.id === ticketPurchase.routeId);
     if (!route || !route.stops || route.stops.length === 0) return { oneWay: route?.price_one_way || "0.00", roundTrip: route?.price_round_trip || "0.00", startName: null, endName: null };
     
     let startStop = route.stops[0];
@@ -177,7 +201,7 @@ useEffect(() => {
 
   const handleConfirmTicketPayment = () => {
     setTicketPurchase((prev) => (prev ? { ...prev, step: "payment" } : null))
-    const route = routes.find(r => r.id === ticketPurchase?.routeId)
+    const route = allRoutes.find(r => r.id === ticketPurchase?.routeId)
     if (route && ticketPurchase) {
       const redirectUrl = window.location.origin + "/checkout-success";
       useAppStore.getState().buyTicketWompi(
@@ -205,7 +229,7 @@ useEffect(() => {
 
       {/* Tracking Modal with Scroll */}
       {tracking?.showTracking && (() => {
-        const trackedRoute = routes.find(r => r.id === tracking.routeId)
+        const trackedRoute = allRoutes.find(r => r.id === tracking.routeId)
         const routeAny = trackedRoute as any
         const hasGPS = routeAny?.is_active && routeAny?.unit_lat && routeAny?.unit_lng
         return (
@@ -237,8 +261,8 @@ useEffect(() => {
                 </div>
                 {hasGPS ? (
                   <div className="space-y-1 text-sm">
-                    <p className="text-muted-foreground">Lat: <span className="font-mono text-foreground">{routeAny.unit_lat?.toFixed(6)}</span></p>
-                    <p className="text-muted-foreground">Lng: <span className="font-mono text-foreground">{routeAny.unit_lng?.toFixed(6)}</span></p>
+                    <p className="text-muted-foreground">Lat: <span className="font-mono text-foreground">{routeAny.unit_lat != null ? Number(routeAny.unit_lat).toFixed(6) : '—'}</span></p>
+                    <p className="text-muted-foreground">Lng: <span className="font-mono text-foreground">{routeAny.unit_lng != null ? Number(routeAny.unit_lng).toFixed(6) : '—'}</span></p>
                     <p className="text-xs text-green-600 dark:text-green-400 mt-1">Actualizado hace unos segundos</p>
                   </div>
                 ) : (
@@ -380,7 +404,7 @@ useEffect(() => {
                     <p className="text-xs text-muted-foreground mb-3">{service.location}</p>
                     <Button
                       onClick={() => {
-                        handleBuyTicket(routes.find((r) => r.id === serviceView.routeId)!, service)
+                        handleBuyTicket(allRoutes.find((r) => r.id === serviceView.routeId)!, service)
                         setServiceView(null)
                       }}
                       size="sm"
@@ -430,7 +454,7 @@ useEffect(() => {
                   <div className="space-y-4">
                     <div className="bg-muted p-4 rounded-xl">
                       <p className="text-xs text-muted-foreground mb-1">Ruta seleccionada</p>
-                      <p className="font-bold">{routes.find((r) => r.id === ticketPurchase.routeId)?.name}</p>
+                      <p className="font-bold">{allRoutes.find((r) => r.id === ticketPurchase.routeId)?.name}</p>
                     </div>
 
                     <div className="space-y-4">
@@ -441,8 +465,8 @@ useEffect(() => {
                           value={ticketPurchase.startStopId || ''}
                           onChange={(e) => setTicketPurchase(prev => prev ? { ...prev, startStopId: Number(e.target.value) } : null)}
                         >
-                          {routes.find((r) => r.id === ticketPurchase.routeId)?.stops?.filter(s => {
-                             const endStop = routes.find((r) => r.id === ticketPurchase.routeId)?.stops?.find(es => es.id === ticketPurchase.endStopId);
+                          {allRoutes.find((r) => r.id === ticketPurchase.routeId)?.stops?.filter(s => {
+                             const endStop = allRoutes.find((r) => r.id === ticketPurchase.routeId)?.stops?.find(es => es.id === ticketPurchase.endStopId);
                              return !endStop || s.order < endStop.order;
                           }).map(stop => (
                             <option key={stop.id} value={stop.id}>{stop.name}</option>
@@ -457,8 +481,8 @@ useEffect(() => {
                           value={ticketPurchase.endStopId || ''}
                           onChange={(e) => setTicketPurchase(prev => prev ? { ...prev, endStopId: Number(e.target.value) } : null)}
                         >
-                          {routes.find((r) => r.id === ticketPurchase.routeId)?.stops?.filter(s => {
-                             const startStop = routes.find((r) => r.id === ticketPurchase.routeId)?.stops?.find(ss => ss.id === ticketPurchase.startStopId);
+                          {allRoutes.find((r) => r.id === ticketPurchase.routeId)?.stops?.filter(s => {
+                             const startStop = allRoutes.find((r) => r.id === ticketPurchase.routeId)?.stops?.find(ss => ss.id === ticketPurchase.startStopId);
                              return startStop && s.order > startStop.order;
                           }).map(stop => (
                             <option key={stop.id} value={stop.id}>{stop.name}</option>
@@ -816,7 +840,7 @@ function RouteCardItem({
         <div className="mt-4 grid grid-cols-2 gap-2">
           <div className="bg-muted p-2 rounded-lg text-center">
             <p className="text-xs text-muted-foreground">Paradas</p>
-            <p className="font-bold text-sm">{route.stops.length}</p>
+            <p className="font-bold text-sm">{(route.stops || []).length}</p>
           </div>
           <div className="bg-muted p-2 rounded-lg text-center">
             <p className="text-xs text-muted-foreground">GPS</p>
@@ -831,14 +855,16 @@ function RouteCardItem({
       <div className="px-4 py-3 border-b border-border">
         <p className="text-sm font-semibold mb-2">Paradas de esta ruta:</p>
         <div className="space-y-2">
-          {route.stops.map((stop, idx) => (
+          {(route.stops || []).map((stop, idx) => (
             <div key={idx} className="flex items-center gap-3 text-sm">
               <div className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/10 text-primary font-bold text-xs flex-shrink-0">
                 {stop.order}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium truncate">{stop.name || `Parada ${stop.order}`}</p>
-                <p className="text-xs text-muted-foreground">{stop.latitude.toFixed(4)}, {stop.longitude.toFixed(4)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {stop.latitude != null ? Number(stop.latitude).toFixed(4) : '—'}, {stop.longitude != null ? Number(stop.longitude).toFixed(4) : '—'}
+                </p>
               </div>
             </div>
           ))}
