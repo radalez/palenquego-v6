@@ -337,8 +337,15 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
       <div className="relative w-full h-full flex flex-col bg-background overflow-hidden">
 
         {/* HEADER PRINCIPAL VERDE / SELVA */}
-        <div className="relative z-30 bg-[#063b27] bg-gradient-to-b from-[#04281a] via-[#064e3b] to-[#043324] w-full pt-4 pb-4 px-4 shadow-xl shrink-0 rounded-b-[28px]">
-          {/* Fila superior: Logo y Avatar */}
+        <div className="relative z-30 bg-[#063b27] bg-gradient-to-b from-[#04281a] via-[#064e3b] to-[#043324] w-full pt-4 pb-4 px-4 shadow-xl shrink-0 rounded-b-[28px] overflow-hidden">
+          {/* Fondo decorativo con banner-top.png */}
+          <div 
+            className="absolute inset-0 bg-cover bg-right-top bg-no-repeat pointer-events-none opacity-80 z-0"
+            style={{ backgroundImage: `url('/banner-top.png')` }}
+          />
+
+          <div className="relative z-10">
+            {/* Fila superior: Logo y Avatar */}
           <div className="flex items-center justify-between text-white mb-2.5">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center shadow-xs">
@@ -643,6 +650,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
               </Button>
             </div>
           )}
+          </div>
         </div>
 
         {/* MAPA PRINCIPAL (OCUPA EL ESPACIO RESTANTE Y SE ADAPTA AL 100%) */}
@@ -996,8 +1004,15 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
     return (
       <div className="w-full h-full flex flex-col bg-[#F8FAF9] overflow-hidden">
         {/* HEADER SUPERIOR VERDE CON LOGO Y AVATAR */}
-        <div className="relative z-20 bg-[#063b27] bg-gradient-to-b from-[#04281a] via-[#064e3b] to-[#043324] w-full pt-4 pb-4 px-4 shadow-xl shrink-0 rounded-b-[28px]">
-          {/* Fila superior: Logo y Avatar */}
+        <div className="relative z-20 bg-[#063b27] bg-gradient-to-b from-[#04281a] via-[#064e3b] to-[#043324] w-full pt-4 pb-4 px-4 shadow-xl shrink-0 rounded-b-[28px] overflow-hidden">
+          {/* Fondo decorativo con banner-top.png */}
+          <div 
+            className="absolute inset-0 bg-cover bg-right-top bg-no-repeat pointer-events-none opacity-80 z-0"
+            style={{ backgroundImage: `url('/banner-top.png')` }}
+          />
+
+          <div className="relative z-10">
+            {/* Fila superior: Logo y Avatar */}
           <div className="flex items-center justify-between text-white mb-2.5">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center shadow-xs">
@@ -1084,6 +1099,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
             >
               <ChevronRight className="h-4 w-4" />
             </button>
+          </div>
           </div>
         </div>
 
