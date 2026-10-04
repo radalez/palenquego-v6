@@ -94,6 +94,11 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
   const [mapPickMode, setMapPickMode] = useState<'origin' | 'destination' | null>(null)
   const [currentPickedOrigin, setCurrentPickedOrigin] = useState<{ name: string; lat: number; lng: number } | null>(null)
   const [currentPickedDestination, setCurrentPickedDestination] = useState<{ name: string; lat: number; lng: number } | null>(null)
+  
+  // Estado para Nivel de Detalle (LOD) y Cartita Flotante de Ruta
+  const [mapZoom, setMapZoom] = useState<number>(9)
+  const [previewRoute, setPreviewRoute] = useState<any | null>(null)
+  const [hoveredRouteId, setHoveredRouteId] = useState<any | null>(null)
 
   useEffect(() => {
     fetchMyUserRoutes()
@@ -312,6 +317,88 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
     return result
   }, [routes, superCategory, activeCategory, filterService, filterLine, destination, searchQuery])
 
+  // Parser para extraer número/código corto de ruta y separar origen/destino
+  const parseRouteDisplay = (routeName: string) => {
+    let badge = ''
+    let destination = ''
+    let origin = ''
+
+    // Detectar patrones como "Ruta 117-A", "Ruta 2-A", "Ruta 900-1", "Ruta 12", etc.
+    const routeNumMatch = routeName.match(/Ruta\s+([0-9]+[A-Za-z0-9\-\/]*)/i)
+    if (routeNumMatch) {
+      badge = routeNumMatch[1]
+    } else {
+      const parts = routeName.split(/[:\-|➔]/)[0].trim()
+      badge = parts.replace(/^Ruta\s+/i, '').trim().slice(0, 8)
+    }
+
+    if (routeName.includes('->')) {
+      const splitArr = routeName.split('->')
+      destination = splitArr[1]?.trim() || ''
+      const originPart = splitArr[0]?.split(':')
+      origin = originPart.length > 1 ? originPart[1]?.trim() : originPart[0]?.trim()
+    } else if (routeName.includes(' - ')) {
+      const splitArr = routeName.split(' - ')
+      origin = splitArr[0]?.replace(/^Ruta\s+[^:]*:\s*/i, '').trim()
+      destination = splitArr[1]?.trim() || ''
+    } else {
+      destination = routeName
+    }
+
+    destination = destination.replace(/^Punto Final/i, '').replace(/Centro SS/i, 'San Salvador').trim()
+    origin = origin.replace(/^Punto Inicial/i, '').trim()
+
+    return {
+      badge: badge || 'Bus',
+      origin: origin || 'Origen',
+      destination: destination || 'Destino',
+    }
+  }
+
+  // Precalcular micro-dispersión orbital para evitar amontonamiento en terminales con coordenadas idénticas
+  const routePositions = useMemo(() => {
+    const coordGroups: { [key: string]: number[] } = {}
+    filteredRoutes.forEach((route, i) => {
+      if (!route.stops?.length) return
+      const lat = route.stops[0].latitude
+      const lng = route.stops[0].longitude
+      // Agrupar rutas en un radio estrecho (~150m)
+      const key = `${lat.toFixed(3)},${lng.toFixed(3)}`
+      if (!coordGroups[key]) coordGroups[key] = []
+      coordGroups[key].push(i)
+    })
+
+    return filteredRoutes.map((route, i) => {
+      if (!route.stops?.length) return { pos: { lat: 13.6893, lng: -89.1872 }, offsetX: 0, offsetY: 0 }
+      const lat = route.stops[0].latitude
+      const lng = route.stops[0].longitude
+      const key = `${lat.toFixed(3)},${lng.toFixed(3)}`
+      const group = coordGroups[key] || [i]
+      const indexInGroup = group.indexOf(i)
+      const countInGroup = group.length
+
+      let offsetX = 0
+      let offsetY = 0
+      if (countInGroup > 1) {
+        // Dispersión radial limpia y estética solo para las que comparten el mismo punto de origen
+        const radius = Math.min(24, 12 + countInGroup * 2)
+        const angle = (indexInGroup / countInGroup) * 2 * Math.PI
+        offsetX = Math.round(Math.cos(angle) * radius)
+        offsetY = Math.round(Math.sin(angle) * radius)
+      }
+
+      return {
+        pos: { lat, lng },
+        offsetX,
+        offsetY,
+      }
+    })
+  }, [filteredRoutes])
+
+  const previewPathCoordinates = useMemo(() =>
+    previewRoute?.stops?.map((s: any) => ({ lat: s.latitude, lng: s.longitude })) || []
+  , [previewRoute])
+
   const pathCoordinates = useMemo(() =>
     selectedRoute?.stops?.map((s: any) => ({ lat: s.latitude, lng: s.longitude })) || []
   , [selectedRoute])
@@ -326,9 +413,6 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
   const catColor = selectedRoute?.category?.color || '#059669'
   const catIcon  = selectedRoute?.category?.icon  || 'MapPin'
 
-  // ─────────────────────────────────────────────
-  // PANTALLA 1 — MAPA
-  // ─────────────────────────────────────────────
   // ─────────────────────────────────────────────
   // PANTALLA 1 — MAPA
   // ─────────────────────────────────────────────
@@ -659,10 +743,19 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
             <GoogleMap 
               mapContainerStyle={containerStyle} 
               center={mapCenter} 
-              zoom={9}
+              zoom={mapZoom}
               options={{ disableDefaultUI: true, zoomControl: false, styles: MAP_STYLES }}
               onLoad={(map) => { mapRef.current = map }}
-              onClick={handleMapClick}
+              onZoomChanged={() => {
+                if (mapRef.current) {
+                  const z = mapRef.current.getZoom()
+                  if (typeof z === 'number') setMapZoom(z)
+                }
+              }}
+              onClick={(e) => {
+                setPreviewRoute(null)
+                handleMapClick(e)
+              }}
             >
               {currentPickedOrigin && (
                 <Marker
@@ -679,28 +772,91 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
                 />
               )}
 
+              {/* Trazado Vectorial GPS de la Ruta Previsualizada */}
+              {previewPathCoordinates.length > 1 && (
+                <Polyline
+                  path={previewPathCoordinates}
+                  options={{
+                    strokeColor: previewRoute?.category?.color || '#059669',
+                    strokeOpacity: 0.9,
+                    strokeWeight: 5,
+                  }}
+                />
+              )}
+
+              {/* Marcadores de Rutas con Nivel de Detalle Inteligente (LOD) */}
               {filteredRoutes.map((route, idx) => {
                 if (!route.stops?.length) return null
+                const { pos, offsetX, offsetY } = routePositions[idx] || { pos: { lat: route.stops[0].latitude, lng: route.stops[0].longitude }, offsetX: 0, offsetY: 0 }
                 const rColor = route.category?.color || '#059669'
-                const rIcon  = route.category?.icon  || 'MapPin'
-                const pos    = { lat: route.stops[0].latitude, lng: route.stops[0].longitude }
-                
-                // Desplazamiento visual para evitar que pines en la misma ciudad se tapen entre sí
-                const offsetX = (idx % 3) * 20 - 20; 
-                const offsetY = Math.floor(idx / 3) * 20 - 20;
+                const rIcon  = route.category?.icon  || 'Bus'
+                const info   = parseRouteDisplay(route.name)
+                const isPreview = previewRoute?.id === route.id
+                const isHovered = hoveredRouteId === route.id
+                const isHighlighted = isPreview || isHovered
 
                 return (
                   <OverlayView key={route.id} position={pos} mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}>
-                    <div className="absolute -translate-x-1/2 -translate-y-full cursor-pointer transition-transform hover:scale-110 hover:z-50 z-10"
+                    <div
+                      className={`absolute -translate-x-1/2 -translate-y-full cursor-pointer transition-all duration-200 ${
+                        isHighlighted ? 'z-50 scale-110' : 'z-10 hover:scale-105 hover:z-40'
+                      }`}
                       style={{ marginLeft: `${offsetX}px`, marginTop: `${offsetY}px` }}
-                      onClick={() => { setSelectedRoute(route); setView('detail') }}>
-                      <div className="flex items-center gap-1 bg-white rounded-full p-1 pr-3 shadow-lg border border-gray-100">
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-white" style={{ backgroundColor: rColor }}>
-                          <DynamicIcon name={rIcon} className="h-4 w-4" />
+                      onMouseEnter={() => setHoveredRouteId(route.id)}
+                      onMouseLeave={() => setHoveredRouteId(null)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setPreviewRoute(route)
+                        if (mapRef.current && route.stops?.length) {
+                          mapRef.current.panTo({ lat: route.stops[0].latitude, lng: route.stops[0].longitude })
+                        }
+                      }}
+                    >
+                      {/* NIVEL 1: Zoom Lejano (mapZoom < 12) -> Micro-Badge Circular / Compacto */}
+                      {mapZoom < 12 ? (
+                        <div className="flex flex-col items-center">
+                          <div
+                            className={`flex items-center justify-center gap-1 px-2 py-0.5 rounded-full text-white font-extrabold text-[11px] shadow-md border-2 transition-all ${
+                              isHighlighted ? 'ring-4 ring-emerald-300 scale-110' : 'border-white'
+                            }`}
+                            style={{ backgroundColor: rColor }}
+                          >
+                            <DynamicIcon name={rIcon} className="h-3 w-3 shrink-0" />
+                            <span className="leading-tight tracking-tight">{info.badge}</span>
+                          </div>
+                          <div
+                            className="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[5px]"
+                            style={{ borderTopColor: rColor }}
+                          />
                         </div>
-                        <span className="text-xs font-bold text-gray-800 whitespace-nowrap">{route.name}</span>
-                      </div>
-                      <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-white absolute left-1/2 -translate-x-1/2" />
+                      ) : (
+                        /* NIVEL 2: Zoom Medio / Cercano (mapZoom >= 12) -> Chip Estilizado con Badge + Destino */
+                        <div className="flex flex-col items-center">
+                          <div
+                            className={`flex items-center gap-1.5 bg-white rounded-full p-1 pr-2.5 shadow-lg border transition-all ${
+                              isHighlighted ? 'ring-2 ring-emerald-400 border-emerald-500 scale-105' : 'border-gray-200'
+                            }`}
+                          >
+                            <div
+                              className="h-6 px-2 rounded-full flex items-center justify-center text-white text-[10px] font-black shrink-0 shadow-xs"
+                              style={{ backgroundColor: rColor }}
+                            >
+                              <span>{info.badge}</span>
+                            </div>
+                            <div className="flex flex-col text-left leading-none">
+                              <span className="text-[11px] font-bold text-gray-800 whitespace-nowrap max-w-[130px] truncate">
+                                {info.destination || info.origin}
+                              </span>
+                              {route.price_one_way ? (
+                                <span className="text-[9px] font-semibold text-emerald-600">
+                                  ${route.price_one_way}
+                                </span>
+                              ) : null}
+                            </div>
+                          </div>
+                          <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[6px] border-t-white shadow-sm" />
+                        </div>
+                      )}
                     </div>
                   </OverlayView>
                 )
@@ -709,6 +865,90 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
           ) : (
             <div className="w-full h-full bg-[#E8F5E9] animate-pulse flex items-center justify-center text-gray-500 text-sm">
               Cargando mapa...
+            </div>
+          )}
+
+          {/* CARTITA FLOTANTE DE RUTA SELECCIONADA / PREVIEW */}
+          {previewRoute && (
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-md animate-in slide-in-from-bottom-5 fade-in duration-300">
+              <div className="bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-2xl border border-gray-100 flex flex-col gap-3 relative">
+                {/* Botón Cerrar */}
+                <button
+                  type="button"
+                  onClick={() => setPreviewRoute(null)}
+                  className="absolute top-3 right-3 p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors"
+                  title="Cerrar vista previa"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+
+                {/* Encabezado: Categoría & Badge */}
+                <div className="flex items-center gap-2 pr-8">
+                  <div
+                    className="px-2.5 py-1 rounded-full text-white text-xs font-black flex items-center gap-1.5 shadow-sm"
+                    style={{ backgroundColor: previewRoute.category?.color || '#059669' }}
+                  >
+                    <DynamicIcon name={previewRoute.category?.icon || 'Bus'} className="h-3.5 w-3.5" />
+                    <span>{parseRouteDisplay(previewRoute.name).badge}</span>
+                  </div>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500 truncate">
+                    {previewRoute.category?.name || 'Transporte Colectivo'}
+                  </span>
+                </div>
+
+                {/* Recorrido Origen -> Destino */}
+                <div className="flex flex-col gap-1.5 bg-gray-50/80 rounded-xl p-2.5 border border-gray-100">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-200 shrink-0" />
+                    <span className="text-xs font-bold text-gray-800 truncate">
+                      {parseRouteDisplay(previewRoute.name).origin}
+                    </span>
+                  </div>
+                  <div className="w-0.5 h-3 bg-gray-300 ml-1 rounded-full" />
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-rose-200 shrink-0" />
+                    <span className="text-xs font-bold text-gray-800 truncate">
+                      {parseRouteDisplay(previewRoute.name).destination}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Métricas: Tarifa Ida, Vuelta y Paradas */}
+                <div className="grid grid-cols-3 gap-2 py-1 text-center border-y border-gray-100">
+                  <div>
+                    <span className="text-[10px] text-gray-500 block uppercase font-medium">Tarifa Ida</span>
+                    <span className="text-sm font-black text-emerald-600">
+                      ${previewRoute.price_one_way || '0.25'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-gray-500 block uppercase font-medium">Tarifa Vuelta</span>
+                    <span className="text-sm font-black text-gray-700">
+                      ${previewRoute.price_round_trip || '0.50'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-gray-500 block uppercase font-medium">Paradas</span>
+                    <span className="text-sm font-black text-gray-700">
+                      {previewRoute.stops?.length || 0}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Botón de Acción Principal */}
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => {
+                      setSelectedRoute(previewRoute);
+                      setView('detail');
+                    }}
+                    className="flex-1 bg-[#064e3b] hover:bg-[#043324] text-white font-bold text-xs h-10 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+                  >
+                    <span>Ver Recorrido & Paradas</span>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
 
