@@ -84,12 +84,25 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
 
   // Estados de Super Categorías y Modo de Cabecera
   const currentUser = useAppStore((state) => state.currentUser)
-  const [superCategory, setSuperCategory] = useState<'INTERURBANO' | 'URBANO' | 'TOUR'>('INTERURBANO')
-  const [headerMode, setHeaderMode] = useState<'search' | 'categories'>('search')
+  const [superCategory, setSuperCategory] = useState<'INTERURBANO' | 'URBANO' | 'TOUR' | null>(null)
+  const [panelMode, setPanelMode] = useState<'none' | 'categories' | 'search'>('none')
   const [origin, setOrigin] = useState("San Salvador")
   const [destination, setDestination] = useState("")
   const [showPromoBanner, setShowPromoBanner] = useState(true)
   const [currentPromoIndex, setCurrentPromoIndex] = useState(0)
+
+  // Ciclo de 3 estados: 'none' (arranca sin nada) -> 'categories' -> 'search' -> 'none'
+  const handleToggleClick = () => {
+    if (panelMode === 'none') {
+      setPanelMode('categories')
+    } else if (panelMode === 'categories') {
+      setPanelMode('search')
+      setCategoryPanelOpen(false)
+    } else {
+      setPanelMode('none')
+      setCategoryPanelOpen(false)
+    }
+  }
 
   // Estados para Modal de Filtros (media_1791123281831.jpg)
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false)
@@ -294,12 +307,12 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
             </p>
           </div>
 
-          {/* BARRA DE LAS 3 SUPER CATEGORÍAS + BOTÓN FLECHITA */}
+          {/* BARRA DE LAS 3 SUPER CATEGORÍAS + BOTÓN FLECHITA A LA DERECHA */}
           <div className="bg-white rounded-2xl shadow-md p-1.5 flex items-center justify-between gap-1 border border-gray-100">
             {/* 1. Interurbano */}
             <button
               type="button"
-              onClick={() => setSuperCategory('INTERURBANO')}
+              onClick={() => setSuperCategory(prev => prev === 'INTERURBANO' ? null : 'INTERURBANO')}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-1 rounded-xl text-xs font-bold transition-all ${
                 superCategory === 'INTERURBANO'
                   ? 'bg-[#dcfce7] text-[#064e3b] shadow-xs'
@@ -313,7 +326,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
             {/* 2. Urbano */}
             <button
               type="button"
-              onClick={() => setSuperCategory('URBANO')}
+              onClick={() => setSuperCategory(prev => prev === 'URBANO' ? null : 'URBANO')}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-1 rounded-xl text-xs font-bold transition-all ${
                 superCategory === 'URBANO'
                   ? 'bg-[#dcfce7] text-[#064e3b] shadow-xs'
@@ -324,24 +337,10 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
               <span className="text-[11px]">Urbano</span>
             </button>
 
-            {/* 3. BOTÓN FLECHITA CIRCULAR (Alterna entre Buscador y Categorías) */}
+            {/* 3. Tours */}
             <button
               type="button"
-              onClick={() => setHeaderMode(prev => prev === 'search' ? 'categories' : 'search')}
-              className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-all ${
-                headerMode === 'categories' 
-                  ? 'bg-[#a3e635] text-[#064e3b] shadow-sm rotate-180' 
-                  : 'bg-[#dcfce7] text-[#064e3b] hover:bg-emerald-200 shadow-xs'
-              }`}
-              title={headerMode === 'search' ? 'Ver categorías' : 'Ver buscador'}
-            >
-              <ChevronLeft className="h-3.5 w-3.5" />
-            </button>
-
-            {/* 4. Tours */}
-            <button
-              type="button"
-              onClick={() => setSuperCategory('TOUR')}
+              onClick={() => setSuperCategory(prev => prev === 'TOUR' ? null : 'TOUR')}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-1 rounded-xl text-xs font-bold transition-all ${
                 superCategory === 'TOUR'
                   ? 'bg-[#dcfce7] text-[#064e3b] shadow-xs'
@@ -351,11 +350,123 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
               <Camera className="h-3.5 w-3.5" />
               <span className="text-[11px]">Tours</span>
             </button>
+
+            {/* 4. BOTÓN FLECHITA AL LADO DERECHO DE TODO (Ciclo: categorias -> buscador -> ocultar) */}
+            <button
+              type="button"
+              onClick={handleToggleClick}
+              className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-all shadow-xs active:scale-95 ${
+                panelMode !== 'none'
+                  ? 'bg-[#a3e635] text-[#064e3b] font-bold rotate-90'
+                  : 'bg-[#dcfce7] text-[#064e3b] hover:bg-emerald-200'
+              }`}
+              title={
+                panelMode === 'none' 
+                  ? 'Ver categorías' 
+                  : panelMode === 'categories' 
+                  ? 'Ver buscador' 
+                  : 'Ocultar panel'
+              }
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
           </div>
 
-          {/* CONTENIDO INTERCAMBIABLE: MODO A (BUSCADOR) vs MODO B (CATEGORÍAS) */}
-          {headerMode === 'search' ? (
-            /* MODO A: TARJETA DE BÚSQUEDA Y RESERVA */
+          {/* PANEL INFERIOR INTERCAMBIABLE SEGÚN panelMode ('none' | 'categories' | 'search') */}
+          {panelMode === 'categories' && (
+            /* MODO 1: BARRA Y GRID DE CATEGORÍAS (COMPORTAMIENTO ORIGINAL RESTAURADO) */
+            <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-2 mt-2.5 transition-all duration-300 animate-in fade-in">
+              {/* Vista 1: Scroll Horizontal */}
+              {!categoryPanelOpen && (
+                <div className="flex items-center gap-1 animate-in fade-in duration-200">
+                  {/* Botón Todas (Abre Grid Completo) */}
+                  <button
+                    type="button"
+                    onClick={() => { setCategoryPanelOpen(true); setActiveCategory(null) }}
+                    className={`flex flex-col items-center gap-1 min-w-[60px] p-2 rounded-xl transition-all shrink-0 ${
+                      activeCategory === null ? 'bg-gray-100 border border-gray-200 shadow-sm' : 'hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className={`p-1.5 rounded-full ${activeCategory === null ? 'text-[#0B1F15]' : 'text-gray-500'}`}>
+                      <LayoutGrid className="h-5 w-5" />
+                    </div>
+                    <span className={`text-[10px] font-bold ${activeCategory === null ? 'text-[#0B1F15]' : 'text-gray-500'}`}>
+                      Todas
+                    </span>
+                  </button>
+
+                  <div className="w-px h-10 bg-gray-100 shrink-0" />
+
+                  {/* Scroll horizontal */}
+                  <div className="flex-1 overflow-x-auto scrollbar-hide">
+                    <div className="flex gap-2 px-1" style={{ width: 'max-content' }}>
+                      {(categories.length > 0 ? categories : DEFAULT_TOUR_CATEGORIES).map(cat => (
+                        <button
+                          key={cat.id || cat.slug}
+                          type="button"
+                          onClick={() => { setActiveCategory(cat.slug); setCategoryPanelOpen(false) }}
+                          className={`flex flex-col items-center gap-1 min-w-[62px] p-2 rounded-xl transition-all ${
+                            activeCategory === cat.slug ? 'bg-gray-100 border border-gray-200 shadow-sm' : 'hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="p-1.5 rounded-full" style={{ color: activeCategory === cat.slug ? (cat.color || '#059669') : '#6B7280' }}>
+                            <DynamicIcon name={cat.icon || 'MapPin'} className="h-5 w-5" />
+                          </div>
+                          <span className={`text-[10px] font-medium text-center leading-tight ${activeCategory === cat.slug ? 'text-[#064e3b] font-bold' : 'text-gray-500'}`}>
+                            {cat.name}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Vista 2: Grilla Expandible de TODAS las categorías */}
+              {categoryPanelOpen && (
+                <div className="animate-in fade-in slide-in-from-top-2 duration-200 p-1">
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                    {/* Botón Ocultar Todas (Cierra Modal) */}
+                    <button
+                      type="button"
+                      onClick={() => { setCategoryPanelOpen(false); setActiveCategory(null) }}
+                      className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 active:scale-95 transition-all"
+                      style={activeCategory === null ? {
+                        backgroundColor: '#05966915',
+                        borderWidth: 1.5, borderStyle: 'solid', borderColor: '#059669',
+                      } : {}}
+                    >
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm" style={{ backgroundColor: '#05966920' }}>
+                        <ChevronUp className="h-5 w-5" style={{ color: '#059669' }} />
+                      </div>
+                      <span className="text-[10px] font-semibold text-gray-700 text-center leading-tight">Ocultar Todas</span>
+                    </button>
+
+                    {(categories.length > 0 ? categories : DEFAULT_TOUR_CATEGORIES).map(cat => (
+                      <button
+                        key={cat.id || cat.slug}
+                        type="button"
+                        onClick={() => { setActiveCategory(cat.slug); setCategoryPanelOpen(false) }}
+                        className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 active:scale-95 transition-all"
+                        style={activeCategory === cat.slug ? {
+                          backgroundColor: (cat.color || '#059669') + '15',
+                          borderWidth: 1.5, borderStyle: 'solid', borderColor: cat.color || '#059669',
+                        } : {}}
+                      >
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm" style={{ backgroundColor: (cat.color || '#059669') + '20' }}>
+                          <DynamicIcon name={cat.icon || 'MapPin'} className="h-5 w-5" style={{ color: cat.color || '#059669' }} />
+                        </div>
+                        <span className="text-[10px] font-semibold text-gray-700 text-center leading-tight">{cat.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {panelMode === 'search' && (
+            /* MODO 2: TARJETA DE BÚSQUEDA Y RESERVA */
             <div className="bg-white rounded-2xl shadow-xl mt-2.5 p-3.5 border border-gray-100 animate-in fade-in duration-200">
               {/* Origen y Destino */}
               <div className="relative flex items-center">
@@ -443,46 +554,6 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
                 <Search className="h-3.5 w-3.5" />
                 Buscar rutas
               </Button>
-            </div>
-          ) : (
-            /* MODO B: FILTRO DE CATEGORÍAS TEMÁTICAS (PLAYAS, PUEBLOS, HISTORIA, ETC) */
-            <div className="bg-white rounded-2xl shadow-xl mt-2.5 p-2 border border-gray-100 animate-in fade-in duration-200">
-              <div className="flex items-center gap-1">
-                {/* Todas */}
-                <button
-                  type="button"
-                  onClick={() => setActiveCategory(null)}
-                  className={`flex flex-col items-center gap-1 min-w-[56px] p-2 rounded-xl transition-all shrink-0 ${
-                    activeCategory === null ? 'bg-emerald-50 text-[#064e3b] border border-emerald-200 font-bold' : 'text-gray-500 hover:bg-gray-50'
-                  }`}
-                >
-                  <LayoutGrid className="h-4 w-4" />
-                  <span className="text-[10px] font-bold">Todas</span>
-                </button>
-
-                <div className="w-px h-8 bg-gray-200 shrink-0" />
-
-                {/* Categorías dinámicas en scroll */}
-                <div className="flex-1 overflow-x-auto scrollbar-hide">
-                  <div className="flex gap-1.5 px-1" style={{ width: 'max-content' }}>
-                    {(categories.length > 0 ? categories : DEFAULT_TOUR_CATEGORIES).map(cat => (
-                      <button
-                        key={cat.id || cat.slug}
-                        type="button"
-                        onClick={() => setActiveCategory(activeCategory === cat.slug ? null : cat.slug)}
-                        className={`flex flex-col items-center gap-1 min-w-[58px] p-2 rounded-xl transition-all ${
-                          activeCategory === cat.slug 
-                            ? 'bg-emerald-50 text-[#064e3b] border border-emerald-200 font-bold' 
-                            : 'text-gray-600 hover:bg-gray-50'
-                        }`}
-                      >
-                        <DynamicIcon name={cat.icon || 'MapPin'} className="h-4 w-4" style={{ color: activeCategory === cat.slug ? '#059669' : '#6b7280' }} />
-                        <span className="text-[10px] text-center leading-tight truncate max-w-[55px]">{cat.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
             </div>
           )}
         </div>
@@ -693,7 +764,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
               onClick={() => {
                 if (PROMO_SLIDES[currentPromoIndex].category === 'TOUR') {
                   setSuperCategory('TOUR');
-                  setHeaderMode('categories');
+                  setPanelMode('categories');
                 }
               }}
               className="relative w-full h-[90px] rounded-2xl overflow-hidden shadow-sm border border-gray-100 group cursor-pointer bg-gray-100"
@@ -787,7 +858,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
           <div className="bg-white rounded-2xl shadow-md p-1.5 flex items-center justify-between gap-1 border border-gray-100">
             <button
               type="button"
-              onClick={() => setSuperCategory('INTERURBANO')}
+              onClick={() => setSuperCategory(prev => prev === 'INTERURBANO' ? null : 'INTERURBANO')}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-1 rounded-xl text-xs font-bold transition-all ${
                 superCategory === 'INTERURBANO'
                   ? 'bg-[#dcfce7] text-[#064e3b] shadow-xs'
@@ -800,7 +871,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
 
             <button
               type="button"
-              onClick={() => setSuperCategory('URBANO')}
+              onClick={() => setSuperCategory(prev => prev === 'URBANO' ? null : 'URBANO')}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-1 rounded-xl text-xs font-bold transition-all ${
                 superCategory === 'URBANO'
                   ? 'bg-[#dcfce7] text-[#064e3b] shadow-xs'
@@ -813,19 +884,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
 
             <button
               type="button"
-              onClick={() => {
-                setHeaderMode(prev => prev === 'search' ? 'categories' : 'search');
-                setView('map');
-              }}
-              className="w-7 h-7 rounded-full bg-[#dcfce7] text-[#064e3b] hover:bg-emerald-200 flex items-center justify-center shrink-0 shadow-xs transition-all"
-              title="Ver categorías en mapa"
-            >
-              <ChevronLeft className="h-3.5 w-3.5" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setSuperCategory('TOUR')}
+              onClick={() => setSuperCategory(prev => prev === 'TOUR' ? null : 'TOUR')}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-1 rounded-xl text-xs font-bold transition-all ${
                 superCategory === 'TOUR'
                   ? 'bg-[#dcfce7] text-[#064e3b] shadow-xs'
@@ -834,6 +893,19 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
             >
               <Camera className="h-3.5 w-3.5" />
               <span className="text-[11px]">Tours</span>
+            </button>
+
+            {/* Flechita al lado derecho de todo */}
+            <button
+              type="button"
+              onClick={() => {
+                setView('map');
+                handleToggleClick();
+              }}
+              className="w-7 h-7 rounded-full bg-[#dcfce7] text-[#064e3b] hover:bg-emerald-200 flex items-center justify-center shrink-0 shadow-xs transition-all active:scale-95"
+              title="Ver en mapa"
+            >
+              <ChevronRight className="h-4 w-4" />
             </button>
           </div>
         </div>
@@ -958,7 +1030,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
               onClick={() => {
                 if (PROMO_SLIDES[currentPromoIndex].category === 'TOUR') {
                   setSuperCategory('TOUR');
-                  setHeaderMode('categories');
+                  setPanelMode('categories');
                   setView('map');
                 }
               }}
