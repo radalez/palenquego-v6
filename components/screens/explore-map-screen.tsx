@@ -384,7 +384,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
   // Sugerencias predictivas en vivo para Origen
   const originSuggestions = useMemo(() => {
     if (!origin || origin.trim().length === 0) {
-      return POPULAR_SALVADOR_PLACES.slice(0, 5)
+      return POPULAR_SALVADOR_PLACES
     }
     const q = origin.toLowerCase()
     const matches: any[] = []
@@ -397,13 +397,13 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
         matches.push({ name: disp.origin, category: `Ruta ${disp.badge}`, icon: "Bus", route: r })
       }
     }
-    return matches.slice(0, 6)
+    return matches.slice(0, 20)
   }, [origin, routes])
 
   // Sugerencias predictivas en vivo para Destino
   const destSuggestions = useMemo(() => {
     if (!destination || destination.trim().length === 0) {
-      return POPULAR_SALVADOR_PLACES.slice(0, 5)
+      return POPULAR_SALVADOR_PLACES
     }
     const q = destination.toLowerCase()
     const matches: any[] = []
@@ -416,7 +416,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
         matches.push({ name: disp.destination, category: `Ruta ${disp.badge}`, icon: "Bus", route: r })
       }
     }
-    return matches.slice(0, 6)
+    return matches.slice(0, 20)
   }, [destination, routes])
 
   const handleUseCurrentLocation = () => {
@@ -516,10 +516,10 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
       <div className="relative w-full h-full flex flex-col bg-background overflow-hidden">
 
         {/* HEADER PRINCIPAL VERDE / SELVA */}
-        <div className="relative z-30 bg-[#063b27] bg-gradient-to-b from-[#04281a] via-[#064e3b] to-[#043324] w-full pt-4 pb-4 px-4 shadow-xl shrink-0 rounded-b-[28px] overflow-hidden">
+        <div className="relative z-30 bg-[#063b27] bg-gradient-to-b from-[#04281a] via-[#064e3b] to-[#043324] w-full pt-4 pb-4 px-4 shadow-xl shrink-0 rounded-b-[28px]">
           {/* Fondo decorativo con banner-panda.png */}
           <div 
-            className="absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none opacity-85 z-0"
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none opacity-85 z-0 rounded-b-[28px] overflow-hidden"
             style={{ backgroundImage: `url('/banner-panda.png')` }}
           />
 
@@ -740,12 +740,12 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
 
           {panelMode === 'search' && (
             /* MODO 2: TARJETA DE BÚSQUEDA PREDICTIVA A -> B */
-            <div className="bg-white rounded-2xl shadow-xl mt-2.5 p-3.5 border border-gray-100 animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl shadow-xl mt-2.5 p-3.5 border border-gray-100 animate-in fade-in duration-200 relative">
               {/* Origen y Destino */}
-              <div className="relative flex items-center">
+              <div className="flex items-center">
                 <div className="flex-1 space-y-2">
                   {/* Origen */}
-                  <div className="flex items-center gap-2.5 relative">
+                  <div className="flex items-center gap-2.5">
                     <MapPin className="h-4 w-4 text-[#059669] shrink-0" />
                     <div className="flex-1 min-w-0">
                       <span className="text-[10px] uppercase font-bold text-gray-400 block leading-none">Origen</span>
@@ -755,8 +755,12 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
                         onChange={(e) => {
                           setOrigin(e.target.value)
                           setShowOriginSuggestions(true)
+                          setShowDestSuggestions(false)
                         }}
-                        onFocus={() => setShowOriginSuggestions(true)}
+                        onFocus={() => {
+                          setShowOriginSuggestions(true)
+                          setShowDestSuggestions(false)
+                        }}
                         onBlur={() => setTimeout(() => setShowOriginSuggestions(false), 250)}
                         className="text-xs font-bold text-gray-900 bg-transparent w-full border-none p-0 focus:ring-0 focus:outline-none placeholder:text-gray-400 placeholder:font-normal"
                         placeholder="📍 Punto de partida (o Mi ubicación)"
@@ -771,53 +775,22 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
                     >
                       <Navigation2 className="h-3.5 w-3.5" />
                     </button>
-
-                    {/* Dropdown predictivo de Origen */}
-                    {showOriginSuggestions && originSuggestions.length > 0 && (
-                      <div className="absolute left-0 right-0 top-full mt-1.5 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 overflow-hidden divide-y divide-gray-50 max-h-52 overflow-y-auto">
-                        <button
-                          type="button"
-                          onMouseDown={(e) => {
-                            e.preventDefault()
-                            handleUseCurrentLocation()
-                          }}
-                          className="w-full text-left px-3 py-2 hover:bg-emerald-50/70 flex items-center gap-2 text-[#059669] font-bold text-xs bg-emerald-50/30"
-                        >
-                          <Navigation2 className="h-3.5 w-3.5" />
-                          <span>Usar mi ubicación actual</span>
-                        </button>
-                        {originSuggestions.map((item, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onMouseDown={(e) => {
-                              e.preventDefault()
-                              setOrigin(item.name)
-                              setShowOriginSuggestions(false)
-                            }}
-                            className="w-full text-left px-3 py-2 hover:bg-emerald-50/70 flex items-center gap-2.5 transition-colors group"
-                          >
-                            <div className="p-1 rounded-md bg-gray-100 text-gray-500 group-hover:text-emerald-600 shrink-0">
-                              <DynamicIcon name={item.icon || 'MapPin'} className="h-3 w-3" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <span className="text-xs font-bold text-gray-800 block truncate group-hover:text-emerald-700">
-                                {item.name}
-                              </span>
-                              <span className="text-[10px] text-gray-400 block truncate">
-                                {item.category}
-                              </span>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
+                    {origin && (
+                      <button
+                        type="button"
+                        onClick={() => setOrigin('')}
+                        className="p-1 text-gray-400 hover:text-gray-600"
+                        title="Borrar origen"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
                     )}
                   </div>
 
                   <div className="h-px bg-gray-100 ml-6" />
 
                   {/* Destino */}
-                  <div className="flex items-center gap-2.5 relative">
+                  <div className="flex items-center gap-2.5">
                     <MapPin className="h-4 w-4 text-rose-500 shrink-0" />
                     <div className="flex-1 min-w-0">
                       <span className="text-[10px] uppercase font-bold text-gray-400 block leading-none">Destino</span>
@@ -827,8 +800,12 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
                         onChange={(e) => {
                           setDestination(e.target.value)
                           setShowDestSuggestions(true)
+                          setShowOriginSuggestions(false)
                         }}
-                        onFocus={() => setShowDestSuggestions(true)}
+                        onFocus={() => {
+                          setShowDestSuggestions(true)
+                          setShowOriginSuggestions(false)
+                        }}
                         onBlur={() => setTimeout(() => setShowDestSuggestions(false), 250)}
                         className="text-xs font-semibold text-gray-800 bg-transparent w-full border-none p-0 focus:ring-0 focus:outline-none placeholder:text-gray-400"
                         placeholder="¿A dónde quieres ir? (Ej. El Tunco, Metrocentro)"
@@ -839,46 +816,10 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
                         type="button"
                         onClick={() => setDestination('')}
                         className="p-1 text-gray-400 hover:text-gray-600"
+                        title="Borrar destino"
                       >
                         <X className="h-3.5 w-3.5" />
                       </button>
-                    )}
-
-                    {/* Dropdown predictivo de Destino */}
-                    {showDestSuggestions && destSuggestions.length > 0 && (
-                      <div className="absolute left-0 right-0 top-full mt-1.5 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 overflow-hidden divide-y divide-gray-50 max-h-52 overflow-y-auto">
-                        {destSuggestions.map((item, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onMouseDown={(e) => {
-                              e.preventDefault()
-                              setDestination(item.name)
-                              setShowDestSuggestions(false)
-                              if (item.route) {
-                                setPreviewRoute(item.route)
-                                if (mapRef.current && item.route.stops?.length) {
-                                  mapRef.current.panTo({ lat: item.route.stops[0].latitude, lng: item.route.stops[0].longitude })
-                                  mapRef.current.setZoom(13)
-                                }
-                              }
-                            }}
-                            className="w-full text-left px-3 py-2 hover:bg-emerald-50/70 flex items-center gap-2.5 transition-colors group"
-                          >
-                            <div className="p-1 rounded-md bg-gray-100 text-gray-500 group-hover:text-emerald-600 shrink-0">
-                              <DynamicIcon name={item.icon || 'MapPin'} className="h-3 w-3" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <span className="text-xs font-bold text-gray-800 block truncate group-hover:text-emerald-700">
-                                {item.name}
-                              </span>
-                              <span className="text-[10px] text-gray-400 block truncate">
-                                {item.category}
-                              </span>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
                     )}
                   </div>
                 </div>
@@ -901,6 +842,8 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
               {/* Botón Buscar Rutas */}
               <Button
                 onClick={() => {
+                  setShowOriginSuggestions(false)
+                  setShowDestSuggestions(false)
                   if (filteredRoutes.length > 0) {
                     const r = filteredRoutes[0]
                     setPreviewRoute(r)
@@ -917,6 +860,106 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
                 <Search className="h-3.5 w-3.5" />
                 <span>Buscar rutas ({filteredRoutes.length} disponibles)</span>
               </Button>
+
+              {/* DROPDOWN PREDICTIVO FLOTANTE AMPLIO: ORIGEN */}
+              {showOriginSuggestions && originSuggestions.length > 0 && (
+                <div className="absolute left-0 right-0 top-[102%] mt-2 bg-white rounded-2xl shadow-2xl border border-gray-200 z-[100] max-h-[380px] overflow-y-auto divide-y divide-gray-100 p-2 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-500 bg-gray-50/90 rounded-lg mb-1 flex items-center justify-between">
+                    <span>Puntos de Partida Sugeridos</span>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => { e.preventDefault(); setShowOriginSuggestions(false); }}
+                      className="text-gray-400 hover:text-gray-600 p-0.5"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      handleUseCurrentLocation()
+                    }}
+                    className="w-full text-left px-3.5 py-2.5 hover:bg-emerald-100/70 flex items-center gap-2.5 text-[#059669] font-bold text-xs bg-emerald-50/60 rounded-xl mb-1.5 border border-emerald-100"
+                  >
+                    <Navigation2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                    <span>📍 Usar mi ubicación actual</span>
+                  </button>
+                  {originSuggestions.map((item, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault()
+                        setOrigin(item.name)
+                        setShowOriginSuggestions(false)
+                      }}
+                      className="w-full text-left px-3.5 py-2.5 hover:bg-emerald-50/80 active:bg-emerald-100 flex items-center gap-3 transition-colors rounded-xl group"
+                    >
+                      <div className="p-2 rounded-xl bg-gray-100 group-hover:bg-[#059669]/15 text-gray-600 group-hover:text-[#059669] shrink-0 transition-colors shadow-xs">
+                        <DynamicIcon name={item.icon || 'MapPin'} className="h-4 w-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-xs font-bold text-gray-800 block truncate group-hover:text-emerald-700">
+                          {item.name}
+                        </span>
+                        <span className="text-[11px] text-gray-400 block truncate mt-0.5">
+                          {item.category}
+                        </span>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-emerald-500 shrink-0" />
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* DROPDOWN PREDICTIVO FLOTANTE AMPLIO: DESTINO */}
+              {showDestSuggestions && destSuggestions.length > 0 && (
+                <div className="absolute left-0 right-0 top-[102%] mt-2 bg-white rounded-2xl shadow-2xl border border-gray-200 z-[100] max-h-[380px] overflow-y-auto divide-y divide-gray-100 p-2 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-500 bg-gray-50/90 rounded-lg mb-1 flex items-center justify-between">
+                    <span>Destinos y Rutas Sugeridas</span>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => { e.preventDefault(); setShowDestSuggestions(false); }}
+                      className="text-gray-400 hover:text-gray-600 p-0.5"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  {destSuggestions.map((item, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault()
+                        setDestination(item.name)
+                        setShowDestSuggestions(false)
+                        if (item.route) {
+                          setPreviewRoute(item.route)
+                          if (mapRef.current && item.route.stops?.length) {
+                            mapRef.current.panTo({ lat: item.route.stops[0].latitude, lng: item.route.stops[0].longitude })
+                            mapRef.current.setZoom(13)
+                          }
+                        }
+                      }}
+                      className="w-full text-left px-3.5 py-2.5 hover:bg-emerald-50/80 active:bg-emerald-100 flex items-center gap-3 transition-colors rounded-xl group"
+                    >
+                      <div className="p-2 rounded-xl bg-gray-100 group-hover:bg-[#059669]/15 text-gray-600 group-hover:text-[#059669] shrink-0 transition-colors shadow-xs">
+                        <DynamicIcon name={item.icon || 'MapPin'} className="h-4 w-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-xs font-bold text-gray-900 block truncate group-hover:text-[#064e3b]">
+                          {item.name}
+                        </span>
+                        <span className="text-[11px] text-gray-500 block truncate mt-0.5">
+                          {item.category}
+                        </span>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-emerald-500 shrink-0" />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
           </div>
