@@ -6,13 +6,14 @@ import {
   Search, MapPin, Navigation2, SlidersHorizontal, ChevronLeft, ChevronRight,
   LayoutGrid, ChevronUp, X, Bookmark, Clock, Share2,
   ArrowUpDown, Calendar, Users, Bus, Building2, Camera, ChevronDown,
-  Map, Filter, Palmtree, Utensils, Home, Landmark, Leaf, Sparkles
+  Map, Filter, Palmtree, Utensils, Home, Landmark, Leaf, Sparkles, Car, Star
 } from 'lucide-react'
 import { ScrollArea } from "@/components/ui/scroll-area"
 import * as LucideIcons from 'lucide-react'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useAppStore, fetchWithAuth } from "@/lib/store"
+import { UserRoutesModal } from "@/components/user-routes-modal"
 
 const containerStyle = { width: '100%', height: '100%' }
 const API_BASE = "/api-proxy"
@@ -84,6 +85,51 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
 
   // Estados de Super Categorías y Modo de Cabecera
   const currentUser = useAppStore((state) => state.currentUser)
+  const myUserRoutes = useAppStore((state) => state.myUserRoutes)
+  const requestedTrips = useAppStore((state) => state.requestedTrips)
+  const fetchMyUserRoutes = useAppStore((state) => state.fetchMyUserRoutes)
+  const fetchRequestedTrips = useAppStore((state) => state.fetchRequestedTrips)
+
+  const [isUserRoutesModalOpen, setIsUserRoutesModalOpen] = useState(false)
+  const [mapPickMode, setMapPickMode] = useState<'origin' | 'destination' | null>(null)
+  const [currentPickedOrigin, setCurrentPickedOrigin] = useState<{ name: string; lat: number; lng: number } | null>(null)
+  const [currentPickedDestination, setCurrentPickedDestination] = useState<{ name: string; lat: number; lng: number } | null>(null)
+
+  useEffect(() => {
+    fetchMyUserRoutes()
+    if (currentUser?.tipo === 'CHOFER') {
+      fetchRequestedTrips()
+    }
+  }, [fetchMyUserRoutes, fetchRequestedTrips, currentUser?.tipo])
+
+  const handleMapClick = async (e: google.maps.MapMouseEvent) => {
+    if (!mapPickMode || !e.latLng) return
+    const lat = e.latLng.lat()
+    const lng = e.latLng.lng()
+    let placeName = `Punto (${lat.toFixed(4)}, ${lng.toFixed(4)})`
+
+    try {
+      if (window.google?.maps?.Geocoder) {
+        const geocoder = new window.google.maps.Geocoder()
+        const res = await geocoder.geocode({ location: { lat, lng } })
+        if (res.results && res.results[0]) {
+          placeName = res.results[0].formatted_address
+        }
+      }
+    } catch (err) {
+      console.warn("Geocoder error:", err)
+    }
+
+    if (mapPickMode === 'origin') {
+      setCurrentPickedOrigin({ name: placeName, lat, lng })
+    } else if (mapPickMode === 'destination') {
+      setCurrentPickedDestination({ name: placeName, lat, lng })
+    }
+
+    setMapPickMode(null)
+    setIsUserRoutesModalOpen(true)
+  }
+
   const [superCategory, setSuperCategory] = useState<'INTERURBANO' | 'URBANO' | 'TOUR' | null>(null)
   const [panelMode, setPanelMode] = useState<'none' | 'categories' | 'search'>('none')
   const [origin, setOrigin] = useState("San Salvador")
@@ -372,6 +418,28 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
             </button>
           </div>
 
+          {/* BANNER DINÁMICO CUANDO ESTÁ EN MODO URBANO */}
+          {superCategory === 'URBANO' && (
+            <div className="mt-2.5 bg-gradient-to-r from-[#04281a] to-[#064e3b] text-white p-2.5 px-3 rounded-2xl border border-emerald-400/30 flex items-center justify-between shadow-md animate-in fade-in duration-200">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-xl bg-white/10 flex items-center justify-center text-[#a3e635]">
+                  <Car className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-black text-white">Taxi & Rutas Urbanas</p>
+                  <p className="text-[10px] text-white/70">Pide un viaje a demanda o crea tu ruta</p>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => setIsUserRoutesModalOpen(true)}
+                className="bg-[#a3e635] hover:bg-[#86efac] text-[#064e3b] font-black text-[11px] h-7 px-2.5 rounded-xl shadow-xs"
+              >
+                + Pedir Viaje
+              </Button>
+            </div>
+          )}
+
           {/* PANEL INFERIOR INTERCAMBIABLE SEGÚN panelMode ('none' | 'categories' | 'search') */}
           {panelMode === 'categories' && (
             /* MODO 1: BARRA Y GRID DE CATEGORÍAS (COMPORTAMIENTO ORIGINAL RESTAURADO) */
@@ -567,7 +635,23 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
               zoom={9}
               options={{ disableDefaultUI: true, zoomControl: false, styles: MAP_STYLES }}
               onLoad={(map) => { mapRef.current = map }}
+              onClick={handleMapClick}
             >
+              {currentPickedOrigin && (
+                <Marker
+                  position={{ lat: currentPickedOrigin.lat, lng: currentPickedOrigin.lng }}
+                  label={{ text: "A", color: "white", fontWeight: "bold" }}
+                  title="Punto de Origen"
+                />
+              )}
+              {currentPickedDestination && (
+                <Marker
+                  position={{ lat: currentPickedDestination.lat, lng: currentPickedDestination.lng }}
+                  label={{ text: "B", color: "white", fontWeight: "bold" }}
+                  title="Destino"
+                />
+              )}
+
               {filteredRoutes.map((route, idx) => {
                 if (!route.stops?.length) return null
                 const rColor = route.category?.color || '#059669'
@@ -601,8 +685,52 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
             </div>
           )}
 
-          {/* Botón flotante para ver lista */}
-          <div className="absolute top-3 right-3 z-10">
+          {/* Banner indicador de modo selección de punto en mapa */}
+          {mapPickMode && (
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 bg-[#064e3b] text-white px-4 py-2.5 rounded-2xl shadow-xl flex items-center gap-3 animate-in slide-in-from-top duration-300">
+              <MapPin className="h-4 w-4 text-[#a3e635] animate-bounce shrink-0" />
+              <span className="text-xs font-bold whitespace-nowrap">
+                {mapPickMode === 'origin' ? 'Toca el mapa para fijar Punto de Origen' : 'Toca el mapa para fijar Destino'}
+              </span>
+              <button
+                type="button"
+                onClick={() => { setMapPickMode(null); setIsUserRoutesModalOpen(true); }}
+                className="p-1 hover:bg-white/20 rounded-full text-white ml-1"
+                title="Cancelar selección"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+
+          {/* Alerta flotante para chofer si hay solicitudes */}
+          {currentUser?.tipo === 'CHOFER' && requestedTrips?.length > 0 && !mapPickMode && (
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20">
+              <button
+                type="button"
+                onClick={() => setIsUserRoutesModalOpen(true)}
+                className="bg-amber-500 hover:bg-amber-600 text-white font-black text-xs px-3.5 py-1.5 rounded-full shadow-lg flex items-center gap-2 animate-bounce"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                <span>{requestedTrips.length} viaje(s) solicitado(s)</span>
+              </button>
+            </div>
+          )}
+
+          {/* Botones flotantes: Mis Rutas & Lista */}
+          <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={() => setIsUserRoutesModalOpen(true)}
+              className="bg-white hover:bg-gray-50 text-[#064e3b] font-bold text-xs h-9 px-3 rounded-xl shadow-md border border-emerald-100 flex items-center gap-1.5"
+            >
+              <Car className="h-3.5 w-3.5 text-[#059669]" />
+              <span>Mis Rutas</span>
+              {(myUserRoutes?.length > 0 || (currentUser?.tipo === 'CHOFER' && requestedTrips?.length > 0)) && (
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              )}
+            </Button>
+
             <Button
               size="sm"
               onClick={() => setView('list')}
@@ -808,6 +936,21 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
             </div>
           </div>
         )}
+
+        {/* MODAL DE MIS RUTAS Y TAXI URBANO */}
+        <UserRoutesModal
+          isOpen={isUserRoutesModalOpen}
+          onClose={() => setIsUserRoutesModalOpen(false)}
+          onSelectRouteOnMap={(route) => {
+            setSelectedRoute(route)
+            setView('detail')
+          }}
+          onStartMapPickMode={(mode) => {
+            setMapPickMode(mode)
+          }}
+          currentPickedOrigin={currentPickedOrigin}
+          currentPickedDestination={currentPickedDestination}
+        />
       </div>
     )
   }
@@ -923,6 +1066,16 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
             </div>
 
             <div className="flex items-center gap-2">
+              {/* Botón Mis Rutas */}
+              <button
+                type="button"
+                onClick={() => setIsUserRoutesModalOpen(true)}
+                className="flex items-center gap-1.5 bg-white hover:bg-gray-50 text-[#064e3b] font-bold text-xs px-3 py-1.5 rounded-xl shadow-xs border border-emerald-100 transition-all active:scale-95"
+              >
+                <Car className="h-3.5 w-3.5 text-[#059669]" />
+                <span>Mis Rutas</span>
+              </button>
+
               {/* Botón Filtros */}
               <button
                 type="button"
@@ -1166,6 +1319,22 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
             </div>
           </div>
         )}
+
+        {/* MODAL DE MIS RUTAS Y TAXI URBANO */}
+        <UserRoutesModal
+          isOpen={isUserRoutesModalOpen}
+          onClose={() => setIsUserRoutesModalOpen(false)}
+          onSelectRouteOnMap={(route) => {
+            setSelectedRoute(route)
+            setView('detail')
+          }}
+          onStartMapPickMode={(mode) => {
+            setMapPickMode(mode)
+            setView('map')
+          }}
+          currentPickedOrigin={currentPickedOrigin}
+          currentPickedDestination={currentPickedDestination}
+        />
       </div>
     )
   }
@@ -1246,6 +1415,40 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
           <span className="text-[10px] text-gray-500">Estimado</span>
         </div>
       </div>
+
+      {/* TARJETA DE ESTADO DE VIAJE SI ES RUTA A DEMANDA */}
+      {selectedRoute?.estado_viaje && (
+        <div className="relative z-20 mx-4 mt-2 bg-white rounded-2xl shadow-lg p-3.5 flex items-center justify-between border border-gray-100">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-[#059669] flex items-center justify-center">
+              <Car className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-gray-900">
+                {selectedRoute.estado_viaje === 'SOLICITADO' && '🟡 Esperando conductor...'}
+                {selectedRoute.estado_viaje === 'ACEPTADO' && '🟢 Chofer en camino'}
+                {selectedRoute.estado_viaje === 'EN_CURSO' && '🔵 Viaje en curso'}
+                {selectedRoute.estado_viaje === 'FINALIZADO' && '🏁 Viaje completado'}
+                {selectedRoute.estado_viaje === 'BORRADOR' && '⚪ Ruta guardada'}
+              </p>
+              {selectedRoute.driver_name && (
+                <p className="text-[10px] text-gray-500">Conductor: {selectedRoute.driver_name}</p>
+              )}
+            </div>
+          </div>
+
+          {selectedRoute.calificacion ? (
+            <div className="flex items-center gap-1 text-xs font-bold text-amber-500">
+              <Star className="w-3.5 h-3.5 fill-amber-400" />
+              <span>{selectedRoute.calificacion}.0</span>
+            </div>
+          ) : (
+            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
+              {selectedRoute.estado_viaje}
+            </span>
+          )}
+        </div>
+      )}
 
       {/* BOTTOM SHEET — lista de paradas + botones */}
       <div 

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Navigation2, StopCircle, Truck, Wifi, WifiOff, AlertCircle, Users } from "lucide-react"
+import { Navigation2, StopCircle, Truck, Wifi, WifiOff, AlertCircle, Users, Car, CheckCircle2, Sparkles, MapPin } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAppStore } from "@/lib/store"
 import { HeaderWithMenu } from "@/components/header-with-menu"
@@ -25,6 +25,7 @@ import { DriverKycScreen } from "./driver-kyc-screen"
 export function DriverScreen({ onNavigate }: DriverScreenProps) {
   const { routes, fetchRoutes, accessToken, currentUser } = useAppStore()
   const { isDriverTracking, driverGpsError, driverCurrentPos, startDriverTracking, stopDriverTracking, driverGpsCount } = useAppStore()
+  const { requestedTrips, fetchRequestedTrips, acceptTrip, startTrip, finishTrip } = useAppStore()
   
   const [myUnit, setMyUnit] = useState<MyUnit | null>(null)
   const [unitError, setUnitError] = useState<string | null>(null)
@@ -33,7 +34,12 @@ export function DriverScreen({ onNavigate }: DriverScreenProps) {
   useEffect(() => {
     fetchRoutes()
     fetchMyUnit()
-  }, [fetchRoutes, accessToken])
+    fetchRequestedTrips()
+    const interval = setInterval(() => {
+      fetchRequestedTrips()
+    }, 15000)
+    return () => clearInterval(interval)
+  }, [fetchRoutes, fetchRequestedTrips, accessToken])
 
   const fetchMyUnit = async () => {
     if (!accessToken) return
@@ -60,6 +66,12 @@ export function DriverScreen({ onNavigate }: DriverScreenProps) {
   const myRoute = myUnit
     ? routes.find((r: any) => r.unit_id === myUnit.id || r.unit_name === myUnit.name) ?? null
     : null
+
+  // Viajes urbanos a demanda asignados al chofer
+  const myAssignedTrips = routes.filter(
+    (r: any) => (r.driver === currentUser?.id || r.driver_name === currentUser?.name) &&
+                (r.estado_viaje === 'ACEPTADO' || r.estado_viaje === 'EN_CURSO')
+  )
 
   const handleStartTracking = () => {
     if (myUnit) {
@@ -141,6 +153,137 @@ export function DriverScreen({ onNavigate }: DriverScreenProps) {
             </p>
           )}
           {driverGpsError && <p className="text-xs text-red-500">{driverGpsError}</p>}
+        </div>
+
+        {/* Panel Viajes Urbanos a Demanda (Tipo Uber) */}
+        <div className="bg-card border-2 border-emerald-500/30 rounded-2xl p-4 shadow-sm space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+                <Car className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm">Viajes Urbanos a Demanda</h3>
+                <p className="text-[11px] text-muted-foreground">Solicitudes de pasajeros en tiempo real</p>
+              </div>
+            </div>
+            {requestedTrips?.length > 0 && (
+              <span className="text-xs font-black bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full animate-pulse">
+                {requestedTrips.length} disponibles
+              </span>
+            )}
+          </div>
+
+          {/* Viajes Aceptados / En Curso asignados a este chofer */}
+          {myAssignedTrips.length > 0 && (
+            <div className="space-y-2 pt-2 border-t border-border">
+              <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                Tu viaje asignado en curso:
+              </p>
+              {myAssignedTrips.map((trip: any) => {
+                const origin = trip.stops?.[0]?.name || "Origen"
+                const destination = trip.stops?.[trip.stops?.length - 1]?.name || "Destino"
+                const isStarted = trip.estado_viaje === 'EN_CURSO'
+
+                return (
+                  <div key={trip.id} className="p-3 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-xl border border-emerald-200 dark:border-emerald-800 space-y-2 text-xs">
+                    <div className="flex justify-between items-center font-bold">
+                      <span className="text-foreground">{trip.name}</span>
+                      <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-full bg-emerald-600 text-white">
+                        {trip.estado_viaje}
+                      </span>
+                    </div>
+                    <div className="text-muted-foreground space-y-0.5">
+                      <p><strong>Recogida:</strong> {origin}</p>
+                      <p><strong>Destino:</strong> {destination}</p>
+                    </div>
+                    <div className="flex gap-2 pt-1">
+                      {!isStarted ? (
+                        <Button
+                          size="sm"
+                          onClick={async () => {
+                            const res = await startTrip(trip.id)
+                            if (res.success) {
+                              fetchRoutes()
+                            } else {
+                              alert(res.error || "No se pudo iniciar el viaje.")
+                            }
+                          }}
+                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold h-9 rounded-xl"
+                        >
+                          ▶ Iniciar Recorrido
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={async () => {
+                            const res = await finishTrip(trip.id)
+                            if (res.success) {
+                              alert("¡Viaje finalizado con éxito! El pasajero podrá calificarte.")
+                              fetchRoutes()
+                            } else {
+                              alert(res.error || "No se pudo finalizar el viaje.")
+                            }
+                          }}
+                          className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold h-9 rounded-xl"
+                        >
+                          ✓ Finalizar Viaje
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Solicitudes Disponibles para Aceptar */}
+          {requestedTrips?.length > 0 ? (
+            <div className="space-y-2 pt-2 border-t border-border">
+              <p className="text-xs font-semibold text-muted-foreground">Nuevas solicitudes:</p>
+              {requestedTrips.map((req: any) => {
+                const origin = req.stops?.[0]?.name || "Origen"
+                const destination = req.stops?.[req.stops?.length - 1]?.name || "Destino"
+
+                return (
+                  <div key={req.id} className="p-3 bg-muted/60 rounded-xl border border-border space-y-2 text-xs">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-foreground">{req.name}</span>
+                      <span className="text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950 px-2 py-0.5 rounded-full border border-amber-200">
+                        Esperando chofer
+                      </span>
+                    </div>
+                    <div className="text-muted-foreground space-y-0.5">
+                      <p><strong>De:</strong> {origin}</p>
+                      <p><strong>A:</strong> {destination}</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={async () => {
+                        const res = await acceptTrip(req.id)
+                        if (res.success) {
+                          alert("¡Viaje aceptado! Dirígete a recoger al pasajero.")
+                          fetchRequestedTrips()
+                          fetchRoutes()
+                        } else {
+                          alert(res.error || "No se pudo aceptar el viaje.")
+                        }
+                      }}
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-9 rounded-xl shadow-xs"
+                    >
+                      ✓ Aceptar Viaje
+                    </Button>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            myAssignedTrips.length === 0 && (
+              <p className="text-xs text-muted-foreground text-center py-2">
+                No hay solicitudes de viaje pendientes en este momento.
+              </p>
+            )
+          )}
         </div>
 
         {/* Panel Anti-Fraude (Control de Pasajeros) */}

@@ -152,6 +152,21 @@ export interface Route {
     effective_price_one_way?: string;
     effective_price_round_trip?: string;
   }[];
+  creador?: number | null;
+  driver?: number | null;
+  driver_phone?: string;
+  is_mine?: boolean;
+  estado_viaje?: "BORRADOR" | "SOLICITADO" | "ACEPTADO" | "EN_CURSO" | "FINALIZADO" | "CANCELADO";
+  calificacion?: number | null;
+  comentario_calificacion?: string;
+  route_type?: "INTERURBANO" | "URBANO" | "TOUR";
+  category?: {
+    id: number;
+    name: string;
+    slug: string;
+    icon?: string;
+    color?: string;
+  };
 }
 
 export interface Transportation {
@@ -346,6 +361,24 @@ interface AppState {
   startDriverTracking: (unitId: number) => void
   stopDriverTracking: () => void
   passStop: (unitId: number, stopId: number) => Promise<{ok: boolean, data?: any, error?: string}>
+
+  // --- USER ROUTES & ON-DEMAND TRIPS ---
+  myUserRoutes: any[]
+  requestedTrips: any[]
+  fetchMyUserRoutes: () => Promise<void>
+  createUserRoute: (data: { 
+    name?: string; 
+    origin: { name: string; lat: number; lng: number }; 
+    destination: { name: string; lat: number; lng: number }; 
+    solicitar_servicio?: boolean;
+    precio_estimado?: number;
+  }) => Promise<{ success: boolean; data?: any; error?: string }>
+  deleteUserRoute: (routeId: number) => Promise<boolean>
+  fetchRequestedTrips: () => Promise<void>
+  acceptTrip: (routeId: number) => Promise<{ success: boolean; data?: any; error?: string }>
+  startTrip: (routeId: number) => Promise<{ success: boolean; data?: any; error?: string }>
+  finishTrip: (routeId: number) => Promise<{ success: boolean; data?: any; error?: string }>
+  rateTrip: (routeId: number, calificacion: number, comentario?: string) => Promise<{ success: boolean; data?: any; error?: string }>
 }
 
 let driverGpsInterval: NodeJS.Timeout | null = null;
@@ -430,6 +463,10 @@ export const useAppStore = create<AppState>()(
       poolPaymentPending: [],
       guardians: [],
       isLoading: false,
+
+      // --- USER ROUTES & ON-DEMAND TRIPS STATE ---
+      myUserRoutes: [],
+      requestedTrips: [],
 
       // --- GPS INITIAL STATE ---
       isDriverTracking: false,
@@ -1854,6 +1891,140 @@ export const useAppStore = create<AppState>()(
         } catch (error) {
           console.error("Error al escanear:", error);
           return null;
+        }
+      },
+
+      // --- USER ROUTES & ON-DEMAND TRIPS IMPLEMENTATION ---
+      fetchMyUserRoutes: async () => {
+        try {
+          const response = await fetchWithAuth(`${API_BASE}/transport/routes/mis-rutas/`);
+          if (response.ok) {
+            const data = await response.json();
+            set({ myUserRoutes: Array.isArray(data) ? data : [] });
+          }
+        } catch (e) {
+          console.error("Error fetching my routes:", e);
+        }
+      },
+
+      createUserRoute: async (payload) => {
+        try {
+          const response = await fetchWithAuth(`${API_BASE}/transport/routes/crear-ruta-usuario/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (response.ok) {
+            const data = await response.json();
+            set((state) => ({ myUserRoutes: [data, ...state.myUserRoutes] }));
+            return { success: true, data };
+          }
+          const err = await response.json().catch(() => ({}));
+          return { success: false, error: err.error || "No se pudo crear la ruta" };
+        } catch (e: any) {
+          return { success: false, error: e.message || "Error de conexión" };
+        }
+      },
+
+      deleteUserRoute: async (routeId: number) => {
+        try {
+          const response = await fetchWithAuth(`${API_BASE}/transport/routes/${routeId}/eliminar-ruta/`, {
+            method: 'DELETE'
+          });
+          if (response.ok) {
+            set((state) => ({
+              myUserRoutes: state.myUserRoutes.filter((r) => r.id !== routeId)
+            }));
+            return true;
+          }
+          return false;
+        } catch (e) {
+          console.error("Error deleting route:", e);
+          return false;
+        }
+      },
+
+      fetchRequestedTrips: async () => {
+        try {
+          const response = await fetchWithAuth(`${API_BASE}/transport/routes/viajes-solicitados/`);
+          if (response.ok) {
+            const data = await response.json();
+            set({ requestedTrips: Array.isArray(data) ? data : [] });
+          }
+        } catch (e) {
+          console.error("Error fetching requested trips:", e);
+        }
+      },
+
+      acceptTrip: async (routeId: number) => {
+        try {
+          const response = await fetchWithAuth(`${API_BASE}/transport/routes/${routeId}/aceptar-viaje/`, {
+            method: 'POST'
+          });
+          if (response.ok) {
+            const data = await response.json();
+            set((state) => ({
+              requestedTrips: state.requestedTrips.filter((r) => r.id !== routeId)
+            }));
+            return { success: true, data };
+          }
+          const err = await response.json().catch(() => ({}));
+          return { success: false, error: err.error || "No se pudo aceptar el viaje" };
+        } catch (e: any) {
+          return { success: false, error: e.message || "Error al aceptar el viaje" };
+        }
+      },
+
+      startTrip: async (routeId: number) => {
+        try {
+          const response = await fetchWithAuth(`${API_BASE}/transport/routes/${routeId}/iniciar-viaje/`, {
+            method: 'POST'
+          });
+          if (response.ok) {
+            const data = await response.json();
+            return { success: true, data };
+          }
+          const err = await response.json().catch(() => ({}));
+          return { success: false, error: err.error || "No se pudo iniciar el viaje" };
+        } catch (e: any) {
+          return { success: false, error: e.message || "Error al iniciar el viaje" };
+        }
+      },
+
+      finishTrip: async (routeId: number) => {
+        try {
+          const response = await fetchWithAuth(`${API_BASE}/transport/routes/${routeId}/finalizar-viaje/`, {
+            method: 'POST'
+          });
+          if (response.ok) {
+            const data = await response.json();
+            return { success: true, data };
+          }
+          const err = await response.json().catch(() => ({}));
+          return { success: false, error: err.error || "No se pudo finalizar el viaje" };
+        } catch (e: any) {
+          return { success: false, error: e.message || "Error al finalizar el viaje" };
+        }
+      },
+
+      rateTrip: async (routeId: number, calificacion: number, comentario?: string) => {
+        try {
+          const response = await fetchWithAuth(`${API_BASE}/transport/routes/${routeId}/calificar-viaje/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ calificacion, comentario: comentario || "" })
+          });
+          if (response.ok) {
+            const data = await response.json();
+            set((state) => ({
+              myUserRoutes: state.myUserRoutes.map((r) => r.id === routeId ? { ...r, calificacion, comentario_calificacion: comentario } : r)
+            }));
+            return { success: true, data };
+          }
+          const err = await response.json().catch(() => ({}));
+          return { success: false, error: err.error || "No se pudo registrar la calificación" };
+        } catch (e: any) {
+          return { success: false, error: e.message || "Error al calificar el viaje" };
         }
       },
       
