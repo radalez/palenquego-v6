@@ -17,6 +17,7 @@ import { UserRoutesModal } from "@/components/user-routes-modal"
 
 const containerStyle = { width: '100%', height: '100%' }
 const API_BASE = "/api-proxy"
+const GOOGLE_MAPS_LIBRARIES: ("places")[] = ["places"]
 
 type ViewState = 'map' | 'list' | 'detail'
 
@@ -190,6 +191,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
+    libraries: GOOGLE_MAPS_LIBRARIES,
   })
 
   useEffect(() => {
@@ -945,8 +947,12 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
             setSelectedRoute(route)
             setView('detail')
           }}
-          onStartMapPickMode={(mode) => {
+          onStartMapPickMode={(mode, center) => {
             setMapPickMode(mode)
+            if (center && mapRef.current) {
+              mapRef.current.panTo(center)
+              mapRef.current.setZoom(15)
+            }
           }}
           currentPickedOrigin={currentPickedOrigin}
           currentPickedDestination={currentPickedDestination}

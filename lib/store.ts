@@ -160,6 +160,10 @@ export interface Route {
   calificacion?: number | null;
   comentario_calificacion?: string;
   route_type?: "INTERURBANO" | "URBANO" | "TOUR";
+  tipo_viaje?: "SOLO_IDA" | "IDA_Y_VUELTA";
+  precio_ofertado?: string | number;
+  precio_contraoferta?: string | number | null;
+  estado_oferta?: "PENDIENTE" | "CONTRAOFERTADO" | "ACEPTADO" | "RECHAZADO";
   category?: {
     id: number;
     name: string;
@@ -372,6 +376,8 @@ interface AppState {
     destination: { name: string; lat: number; lng: number }; 
     solicitar_servicio?: boolean;
     precio_estimado?: number;
+    tipo_viaje?: "SOLO_IDA" | "IDA_Y_VUELTA";
+    precio_ofertado?: number;
   }) => Promise<{ success: boolean; data?: any; error?: string }>
   deleteUserRoute: (routeId: number) => Promise<boolean>
   fetchRequestedTrips: () => Promise<void>
@@ -379,6 +385,9 @@ interface AppState {
   startTrip: (routeId: number) => Promise<{ success: boolean; data?: any; error?: string }>
   finishTrip: (routeId: number) => Promise<{ success: boolean; data?: any; error?: string }>
   rateTrip: (routeId: number, calificacion: number, comentario?: string) => Promise<{ success: boolean; data?: any; error?: string }>
+  contraofertarTrip: (routeId: number, precio: number) => Promise<{ success: boolean; data?: any; error?: string }>
+  aceptarContraoferta: (routeId: number) => Promise<{ success: boolean; data?: any; error?: string }>
+  rechazarContraoferta: (routeId: number) => Promise<{ success: boolean; data?: any; error?: string }>
 }
 
 let driverGpsInterval: NodeJS.Timeout | null = null;
@@ -2028,6 +2037,67 @@ export const useAppStore = create<AppState>()(
         }
       },
       
+      contraofertarTrip: async (routeId: number, precio: number) => {
+        try {
+          const response = await fetchWithAuth(`${API_BASE}/transport/routes/${routeId}/contraofertar-viaje/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ precio })
+          });
+          if (response.ok) {
+            const data = await response.json();
+            set((state) => ({
+              requestedTrips: state.requestedTrips.map((r) => r.id === routeId ? data : r),
+              myUserRoutes: state.myUserRoutes.map((r) => r.id === routeId ? data : r)
+            }));
+            return { success: true, data };
+          }
+          const err = await response.json().catch(() => ({}));
+          return { success: false, error: err.error || "No se pudo enviar la contraoferta" };
+        } catch (e: any) {
+          return { success: false, error: e.message || "Error al enviar la contraoferta" };
+        }
+      },
+
+      aceptarContraoferta: async (routeId: number) => {
+        try {
+          const response = await fetchWithAuth(`${API_BASE}/transport/routes/${routeId}/aceptar-contraoferta/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+          });
+          if (response.ok) {
+            const data = await response.json();
+            set((state) => ({
+              myUserRoutes: state.myUserRoutes.map((r) => r.id === routeId ? data : r)
+            }));
+            return { success: true, data };
+          }
+          const err = await response.json().catch(() => ({}));
+          return { success: false, error: err.error || "No se pudo aceptar la contraoferta" };
+        } catch (e: any) {
+          return { success: false, error: e.message || "Error al aceptar la contraoferta" };
+        }
+      },
+
+      rechazarContraoferta: async (routeId: number) => {
+        try {
+          const response = await fetchWithAuth(`${API_BASE}/transport/routes/${routeId}/rechazar-contraoferta/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+          });
+          if (response.ok) {
+            const data = await response.json();
+            set((state) => ({
+              myUserRoutes: state.myUserRoutes.map((r) => r.id === routeId ? data : r)
+            }));
+            return { success: true, data };
+          }
+          const err = await response.json().catch(() => ({}));
+          return { success: false, error: err.error || "No se pudo rechazar la contraoferta" };
+        } catch (e: any) {
+          return { success: false, error: e.message || "Error al rechazar la contraoferta" };
+        }
+      },
     }),
     {
       name: "app-storage",

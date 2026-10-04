@@ -1,8 +1,9 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Navigation2, StopCircle, Truck, Wifi, WifiOff, AlertCircle, Users, Car, CheckCircle2, Sparkles, MapPin } from "lucide-react"
+import { Navigation2, StopCircle, Truck, Wifi, WifiOff, AlertCircle, Users, Car, CheckCircle2, Sparkles, MapPin, Repeat, DollarSign } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { useAppStore } from "@/lib/store"
 import { HeaderWithMenu } from "@/components/header-with-menu"
 import { cn } from "@/lib/utils"
@@ -25,10 +26,19 @@ import { DriverKycScreen } from "./driver-kyc-screen"
 export function DriverScreen({ onNavigate }: DriverScreenProps) {
   const { routes, fetchRoutes, accessToken, currentUser } = useAppStore()
   const { isDriverTracking, driverGpsError, driverCurrentPos, startDriverTracking, stopDriverTracking, driverGpsCount } = useAppStore()
-  const { requestedTrips, fetchRequestedTrips, acceptTrip, startTrip, finishTrip } = useAppStore()
+  const { requestedTrips, fetchRequestedTrips, acceptTrip, startTrip, finishTrip, contraofertarTrip } = useAppStore()
   
   const [myUnit, setMyUnit] = useState<MyUnit | null>(null)
   const [unitError, setUnitError] = useState<string | null>(null)
+  const [activeCounterTripId, setActiveCounterTripId] = useState<number | null>(null)
+  const [counterPrice, setCounterPrice] = useState<string>("")
+  const [isSubmittingCounter, setIsSubmittingCounter] = useState<boolean>(false)
+  const [toastMsg, setToastMsg] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null)
+
+  const showToast = (type: 'success' | 'error' | 'info', text: string) => {
+    setToastMsg({ type, text })
+    setTimeout(() => setToastMsg(null), 3800)
+  }
 
   // Cargamos las rutas y buscamos la unidad del chofer al montar
   useEffect(() => {
@@ -89,8 +99,22 @@ export function DriverScreen({ onNavigate }: DriverScreenProps) {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="flex flex-col min-h-screen bg-background relative">
       <HeaderWithMenu title="Panel del Chofer" onNavigate={onNavigate} />
+
+      {/* Toast Flotante */}
+      {toastMsg && (
+        <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[70] px-4 py-2.5 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-bold animate-in slide-in-from-top duration-300 ${
+          toastMsg.type === 'success' ? 'bg-emerald-600 text-white' :
+          toastMsg.type === 'error' ? 'bg-red-600 text-white' :
+          'bg-gray-900 text-white'
+        }`}>
+          {toastMsg.type === 'success' && <CheckCircle2 className="w-4 h-4 shrink-0" />}
+          {toastMsg.type === 'error' && <AlertCircle className="w-4 h-4 shrink-0" />}
+          {toastMsg.type === 'info' && <Sparkles className="w-4 h-4 shrink-0" />}
+          <span>{toastMsg.text}</span>
+        </div>
+      )}
 
       <div className="flex-1 p-4 space-y-4 pb-8">
 
@@ -204,9 +228,10 @@ export function DriverScreen({ onNavigate }: DriverScreenProps) {
                           onClick={async () => {
                             const res = await startTrip(trip.id)
                             if (res.success) {
+                              showToast('success', "Viaje iniciado. El pasajero puede rastrear tu recorrido en tiempo real.")
                               fetchRoutes()
                             } else {
-                              alert(res.error || "No se pudo iniciar el viaje.")
+                              showToast('error', res.error || "No se pudo iniciar el viaje.")
                             }
                           }}
                           className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold h-9 rounded-xl"
@@ -219,10 +244,10 @@ export function DriverScreen({ onNavigate }: DriverScreenProps) {
                           onClick={async () => {
                             const res = await finishTrip(trip.id)
                             if (res.success) {
-                              alert("¡Viaje finalizado con éxito! El pasajero podrá calificarte.")
+                              showToast('success', "¡Viaje finalizado con éxito! El pasajero podrá calificarte.")
                               fetchRoutes()
                             } else {
-                              alert(res.error || "No se pudo finalizar el viaje.")
+                              showToast('error', res.error || "No se pudo finalizar el viaje.")
                             }
                           }}
                           className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold h-9 rounded-xl"
@@ -239,40 +264,161 @@ export function DriverScreen({ onNavigate }: DriverScreenProps) {
 
           {/* Solicitudes Disponibles para Aceptar */}
           {requestedTrips?.length > 0 ? (
-            <div className="space-y-2 pt-2 border-t border-border">
-              <p className="text-xs font-semibold text-muted-foreground">Nuevas solicitudes:</p>
+            <div className="space-y-3 pt-2 border-t border-border">
+              <p className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                Nuevas solicitudes de pasajeros ({requestedTrips.length}):
+              </p>
               {requestedTrips.map((req: any) => {
                 const origin = req.stops?.[0]?.name || "Origen"
                 const destination = req.stops?.[req.stops?.length - 1]?.name || "Destino"
+                const isIdaVuelta = req.tipo_viaje === 'IDA_Y_VUELTA'
+                const clientPrice = req.precio_ofertado || req.price_one_way || '2.50'
+                const isCounterActive = activeCounterTripId === req.id
 
                 return (
-                  <div key={req.id} className="p-3 bg-muted/60 rounded-xl border border-border space-y-2 text-xs">
-                    <div className="flex justify-between items-center">
-                      <span className="font-bold text-foreground">{req.name}</span>
-                      <span className="text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950 px-2 py-0.5 rounded-full border border-amber-200">
-                        Esperando chofer
+                  <div key={req.id} className="p-3.5 bg-muted/70 rounded-2xl border border-border space-y-2.5 text-xs">
+                    <div className="flex justify-between items-start gap-2">
+                      <div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-bold text-foreground text-sm">{req.name}</span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                            isIdaVuelta
+                              ? 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300'
+                              : 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
+                          }`}>
+                            {isIdaVuelta ? <Repeat className="w-2.5 h-2.5" /> : <Car className="w-2.5 h-2.5" />}
+                            {isIdaVuelta ? 'Ida y Retorno' : 'Solo Ida'}
+                          </span>
+                        </div>
+                        <div className="mt-1 flex items-center gap-1 text-xs">
+                          <span className="text-muted-foreground">Tarifa ofrecida:</span>
+                          <span className="font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded-md">
+                            ${clientPrice}
+                          </span>
+                        </div>
+                      </div>
+
+                      <span className="text-[10px] font-black uppercase text-amber-700 bg-amber-100 dark:bg-amber-950 dark:text-amber-300 px-2.5 py-0.5 rounded-full shrink-0">
+                        Esperando
                       </span>
                     </div>
-                    <div className="text-muted-foreground space-y-0.5">
+
+                    <div className="text-muted-foreground space-y-1 bg-background/60 p-2 rounded-xl">
                       <p><strong>De:</strong> {origin}</p>
                       <p><strong>A:</strong> {destination}</p>
                     </div>
-                    <Button
-                      size="sm"
-                      onClick={async () => {
-                        const res = await acceptTrip(req.id)
-                        if (res.success) {
-                          alert("¡Viaje aceptado! Dirígete a recoger al pasajero.")
-                          fetchRequestedTrips()
-                          fetchRoutes()
-                        } else {
-                          alert(res.error || "No se pudo aceptar el viaje.")
-                        }
-                      }}
-                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-9 rounded-xl shadow-xs"
-                    >
-                      ✓ Aceptar Viaje
-                    </Button>
+
+                    {/* CAJA DE CONTRAOFERTA */}
+                    {isCounterActive ? (
+                      <div className="p-2.5 bg-amber-50 dark:bg-amber-950/60 rounded-xl border border-amber-200 dark:border-amber-800 space-y-2">
+                        <div className="flex justify-between items-center text-[11px] font-bold text-amber-800 dark:text-amber-300">
+                          <span>Tu Contraoferta:</span>
+                          <span className="text-muted-foreground font-normal">Ofreció: ${clientPrice}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <div className="relative flex-1">
+                            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-xs">$</span>
+                            <Input
+                              type="number"
+                              step="0.25"
+                              value={counterPrice}
+                              onChange={(e) => setCounterPrice(e.target.value)}
+                              className="pl-5 h-8 text-xs font-bold rounded-lg bg-background"
+                              placeholder="Monto"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const curr = parseFloat(counterPrice) || parseFloat(clientPrice) || 0
+                              setCounterPrice((curr + 0.50).toFixed(2))
+                            }}
+                            className="px-2 py-1 bg-background border border-border rounded-lg text-[10px] font-bold"
+                          >
+                            +$0.50
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const curr = parseFloat(counterPrice) || parseFloat(clientPrice) || 0
+                              setCounterPrice((curr + 1.00).toFixed(2))
+                            }}
+                            className="px-2 py-1 bg-background border border-border rounded-lg text-[10px] font-bold"
+                          >
+                            +$1.00
+                          </button>
+                        </div>
+                        <div className="flex gap-1.5 pt-0.5">
+                          <Button
+                            size="sm"
+                            disabled={isSubmittingCounter}
+                            onClick={async () => {
+                              const p = parseFloat(counterPrice)
+                              if (!p || p <= 0) {
+                                showToast('error', "Monto inválido.")
+                                return
+                              }
+                              setIsSubmittingCounter(true)
+                              const res = await contraofertarTrip(req.id, p)
+                              setIsSubmittingCounter(false)
+                              if (res.success) {
+                                showToast('success', `Contraoferta de $${p.toFixed(2)} enviada al pasajero.`)
+                                setActiveCounterTripId(null)
+                                fetchRequestedTrips()
+                              } else {
+                                showToast('error', res.error || "No se pudo enviar la oferta.")
+                              }
+                            }}
+                            className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs h-8 rounded-lg shadow-xs"
+                          >
+                            {isSubmittingCounter ? "Enviando..." : `Enviar Oferta ($${counterPrice})`}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setActiveCounterTripId(null)}
+                            className="text-xs h-8 rounded-lg px-2"
+                          >
+                            Cancelar
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={async () => {
+                            const res = await acceptTrip(req.id)
+                            if (res.success) {
+                              showToast('success', "¡Viaje aceptado! Dirígete a recoger al pasajero.")
+                              fetchRequestedTrips()
+                              fetchRoutes()
+                            } else {
+                              showToast('error', res.error || "No se pudo aceptar el viaje.")
+                            }
+                          }}
+                          className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-9 rounded-xl shadow-xs gap-1"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Aceptar ${clientPrice}
+                        </Button>
+
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setActiveCounterTripId(req.id)
+                            const base = parseFloat(clientPrice) || 2.50
+                            setCounterPrice((base + 1.00).toFixed(2))
+                          }}
+                          className="text-xs font-bold text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 hover:bg-amber-100 h-9 rounded-xl px-3 flex items-center gap-1"
+                        >
+                          <DollarSign className="w-3.5 h-3.5" />
+                          Contraofertar
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )
               })}
@@ -384,12 +530,12 @@ export function DriverScreen({ onNavigate }: DriverScreenProps) {
                       useAppStore.getState().passStop(myUnit.id, stop.id).then((result) => {
                         if (result.ok) {
                           if (result.data?.notified_passengers > 0) {
-                            alert("¡Parada marcada con éxito! Se notificó a los pasajeros.");
+                            showToast('success', "¡Parada marcada con éxito! Se notificó a los pasajeros.");
                           } else {
-                            alert("La parada se marcó, pero no había pasajeros activos para notificar (o ya estaba registrada).");
+                            showToast('info', "La parada se marcó, pero no había pasajeros activos para notificar.");
                           }
                         } else {
-                          alert(`Error del servidor: ${result.error || 'Desconocido'}`);
+                          showToast('error', `Error del servidor: ${result.error || 'Desconocido'}`);
                         }
                       });
                     }
