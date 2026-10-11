@@ -33,7 +33,7 @@ import { PoolPaymentModal } from "@/components/pool-payment-modal"
 import { InstallPWABanner } from "@/components/install-pwa-banner"
 import { DesktopSidebar } from "@/components/desktop-sidebar"
 import { useAppStore } from "@/lib/store"
-import { Truck, X } from "lucide-react"
+import { Truck, X, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 type ActiveTab =
@@ -197,7 +197,25 @@ export default function Home() {
       {/* Desktop Sidebar */}
       {!isDesktopSidebarCollapsed && (
         <div className="hidden lg:block h-screen flex-shrink-0 shadow-lg relative z-20 transition-all duration-300">
-          <DesktopSidebar activeTab={activeTab} onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />
+          <DesktopSidebar 
+            activeTab={activeTab} 
+            onNavigate={(tab) => setActiveTab(tab as ActiveTab)} 
+            onToggleCollapse={() => setIsDesktopSidebarCollapsed(true)}
+          />
+        </div>
+      )}
+
+      {/* Botón flotante para restaurar menú lateral en escritorio cuando está oculto */}
+      {isDesktopSidebarCollapsed && (
+        <div className="hidden lg:block fixed top-3 left-3 z-50">
+          <button
+            type="button"
+            onClick={() => setIsDesktopSidebarCollapsed(false)}
+            title="Mostrar menú de navegación"
+            className="w-9 h-9 bg-white/95 hover:bg-emerald-50 text-gray-700 hover:text-[#064e3b] rounded-2xl shadow-xl border border-gray-200/90 flex items-center justify-center transition-all active:scale-95 group"
+          >
+            <ChevronRight className="w-5 h-5 text-emerald-700 group-hover:translate-x-0.5 transition-transform" />
+          </button>
         </div>
       )}
 

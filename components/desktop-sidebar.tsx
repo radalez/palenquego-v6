@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Store, Users, QrCode, Map, Briefcase, Crown, Zap, Star, Gem, LogOut, ChevronRight, CreditCard, Bell, Shield, HelpCircle, User, Home, ShieldCheck, Truck } from "lucide-react"
+import { Store, Users, QrCode, Map, Briefcase, Crown, Zap, Star, Gem, LogOut, ChevronRight, ChevronLeft, CreditCard, Bell, Shield, HelpCircle, User, Home, ShieldCheck, Truck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAppStore } from "@/lib/store"
 import { cn } from "@/lib/utils"
@@ -9,9 +9,10 @@ import { cn } from "@/lib/utils"
 interface DesktopSidebarProps {
   activeTab: string
   onNavigate: (tab: string) => void
+  onToggleCollapse?: () => void
 }
 
-export function DesktopSidebar({ activeTab, onNavigate }: DesktopSidebarProps) {
+export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: DesktopSidebarProps) {
   const { userPlan, logout, currentUser } = useAppStore()
   const [isMounted, setIsMounted] = useState(false)
 
@@ -46,12 +47,24 @@ export function DesktopSidebar({ activeTab, onNavigate }: DesktopSidebarProps) {
   return (
     <div className="w-72 bg-card border-r border-border h-full flex flex-col overflow-y-auto">
       <div className="p-6">
-        {/* Logo/Brand */}
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-            <img src="/logo-white.png" alt="Palenque Go Logo" className="w-6 h-6 object-contain" style={{ filter: 'invert(1)' }} />
+        {/* Logo/Brand + Botón para ocultar menú */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+              <img src="/logo-white.png" alt="Palenque Go Logo" className="w-6 h-6 object-contain" style={{ filter: 'invert(1)' }} />
+            </div>
+            <h1 className="text-xl font-bold text-primary tracking-tight">Palenque Go</h1>
           </div>
-          <h1 className="text-xl font-bold text-primary tracking-tight">Palenque Go</h1>
+          {onToggleCollapse && (
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              title="Ocultar menú lateral"
+              className="w-8 h-8 rounded-xl bg-muted/60 hover:bg-emerald-50 hover:text-[#064e3b] text-muted-foreground flex items-center justify-center transition-all active:scale-95 border border-transparent hover:border-emerald-200"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+          )}
         </div>
 
         {/* Sección de Chofer / Conductor */}

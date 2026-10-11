@@ -1378,22 +1378,9 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
           )}
 
           {/* CONTROLES FLOTANTES SUPERIORES */}
-          <div className="absolute top-3.5 left-3.5 right-3.5 z-20 flex items-center justify-between pointer-events-none">
-            {/* Botón Hamburguesa de Desktop para colapsar/expandir el panel lateral */}
-            {onToggleDesktopSidebar ? (
-              <button
-                type="button"
-                onClick={onToggleDesktopSidebar}
-                title={isDesktopSidebarCollapsed ? "Mostrar menú lateral" : "Ocultar menú lateral"}
-                className="hidden lg:flex items-center gap-1.5 px-3 py-2 bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-gray-200/80 hover:bg-emerald-50 text-gray-700 hover:text-[#064e3b] font-bold text-xs pointer-events-auto transition-all active:scale-95"
-              >
-                <Menu className="w-4 h-4 text-emerald-700" />
-                <span className="hidden xl:inline">{isDesktopSidebarCollapsed ? "Mostrar Menú" : "Ocultar Menú"}</span>
-              </button>
-            ) : <div />}
-
+          <div className="absolute top-3.5 right-3.5 z-20 flex items-center pointer-events-none">
             {/* Toggle Flotante Mapa / Lista */}
-            <div className="bg-white/95 backdrop-blur-md rounded-2xl p-1 shadow-lg border border-gray-200/80 flex items-center gap-0.5 pointer-events-auto ml-auto">
+            <div className="bg-white/95 backdrop-blur-md rounded-2xl p-1 shadow-lg border border-gray-200/80 flex items-center gap-0.5 pointer-events-auto">
               <button
                 type="button"
                 className="px-3.5 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 bg-[#dcfce7] text-[#064e3b] shadow-xs"
@@ -1542,7 +1529,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
                 }}
                 className="flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100 transition-colors"
               >
-                <span>{isSheetExpanded ? 'Bajar' : 'Ver opciones'}</span>
+                <span>{isSheetExpanded ? 'Ocultar' : 'Ver opciones'}</span>
                 {isSheetExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
               </button>
             </div>
