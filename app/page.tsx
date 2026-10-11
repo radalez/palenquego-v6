@@ -186,10 +186,10 @@ export default function Home() {
     return <OnboardingScreen onComplete={handleOnboardingComplete} />
   }
 
-  const isMainTab =
-    activeTab === "marketplace" || activeTab === "businesses" || activeTab === "pool" || activeTab === "safeflow" || activeTab === "profile" || activeTab === "rutas" || activeTab === "rutas-classic" || activeTab === "map-explorer"
-
   const isMapExplorer = activeTab === "map-explorer"
+
+  const isMainTab =
+    (activeTab === "marketplace" || activeTab === "businesses" || activeTab === "pool" || activeTab === "safeflow" || activeTab === "profile" || activeTab === "rutas" || activeTab === "rutas-classic") && !isMapExplorer
 
   return (
     <div className="min-h-screen bg-background flex w-full overflow-hidden">
@@ -199,7 +199,7 @@ export default function Home() {
       </div>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col relative h-screen overflow-hidden w-full lg:max-w-none max-w-md mx-auto shadow-2xl lg:shadow-none bg-background lg:border-l lg:border-border">
+      <main className={`flex-1 flex flex-col relative h-screen overflow-hidden w-full ${isMapExplorer ? 'max-w-none' : 'lg:max-w-none max-w-md'} mx-auto shadow-2xl lg:shadow-none bg-background lg:border-l lg:border-border`}>
         <InstallPWABanner />
 
         {/* Widget GPS flotante para choferes (solo cuando NO están en su panel) */}
@@ -212,7 +212,7 @@ export default function Home() {
         )}
 
         {/* Screen Content */}
-        <div className={`flex-1 overflow-y-auto pb-16 lg:pb-0`}>
+        <div className={`flex-1 ${isMapExplorer ? 'h-full overflow-hidden' : 'overflow-y-auto pb-16 lg:pb-0'}`}>
         {activeTab === "marketplace" && (
           <MarketplaceScreen
             onNavigate={(tab) => setActiveTab(tab as ActiveTab)}

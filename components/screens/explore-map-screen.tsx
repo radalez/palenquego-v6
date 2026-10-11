@@ -6,8 +6,7 @@ import {
   Search, MapPin, Navigation2, SlidersHorizontal, ChevronLeft, ChevronRight,
   LayoutGrid, ChevronUp, X, Bookmark, Clock, Share2,
   ArrowUpDown, Calendar, Users, Bus, Building2, Camera, ChevronDown,
-  Map, Filter, Palmtree, Utensils, Home, Landmark, Leaf, Sparkles, Car, Star,
-  Compass, Plane, Mountain, Sun
+  Map, Filter, Palmtree, Utensils, Home, Landmark, Leaf, Sparkles, Car, Star
 } from 'lucide-react'
 import { ScrollArea } from "@/components/ui/scroll-area"
 import * as LucideIcons from 'lucide-react'
@@ -22,137 +21,25 @@ const GOOGLE_MAPS_LIBRARIES: ("places")[] = ["places"]
 
 type ViewState = 'map' | 'list' | 'detail'
 
-const STRATEGIC_HUBS = [
-  {
-    id: 'san-salvador',
-    name: 'San Salvador',
-    category: 'URBANO',
-    icon: 'Bus',
-    color: '#059669',
-    lat: 13.6929,
-    lng: -89.2182,
-    routesCount: 28,
-    desc: 'Centro Histórico, BINAES y Terminales'
-  },
-  {
-    id: 'santa-ana',
-    name: 'Santa Ana',
-    category: 'INTERURBANO',
-    icon: 'Bus',
-    color: '#059669',
-    lat: 13.9942,
-    lng: -89.5597,
-    routesCount: 8,
-    desc: 'Catedral, Volcán de Santa Ana y Conexión Occidente'
-  },
-  {
-    id: 'la-libertad',
-    name: 'La Libertad',
-    category: 'TOUR',
-    icon: 'Palmtree',
-    color: '#f97316',
-    lat: 13.4883,
-    lng: -89.3222,
-    routesCount: 6,
-    desc: 'Surf City, El Tunco, El Sunzal y Playas'
-  },
-  {
-    id: 'suchitoto',
-    name: 'Suchitoto',
-    category: 'TOUR',
-    icon: 'Camera',
-    color: '#ea580c',
-    lat: 13.9378,
-    lng: -89.0278,
-    routesCount: 4,
-    desc: 'Pueblo Histórico Colonial y Lago Suchitlán'
-  },
-  {
-    id: 'san-vicente',
-    name: 'San Vicente',
-    category: 'INTERURBANO',
-    icon: 'Mountain',
-    color: '#15803d',
-    lat: 13.6444,
-    lng: -88.8028,
-    routesCount: 5,
-    desc: 'Volcán Chinchontepec y Corredor Panamericano'
-  },
-  {
-    id: 'aeropuerto',
-    name: 'Aeropuerto SAL',
-    category: 'INTERURBANO',
-    icon: 'Plane',
-    color: '#0284c7',
-    lat: 13.4409,
-    lng: -89.0557,
-    routesCount: 4,
-    desc: 'Aeropuerto Int. San Óscar Arnulfo Romero'
-  }
-]
-
-const FEATURED_DESTINATIONS = [
-  {
-    id: 'la-libertad',
-    name: 'La Libertad',
-    subtitle: 'Surf City, Playas & Olas',
-    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
-    lat: 13.4883,
-    lng: -89.3222,
-    zoom: 13,
-    category: 'TOUR',
-  },
-  {
-    id: 'suchitoto',
-    name: 'Suchitoto',
-    subtitle: 'Arquitectura Colonial & Lago',
-    image: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=800&q=80',
-    lat: 13.9378,
-    lng: -89.0278,
-    zoom: 14,
-    category: 'TOUR',
-  },
-  {
-    id: 'santa-ana',
-    name: 'Santa Ana',
-    subtitle: 'Catedral & Volcán Ilamatepec',
-    image: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=800&q=80',
-    lat: 13.9942,
-    lng: -89.5597,
-    zoom: 13,
-    category: 'INTERURBANO',
-  },
-  {
-    id: 'san-salvador',
-    name: 'San Salvador',
-    subtitle: 'Centro Histórico & BINAES',
-    image: 'https://images.unsplash.com/photo-1477959858617-67f30bc75b82?auto=format&fit=crop&w=800&q=80',
-    lat: 13.6929,
-    lng: -89.2182,
-    zoom: 13,
-    category: 'URBANO',
-  }
-]
-
 const DEFAULT_PROMO_SLIDES = [
   {
     id: 1,
-    title: "Rutas Interurbanas & Montañas",
-    subtitle: "Viaja cómodo y seguro entre departamentos y miradores.",
+    title: "Rutas Interurbanas & Monta├▒as",
+    subtitle: "Viaja c├│modo y seguro entre departamentos y miradores.",
     category: "INTERURBANO",
     image: "https://res.cloudinary.com/dacanh1gn/image/upload/v1791135828/palenque_banners/slide_1_interurbano_montanas.webp"
   },
   {
     id: 2,
     title: "Taxi & Rutas Urbanas",
-    subtitle: "Muévete por la ciudad a tu propio precio con choferes cercanos.",
+    subtitle: "Mu├®vete por la ciudad a tu propio precio con choferes cercanos.",
     category: "URBANO",
     image: "https://res.cloudinary.com/dacanh1gn/image/upload/v1791135830/palenque_banners/slide_2_urbano_ciudad.webp"
   },
   {
     id: 3,
-    title: "Costa del Bálsamo & Tours",
-    subtitle: "Disfruta de playas, surf, gastronomía y experiencias inolvidables.",
+    title: "Costa del B├ílsamo & Tours",
+    subtitle: "Disfruta de playas, surf, gastronom├¡a y experiencias inolvidables.",
     category: "TOUR",
     image: "https://res.cloudinary.com/dacanh1gn/image/upload/v1791135831/palenque_banners/slide_3_tours_costa.webp"
   }
@@ -160,26 +47,26 @@ const DEFAULT_PROMO_SLIDES = [
 
 const DEFAULT_TOUR_CATEGORIES = [
   { id: 'cat-playa', name: 'Playa', slug: 'playa', icon: 'Palmtree' },
-  { id: 'cat-gastro', name: 'Gastronomía', slug: 'gastronomia', icon: 'Utensils' },
+  { id: 'cat-gastro', name: 'Gastronom├¡a', slug: 'gastronomia', icon: 'Utensils' },
   { id: 'cat-pueblos', name: 'Pueblos', slug: 'pueblos', icon: 'Home' },
   { id: 'cat-historia', name: 'Historia', slug: 'historia', icon: 'Landmark' },
   { id: 'cat-naturaleza', name: 'Naturaleza', slug: 'naturaleza', icon: 'Leaf' },
 ]
 
 const POPULAR_SALVADOR_PLACES = [
-  { name: "Aeropuerto Int. San Óscar Romero", category: "Aeropuerto (San Luis Talpa)", icon: "Plane" },
+  { name: "Aeropuerto Int. San ├ôscar Romero", category: "Aeropuerto (San Luis Talpa)", icon: "Plane" },
   { name: "El Tunco / Sunzal", category: "Playa & Surf (La Libertad)", icon: "Palmtree" },
-  { name: "Planes de Renderos / Puerta del Diablo", category: "Montaña & Mirador", icon: "Mountain" },
+  { name: "Planes de Renderos / Puerta del Diablo", category: "Monta├▒a & Mirador", icon: "Mountain" },
   { name: "Metrocentro San Salvador", category: "Centro Comercial", icon: "ShoppingBag" },
   { name: "Terminal de Occidente", category: "Terminal de Buses Interurbanos", icon: "Bus" },
   { name: "Terminal de Oriente Fenadesal", category: "Terminal de Buses Interurbanos", icon: "Bus" },
-  { name: "Multiplaza & Las Cascadas", category: "Zona Rosa / Antiguo Cuscatlán", icon: "ShoppingBag" },
-  { name: "Suchitoto", category: "Pueblo Histórico (Cuscatlán)", icon: "Landmark" },
-  { name: "Santa Tecla / El Cafetalón", category: "Ciudad (La Libertad)", icon: "Building2" },
-  { name: "Hospital Rosales / Zona Médica", category: "Salud / Centro SS", icon: "Cross" },
-  { name: "Universidad de El Salvador (UES)", category: "Educación / Campus Central", icon: "GraduationCap" },
+  { name: "Multiplaza & Las Cascadas", category: "Zona Rosa / Antiguo Cuscatl├ín", icon: "ShoppingBag" },
+  { name: "Suchitoto", category: "Pueblo Hist├│rico (Cuscatl├ín)", icon: "Landmark" },
+  { name: "Santa Tecla / El Cafetal├│n", category: "Ciudad (La Libertad)", icon: "Building2" },
+  { name: "Hospital Rosales / Zona M├®dica", category: "Salud / Centro SS", icon: "Cross" },
+  { name: "Universidad de El Salvador (UES)", category: "Educaci├│n / Campus Central", icon: "GraduationCap" },
   { name: "Costa del Sol", category: "Playas (La Paz)", icon: "Palmtree" },
-  { name: "Santa Ana / Centro Histórico", category: "Ciudad de Occidente", icon: "Landmark" },
+  { name: "Santa Ana / Centro Hist├│rico", category: "Ciudad de Occidente", icon: "Landmark" },
 ]
 
 interface ExploreMapScreenProps {
@@ -210,7 +97,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
   const [closestRoutesMenu, setClosestRoutesMenu] = useState<{ city: string, routes: any[] } | null>(null)
   const [locationAlert, setLocationAlert] = useState<{ type: 'near' | 'far', distance: number, route: any, city: string, topRoutes: any[] } | null>(null)
 
-  // Estados de Super Categorías y Modo de Cabecera
+  // Estados de Super Categor├¡as y Modo de Cabecera
   const currentUser = useAppStore((state) => state.currentUser)
   const myUserRoutes = useAppStore((state) => state.myUserRoutes)
   const requestedTrips = useAppStore((state) => state.requestedTrips)
@@ -228,90 +115,6 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
   const [mapZoom, setMapZoom] = useState<number>(9)
   const [previewRoute, setPreviewRoute] = useState<any | null>(null)
   const [hoveredRouteId, setHoveredRouteId] = useState<any | null>(null)
-  const [activeCampaign, setActiveCampaign] = useState<{ id: string; name: string; target: string } | null>(null)
-  const [isSearchFocused, setIsSearchFocused] = useState(false)
-
-  // Detector de campañas publicitarias & procedencia de enlaces (?campaign=..., ?tour=..., ?category=...)
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    const params = new URLSearchParams(window.location.search)
-    const camp = params.get("campaign") || params.get("utm_campaign")
-    const tour = params.get("tour")
-    const cat = params.get("category") || params.get("cat")
-    const dest = params.get("dest") || params.get("destino")
-
-    if (camp || tour || cat || dest) {
-      let name = "Campaña Activa"
-      let targetCat: 'INTERURBANO' | 'URBANO' | 'TOUR' | null = null
-
-      if (tour || (camp && camp.toLowerCase().includes("tour")) || (cat && cat.toLowerCase().includes("tour"))) {
-        name = tour ? `Tour: ${tour.replace(/[-_]/g, ' ')}` : "Tours & Experiencias"
-        targetCat = "TOUR"
-      } else if (cat && cat.toLowerCase().includes("urban")) {
-        name = "Transporte Urbano & Taxi"
-        targetCat = "URBANO"
-      } else if (cat && cat.toLowerCase().includes("inter")) {
-        name = "Rutas Interurbanas"
-        targetCat = "INTERURBANO"
-      } else if (camp) {
-        name = `Campaña: ${camp.replace(/[-_]/g, ' ')}`
-      }
-
-      if (dest) {
-        setSearchQuery(dest)
-        setDestination(dest)
-      }
-      if (targetCat) {
-        setSuperCategory(targetCat)
-      }
-      setActiveCampaign({
-        id: camp || tour || cat || "ad",
-        name: name,
-        target: dest || tour || "El Salvador"
-      })
-    }
-  }, [])
-
-  const handleSelectDestination = (dest: any) => {
-    if (mapRef.current) {
-      mapRef.current.panTo({ lat: dest.lat, lng: dest.lng })
-      mapRef.current.setZoom(dest.zoom || 13)
-    }
-    setDestination(dest.name)
-    setSearchQuery(dest.name)
-    if (dest.category) {
-      setSuperCategory(dest.category as any)
-    }
-  }
-
-  const handleHubClick = (hub: any) => {
-    if (mapRef.current) {
-      mapRef.current.panTo({ lat: hub.lat, lng: hub.lng })
-      mapRef.current.setZoom(13)
-    }
-    setDestination(hub.name)
-    if (hub.category) {
-      setSuperCategory(hub.category as any)
-    }
-  }
-
-  const handleExploreCurrentZone = () => {
-    if (mapRef.current) {
-      const center = mapRef.current.getCenter()
-      if (center) {
-        const lat = center.lat()
-        const lng = center.lng()
-        const sorted = [...filteredRoutes].sort((a, b) => {
-          const distA = a.stops?.[0] ? getDistanceInKm(lat, lng, a.stops[0].latitude, a.stops[0].longitude) : 9999
-          const distB = b.stops?.[0] ? getDistanceInKm(lat, lng, b.stops[0].latitude, b.stops[0].longitude) : 9999
-          return distA - distB
-        })
-        if (sorted.length > 0) {
-          setPreviewRoute(sorted[0])
-        }
-      }
-    }
-  }
 
   useEffect(() => {
     fetchMyUserRoutes()
@@ -363,7 +166,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
   const [showPromoBanner, setShowPromoBanner] = useState(true)
   const [currentPromoIndex, setCurrentPromoIndex] = useState(0)
 
-  // Slides dinámicos del backend (con fallback a Cloudinary por defecto)
+  // Slides din├ímicos del backend (con fallback a Cloudinary por defecto)
   const promoSlides = (homeSlides && homeSlides.length > 0) ? homeSlides : DEFAULT_PROMO_SLIDES
   const currentPromoSlide = promoSlides[currentPromoIndex % promoSlides.length]
 
@@ -398,8 +201,30 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
   const [filterService, setFilterService] = useState<'todos' | 'directo' | 'con_paradas'>('todos')
   const [filterTime, setFilterTime] = useState<'cualquiera' | 'manana' | 'tarde' | 'noche'>('cualquiera')
   const [filterLine, setFilterLine] = useState('todas')
+  const [activeCampaign, setActiveCampaign] = useState<string | null>(null)
 
-  // Rotación del carrusel de banners
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search)
+      const campaign = urlParams.get('campaign') || urlParams.get('utm_campaign')
+      const tour = urlParams.get('tour') || urlParams.get('category') || urlParams.get('dest')
+
+      if (campaign || tour) {
+        setActiveCampaign(campaign || tour)
+        if (tour === 'la-libertad' || tour === 'playa' || tour === 'surf') {
+          setSuperCategory('TOUR')
+          setActiveCategory('playa')
+        } else if (tour === 'suchitoto' || tour === 'colonial') {
+          setSuperCategory('TOUR')
+          setActiveCategory('pueblos')
+        } else if (tour === 'santa-ana') {
+          setSuperCategory('INTERURBANO')
+        }
+      }
+    }
+  }, [])
+
+  // Rotaci├│n del carrusel de banners
   useEffect(() => {
     if (!showPromoBanner) return
     const timer = setInterval(() => {
@@ -408,7 +233,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
     return () => clearInterval(timer)
   }, [showPromoBanner, promoSlides.length])
 
-  // Función para calcular distancia (Haversine formula)
+  // Funci├│n para calcular distancia (Haversine formula)
   const getDistanceInKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
     const R = 6371; // Radio de la Tierra en km
     const dLat = (lat2 - lat1) * (Math.PI / 180);
@@ -430,6 +255,15 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
     return API_BASE
   }
 
+  // Interceptar fallos de autenticación de Google Maps para evitar el modal "This page can't load Google Maps correctly"
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).gm_authFailure = () => {
+        console.warn("Google Maps inicializado en modo de contingencia / sin popup de bloqueo.")
+      }
+    }
+  }, [])
+
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
@@ -442,12 +276,20 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
       let hasValidStops = false
       routes.forEach(route => {
         if (route.stops?.length) {
-          bounds.extend({ lat: route.stops[0].latitude, lng: route.stops[0].longitude })
-          hasValidStops = true
+          const lat = route.stops[0].latitude
+          const lng = route.stops[0].longitude
+          // Filtrar estrictamente coordenadas reales dentro de El Salvador
+          if (lat >= 13.0 && lat <= 14.6 && lng >= -90.2 && lng <= -87.5) {
+            bounds.extend({ lat, lng })
+            hasValidStops = true
+          }
         }
       })
       if (hasValidStops) {
         mapRef.current.fitBounds(bounds, { top: 120, bottom: 80, left: 40, right: 40 })
+      } else {
+        mapRef.current.setCenter({ lat: 13.6929, lng: -89.2182 })
+        mapRef.current.setZoom(11)
       }
     }
   }, [routes, isLoaded, view])
@@ -477,7 +319,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
           const data = await res.json()
           setRoutes(data)
           
-          // Restaurar la ruta si venimos de la pantalla clásica
+          // Restaurar la ruta si venimos de la pantalla cl├ísica
           const returnRouteName = useAppStore.getState().returnToMapRoute;
           if (returnRouteName) {
             const found = data.find((r: any) => r.name === returnRouteName);
@@ -493,7 +335,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
     fetchRoutes()
   }, [token, superCategory, activeCategory])
 
-  // Filtrado local por super-categoría, categoría, destino y búsqueda
+  // Filtrado local por super-categor├¡a, categor├¡a, destino y b├║squeda
   const filteredRoutes = useMemo(() => {
     let result = routes
 
@@ -520,8 +362,8 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
 
     const isSpecialOrigin = 
       !origin.trim() || 
-      origin === 'Mi ubicación actual' || 
-      origin.toLowerCase().includes('ubicación') ||
+      origin === 'Mi ubicaci├│n actual' || 
+      origin.toLowerCase().includes('ubicaci├│n') ||
       origin.toLowerCase().includes('fuera de el salvador')
 
     if (!isSpecialOrigin) {
@@ -551,7 +393,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
     return result
   }, [routes, superCategory, activeCategory, filterService, filterLine, destination, origin, searchQuery])
 
-  // Parser para extraer número/código corto de ruta y separar origen/destino
+  // Parser para extraer n├║mero/c├│digo corto de ruta y separar origen/destino
   const parseRouteDisplay = (routeName: string) => {
     let badge = ''
     let destination = ''
@@ -562,7 +404,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
     if (routeNumMatch) {
       badge = routeNumMatch[1]
     } else {
-      const parts = routeName.split(/[:\-|➔]/)[0].trim()
+      const parts = routeName.split(/[:\-|Ô×ö]/)[0].trim()
       badge = parts.replace(/^Ruta\s+/i, '').trim().slice(0, 8)
     }
 
@@ -636,15 +478,15 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
           const isInsideElSalvador = lat >= 13.1 && lat <= 14.5 && lng >= -90.2 && lng <= -87.6
 
           if (isInsideElSalvador) {
-            setOrigin("Mi ubicación actual")
+            setOrigin("Mi ubicaci├│n actual")
             setGpsNotice(null)
             if (mapRef.current) {
               mapRef.current.panTo({ lat, lng })
               mapRef.current.setZoom(14)
             }
           } else {
-            // Usuario en el extranjero (turista o explorando desde otro país)
-            // No sobreescribir falsamente con "San Salvador". Identificar ubicación real:
+            // Usuario en el extranjero (turista o explorando desde otro pa├¡s)
+            // No sobreescribir falsamente con "San Salvador". Identificar ubicaci├│n real:
             if (typeof window !== 'undefined' && (window as any).google?.maps?.Geocoder) {
               const geocoder = new (window as any).google.maps.Geocoder()
               geocoder.geocode({ location: { lat, lng } }, (results: any, status: any) => {
@@ -652,18 +494,18 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
                   const countryComp = results[0].address_components?.find((c: any) => c.types.includes('country'))
                   const cityComp = results[0].address_components?.find((c: any) => c.types.includes('locality') || c.types.includes('administrative_area_level_1'))
                   const locLabel = cityComp ? `${cityComp.long_name}, ${countryComp?.short_name || ''}` : countryComp?.long_name || "Fuera de El Salvador"
-                  setOrigin(`Mi ubicación (${locLabel})`)
+                  setOrigin(`Mi ubicaci├│n (${locLabel})`)
                 } else {
-                  setOrigin("Mi ubicación (Fuera de El Salvador)")
+                  setOrigin("Mi ubicaci├│n (Fuera de El Salvador)")
                 }
               })
             } else {
-              setOrigin("Mi ubicación (Fuera de El Salvador)")
+              setOrigin("Mi ubicaci├│n (Fuera de El Salvador)")
             }
 
             setGpsNotice({
               type: 'outside',
-              title: '📍 Modo Viajero Internacional',
+              title: '­ƒôì Modo Viajero Internacional',
               message: 'Detectamos tu GPS en el extranjero. Nuestras rutas de transporte operan dentro de El Salvador. Para planear tu recorrido, elige tu punto de llegada o terminal:'
             })
 
@@ -676,11 +518,11 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
           setShowOriginSuggestions(false)
         },
         (err) => {
-          console.warn("Geolocalización error:", err)
+          console.warn("Geolocalizaci├│n error:", err)
           setGpsNotice({
             type: 'error',
             title: 'GPS no disponible',
-            message: 'No pudimos acceder a tu ubicación actual. Puedes escribir tu punto de partida directamente.'
+            message: 'No pudimos acceder a tu ubicaci├│n actual. Puedes escribir tu punto de partida directamente.'
           })
           setShowOriginSuggestions(false)
         },
@@ -690,13 +532,13 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
       setGpsNotice({
         type: 'error',
         title: 'GPS no compatible',
-        message: 'Tu navegador no soporta geolocalización. Escribe tu punto de partida.'
+        message: 'Tu navegador no soporta geolocalizaci├│n. Escribe tu punto de partida.'
       })
       setShowOriginSuggestions(false)
     }
   }
 
-  // Precalcular micro-dispersión orbital para evitar amontonamiento en terminales con coordenadas idénticas
+  // Precalcular micro-dispersi├│n orbital para evitar amontonamiento en terminales con coordenadas id├®nticas
   const routePositions = useMemo(() => {
     const coordGroups: { [key: string]: number[] } = {}
     filteredRoutes.forEach((route, i) => {
@@ -721,7 +563,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
       let offsetX = 0
       let offsetY = 0
       if (countInGroup > 1) {
-        // Dispersión radial limpia y estética solo para las que comparten el mismo punto de origen
+        // Dispersi├│n radial limpia y est├®tica solo para las que comparten el mismo punto de origen
         const radius = Math.min(24, 12 + countInGroup * 2)
         const angle = (indexInGroup / countInGroup) * 2 * Math.PI
         offsetX = Math.round(Math.cos(angle) * radius)
@@ -754,9 +596,9 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
   const catColor = selectedRoute?.category?.color || '#059669'
   const catIcon  = selectedRoute?.category?.icon  || 'MapPin'
 
-  // ─────────────────────────────────────────────
-  // PANTALLA 1 — MAPA
-  // ─────────────────────────────────────────────
+  // ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+  // PANTALLA 1 ÔÇö MAPA
+  // ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
   if (view === 'map') {
     return (
       <div className="relative w-full h-full flex flex-col bg-background overflow-hidden">
@@ -771,222 +613,547 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
 
           <div className="relative z-10">
             {/* Fila superior: Logo y Avatar */}
-            <div className="flex items-center justify-between text-white mb-2.5">
+          <div className="flex items-center justify-between text-white mb-2.5">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center shadow-xs">
+                <Navigation2 className="h-4 w-4 text-[#a3e635] rotate-45" />
+              </div>
+              <span className="text-lg font-black tracking-tight text-white flex items-center">
+                Palenque<span className="text-[#a3e635]">Go</span>
+              </span>
+            </div>
+
+            <button 
+              onClick={() => onNavigate('profile')} 
+              className="w-8 h-8 rounded-full bg-amber-700/80 border border-amber-500/40 flex items-center justify-center text-xs font-bold text-white shadow-sm hover:scale-105 transition-transform overflow-hidden"
+              title="Mi Perfil"
+            >
+              {currentUser?.avatar ? (
+                <img src={currentUser.avatar} alt="Perfil" className="w-full h-full object-cover" />
+              ) : (
+                currentUser?.name?.[0]?.toUpperCase() || 'M'
+              )}
+            </button>
+          </div>
+
+          {/* Saludo y Pregunta */}
+          <div className="mb-3">
+            <h1 className="text-xl font-black text-white leading-tight">
+              ┬┐A d├│nde <span className="text-[#a3e635]">vamos?</span>
+            </h1>
+            <p className="text-xs text-white/75 mt-0.5 font-medium">
+              Tu pr├│xima ruta empieza aqu├¡.
+            </p>
+          </div>
+
+          {/* BARRA DE LAS 3 SUPER CATEGOR├ìAS + BOT├ôN FLECHITA A LA DERECHA */}
+          <div className="bg-white rounded-2xl shadow-md p-1.5 flex items-center justify-between gap-1 border border-gray-100">
+            {/* 1. Interurbano */}
+            <button
+              type="button"
+              onClick={() => setSuperCategory(prev => prev === 'INTERURBANO' ? null : 'INTERURBANO')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-1 rounded-xl text-xs font-bold transition-all ${
+                superCategory === 'INTERURBANO'
+                  ? 'bg-[#dcfce7] text-[#064e3b] shadow-xs'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <Bus className="h-3.5 w-3.5" />
+              <span className="text-[11px]">Interurbano</span>
+            </button>
+
+            {/* 2. Urbano */}
+            <button
+              type="button"
+              onClick={() => setSuperCategory(prev => prev === 'URBANO' ? null : 'URBANO')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-1 rounded-xl text-xs font-bold transition-all ${
+                superCategory === 'URBANO'
+                  ? 'bg-[#dcfce7] text-[#064e3b] shadow-xs'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <Building2 className="h-3.5 w-3.5" />
+              <span className="text-[11px]">Urbano</span>
+            </button>
+
+            {/* 3. Tours */}
+            <button
+              type="button"
+              onClick={() => setSuperCategory(prev => prev === 'TOUR' ? null : 'TOUR')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-1 rounded-xl text-xs font-bold transition-all ${
+                superCategory === 'TOUR'
+                  ? 'bg-[#dcfce7] text-[#064e3b] shadow-xs'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <Camera className="h-3.5 w-3.5" />
+              <span className="text-[11px]">Tours</span>
+            </button>
+
+            {/* 4. BOT├ôN FLECHITA AL LADO DERECHO DE TODO (Ciclo: categorias -> buscador -> ocultar) */}
+            <button
+              type="button"
+              onClick={handleToggleClick}
+              className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-all shadow-xs active:scale-95 ${
+                panelMode !== 'none'
+                  ? 'bg-[#a3e635] text-[#064e3b] font-bold rotate-90'
+                  : 'bg-[#dcfce7] text-[#064e3b] hover:bg-emerald-200'
+              }`}
+              title={
+                panelMode === 'none' 
+                  ? 'Ver categor├¡as' 
+                  : panelMode === 'categories' 
+                  ? 'Ver buscador' 
+                  : 'Ocultar panel'
+              }
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+
+          {/* BANNER DIN├üMICO CUANDO EST├ü EN MODO URBANO */}
+          {superCategory === 'URBANO' && (
+            <div className="mt-2.5 bg-gradient-to-r from-[#04281a] to-[#064e3b] text-white p-2.5 px-3 rounded-2xl border border-emerald-400/30 flex items-center justify-between shadow-md animate-in fade-in duration-200">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center shadow-xs">
-                  <Navigation2 className="h-4 w-4 text-[#a3e635] rotate-45" />
+                <div className="w-7 h-7 rounded-xl bg-white/10 flex items-center justify-center text-[#a3e635]">
+                  <Car className="h-4 w-4" />
                 </div>
-                <span className="text-lg font-black tracking-tight text-white flex items-center">
-                  Palenque<span className="text-[#a3e635]">Go</span>
-                </span>
+                <div>
+                  <p className="text-[11px] font-black text-white">Taxi & Rutas Urbanas</p>
+                  <p className="text-[10px] text-white/70">Pide un viaje a demanda o crea tu ruta</p>
+                </div>
               </div>
-
-              <button 
-                onClick={() => onNavigate('profile')} 
-                className="w-8 h-8 rounded-full bg-amber-700/80 border border-amber-500/40 flex items-center justify-center text-xs font-bold text-white shadow-sm hover:scale-105 transition-transform overflow-hidden"
-                title="Mi Perfil"
+              <Button
+                size="sm"
+                onClick={() => setIsUserRoutesModalOpen(true)}
+                className="bg-[#a3e635] hover:bg-[#86efac] text-[#064e3b] font-black text-[11px] h-7 px-2.5 rounded-xl shadow-xs"
               >
-                {currentUser?.avatar ? (
-                  <img src={currentUser.avatar} alt="Perfil" className="w-full h-full object-cover" />
-                ) : (
-                  currentUser?.name?.[0]?.toUpperCase() || 'M'
-                )}
-              </button>
+                + Pedir Viaje
+              </Button>
             </div>
+          )}
 
-            {/* Saludo y Pregunta */}
-            <div className="mb-3">
-              <h1 className="text-2xl font-black text-white leading-tight">
-                ¿A dónde <span className="text-[#a3e635]">vamos?</span>
-              </h1>
-              <p className="text-xs text-white/85 mt-0.5 font-medium">
-                Explora rutas, traslados y experiencias
-              </p>
-            </div>
-
-            {/* TARJETA BLANCA FLOTANTE UNIFICADA: BUSCADOR + 3 CATEGORÍAS */}
-            <div className="bg-white rounded-3xl shadow-xl p-2.5 border border-gray-100 flex flex-col gap-2 relative">
-              {/* Input de Búsqueda de Destino */}
-              <div className="relative flex items-center px-2 py-1">
-                <Search className="w-5 h-5 text-gray-400 shrink-0 mr-2.5" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value)
-                    setDestination(e.target.value)
-                    setIsSearchFocused(true)
-                  }}
-                  onFocus={() => setIsSearchFocused(true)}
-                  placeholder="¿Cuál es tu destino?"
-                  className="w-full text-sm font-semibold text-gray-800 placeholder:text-gray-400 focus:outline-none bg-transparent"
-                />
-                {searchQuery && (
+          {/* PANEL INFERIOR INTERCAMBIABLE SEG├ÜN panelMode ('none' | 'categories' | 'search') */}
+          {panelMode === 'categories' && (
+            /* MODO 1: BARRA Y GRID DE CATEGOR├ìAS (COMPORTAMIENTO ORIGINAL RESTAURADO) */
+            <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-2 mt-2.5 transition-all duration-300 animate-in fade-in">
+              {/* Vista 1: Scroll Horizontal */}
+              {!categoryPanelOpen && (
+                <div className="flex items-center gap-1 animate-in fade-in duration-200">
+                  {/* Bot├│n Todas (Abre Grid Completo) */}
                   <button
-                    onClick={() => {
-                      setSearchQuery("")
-                      setDestination("")
-                    }}
-                    className="p-1 text-gray-400 hover:text-gray-600 rounded-full"
+                    type="button"
+                    onClick={() => { setCategoryPanelOpen(true); setActiveCategory(null) }}
+                    className={`flex flex-col items-center gap-1 min-w-[60px] p-2 rounded-xl transition-all shrink-0 ${
+                      activeCategory === null ? 'bg-gray-100 border border-gray-200 shadow-sm' : 'hover:bg-gray-50'
+                    }`}
                   >
-                    <X className="w-4 h-4" />
+                    <div className={`p-1.5 rounded-full ${activeCategory === null ? 'text-[#0B1F15]' : 'text-gray-500'}`}>
+                      <LayoutGrid className="h-5 w-5" />
+                    </div>
+                    <span className={`text-[10px] font-bold ${activeCategory === null ? 'text-[#0B1F15]' : 'text-gray-500'}`}>
+                      Todas
+                    </span>
                   </button>
-                )}
-              </div>
 
-              {/* Separador sutil */}
-              <div className="h-px bg-gray-100 w-full" />
+                  <div className="w-px h-10 bg-gray-100 shrink-0" />
 
-              {/* Fila con las 3 Categorías: Interurbano, Urbano, Tours */}
-              <div className="flex items-center justify-between gap-1">
-                {/* 1. Interurbano */}
-                <button
-                  type="button"
-                  onClick={() => setSuperCategory(prev => prev === 'INTERURBANO' ? null : 'INTERURBANO')}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-1 rounded-xl text-xs font-bold transition-all ${
-                    superCategory === 'INTERURBANO'
-                      ? 'bg-[#dcfce7] text-[#064e3b] shadow-xs'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                  }`}
-                >
-                  <Bus className="h-4 w-4" />
-                  <span className="text-xs">Interurbano</span>
-                </button>
+                  {/* Scroll horizontal */}
+                  <div className="flex-1 overflow-x-auto scrollbar-hide">
+                    <div className="flex gap-2 px-1" style={{ width: 'max-content' }}>
+                      {(categories.length > 0 ? categories : DEFAULT_TOUR_CATEGORIES).map(cat => (
+                        <button
+                          key={cat.id || cat.slug}
+                          type="button"
+                          onClick={() => { setActiveCategory(cat.slug); setCategoryPanelOpen(false) }}
+                          className={`flex flex-col items-center gap-1 min-w-[62px] p-2 rounded-xl transition-all ${
+                            activeCategory === cat.slug ? 'bg-gray-100 border border-gray-200 shadow-sm' : 'hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="p-1.5 rounded-full" style={{ color: activeCategory === cat.slug ? (cat.color || '#059669') : '#6B7280' }}>
+                            <DynamicIcon name={cat.icon || 'MapPin'} className="h-5 w-5" />
+                          </div>
+                          <span className={`text-[10px] font-medium text-center leading-tight ${activeCategory === cat.slug ? 'text-[#064e3b] font-bold' : 'text-gray-500'}`}>
+                            {cat.name}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
 
-                <div className="w-px h-5 bg-gray-200 shrink-0" />
-
-                {/* 2. Urbano */}
-                <button
-                  type="button"
-                  onClick={() => setSuperCategory(prev => prev === 'URBANO' ? null : 'URBANO')}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-1 rounded-xl text-xs font-bold transition-all ${
-                    superCategory === 'URBANO'
-                      ? 'bg-[#dcfce7] text-[#064e3b] shadow-xs'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                  }`}
-                >
-                  <Building2 className="h-4 w-4" />
-                  <span className="text-xs">Urbano</span>
-                </button>
-
-                <div className="w-px h-5 bg-gray-200 shrink-0" />
-
-                {/* 3. Tours */}
-                <button
-                  type="button"
-                  onClick={() => setSuperCategory(prev => prev === 'TOUR' ? null : 'TOUR')}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-1 rounded-xl text-xs font-bold transition-all ${
-                    superCategory === 'TOUR'
-                      ? 'bg-[#dcfce7] text-[#064e3b] shadow-xs'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                  }`}
-                >
-                  <Camera className="h-4 w-4" />
-                  <span className="text-xs">Tours</span>
-                </button>
-              </div>
-
-              {/* Dropdown Predictivo si el input está enfocado */}
-              {isSearchFocused && (searchQuery.trim().length > 0 || destSuggestions.length > 0) && (
-                <div className="absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl shadow-2xl border border-gray-200 z-[100] max-h-[300px] overflow-y-auto divide-y divide-gray-100 p-2 animate-in fade-in slide-in-from-top-1 duration-150">
-                  <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-500 bg-gray-50/90 rounded-lg mb-1 flex items-center justify-between">
-                    <span>Destinos y Rutas Sugeridas</span>
+              {/* Vista 2: Grilla Expandible de TODAS las categor├¡as */}
+              {categoryPanelOpen && (
+                <div className="animate-in fade-in slide-in-from-top-2 duration-200 p-1">
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                    {/* Bot├│n Ocultar Todas (Cierra Modal) */}
                     <button
                       type="button"
-                      onMouseDown={(e) => { e.preventDefault(); setIsSearchFocused(false); }}
-                      className="text-gray-400 hover:text-gray-600 p-0.5"
+                      onClick={() => { setCategoryPanelOpen(false); setActiveCategory(null) }}
+                      className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 active:scale-95 transition-all"
+                      style={activeCategory === null ? {
+                        backgroundColor: '#05966915',
+                        borderWidth: 1.5, borderStyle: 'solid', borderColor: '#059669',
+                      } : {}}
+                    >
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm" style={{ backgroundColor: '#05966920' }}>
+                        <ChevronUp className="h-5 w-5" style={{ color: '#059669' }} />
+                      </div>
+                      <span className="text-[10px] font-semibold text-gray-700 text-center leading-tight">Ocultar Todas</span>
+                    </button>
+
+                    {(categories.length > 0 ? categories : DEFAULT_TOUR_CATEGORIES).map(cat => (
+                      <button
+                        key={cat.id || cat.slug}
+                        type="button"
+                        onClick={() => { setActiveCategory(cat.slug); setCategoryPanelOpen(false) }}
+                        className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 active:scale-95 transition-all"
+                        style={activeCategory === cat.slug ? {
+                          backgroundColor: (cat.color || '#059669') + '15',
+                          borderWidth: 1.5, borderStyle: 'solid', borderColor: cat.color || '#059669',
+                        } : {}}
+                      >
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm" style={{ backgroundColor: (cat.color || '#059669') + '20' }}>
+                          <DynamicIcon name={cat.icon || 'MapPin'} className="h-5 w-5" style={{ color: cat.color || '#059669' }} />
+                        </div>
+                        <span className="text-[10px] font-semibold text-gray-700 text-center leading-tight">{cat.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {panelMode === 'search' && (
+            /* MODO 2: TARJETA DE B├ÜSQUEDA PREDICTIVA A -> B */
+            <div className="bg-white rounded-2xl shadow-xl mt-2.5 p-3.5 border border-gray-100 animate-in fade-in duration-200 relative">
+              {/* Origen y Destino */}
+              <div className="flex items-center">
+                <div className="flex-1 space-y-2">
+                  {/* Origen */}
+                  <div className={`relative ${showOriginSuggestions ? 'z-50' : 'z-20'}`}>
+                    <div className="flex items-center gap-2.5">
+                      <MapPin className="h-4 w-4 text-[#059669] shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-[10px] uppercase font-bold text-gray-400 block leading-none">Origen</span>
+                        <input 
+                          type="text" 
+                          value={origin} 
+                          onChange={(e) => {
+                            setOrigin(e.target.value)
+                            setShowOriginSuggestions(true)
+                            setShowDestSuggestions(false)
+                          }}
+                          onFocus={() => {
+                            setShowOriginSuggestions(true)
+                            setShowDestSuggestions(false)
+                          }}
+                          onBlur={() => setTimeout(() => setShowOriginSuggestions(false), 250)}
+                          className="text-xs font-bold text-gray-900 bg-transparent w-full border-none p-0 focus:ring-0 focus:outline-none placeholder:text-gray-400 placeholder:font-normal"
+                          placeholder="­ƒôì Punto de partida (o Mi ubicaci├│n)"
+                        />
+                      </div>
+                      {/* Bot├│n r├ípido para usar ubicaci├│n */}
+                      <button
+                        type="button"
+                        onClick={handleUseCurrentLocation}
+                        className="p-1 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors"
+                        title="Usar mi ubicaci├│n actual"
+                      >
+                        <Navigation2 className="h-3.5 w-3.5" />
+                      </button>
+                      {origin && (
+                        <button
+                          type="button"
+                          onClick={() => { setOrigin(''); setGpsNotice(null); }}
+                          className="p-1 text-gray-400 hover:text-gray-600"
+                          title="Borrar origen"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* DROPDOWN PREDICTIVO FLOTANTE: ORIGEN (Directamente bajo el input de Origen) */}
+                    {showOriginSuggestions && originSuggestions.length > 0 && (
+                      <div className="absolute left-0 -right-10 top-full mt-2 bg-white rounded-2xl shadow-2xl border border-gray-200 z-[100] max-h-[360px] overflow-y-auto divide-y divide-gray-100 p-2 animate-in fade-in slide-in-from-top-1 duration-150">
+                        <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-500 bg-gray-50/90 rounded-lg mb-1 flex items-center justify-between">
+                          <span>Puntos de Partida Sugeridos</span>
+                          <button
+                            type="button"
+                            onMouseDown={(e) => { e.preventDefault(); setShowOriginSuggestions(false); }}
+                            className="text-gray-400 hover:text-gray-600 p-0.5"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                        <button
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault()
+                            handleUseCurrentLocation()
+                          }}
+                          className="w-full text-left px-3.5 py-2.5 hover:bg-emerald-100/70 flex items-center gap-2.5 text-[#059669] font-bold text-xs bg-emerald-50/60 rounded-xl mb-1.5 border border-emerald-100"
+                        >
+                          <Navigation2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                          <span>­ƒôì Usar mi ubicaci├│n actual</span>
+                        </button>
+                        {originSuggestions.map((item, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onMouseDown={(e) => {
+                              e.preventDefault()
+                              setOrigin(item.name)
+                              setGpsNotice(null)
+                              setShowOriginSuggestions(false)
+                              if (item.route) {
+                                setPreviewRoute(item.route)
+                                if (mapRef.current && item.route.stops?.length) {
+                                  mapRef.current.panTo({ lat: item.route.stops[0].latitude, lng: item.route.stops[0].longitude })
+                                  mapRef.current.setZoom(13)
+                                }
+                              }
+                            }}
+                            className="w-full text-left px-3.5 py-2.5 hover:bg-emerald-50/80 active:bg-emerald-100 flex items-center gap-3 transition-colors rounded-xl group"
+                          >
+                            <div className="p-2 rounded-xl bg-gray-100 group-hover:bg-[#059669]/15 text-gray-600 group-hover:text-[#059669] shrink-0 transition-colors shadow-xs">
+                              <DynamicIcon name={item.icon || 'MapPin'} className="h-4 w-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <span className="text-xs font-bold text-gray-800 block truncate group-hover:text-emerald-700">
+                                {item.name}
+                              </span>
+                              <span className="text-[11px] text-gray-400 block truncate mt-0.5">
+                                {item.category}
+                              </span>
+                            </div>
+                            <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-emerald-500 shrink-0" />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="h-px bg-gray-100 ml-6" />
+
+                  {/* Destino */}
+                  <div className={`relative ${showDestSuggestions ? 'z-50' : 'z-10'}`}>
+                    <div className="flex items-center gap-2.5">
+                      <MapPin className="h-4 w-4 text-rose-500 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-[10px] uppercase font-bold text-gray-400 block leading-none">Destino</span>
+                        <input 
+                          type="text" 
+                          value={destination} 
+                          onChange={(e) => {
+                            setDestination(e.target.value)
+                            setShowDestSuggestions(true)
+                            setShowOriginSuggestions(false)
+                          }}
+                          onFocus={() => {
+                            setShowDestSuggestions(true)
+                            setShowOriginSuggestions(false)
+                          }}
+                          onBlur={() => setTimeout(() => setShowDestSuggestions(false), 250)}
+                          className="text-xs font-semibold text-gray-800 bg-transparent w-full border-none p-0 focus:ring-0 focus:outline-none placeholder:text-gray-400"
+                          placeholder="┬┐A d├│nde quieres ir? (Ej. El Tunco, Metrocentro)"
+                        />
+                      </div>
+                      {destination && (
+                        <button
+                          type="button"
+                          onClick={() => setDestination('')}
+                          className="p-1 text-gray-400 hover:text-gray-600"
+                          title="Borrar destino"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* DROPDOWN PREDICTIVO FLOTANTE: DESTINO (Directamente bajo el input de Destino) */}
+                    {showDestSuggestions && destSuggestions.length > 0 && (
+                      <div className="absolute left-0 -right-10 top-full mt-2 bg-white rounded-2xl shadow-2xl border border-gray-200 z-[100] max-h-[360px] overflow-y-auto divide-y divide-gray-100 p-2 animate-in fade-in slide-in-from-top-1 duration-150">
+                        <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-500 bg-gray-50/90 rounded-lg mb-1 flex items-center justify-between">
+                          <span>Destinos y Rutas Sugeridas</span>
+                          <button
+                            type="button"
+                            onMouseDown={(e) => { e.preventDefault(); setShowDestSuggestions(false); }}
+                            className="text-gray-400 hover:text-gray-600 p-0.5"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                        {destSuggestions.map((item, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onMouseDown={(e) => {
+                              e.preventDefault()
+                              setDestination(item.name)
+                              setShowDestSuggestions(false)
+                              if (item.route) {
+                                setPreviewRoute(item.route)
+                                if (mapRef.current && item.route.stops?.length) {
+                                  mapRef.current.panTo({ lat: item.route.stops[0].latitude, lng: item.route.stops[0].longitude })
+                                  mapRef.current.setZoom(13)
+                                }
+                              }
+                            }}
+                            className="w-full text-left px-3.5 py-2.5 hover:bg-emerald-50/80 active:bg-emerald-100 flex items-center gap-3 transition-colors rounded-xl group"
+                          >
+                            <div className="p-2 rounded-xl bg-gray-100 group-hover:bg-[#059669]/15 text-gray-600 group-hover:text-[#059669] shrink-0 transition-colors shadow-xs">
+                              <DynamicIcon name={item.icon || 'MapPin'} className="h-4 w-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <span className="text-xs font-bold text-gray-900 block truncate group-hover:text-[#064e3b]">
+                                {item.name}
+                              </span>
+                              <span className="text-[11px] text-gray-500 block truncate mt-0.5">
+                                {item.category}
+                              </span>
+                            </div>
+                            <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-emerald-500 shrink-0" />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Bot├│n Swap / Invertir Origen y Destino */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const temp = origin
+                    setOrigin(destination)
+                    setDestination(temp)
+                  }}
+                  className="w-8 h-8 rounded-full border border-gray-200 bg-white hover:bg-gray-50 flex items-center justify-center text-gray-600 shadow-sm ml-2 active:scale-95 transition-transform shrink-0"
+                  title="Intercambiar origen y destino"
+                >
+                  <ArrowUpDown className="h-3.5 w-3.5" />
+                </button>
+              </div>
+
+              {/* Tarjeta de Aviso: Modo Viajero Internacional / GPS Fuera de El Salvador */}
+              {gpsNotice && (
+                <div className="mt-2.5 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs animate-in fade-in">
+                  <div className="flex items-start justify-between gap-1.5">
+                    <div className="flex items-start gap-1.5">
+                      <Sparkles className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-bold text-[11px] text-amber-900 leading-tight">
+                          {gpsNotice.title}
+                        </p>
+                        <p className="text-[10px] text-amber-800/90 mt-0.5 leading-snug">
+                          {gpsNotice.message}
+                        </p>
+                      </div>
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={() => setGpsNotice(null)}
+                      className="text-amber-500 hover:text-amber-700 p-0.5 shrink-0"
                     >
                       <X className="h-3.5 w-3.5" />
                     </button>
                   </div>
-                  {destSuggestions.map((item, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onMouseDown={(e) => {
-                        e.preventDefault()
-                        setSearchQuery(item.name)
-                        setDestination(item.name)
-                        setIsSearchFocused(false)
-                        if (item.route) {
-                          setPreviewRoute(item.route)
-                          if (mapRef.current && item.route.stops?.length) {
-                            mapRef.current.panTo({ lat: item.route.stops[0].latitude, lng: item.route.stops[0].longitude })
-                            mapRef.current.setZoom(13)
-                          }
-                        } else {
-                          const hub = STRATEGIC_HUBS.find(h => h.name.toLowerCase().includes(item.name.toLowerCase()) || item.name.toLowerCase().includes(h.name.toLowerCase()))
-                          if (hub && mapRef.current) {
-                            mapRef.current.panTo({ lat: hub.lat, lng: hub.lng })
-                            mapRef.current.setZoom(13)
-                          }
-                        }
-                      }}
-                      className="w-full text-left px-3 py-2 hover:bg-emerald-50/80 active:bg-emerald-100 flex items-center gap-2.5 transition-colors rounded-xl group"
-                    >
-                      <div className="p-1.5 rounded-lg bg-gray-100 group-hover:bg-[#059669]/15 text-gray-600 group-hover:text-[#059669] shrink-0">
-                        <DynamicIcon name={item.icon || 'MapPin'} className="h-4 w-4" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <span className="text-xs font-bold text-gray-900 block truncate group-hover:text-[#064e3b]">
-                          {item.name}
-                        </span>
-                        <span className="text-[10px] text-gray-500 block truncate">
-                          {item.category}
-                        </span>
-                      </div>
-                      <ChevronRight className="h-3.5 w-3.5 text-gray-300 group-hover:text-emerald-500 shrink-0" />
-                    </button>
-                  ))}
+
+                  {gpsNotice.type === 'outside' && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOrigin("Aeropuerto Int. San ├ôscar Romero")
+                          setGpsNotice(null)
+                        }}
+                        className="text-[10px] font-bold bg-white px-2 py-1 rounded-lg border border-amber-200 text-amber-900 hover:bg-amber-100 flex items-center gap-1 shadow-2xs"
+                      >
+                        Ô£ê´©Å Aeropuerto (SAL)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOrigin("Terminal de Oriente Fenadesal")
+                          setGpsNotice(null)
+                        }}
+                        className="text-[10px] font-bold bg-white px-2 py-1 rounded-lg border border-amber-200 text-amber-900 hover:bg-amber-100 flex items-center gap-1 shadow-2xs"
+                      >
+                        ­ƒÜî Terminal de Oriente
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOrigin("Terminal de Occidente")
+                          setGpsNotice(null)
+                        }}
+                        className="text-[10px] font-bold bg-white px-2 py-1 rounded-lg border border-amber-200 text-amber-900 hover:bg-amber-100 flex items-center gap-1 shadow-2xs"
+                      >
+                        ­ƒÜî Terminal de Occidente
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOrigin("Metrocentro San Salvador")
+                          setGpsNotice(null)
+                        }}
+                        className="text-[10px] font-bold bg-white px-2 py-1 rounded-lg border border-amber-200 text-amber-900 hover:bg-amber-100 flex items-center gap-1 shadow-2xs"
+                      >
+                        ­ƒôì Centro / San Salvador
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
+
+              {/* Bot├│n Buscar Rutas */}
+              <Button
+                onClick={() => {
+                  setShowOriginSuggestions(false)
+                  setShowDestSuggestions(false)
+                  if (filteredRoutes.length > 0) {
+                    const r = filteredRoutes[0]
+                    setPreviewRoute(r)
+                    if (mapRef.current && r.stops?.length) {
+                      mapRef.current.panTo({ lat: r.stops[0].latitude, lng: r.stops[0].longitude })
+                      mapRef.current.setZoom(13)
+                    }
+                  } else {
+                    setView('list')
+                  }
+                }}
+                className="w-full mt-3 h-10 rounded-xl bg-[#064e3b] hover:bg-[#043324] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md active:scale-[0.99] transition-all"
+              >
+                <Search className="h-3.5 w-3.5" />
+                <span>Buscar rutas ({filteredRoutes.length} disponibles)</span>
+              </Button>
             </div>
-
-            {/* Chip de Campaña activa si llega desde anuncio */}
-            {activeCampaign && (
-              <div className="mt-2.5 bg-gradient-to-r from-emerald-600/90 to-teal-700/90 text-white p-2 px-3 rounded-2xl border border-emerald-300/30 flex items-center justify-between shadow-md animate-in fade-in">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-[#a3e635] shrink-0" />
-                  <div>
-                    <span className="text-xs font-black block leading-none">{activeCampaign.name}</span>
-                    <span className="text-[10px] text-white/80 block mt-0.5">Mostrando experiencias destacadas para {activeCampaign.target}</span>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => setActiveCampaign(null)} 
-                  className="p-1 hover:bg-white/20 rounded-full text-white/80 hover:text-white"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            )}
-
-            {/* Banner Dinámico cuando está en modo Urbano */}
-            {superCategory === 'URBANO' && (
-              <div className="mt-2 bg-gradient-to-r from-[#04281a] to-[#064e3b] text-white p-2 px-3 rounded-2xl border border-emerald-400/30 flex items-center justify-between shadow-md animate-in fade-in duration-200">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-xl bg-white/10 flex items-center justify-center text-[#a3e635]">
-                    <Car className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-black text-white leading-tight">Taxi & Rutas Urbanas</p>
-                    <p className="text-[9px] text-white/70">Pide un viaje a demanda o propón tu tarifa</p>
-                  </div>
-                </div>
-                <Button
-                  size="sm"
-                  onClick={() => setIsUserRoutesModalOpen(true)}
-                  className="bg-[#a3e635] hover:bg-[#86efac] text-[#064e3b] font-black text-[11px] h-7 px-2.5 rounded-xl shadow-xs"
-                >
-                  + Pedir Viaje
-                </Button>
-              </div>
-            )}
+          )}
           </div>
         </div>
 
-        {/* MAPA PRINCIPAL */}
-        <div className="relative flex-1 w-full overflow-hidden z-0 min-h-[220px]">
+        {/* MAPA PRINCIPAL (OCUPA EL ESPACIO RESTANTE Y SE ADAPTA AL 100%) */}
+        <div className="relative flex-1 w-full overflow-hidden z-0">
+          <style dangerouslySetInnerHTML={{ __html: `
+            .gm-err-container, .gm-err-content, .dismissButton {
+              display: none !important;
+            }
+          `}} />
+
+          {/* Badge de Campaña Activa si viene de un anuncio */}
+          {activeCampaign && (
+            <div className="absolute top-3 left-3 z-30 bg-[#064e3b]/95 backdrop-blur-md text-white px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-md border border-emerald-500/30">
+              <span>🎯 Campaña: {activeCampaign}</span>
+              <button type="button" onClick={() => setActiveCampaign(null)} className="p-0.5 hover:bg-white/20 rounded-full">
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+
           {isLoaded ? (
             <GoogleMap 
               mapContainerStyle={containerStyle} 
@@ -1032,37 +1199,8 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
                 />
               )}
 
-              {/* PINES ESTRATÉGICOS DESTACADOS (Santa Ana, San Salvador, La Libertad, Suchitoto, San Vicente, Aeropuerto) */}
-              {mapZoom < 12 && !activeCategory && !searchQuery && STRATEGIC_HUBS.map((hub) => (
-                <OverlayView key={hub.id} position={{ lat: hub.lat, lng: hub.lng }} mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}>
-                  <div
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleHubClick(hub)
-                    }}
-                    className="absolute -translate-x-1/2 -translate-y-full cursor-pointer group transition-transform hover:scale-110 active:scale-95 z-20"
-                  >
-                    <div className="flex flex-col items-center">
-                      <div
-                        className="w-9 h-9 rounded-full flex items-center justify-center text-white shadow-lg border-2 border-white transition-all group-hover:ring-4 group-hover:ring-emerald-300"
-                        style={{ backgroundColor: hub.color }}
-                      >
-                        <DynamicIcon name={hub.icon} className="w-4 h-4" />
-                      </div>
-                      <div
-                        className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[6px]"
-                        style={{ borderTopColor: hub.color }}
-                      />
-                      <div className="mt-0.5 bg-white/95 backdrop-blur-xs px-2 py-0.5 rounded-full shadow-md border border-gray-100 flex items-center gap-1">
-                        <span className="text-[10px] font-black text-gray-800 whitespace-nowrap">{hub.name}</span>
-                      </div>
-                    </div>
-                  </div>
-                </OverlayView>
-              ))}
-
-              {/* Marcadores de Rutas Detalladas (al hacer zoom o filtrar) */}
-              {(mapZoom >= 12 || activeCategory || searchQuery || superCategory) && filteredRoutes.map((route, idx) => {
+              {/* Marcadores de Rutas con Nivel de Detalle Inteligente (LOD) */}
+              {filteredRoutes.map((route, idx) => {
                 if (!route.stops?.length) return null
                 const { pos, offsetX, offsetY } = routePositions[idx] || { pos: { lat: route.stops[0].latitude, lng: route.stops[0].longitude }, offsetX: 0, offsetY: 0 }
                 const rColor = route.category?.color || '#059669'
@@ -1089,6 +1227,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
                         }
                       }}
                     >
+                      {/* NIVEL 1: Zoom Lejano (mapZoom < 12) -> Micro-Badge Circular / Compacto */}
                       {mapZoom < 12 ? (
                         <div className="flex flex-col items-center">
                           <div
@@ -1106,6 +1245,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
                           />
                         </div>
                       ) : (
+                        /* NIVEL 2: Zoom Medio / Cercano (mapZoom >= 12) -> Chip Estilizado con Badge + Destino */
                         <div className="flex flex-col items-center">
                           <div
                             className={`flex items-center gap-1.5 bg-white rounded-full p-1 pr-2.5 shadow-lg border transition-all ${
@@ -1143,55 +1283,11 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
             </div>
           )}
 
-          {/* CONTROLES FLOTANTES DEL MAPA: TOGGLE MAPA / LISTA */}
-          <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
-            <div className="bg-white/95 backdrop-blur-sm rounded-full p-1 shadow-md border border-gray-100 flex items-center">
-              <button
-                type="button"
-                className="px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 bg-[#dcfce7] text-[#064e3b] shadow-xs"
-              >
-                <Map className="w-3.5 h-3.5" />
-                <span>Mapa</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setView('list')}
-                className="px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 text-gray-600 hover:text-gray-900"
-              >
-                <SlidersHorizontal className="w-3.5 h-3.5" />
-                <span>Lista</span>
-              </button>
-            </div>
-          </div>
-
-          {/* BOTÓN FLOTANTE INFERIOR IZQUIERDO: EXPLORAR ESTA ZONA */}
-          <div className="absolute bottom-4 left-3 z-10">
-            <button
-              type="button"
-              onClick={handleExploreCurrentZone}
-              className="bg-[#064e3b] hover:bg-[#043324] text-white font-bold text-xs px-3.5 py-2 rounded-full shadow-lg border border-emerald-400/40 flex items-center gap-2 transition-all active:scale-95"
-            >
-              <Navigation2 className="w-3.5 h-3.5 text-[#a3e635] rotate-45" />
-              <span>Explorar esta zona</span>
-            </button>
-          </div>
-
-          {/* BOTÓN FLOTANTE INFERIOR DERECHO: BRÚJULA / GEOLOCALIZAR */}
-          <div className="absolute bottom-4 right-3 z-10">
-            <button
-              type="button"
-              onClick={handleUseCurrentLocation}
-              className="bg-white hover:bg-gray-50 text-[#064e3b] w-10 h-10 rounded-full shadow-lg border border-gray-100 flex items-center justify-center transition-all active:scale-95"
-              title="Mi ubicación actual"
-            >
-              <Compass className="w-5 h-5 text-[#064e3b]" />
-            </button>
-          </div>
-
           {/* CARTITA FLOTANTE DE RUTA SELECCIONADA / PREVIEW */}
           {previewRoute && (
-            <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-md animate-in slide-in-from-bottom-5 fade-in duration-300">
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-md animate-in slide-in-from-bottom-5 fade-in duration-300">
               <div className="bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-2xl border border-gray-100 flex flex-col gap-3 relative">
+                {/* Bot├│n Cerrar */}
                 <button
                   type="button"
                   onClick={() => setPreviewRoute(null)}
@@ -1201,6 +1297,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
                   <X className="h-4 w-4" />
                 </button>
 
+                {/* Encabezado: Categor├¡a & Badge */}
                 <div className="flex items-center gap-2 pr-8">
                   <div
                     className="px-2.5 py-1 rounded-full text-white text-xs font-black flex items-center gap-1.5 shadow-sm"
@@ -1214,6 +1311,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
                   </span>
                 </div>
 
+                {/* Recorrido Origen -> Destino */}
                 <div className="flex flex-col gap-1.5 bg-gray-50/80 rounded-xl p-2.5 border border-gray-100">
                   <div className="flex items-center gap-2">
                     <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-200 shrink-0" />
@@ -1230,6 +1328,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
                   </div>
                 </div>
 
+                {/* M├®tricas: Tarifa Ida, Vuelta y Paradas */}
                 <div className="grid grid-cols-3 gap-2 py-1 text-center border-y border-gray-100">
                   <div>
                     <span className="text-[10px] text-gray-500 block uppercase font-medium">Tarifa Ida</span>
@@ -1251,171 +1350,285 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
                   </div>
                 </div>
 
-                <Button
-                  onClick={() => {
-                    setSelectedRoute(previewRoute);
-                    setView('detail');
-                  }}
-                  className="w-full bg-[#064e3b] hover:bg-[#043324] text-white font-bold text-xs h-10 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
-                >
-                  <span>Ver Recorrido & Paradas</span>
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
+                {/* Bot├│n de Acci├│n Principal */}
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => {
+                      setSelectedRoute(previewRoute);
+                      setView('detail');
+                    }}
+                    className="flex-1 bg-[#064e3b] hover:bg-[#043324] text-white font-bold text-xs h-10 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+                  >
+                    <span>Ver Recorrido & Paradas</span>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
           )}
-        </div>
 
-        {/* BOTTOM SHEET INFERIOR: DESCUBRE PALENQUE & DESTINOS PARA EXPLORAR */}
-        <div className="relative z-30 bg-white rounded-t-[32px] shadow-2xl border-t border-gray-100 flex flex-col shrink-0 max-h-[46vh] overflow-y-auto">
-          {/* Barra Handle */}
-          <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto my-2.5 shrink-0" />
-
-          {/* Título: Descubre Palenque */}
-          <div className="px-4 mb-3 shrink-0">
-            <h2 className="text-xl font-black text-gray-900 tracking-tight leading-none">
-              Descubre <span className="text-[#16a34a]">Palenque</span>
-            </h2>
-            <p className="text-xs text-gray-400 font-medium mt-1">Ejemplo ilustrativo</p>
-          </div>
-
-          {/* 3 Tarjetas de Acción Rápida */}
-          <div className="grid grid-cols-3 gap-2 px-4 mb-4 shrink-0">
-            <button
-              type="button"
-              onClick={() => {
-                setSuperCategory('INTERURBANO')
-                setView('list')
-              }}
-              className="bg-[#ecfdf5] hover:bg-[#d1fae5] border border-emerald-100 rounded-2xl p-2.5 flex items-center justify-between text-left transition-all active:scale-95 shadow-2xs"
-            >
-              <div className="flex items-center gap-1.5 min-w-0">
-                <div className="w-6 h-6 rounded-lg bg-emerald-600/10 text-[#064e3b] flex items-center justify-center shrink-0">
-                  <Bus className="w-3.5 h-3.5" />
-                </div>
-                <span className="text-[10px] font-bold text-gray-800 leading-tight">Viaja entre ciudades</span>
-              </div>
-              <ChevronRight className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setSuperCategory('URBANO')
-                setIsUserRoutesModalOpen(true)
-              }}
-              className="bg-[#f7fee7] hover:bg-[#ecfccb] border border-lime-100 rounded-2xl p-2.5 flex items-center justify-between text-left transition-all active:scale-95 shadow-2xs"
-            >
-              <div className="flex items-center gap-1.5 min-w-0">
-                <div className="w-6 h-6 rounded-lg bg-lime-600/10 text-lime-800 flex items-center justify-center shrink-0">
-                  <Building2 className="w-3.5 h-3.5" />
-                </div>
-                <span className="text-[10px] font-bold text-gray-800 leading-tight">Muévete en la ciudad</span>
-              </div>
-              <ChevronRight className="w-3.5 h-3.5 text-lime-800 shrink-0" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setSuperCategory('TOUR')
-                onNavigate('marketplace')
-              }}
-              className="bg-[#fffbeb] hover:bg-[#fef3c7] border border-amber-100 rounded-2xl p-2.5 flex items-center justify-between text-left transition-all active:scale-95 shadow-2xs"
-            >
-              <div className="flex items-center gap-1.5 min-w-0">
-                <div className="w-6 h-6 rounded-lg bg-amber-600/10 text-amber-800 flex items-center justify-center shrink-0">
-                  <Camera className="w-3.5 h-3.5" />
-                </div>
-                <span className="text-[10px] font-bold text-gray-800 leading-tight">Explora tours</span>
-              </div>
-              <ChevronRight className="w-3.5 h-3.5 text-amber-800 shrink-0" />
-            </button>
-          </div>
-
-          {/* Sección: Destinos para explorar */}
-          <div className="px-4 mb-4 shrink-0">
-            <div className="flex items-center justify-between mb-2.5">
-              <h3 className="text-sm font-black text-gray-900 tracking-tight">Destinos para explorar</h3>
-              <button 
+          {/* Banner indicador de modo selecci├│n de punto en mapa */}
+          {mapPickMode && (
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 bg-[#064e3b] text-white px-4 py-2.5 rounded-2xl shadow-xl flex items-center gap-3 animate-in slide-in-from-top duration-300">
+              <MapPin className="h-4 w-4 text-[#a3e635] animate-bounce shrink-0" />
+              <span className="text-xs font-bold whitespace-nowrap">
+                {mapPickMode === 'origin' ? 'Toca el mapa para fijar Punto de Origen' : 'Toca el mapa para fijar Destino'}
+              </span>
+              <button
                 type="button"
-                onClick={() => setView('list')} 
-                className="w-6 h-6 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition-colors"
+                onClick={() => { setMapPickMode(null); setIsUserRoutesModalOpen(true); }}
+                className="p-1 hover:bg-white/20 rounded-full text-white ml-1"
+                title="Cancelar selecci├│n"
               >
-                <ChevronRight className="w-3.5 h-3.5" />
+                <X className="h-4 w-4" />
               </button>
             </div>
+          )}
 
-            <div className="grid grid-cols-2 gap-2.5">
-              {FEATURED_DESTINATIONS.slice(0, 2).map((dest) => (
-                <div
-                  key={dest.id}
-                  className="relative h-36 rounded-2xl overflow-hidden shadow-md group cursor-pointer border border-gray-100"
-                  onClick={() => handleSelectDestination(dest)}
-                >
-                  <img
-                    src={dest.image}
-                    alt={dest.name}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent p-2.5 flex flex-col justify-end text-white">
-                    <span className="text-xs font-black text-white leading-tight mb-1.5 drop-shadow-sm">{dest.name}</span>
-                    <button
-                      type="button"
-                      className="bg-[#a3e635] hover:bg-[#86efac] text-[#064e3b] font-black text-[10px] py-1 px-2.5 rounded-full flex items-center justify-center gap-1 shadow-xs transition-transform active:scale-95 w-fit"
-                    >
-                      <span>Ver opciones</span>
-                      <ChevronRight className="w-3 h-3" />
-                    </button>
-                  </div>
-                </div>
-              ))}
+          {/* Alerta flotante para chofer si hay solicitudes */}
+          {currentUser?.tipo === 'CHOFER' && requestedTrips?.length > 0 && !mapPickMode && (
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20">
+              <button
+                type="button"
+                onClick={() => setIsUserRoutesModalOpen(true)}
+                className="bg-amber-500 hover:bg-amber-600 text-white font-black text-xs px-3.5 py-1.5 rounded-full shadow-lg flex items-center gap-2 animate-bounce"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                <span>{requestedTrips.length} viaje(s) solicitado(s)</span>
+              </button>
+            </div>
+          )}
+
+          {/* Botones flotantes: Mis Rutas & Lista */}
+          <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={() => setIsUserRoutesModalOpen(true)}
+              className="bg-white hover:bg-gray-50 text-[#064e3b] font-bold text-xs h-9 px-3 rounded-xl shadow-md border border-emerald-100 flex items-center gap-1.5"
+            >
+              <Car className="h-3.5 w-3.5 text-[#059669]" />
+              <span>Mis Rutas</span>
+              {(myUserRoutes?.length > 0 || (currentUser?.tipo === 'CHOFER' && requestedTrips?.length > 0)) && (
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              )}
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={() => setView('list')}
+              className="bg-white hover:bg-gray-50 text-gray-800 font-bold text-xs h-9 px-3 rounded-xl shadow-md border border-gray-200 flex items-center gap-1.5"
+            >
+              <SlidersHorizontal className="h-3.5 w-3.5 text-[#059669]" />
+              <span>Lista</span>
+            </Button>
+          </div>
+
+          {/* Badge de rutas disponibles */}
+          <div className="absolute bottom-4 left-3 z-10">
+            <div className="bg-[#064e3b] text-white px-3 py-1.5 rounded-xl shadow-md flex items-center gap-2">
+              <DynamicIcon name="Sparkles" className="h-3.5 w-3.5 text-[#a3e635]" />
+              <span className="text-xs font-bold">{filteredRoutes.length} rutas</span>
             </div>
           </div>
 
-          {/* Slider Publicitario (al hacer scroll hacia abajo) */}
-          {showPromoBanner && (
-            <div className="px-4 pb-6 pt-1 shrink-0">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Promociones & Experiencias</span>
-              </div>
-              <div 
-                onClick={() => handlePromoSlideClick(currentPromoSlide)}
-                className="relative w-full h-[95px] rounded-2xl overflow-hidden shadow-sm border border-gray-100 group cursor-pointer bg-gray-100"
-              >
-                <img 
-                  src={currentPromoSlide.image} 
-                  alt={currentPromoSlide.title || "Banner Publicidad"}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent p-3 flex flex-col justify-end text-white pointer-events-none">
-                  <h4 className="text-xs sm:text-sm font-black tracking-tight leading-tight drop-shadow-sm">
-                    {currentPromoSlide.title}
-                  </h4>
-                  <p className="text-[10px] text-white/90 line-clamp-1 font-medium drop-shadow-xs">
-                    {currentPromoSlide.subtitle}
-                  </p>
+          {/* Location Alert */}
+          {locationAlert && (
+            <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 w-11/12 max-w-sm">
+              <div className="bg-white rounded-2xl shadow-2xl p-4 border border-gray-100 flex items-start gap-3 animate-in slide-in-from-top-4 duration-300">
+                <div className="bg-[#059669]/10 p-2.5 rounded-full text-[#059669] shrink-0">
+                  <MapPin className="h-5 w-5" />
                 </div>
-                {/* Indicadores de slides */}
-                <div className="absolute bottom-2 right-3 z-20 flex gap-1 bg-black/40 px-2 py-0.5 rounded-full backdrop-blur-xs">
-                  {promoSlides.map((_, i) => (
-                    <button 
-                      key={i} 
-                      type="button"
-                      onClick={(e) => { 
-                        e.stopPropagation(); 
-                        setCurrentPromoIndex(i); 
+                <div className="flex-1">
+                  <h4 className="text-sm font-bold text-gray-900">
+                    {locationAlert.type === 'near' ? 'Ruta cerca de ti' : 'Est├ís un poco lejos'}
+                  </h4>
+                  <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                    {locationAlert.type === 'near' 
+                      ? `La ruta "${locationAlert.route.name}" est├í a solo ${locationAlert.distance.toFixed(1)}km. ┬┐Quieres explorarla?`
+                      : `No hay rutas cerca de tu zona. La m├ís cercana es "${locationAlert.route.name}" a ${locationAlert.distance.toFixed(0)}km.`}
+                  </p>
+                  <div className="flex gap-2 mt-3">
+                    <Button 
+                      className="flex-1 bg-[#059669] hover:bg-[#047857] text-white rounded-xl h-9 text-xs font-semibold"
+                      onClick={() => {
+                        if (mapRef.current && locationAlert.route.stops?.length > 0) {
+                          mapRef.current.panTo({
+                            lat: locationAlert.route.stops[0].latitude,
+                            lng: locationAlert.route.stops[0].longitude
+                          });
+                          mapRef.current.setZoom(13);
+                        }
+                        setSelectedRoute(locationAlert.route);
+                        setView('detail');
+                        setLocationAlert(null);
                       }}
-                      className={`h-1.5 rounded-full transition-all ${
-                        i === (currentPromoIndex % promoSlides.length) ? 'w-4 bg-[#a3e635]' : 'w-1.5 bg-white/60'
-                      }`} 
-                    />
-                  ))}
+                    >
+                      {locationAlert.type === 'near' ? 'Ver ruta' : 'Ll├®vame all├¡'}
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      className="flex-1 h-9 text-xs font-semibold text-gray-500 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-xl"
+                      onClick={() => {
+                        setClosestRoutesMenu({ city: locationAlert.city, routes: locationAlert.topRoutes });
+                        setLocationAlert(null);
+                      }}
+                    >
+                      Ver m├ís rutas
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
           )}
+
+          {/* Zoom & Geolocate controls DENTRO DEL MAPA */}
+          <div className="absolute bottom-4 right-3 z-10 flex flex-col gap-2">
+            <Button 
+              variant="secondary" 
+              size="icon" 
+              className="bg-white rounded-full shadow-lg h-10 w-10 text-gray-700 hover:text-[#059669]"
+              onClick={() => {
+                if (navigator.geolocation && mapRef.current) {
+                  navigator.geolocation.getCurrentPosition(
+                    async (position) => {
+                      const lat = position.coords.latitude;
+                      const lng = position.coords.longitude;
+                      
+                      mapRef.current?.panTo({ lat, lng });
+                      mapRef.current?.setZoom(14);
+
+                      let cityName = "tu ubicaci├│n";
+                      try {
+                        const geocoder = new window.google.maps.Geocoder();
+                        const res = await geocoder.geocode({ location: { lat, lng } });
+                        if (res.results[0]) {
+                          const addressComponents = res.results[0].address_components;
+                          const locality = addressComponents.find((c: any) => c.types.includes('locality'));
+                          const sublocality = addressComponents.find((c: any) => c.types.includes('sublocality'));
+                          cityName = locality?.long_name || sublocality?.long_name || "tu ubicaci├│n";
+                        }
+                      } catch (e) { console.error("Geocoder failed", e); }
+
+                      const routesWithDist = filteredRoutes.map(route => {
+                        let dist = Infinity;
+                        if (route.stops && route.stops.length > 0) {
+                          dist = getDistanceInKm(lat, lng, route.stops[0].latitude, route.stops[0].longitude);
+                        }
+                        return { ...route, __dist: dist };
+                      }).filter(r => r.__dist !== Infinity);
+
+                      routesWithDist.sort((a, b) => a.__dist - b.__dist);
+                      const topRoutes = routesWithDist.slice(0, 3);
+
+                      if (topRoutes.length > 0) {
+                        const closestRoute = topRoutes[0];
+                        const minDistance = closestRoute.__dist;
+                        
+                        if (minDistance <= 10) {
+                          setLocationAlert({ type: 'near', distance: minDistance, route: closestRoute, city: cityName, topRoutes });
+                        } else {
+                          setLocationAlert({ type: 'far', distance: minDistance, route: closestRoute, city: cityName, topRoutes });
+                        }
+                      }
+                    },
+                    (error) => console.error("Error getting location:", error)
+                  );
+                }
+              }}
+            >
+              <Navigation2 className="h-4 w-4 text-[#059669]" />
+            </Button>
+            <div className="bg-white rounded-xl shadow-lg flex flex-col overflow-hidden">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="rounded-none h-9 w-9 text-gray-700 border-b border-gray-100 font-bold text-base"
+                onClick={() => {
+                  if (mapRef.current) {
+                    mapRef.current.setZoom((mapRef.current.getZoom() || 9) + 1)
+                  }
+                }}
+              >
+                +
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="rounded-none h-9 w-9 text-gray-700 font-bold text-base"
+                onClick={() => {
+                  if (mapRef.current) {
+                    mapRef.current.setZoom((mapRef.current.getZoom() || 9) - 1)
+                  }
+                }}
+              >
+                ÔêÆ
+              </Button>
+            </div>
+          </div>
         </div>
+
+        {/* SLIDER PUBLICITARIO DEBAJO DEL MAPA (CON BOT├ôN 'X' PARA OCULTARLO Y EXPANDIR EL MAPA AL 100%) */}
+        {showPromoBanner && (
+          <div className="relative z-10 w-full px-3 py-2 bg-white shrink-0 border-t border-gray-100 shadow-sm animate-in slide-in-from-bottom duration-300">
+            <div 
+              onClick={() => handlePromoSlideClick(currentPromoSlide)}
+              className="relative w-full h-[90px] rounded-2xl overflow-hidden shadow-sm border border-gray-100 group cursor-pointer bg-gray-100"
+            >
+              {/* Imagen del banner publicitario */}
+              <img 
+                src={currentPromoSlide.image} 
+                alt={currentPromoSlide.title || "Banner Publicidad"}
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+
+              {/* T├¡tulo y subt├¡tulo din├ímicos configurados en el backend */}
+              {(currentPromoSlide.title || currentPromoSlide.subtitle) && (
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent p-3 flex flex-col justify-end text-white pointer-events-none">
+                  {currentPromoSlide.title && (
+                    <h4 className="text-xs sm:text-sm font-black tracking-tight leading-tight drop-shadow-sm">
+                      {currentPromoSlide.title}
+                    </h4>
+                  )}
+                  {currentPromoSlide.subtitle && (
+                    <p className="text-[10px] sm:text-[11px] text-white/90 line-clamp-1 font-medium drop-shadow-xs">
+                      {currentPromoSlide.subtitle}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Bot├│n 'X' para descartar el slider */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowPromoBanner(false);
+                }}
+                className="absolute top-2 right-2 z-30 w-6 h-6 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center transition-all shadow-md active:scale-95"
+                title="Cerrar publicidad"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+
+              {/* Indicadores de slides (puntos) */}
+              <div className="absolute bottom-2 right-3 z-20 flex gap-1 bg-black/40 px-2 py-0.5 rounded-full backdrop-blur-xs">
+                {promoSlides.map((_, i) => (
+                  <button 
+                    key={i} 
+                    type="button"
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      setCurrentPromoIndex(i); 
+                    }}
+                    className={`h-1.5 rounded-full transition-all ${
+                      i === (currentPromoIndex % promoSlides.length) ? 'w-4 bg-[#a3e635]' : 'w-1.5 bg-white/60'
+                    }`} 
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* MODAL DE MIS RUTAS Y TAXI URBANO */}
         <UserRoutesModal
@@ -1439,9 +1652,9 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
     )
   }
 
-  // ─────────────────────────────────────────────
-  // PANTALLA 2 — LISTA DE RUTAS
-  // ─────────────────────────────────────────────
+  // ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+  // PANTALLA 2 ÔÇö LISTA DE RUTAS
+  // ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
   if (view === 'list') {
     return (
       <div className="w-full h-full flex flex-col bg-[#F8FAF9] overflow-hidden">
@@ -1481,14 +1694,14 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
           {/* Saludo y Pregunta */}
           <div className="mb-3">
             <h1 className="text-xl font-black text-white leading-tight">
-              ¿A dónde <span className="text-[#a3e635]">vamos?</span>
+              ┬┐A d├│nde <span className="text-[#a3e635]">vamos?</span>
             </h1>
             <p className="text-xs text-white/75 mt-0.5 font-medium">
-              Tu próxima ruta empieza aquí.
+              Tu pr├│xima ruta empieza aqu├¡.
             </p>
           </div>
 
-          {/* BARRA DE LAS 3 SUPER CATEGORÍAS */}
+          {/* BARRA DE LAS 3 SUPER CATEGOR├ìAS */}
           <div className="bg-white rounded-2xl shadow-md p-1.5 flex items-center justify-between gap-1 border border-gray-100">
             <button
               type="button"
@@ -1553,12 +1766,12 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
               <h2 className="text-base font-extrabold text-gray-900">Rutas para tu viaje</h2>
               <span className="inline-block text-[11px] font-bold text-[#064e3b] bg-emerald-100/70 px-2 py-0.5 rounded-md mt-0.5">
                 {superCategory === 'INTERURBANO' ? 'Interurbano' : superCategory === 'URBANO' ? 'Urbano' : 'Tours'}
-                {activeCategory && ` · ${activeCategory}`}
+                {activeCategory && ` ┬À ${activeCategory}`}
               </span>
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Botón Mis Rutas */}
+              {/* Bot├│n Mis Rutas */}
               <button
                 type="button"
                 onClick={() => setIsUserRoutesModalOpen(true)}
@@ -1568,7 +1781,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
                 <span>Mis Rutas</span>
               </button>
 
-              {/* Botón Filtros */}
+              {/* Bot├│n Filtros */}
               <button
                 type="button"
                 onClick={() => setIsFilterModalOpen(true)}
@@ -1578,7 +1791,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
                 <span>Filtros</span>
               </button>
 
-              {/* Botón Mapa */}
+              {/* Bot├│n Mapa */}
               <button
                 type="button"
                 onClick={() => setView('map')}
@@ -1590,7 +1803,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
             </div>
           </div>
 
-          {/* Buscador Rápido de Rutas */}
+          {/* Buscador R├ípido de Rutas */}
           <div className="relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             <Input
@@ -1611,7 +1824,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
             <div className="flex flex-col items-center justify-center py-16 text-gray-400">
               <MapPin className="h-12 w-12 mb-3 opacity-30 text-gray-400" />
               <p className="text-sm font-bold text-gray-700">No se encontraron rutas</p>
-              <p className="text-xs text-gray-500 mt-1">Prueba cambiando los filtros o la búsqueda</p>
+              <p className="text-xs text-gray-500 mt-1">Prueba cambiando los filtros o la b├║squeda</p>
               <Button
                 variant="outline"
                 size="sm"
@@ -1646,7 +1859,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
                         {route.name}
                       </h3>
                       <p className="text-[11px] text-gray-500 mt-0.5 truncate">
-                        Ruta {route.route_type ? route.route_type.toLowerCase() : 'interurbana'} · {route.stops?.length || 0} paradas y horarios
+                        Ruta {route.route_type ? route.route_type.toLowerCase() : 'interurbana'} ┬À {route.stops?.length || 0} paradas y horarios
                       </p>
                     </div>
                   </div>
@@ -1684,7 +1897,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
 
-              {/* Título y subtítulo dinámicos configurados en el backend */}
+              {/* T├¡tulo y subt├¡tulo din├ímicos configurados en el backend */}
               {(currentPromoSlide.title || currentPromoSlide.subtitle) && (
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent p-3 flex flex-col justify-end text-white pointer-events-none">
                   {currentPromoSlide.title && (
@@ -1775,13 +1988,13 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
                 </div>
               </div>
 
-              {/* SALIDA: Cualquier hora | Mañana | Tarde | Noche */}
+              {/* SALIDA: Cualquier hora | Ma├▒ana | Tarde | Noche */}
               <div className="mt-4">
                 <label className="text-xs font-extrabold text-gray-700 block mb-2">Salida</label>
                 <div className="grid grid-cols-4 gap-1.5">
                   {[
                     { id: 'cualquiera', label: 'Cualquier hora' },
-                    { id: 'manana', label: 'Mañana' },
+                    { id: 'manana', label: 'Ma├▒ana' },
                     { id: 'tarde', label: 'Tarde' },
                     { id: 'noche', label: 'Noche' },
                   ].map((t) => (
@@ -1844,13 +2057,13 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
     )
   }
 
-  // ─────────────────────────────────────────────
-  // PANTALLA 3 — DETALLE DE RUTA
-  // ─────────────────────────────────────────────
+  // ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+  // PANTALLA 3 ÔÇö DETALLE DE RUTA
+  // ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
   return (
     <div className="relative w-full h-full flex flex-col bg-background overflow-hidden">
 
-      {/* MAPA — fondo completo */}
+      {/* MAPA ÔÇö fondo completo */}
       <div className="absolute inset-0 z-0">
         {isLoaded && selectedRoute ? (
           <GoogleMap mapContainerStyle={containerStyle} center={mapCenter} zoom={10}
@@ -1889,7 +2102,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
           </div>
           <div className="min-w-0">
             <h2 className="text-white font-bold text-base leading-tight truncate">{selectedRoute?.name}</h2>
-            <p className="text-gray-400 text-xs">{selectedRoute?.category?.name || 'Ruta turística'}</p>
+            <p className="text-gray-400 text-xs">{selectedRoute?.category?.name || 'Ruta tur├¡stica'}</p>
           </div>
         </div>
         <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 shrink-0">
@@ -1906,7 +2119,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
         <div className="w-px h-8 bg-gray-100" />
         <div className="flex flex-col items-center">
           <span className="text-lg font-bold text-gray-900">
-            {selectedRoute?.price_one_way ? `$${selectedRoute.price_one_way}` : '—'}
+            {selectedRoute?.price_one_way ? `$${selectedRoute.price_one_way}` : 'ÔÇö'}
           </span>
           <span className="text-[10px] text-gray-500">Por persona</span>
         </div>
@@ -1915,7 +2128,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
           <span className="text-lg font-bold text-gray-900">
             {selectedRoute?.stops?.length > 1
               ? `${(selectedRoute.stops.length - 1) * 20} min`
-              : '—'}
+              : 'ÔÇö'}
           </span>
           <span className="text-[10px] text-gray-500">Estimado</span>
         </div>
@@ -1930,11 +2143,11 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
             </div>
             <div>
               <p className="text-xs font-bold text-gray-900">
-                {selectedRoute.estado_viaje === 'SOLICITADO' && '🟡 Esperando conductor...'}
-                {selectedRoute.estado_viaje === 'ACEPTADO' && '🟢 Chofer en camino'}
-                {selectedRoute.estado_viaje === 'EN_CURSO' && '🔵 Viaje en curso'}
-                {selectedRoute.estado_viaje === 'FINALIZADO' && '🏁 Viaje completado'}
-                {selectedRoute.estado_viaje === 'BORRADOR' && '⚪ Ruta guardada'}
+                {selectedRoute.estado_viaje === 'SOLICITADO' && '­ƒƒí Esperando conductor...'}
+                {selectedRoute.estado_viaje === 'ACEPTADO' && '­ƒƒó Chofer en camino'}
+                {selectedRoute.estado_viaje === 'EN_CURSO' && '­ƒöÁ Viaje en curso'}
+                {selectedRoute.estado_viaje === 'FINALIZADO' && '­ƒÅü Viaje completado'}
+                {selectedRoute.estado_viaje === 'BORRADOR' && 'ÔÜ¬ Ruta guardada'}
               </p>
               {selectedRoute.driver_name && (
                 <p className="text-[10px] text-gray-500">Conductor: {selectedRoute.driver_name}</p>
@@ -1955,7 +2168,7 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
         </div>
       )}
 
-      {/* BOTTOM SHEET — lista de paradas + botones */}
+      {/* BOTTOM SHEET ÔÇö lista de paradas + botones */}
       <div 
         className="absolute bottom-0 left-0 right-0 z-20 bg-white rounded-t-3xl shadow-[0_-8px_30px_rgba(0,0,0,0.12)] flex flex-col transition-all duration-300" 
         style={{ maxHeight: isSheetExpanded ? '55vh' : 'auto' }}
