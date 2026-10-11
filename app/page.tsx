@@ -186,20 +186,24 @@ export default function Home() {
     return <OnboardingScreen onComplete={handleOnboardingComplete} />
   }
 
-  const isMainTab =
-    activeTab === "marketplace" || activeTab === "businesses" || activeTab === "pool" || activeTab === "safeflow" || activeTab === "profile" || activeTab === "rutas" || activeTab === "rutas-classic" || activeTab === "map-explorer"
-
   const isMapExplorer = activeTab === "map-explorer"
+
+  const isMainTab =
+    (activeTab === "marketplace" || activeTab === "businesses" || activeTab === "pool" || activeTab === "safeflow" || activeTab === "profile" || activeTab === "rutas" || activeTab === "rutas-classic") && !isMapExplorer
+
+  const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false)
 
   return (
     <div className="min-h-screen bg-background flex w-full overflow-hidden">
       {/* Desktop Sidebar */}
-      <div className="hidden lg:block h-screen flex-shrink-0 shadow-lg relative z-20">
-        <DesktopSidebar activeTab={activeTab} onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />
-      </div>
+      {!isDesktopSidebarCollapsed && (
+        <div className="hidden lg:block h-screen flex-shrink-0 shadow-lg relative z-20 transition-all duration-300">
+          <DesktopSidebar activeTab={activeTab} onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />
+        </div>
+      )}
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col relative h-screen overflow-hidden w-full lg:max-w-none max-w-md mx-auto shadow-2xl lg:shadow-none bg-background lg:border-l lg:border-border">
+      <main className={`flex-1 flex flex-col relative h-screen overflow-hidden w-full ${isMapExplorer ? 'max-w-none' : 'lg:max-w-none max-w-md'} mx-auto shadow-2xl lg:shadow-none bg-background lg:border-l lg:border-border`}>
         <InstallPWABanner />
 
         {/* Widget GPS flotante para choferes (solo cuando NO están en su panel) */}
@@ -212,7 +216,7 @@ export default function Home() {
         )}
 
         {/* Screen Content */}
-        <div className={`flex-1 overflow-y-auto pb-16 lg:pb-0`}>
+        <div className={`flex-1 ${isMapExplorer ? 'h-full overflow-hidden' : 'overflow-y-auto pb-16 lg:pb-0'}`}>
         {activeTab === "marketplace" && (
           <MarketplaceScreen
             onNavigate={(tab) => setActiveTab(tab as ActiveTab)}
@@ -232,6 +236,8 @@ export default function Home() {
           <ExploreMapScreen
              onBack={() => setActiveTab("rutas")}
              onNavigate={(tab) => setActiveTab(tab as ActiveTab)}
+             onToggleDesktopSidebar={() => setIsDesktopSidebarCollapsed(prev => !prev)}
+             isDesktopSidebarCollapsed={isDesktopSidebarCollapsed}
           />
         )}
 

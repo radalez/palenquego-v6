@@ -7,7 +7,7 @@ import {
   LayoutGrid, ChevronUp, X, Bookmark, Clock, Share2,
   ArrowUpDown, Calendar, Users, Bus, Building2, Camera, ChevronDown,
   Map, Filter, Palmtree, Utensils, Home, Landmark, Leaf, Sparkles, Car, Star,
-  Compass, Plane, Mountain, Sun
+  Compass, Plane, Mountain, Sun, Menu, List, Image as ImageIcon
 } from 'lucide-react'
 import { ScrollArea } from "@/components/ui/scroll-area"
 import * as LucideIcons from 'lucide-react'
@@ -185,6 +185,8 @@ const POPULAR_SALVADOR_PLACES = [
 interface ExploreMapScreenProps {
   onBack: () => void
   onNavigate: (tab: string) => void
+  onToggleDesktopSidebar?: () => void
+  isDesktopSidebarCollapsed?: boolean
 }
 
 const DynamicIcon = ({ name, className, style }: { name: string; className?: string; style?: React.CSSProperties }) => {
@@ -198,7 +200,7 @@ const MAP_STYLES = [
   { featureType: "landscape", elementType: "geometry", stylers: [{ color: "#E8F5E9" }] },
 ]
 
-export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) {
+export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, isDesktopSidebarCollapsed }: ExploreMapScreenProps) {
   const [view, setView] = useState<ViewState>('map')
   const [categories, setCategories] = useState<any[]>([])
   const [routes, setRoutes] = useState<any[]>([])
@@ -442,12 +444,20 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
       let hasValidStops = false
       routes.forEach(route => {
         if (route.stops?.length) {
-          bounds.extend({ lat: route.stops[0].latitude, lng: route.stops[0].longitude })
-          hasValidStops = true
+          const lat = route.stops[0].latitude
+          const lng = route.stops[0].longitude
+          // Filtrar estrictamente coordenadas reales dentro de El Salvador
+          if (lat >= 13.0 && lat <= 14.6 && lng >= -90.2 && lng <= -87.5) {
+            bounds.extend({ lat, lng })
+            hasValidStops = true
+          }
         }
       })
       if (hasValidStops) {
-        mapRef.current.fitBounds(bounds, { top: 120, bottom: 80, left: 40, right: 40 })
+        mapRef.current.fitBounds(bounds, { top: 80, bottom: 80, left: 40, right: 40 })
+      } else {
+        mapRef.current.setCenter({ lat: 13.6929, lng: -89.2182 })
+        mapRef.current.setZoom(10)
       }
     }
   }, [routes, isLoaded, view])
@@ -754,36 +764,446 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
   const catColor = selectedRoute?.category?.color || '#059669'
   const catIcon  = selectedRoute?.category?.icon  || 'MapPin'
 
+  // Componente reutilizable para las 3 tarjetas de acción rápida
+  const renderQuickActions = () => (
+    <div className="grid grid-cols-3 gap-2 shrink-0">
+      <button
+        type="button"
+        onClick={() => {
+          setSuperCategory('INTERURBANO')
+          setView('list')
+        }}
+        className="bg-[#ecfdf5] hover:bg-[#d1fae5] border border-emerald-100 rounded-2xl p-2.5 flex items-center justify-between text-left transition-all active:scale-95 shadow-2xs group"
+      >
+        <div className="flex items-center gap-1.5 min-w-0">
+          <div className="w-6 h-6 rounded-lg bg-emerald-600/10 text-[#064e3b] flex items-center justify-center shrink-0">
+            <Bus className="w-3.5 h-3.5" />
+          </div>
+          <span className="text-[10px] font-bold text-gray-800 leading-tight">Viaja entre ciudades</span>
+        </div>
+        <ChevronRight className="w-3.5 h-3.5 text-emerald-700 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+      </button>
+
+      <button
+        type="button"
+        onClick={() => {
+          setSuperCategory('URBANO')
+          setIsUserRoutesModalOpen(true)
+        }}
+        className="bg-[#f7fee7] hover:bg-[#ecfccb] border border-lime-100 rounded-2xl p-2.5 flex items-center justify-between text-left transition-all active:scale-95 shadow-2xs group"
+      >
+        <div className="flex items-center gap-1.5 min-w-0">
+          <div className="w-6 h-6 rounded-lg bg-lime-600/10 text-lime-800 flex items-center justify-center shrink-0">
+            <Building2 className="w-3.5 h-3.5" />
+          </div>
+          <span className="text-[10px] font-bold text-gray-800 leading-tight">Muévete en la ciudad</span>
+        </div>
+        <ChevronRight className="w-3.5 h-3.5 text-lime-800 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+      </button>
+
+      <button
+        type="button"
+        onClick={() => {
+          setSuperCategory('TOUR')
+          onNavigate('marketplace')
+        }}
+        className="bg-[#fffbeb] hover:bg-[#fef3c7] border border-amber-100 rounded-2xl p-2.5 flex items-center justify-between text-left transition-all active:scale-95 shadow-2xs group"
+      >
+        <div className="flex items-center gap-1.5 min-w-0">
+          <div className="w-6 h-6 rounded-lg bg-amber-600/10 text-amber-800 flex items-center justify-center shrink-0">
+            <Camera className="w-3.5 h-3.5" />
+          </div>
+          <span className="text-[10px] font-bold text-gray-800 leading-tight">Explora tours</span>
+        </div>
+        <ChevronRight className="w-3.5 h-3.5 text-amber-800 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+      </button>
+    </div>
+  )
+
+  // Componente reutilizable para los destinos destacados
+  const renderFeaturedDestinations = () => (
+    <div className="flex flex-col gap-2 shrink-0">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-black text-gray-900 tracking-tight">Destinos para explorar</h3>
+        <button 
+          type="button"
+          onClick={() => setView('list')} 
+          className="w-6 h-6 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition-colors"
+        >
+          <ChevronRight className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2.5">
+        {FEATURED_DESTINATIONS.slice(0, 2).map((dest) => (
+          <div
+            key={dest.id}
+            className="relative h-32 lg:h-36 rounded-2xl overflow-hidden shadow-md group cursor-pointer border border-gray-100"
+            onClick={() => handleSelectDestination(dest)}
+          >
+            <img
+              src={dest.image}
+              alt={dest.name}
+              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent p-2.5 flex flex-col justify-end text-white">
+              <span className="text-xs font-black text-white leading-tight mb-1.5 drop-shadow-sm">{dest.name}</span>
+              <button
+                type="button"
+                className="bg-[#a3e635] hover:bg-[#86efac] text-[#064e3b] font-black text-[10px] py-1 px-2.5 rounded-full flex items-center justify-center gap-1 shadow-xs transition-transform active:scale-95 w-fit"
+              >
+                <span>Ver opciones</span>
+                <ChevronRight className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center gap-1.5 text-gray-400 text-[11px] font-medium mt-0.5">
+        <ImageIcon className="w-3.5 h-3.5" />
+        <span>Vista de ejemplo</span>
+      </div>
+    </div>
+  )
+
+  // Componente reutilizable para el slider de publicidad
+  const renderPromoSliderBanner = () => {
+    if (!showPromoBanner) return null;
+    return (
+      <div className="shrink-0 pt-1">
+        <div className="mb-1.5 flex items-center justify-between">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Promociones & Experiencias</span>
+          <button
+            type="button"
+            onClick={() => setShowPromoBanner(false)}
+            className="text-gray-400 hover:text-gray-600 p-0.5 rounded-full"
+            title="Ocultar publicidad"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+        <div 
+          onClick={() => handlePromoSlideClick(currentPromoSlide)}
+          className="relative w-full h-[95px] rounded-2xl overflow-hidden shadow-sm border border-gray-100 group cursor-pointer bg-gray-100"
+        >
+          <img 
+            src={currentPromoSlide.image} 
+            alt={currentPromoSlide.title || "Banner Publicidad"}
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent p-3 flex flex-col justify-end text-white pointer-events-none">
+            <h4 className="text-xs sm:text-sm font-black tracking-tight leading-tight drop-shadow-sm">
+              {currentPromoSlide.title}
+            </h4>
+            <p className="text-[10px] text-white/90 line-clamp-1 font-medium drop-shadow-xs">
+              {currentPromoSlide.subtitle}
+            </p>
+          </div>
+          {/* Indicadores de slides */}
+          <div className="absolute bottom-2 right-3 z-20 flex gap-1 bg-black/40 px-2 py-0.5 rounded-full backdrop-blur-xs">
+            {promoSlides.map((_, i) => (
+              <button 
+                key={i} 
+                type="button"
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  setCurrentPromoIndex(i); 
+                }}
+                className={`h-1.5 rounded-full transition-all ${
+                  i === (currentPromoIndex % promoSlides.length) ? 'w-4 bg-[#a3e635]' : 'w-1.5 bg-white/60'
+                }`} 
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Componente reutilizable para la tarjeta de búsqueda
+  const renderSearchCardUnified = () => (
+    <div className="bg-white rounded-3xl shadow-md p-2.5 border border-gray-100 flex flex-col gap-2 relative">
+      {/* Input de Búsqueda de Destino */}
+      <div className="relative flex items-center px-2 py-1">
+        <Search className="w-4 h-4 text-gray-400 shrink-0 mr-2" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => {
+            setSearchQuery(e.target.value)
+            setDestination(e.target.value)
+            setIsSearchFocused(true)
+          }}
+          onFocus={() => setIsSearchFocused(true)}
+          placeholder="¿Cuál es tu destino?"
+          className="w-full text-xs sm:text-sm font-semibold text-gray-800 placeholder:text-gray-400 focus:outline-none bg-transparent"
+        />
+        {searchQuery && (
+          <button
+            onClick={() => {
+              setSearchQuery("")
+              setDestination("")
+            }}
+            className="p-1 text-gray-400 hover:text-gray-600 rounded-full"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+
+      {/* Separador sutil */}
+      <div className="h-px bg-gray-100 w-full" />
+
+      {/* Fila con las 3 Categorías: Interurbano, Urbano, Tours */}
+      <div className="flex items-center justify-between gap-1">
+        {/* 1. Interurbano */}
+        <button
+          type="button"
+          onClick={() => setSuperCategory(prev => prev === 'INTERURBANO' ? null : 'INTERURBANO')}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-1 rounded-xl text-[11px] sm:text-xs font-bold transition-all ${
+            superCategory === 'INTERURBANO'
+              ? 'bg-[#dcfce7] text-[#064e3b] shadow-xs'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+          }`}
+        >
+          <Bus className="h-3.5 w-3.5" />
+          <span>Interurbano</span>
+        </button>
+
+        <div className="w-px h-4 bg-gray-200 shrink-0" />
+
+        {/* 2. Urbano */}
+        <button
+          type="button"
+          onClick={() => setSuperCategory(prev => prev === 'URBANO' ? null : 'URBANO')}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-1 rounded-xl text-[11px] sm:text-xs font-bold transition-all ${
+            superCategory === 'URBANO'
+              ? 'bg-[#f7fee7] text-lime-800 shadow-xs'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+          }`}
+        >
+          <Building2 className="h-3.5 w-3.5" />
+          <span>Urbano</span>
+        </button>
+
+        <div className="w-px h-4 bg-gray-200 shrink-0" />
+
+        {/* 3. Tours */}
+        <button
+          type="button"
+          onClick={() => setSuperCategory(prev => prev === 'TOUR' ? null : 'TOUR')}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-1 rounded-xl text-[11px] sm:text-xs font-bold transition-all ${
+            superCategory === 'TOUR'
+              ? 'bg-[#fffbeb] text-amber-800 shadow-xs'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+          }`}
+        >
+          <Camera className="h-3.5 w-3.5" />
+          <span>Tours</span>
+        </button>
+      </div>
+
+      {/* Dropdown flotante predictivo */}
+      {isSearchFocused && destSuggestions.length > 0 && (
+        <div className="absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl shadow-2xl border border-gray-200 z-[100] max-h-[300px] overflow-y-auto divide-y divide-gray-100 p-2 animate-in fade-in slide-in-from-top-1 duration-150">
+          <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-500 bg-gray-50/90 rounded-lg mb-1 flex items-center justify-between">
+            <span>Sugerencias para El Salvador</span>
+            <button
+              type="button"
+              onMouseDown={(e) => { e.preventDefault(); setIsSearchFocused(false); }}
+              className="text-gray-400 hover:text-gray-600 p-0.5"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          {destSuggestions.map((item, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault()
+                setDestination(item.name)
+                setSearchQuery(item.name)
+                setIsSearchFocused(false)
+                if (item.route) {
+                  setSelectedRoute(item.route)
+                  setPreviewRoute(item.route)
+                  if (mapRef.current && item.route.stops?.length) {
+                    mapRef.current.panTo({ lat: item.route.stops[0].latitude, lng: item.route.stops[0].longitude })
+                    mapRef.current.setZoom(13)
+                  }
+                }
+              }}
+              className="w-full text-left px-3 py-2 hover:bg-emerald-50/80 active:bg-emerald-100 flex items-center gap-2.5 transition-colors rounded-xl group"
+            >
+              <div className="p-1.5 rounded-lg bg-gray-100 group-hover:bg-[#059669]/15 text-gray-600 group-hover:text-[#059669] shrink-0">
+                <DynamicIcon name={item.icon || 'MapPin'} className="h-3.5 w-3.5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="text-xs font-bold text-gray-900 block truncate group-hover:text-[#064e3b]">
+                  {item.name}
+                </span>
+                <span className="text-[10px] text-gray-500 block truncate">
+                  {item.category}
+                </span>
+              </div>
+              <ChevronRight className="h-3.5 w-3.5 text-gray-300 group-hover:text-emerald-500 shrink-0" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+
   // ─────────────────────────────────────────────
   // PANTALLA 1 — MAPA
   // ─────────────────────────────────────────────
   if (view === 'map') {
     return (
-      <div className="relative w-full h-full flex flex-col bg-background overflow-hidden">
+      <div className="relative w-full h-full flex flex-col lg:flex-row bg-[#F8FAF9] overflow-hidden">
 
-        {/* HEADER PRINCIPAL VERDE / SELVA */}
-        <div className="relative z-30 bg-[#063b27] bg-gradient-to-b from-[#04281a] via-[#064e3b] to-[#043324] w-full pt-4 pb-4 px-4 shadow-xl shrink-0 rounded-b-[28px]">
-          {/* Fondo decorativo con banner-panda.png */}
+        {/* ═════════════════════════════════════════════════════════════ */}
+        {/* COLUMNA IZQUIERDA (DESKTOP SOLO): PANEL LATERAL ELEGANTE */}
+        {/* ═════════════════════════════════════════════════════════════ */}
+        <aside className="hidden lg:flex lg:w-[420px] xl:w-[450px] 2xl:w-[480px] h-full flex-col bg-white border-r border-gray-200 shrink-0 z-20 shadow-xl overflow-y-auto p-4 gap-3.5 custom-scrollbar">
+          {/* Fila Superior: Breadcrumb y Badge */}
+          <div className="flex items-center justify-between shrink-0">
+            <button
+              onClick={onBack}
+              className="flex items-center gap-1 text-xs font-bold text-gray-500 hover:text-emerald-700 transition-colors py-1 px-2 rounded-xl hover:bg-gray-100"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              <span>Inicio / Explorar</span>
+            </button>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
+              Movilidad El Salvador
+            </span>
+          </div>
+
+          {/* Tarjeta Selva & Panda (Diseño Oficial PalenqueGo) */}
+          <div className="relative bg-[#063b27] bg-gradient-to-b from-[#04281a] via-[#064e3b] to-[#043324] rounded-3xl p-4 text-white shadow-lg overflow-hidden shrink-0">
+            <div 
+              className="absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none opacity-85 z-0"
+              style={{ backgroundImage: `url('/banner-panda.png')` }}
+            />
+            <div className="relative z-10 flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center shadow-xs">
+                    <Navigation2 className="h-4 w-4 text-[#a3e635] rotate-45" />
+                  </div>
+                  <span className="text-lg font-black tracking-tight text-white flex items-center">
+                    Palenque<span className="text-[#a3e635]">Go</span>
+                  </span>
+                </div>
+                <button 
+                  onClick={() => onNavigate('profile')} 
+                  className="w-8 h-8 rounded-full bg-amber-700/80 border border-amber-500/40 flex items-center justify-center text-xs font-bold text-white shadow-sm hover:scale-105 transition-transform overflow-hidden"
+                  title="Mi Perfil"
+                >
+                  {currentUser?.avatar ? (
+                    <img src={currentUser.avatar} alt="Perfil" className="w-full h-full object-cover" />
+                  ) : (
+                    currentUser?.name?.[0]?.toUpperCase() || 'M'
+                  )}
+                </button>
+              </div>
+              <div>
+                <h1 className="text-xl xl:text-2xl font-black text-white leading-tight">
+                  ¿A dónde <span className="text-[#a3e635]">vamos?</span>
+                </h1>
+                <p className="text-xs text-white/85 mt-0.5 font-medium">
+                  Explora rutas, traslados y experiencias
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Tarjeta Unificada de Búsqueda */}
+          <div className="shrink-0">
+            {renderSearchCardUnified()}
+          </div>
+
+          {/* Chip de Campaña Activa si proviene de Publicidad */}
+          {activeCampaign && (
+            <div className="shrink-0 bg-gradient-to-r from-emerald-600/90 to-teal-700/90 text-white p-2 px-3 rounded-2xl border border-emerald-300/30 flex items-center justify-between shadow-md">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-[#a3e635] shrink-0" />
+                <div>
+                  <span className="text-xs font-black block leading-none">{activeCampaign.name}</span>
+                  <span className="text-[10px] text-white/80 block mt-0.5">Mostrando experiencias para {activeCampaign.target}</span>
+                </div>
+              </div>
+              <button 
+                onClick={() => setActiveCampaign(null)} 
+                className="p-1 hover:bg-white/20 rounded-full text-white/80 hover:text-white"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
+          {/* Banner Dinámico Modo Urbano / Taxi */}
+          {superCategory === 'URBANO' && (
+            <div className="shrink-0 bg-gradient-to-r from-[#04281a] to-[#064e3b] text-white p-2.5 px-3 rounded-2xl border border-emerald-400/30 flex items-center justify-between shadow-md">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-xl bg-white/10 flex items-center justify-center text-[#a3e635]">
+                  <Car className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-xs font-black text-white leading-tight">Taxi & Rutas Urbanas</p>
+                  <p className="text-[9px] text-white/70">Pide a demanda o propón tu tarifa</p>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => setIsUserRoutesModalOpen(true)}
+                className="bg-[#a3e635] hover:bg-[#86efac] text-[#064e3b] font-black text-[11px] h-7 px-2.5 rounded-xl shadow-xs"
+              >
+                + Pedir Viaje
+              </Button>
+            </div>
+          )}
+
+          {/* Sección: Descubre Palenque (3 Cards) */}
+          <div className="flex flex-col gap-2 shrink-0">
+            <div>
+              <h2 className="text-base font-black text-gray-900 tracking-tight leading-none">
+                Descubre <span className="text-[#16a34a]">Palenque</span>
+              </h2>
+              <p className="text-[11px] text-gray-400 font-medium mt-0.5">Servicios de movilidad y turismo</p>
+            </div>
+            {renderQuickActions()}
+          </div>
+
+          {/* Sección: Destinos para Explorar */}
+          {renderFeaturedDestinations()}
+
+          {/* Banner Promocional Slider */}
+          {renderPromoSliderBanner()}
+        </aside>
+
+        {/* ═════════════════════════════════════════════════════════════ */}
+        {/* CABECERA COMPACTA MOBILE (SOLO PANTALLAS PEQUEÑAS) */}
+        {/* ═════════════════════════════════════════════════════════════ */}
+        <div className="lg:hidden relative z-20 bg-[#063b27] bg-gradient-to-b from-[#04281a] via-[#064e3b] to-[#043324] w-full pt-3 pb-3 px-3.5 shadow-xl shrink-0 rounded-b-[24px]">
           <div 
-            className="absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none opacity-85 z-0 rounded-b-[28px] overflow-hidden"
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none opacity-85 z-0 rounded-b-[24px] overflow-hidden"
             style={{ backgroundImage: `url('/banner-panda.png')` }}
           />
-
-          <div className="relative z-10">
-            {/* Fila superior: Logo y Avatar */}
-            <div className="flex items-center justify-between text-white mb-2.5">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center shadow-xs">
-                  <Navigation2 className="h-4 w-4 text-[#a3e635] rotate-45" />
+          <div className="relative z-10 flex flex-col gap-2">
+            <div className="flex items-center justify-between text-white">
+              <div className="flex items-center gap-1.5">
+                <div className="w-7 h-7 rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center shadow-xs">
+                  <Navigation2 className="h-3.5 w-3.5 text-[#a3e635] rotate-45" />
                 </div>
-                <span className="text-lg font-black tracking-tight text-white flex items-center">
+                <span className="text-base font-black tracking-tight text-white flex items-center">
                   Palenque<span className="text-[#a3e635]">Go</span>
                 </span>
               </div>
-
               <button 
                 onClick={() => onNavigate('profile')} 
-                className="w-8 h-8 rounded-full bg-amber-700/80 border border-amber-500/40 flex items-center justify-center text-xs font-bold text-white shadow-sm hover:scale-105 transition-transform overflow-hidden"
+                className="w-7 h-7 rounded-full bg-amber-700/80 border border-amber-500/40 flex items-center justify-center text-[11px] font-bold text-white shadow-sm overflow-hidden"
                 title="Mi Perfil"
               >
                 {currentUser?.avatar ? (
@@ -793,200 +1213,14 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
                 )}
               </button>
             </div>
-
-            {/* Saludo y Pregunta */}
-            <div className="mb-3">
-              <h1 className="text-2xl font-black text-white leading-tight">
-                ¿A dónde <span className="text-[#a3e635]">vamos?</span>
-              </h1>
-              <p className="text-xs text-white/85 mt-0.5 font-medium">
-                Explora rutas, traslados y experiencias
-              </p>
-            </div>
-
-            {/* TARJETA BLANCA FLOTANTE UNIFICADA: BUSCADOR + 3 CATEGORÍAS */}
-            <div className="bg-white rounded-3xl shadow-xl p-2.5 border border-gray-100 flex flex-col gap-2 relative">
-              {/* Input de Búsqueda de Destino */}
-              <div className="relative flex items-center px-2 py-1">
-                <Search className="w-5 h-5 text-gray-400 shrink-0 mr-2.5" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value)
-                    setDestination(e.target.value)
-                    setIsSearchFocused(true)
-                  }}
-                  onFocus={() => setIsSearchFocused(true)}
-                  placeholder="¿Cuál es tu destino?"
-                  className="w-full text-sm font-semibold text-gray-800 placeholder:text-gray-400 focus:outline-none bg-transparent"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => {
-                      setSearchQuery("")
-                      setDestination("")
-                    }}
-                    className="p-1 text-gray-400 hover:text-gray-600 rounded-full"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-
-              {/* Separador sutil */}
-              <div className="h-px bg-gray-100 w-full" />
-
-              {/* Fila con las 3 Categorías: Interurbano, Urbano, Tours */}
-              <div className="flex items-center justify-between gap-1">
-                {/* 1. Interurbano */}
-                <button
-                  type="button"
-                  onClick={() => setSuperCategory(prev => prev === 'INTERURBANO' ? null : 'INTERURBANO')}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-1 rounded-xl text-xs font-bold transition-all ${
-                    superCategory === 'INTERURBANO'
-                      ? 'bg-[#dcfce7] text-[#064e3b] shadow-xs'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                  }`}
-                >
-                  <Bus className="h-4 w-4" />
-                  <span className="text-xs">Interurbano</span>
-                </button>
-
-                <div className="w-px h-5 bg-gray-200 shrink-0" />
-
-                {/* 2. Urbano */}
-                <button
-                  type="button"
-                  onClick={() => setSuperCategory(prev => prev === 'URBANO' ? null : 'URBANO')}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-1 rounded-xl text-xs font-bold transition-all ${
-                    superCategory === 'URBANO'
-                      ? 'bg-[#dcfce7] text-[#064e3b] shadow-xs'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                  }`}
-                >
-                  <Building2 className="h-4 w-4" />
-                  <span className="text-xs">Urbano</span>
-                </button>
-
-                <div className="w-px h-5 bg-gray-200 shrink-0" />
-
-                {/* 3. Tours */}
-                <button
-                  type="button"
-                  onClick={() => setSuperCategory(prev => prev === 'TOUR' ? null : 'TOUR')}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-1 rounded-xl text-xs font-bold transition-all ${
-                    superCategory === 'TOUR'
-                      ? 'bg-[#dcfce7] text-[#064e3b] shadow-xs'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                  }`}
-                >
-                  <Camera className="h-4 w-4" />
-                  <span className="text-xs">Tours</span>
-                </button>
-              </div>
-
-              {/* Dropdown Predictivo si el input está enfocado */}
-              {isSearchFocused && (searchQuery.trim().length > 0 || destSuggestions.length > 0) && (
-                <div className="absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl shadow-2xl border border-gray-200 z-[100] max-h-[300px] overflow-y-auto divide-y divide-gray-100 p-2 animate-in fade-in slide-in-from-top-1 duration-150">
-                  <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-500 bg-gray-50/90 rounded-lg mb-1 flex items-center justify-between">
-                    <span>Destinos y Rutas Sugeridas</span>
-                    <button
-                      type="button"
-                      onMouseDown={(e) => { e.preventDefault(); setIsSearchFocused(false); }}
-                      className="text-gray-400 hover:text-gray-600 p-0.5"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                  {destSuggestions.map((item, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onMouseDown={(e) => {
-                        e.preventDefault()
-                        setSearchQuery(item.name)
-                        setDestination(item.name)
-                        setIsSearchFocused(false)
-                        if (item.route) {
-                          setPreviewRoute(item.route)
-                          if (mapRef.current && item.route.stops?.length) {
-                            mapRef.current.panTo({ lat: item.route.stops[0].latitude, lng: item.route.stops[0].longitude })
-                            mapRef.current.setZoom(13)
-                          }
-                        } else {
-                          const hub = STRATEGIC_HUBS.find(h => h.name.toLowerCase().includes(item.name.toLowerCase()) || item.name.toLowerCase().includes(h.name.toLowerCase()))
-                          if (hub && mapRef.current) {
-                            mapRef.current.panTo({ lat: hub.lat, lng: hub.lng })
-                            mapRef.current.setZoom(13)
-                          }
-                        }
-                      }}
-                      className="w-full text-left px-3 py-2 hover:bg-emerald-50/80 active:bg-emerald-100 flex items-center gap-2.5 transition-colors rounded-xl group"
-                    >
-                      <div className="p-1.5 rounded-lg bg-gray-100 group-hover:bg-[#059669]/15 text-gray-600 group-hover:text-[#059669] shrink-0">
-                        <DynamicIcon name={item.icon || 'MapPin'} className="h-4 w-4" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <span className="text-xs font-bold text-gray-900 block truncate group-hover:text-[#064e3b]">
-                          {item.name}
-                        </span>
-                        <span className="text-[10px] text-gray-500 block truncate">
-                          {item.category}
-                        </span>
-                      </div>
-                      <ChevronRight className="h-3.5 w-3.5 text-gray-300 group-hover:text-emerald-500 shrink-0" />
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Chip de Campaña activa si llega desde anuncio */}
-            {activeCampaign && (
-              <div className="mt-2.5 bg-gradient-to-r from-emerald-600/90 to-teal-700/90 text-white p-2 px-3 rounded-2xl border border-emerald-300/30 flex items-center justify-between shadow-md animate-in fade-in">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-[#a3e635] shrink-0" />
-                  <div>
-                    <span className="text-xs font-black block leading-none">{activeCampaign.name}</span>
-                    <span className="text-[10px] text-white/80 block mt-0.5">Mostrando experiencias destacadas para {activeCampaign.target}</span>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => setActiveCampaign(null)} 
-                  className="p-1 hover:bg-white/20 rounded-full text-white/80 hover:text-white"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            )}
-
-            {/* Banner Dinámico cuando está en modo Urbano */}
-            {superCategory === 'URBANO' && (
-              <div className="mt-2 bg-gradient-to-r from-[#04281a] to-[#064e3b] text-white p-2 px-3 rounded-2xl border border-emerald-400/30 flex items-center justify-between shadow-md animate-in fade-in duration-200">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-xl bg-white/10 flex items-center justify-center text-[#a3e635]">
-                    <Car className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-black text-white leading-tight">Taxi & Rutas Urbanas</p>
-                    <p className="text-[9px] text-white/70">Pide un viaje a demanda o propón tu tarifa</p>
-                  </div>
-                </div>
-                <Button
-                  size="sm"
-                  onClick={() => setIsUserRoutesModalOpen(true)}
-                  className="bg-[#a3e635] hover:bg-[#86efac] text-[#064e3b] font-black text-[11px] h-7 px-2.5 rounded-xl shadow-xs"
-                >
-                  + Pedir Viaje
-                </Button>
-              </div>
-            )}
+            {renderSearchCardUnified()}
           </div>
         </div>
 
-        {/* MAPA PRINCIPAL */}
-        <div className="relative flex-1 w-full overflow-hidden z-0 min-h-[220px]">
+        {/* ═════════════════════════════════════════════════════════════ */}
+        {/* ÁREA CENTRAL: MAPA COMPLETO INTERACTIVO (100% VISIBILIDAD) */}
+        {/* ═════════════════════════════════════════════════════════════ */}
+        <div className="relative flex-1 h-full w-full overflow-hidden z-0 min-h-[220px]">
           {isLoaded ? (
             <GoogleMap 
               mapContainerStyle={containerStyle} 
@@ -1143,12 +1377,26 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
             </div>
           )}
 
-          {/* CONTROLES FLOTANTES DEL MAPA: TOGGLE MAPA / LISTA */}
-          <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
-            <div className="bg-white/95 backdrop-blur-sm rounded-full p-1 shadow-md border border-gray-100 flex items-center">
+          {/* CONTROLES FLOTANTES SUPERIORES */}
+          <div className="absolute top-3.5 left-3.5 right-3.5 z-20 flex items-center justify-between pointer-events-none">
+            {/* Botón Hamburguesa de Desktop para colapsar/expandir el panel lateral */}
+            {onToggleDesktopSidebar ? (
               <button
                 type="button"
-                className="px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 bg-[#dcfce7] text-[#064e3b] shadow-xs"
+                onClick={onToggleDesktopSidebar}
+                title={isDesktopSidebarCollapsed ? "Mostrar menú lateral" : "Ocultar menú lateral"}
+                className="hidden lg:flex items-center gap-1.5 px-3 py-2 bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-gray-200/80 hover:bg-emerald-50 text-gray-700 hover:text-[#064e3b] font-bold text-xs pointer-events-auto transition-all active:scale-95"
+              >
+                <Menu className="w-4 h-4 text-emerald-700" />
+                <span className="hidden xl:inline">{isDesktopSidebarCollapsed ? "Mostrar Menú" : "Ocultar Menú"}</span>
+              </button>
+            ) : <div />}
+
+            {/* Toggle Flotante Mapa / Lista */}
+            <div className="bg-white/95 backdrop-blur-md rounded-2xl p-1 shadow-lg border border-gray-200/80 flex items-center gap-0.5 pointer-events-auto ml-auto">
+              <button
+                type="button"
+                className="px-3.5 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 bg-[#dcfce7] text-[#064e3b] shadow-xs"
               >
                 <Map className="w-3.5 h-3.5" />
                 <span>Mapa</span>
@@ -1156,42 +1404,42 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
               <button
                 type="button"
                 onClick={() => setView('list')}
-                className="px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 text-gray-600 hover:text-gray-900"
+                className="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100/70"
               >
-                <SlidersHorizontal className="w-3.5 h-3.5" />
+                <List className="w-3.5 h-3.5" />
                 <span>Lista</span>
               </button>
             </div>
           </div>
 
-          {/* BOTÓN FLOTANTE INFERIOR IZQUIERDO: EXPLORAR ESTA ZONA */}
-          <div className="absolute bottom-4 left-3 z-10">
+          {/* BOTÓN FLOTANTE INFERIOR: EXPLORAR ESTA ZONA */}
+          <div className="absolute bottom-20 lg:bottom-6 left-0 right-0 z-20 flex items-center justify-center pointer-events-none px-4">
             <button
               type="button"
               onClick={handleExploreCurrentZone}
-              className="bg-[#064e3b] hover:bg-[#043324] text-white font-bold text-xs px-3.5 py-2 rounded-full shadow-lg border border-emerald-400/40 flex items-center gap-2 transition-all active:scale-95"
+              className="bg-[#064e3b] hover:bg-[#043324] text-white font-bold text-xs py-2.5 px-4 rounded-full shadow-xl flex items-center gap-2 transition-all active:scale-95 border border-emerald-400/40 pointer-events-auto"
             >
               <Navigation2 className="w-3.5 h-3.5 text-[#a3e635] rotate-45" />
               <span>Explorar esta zona</span>
             </button>
           </div>
 
-          {/* BOTÓN FLOTANTE INFERIOR DERECHO: BRÚJULA / GEOLOCALIZAR */}
-          <div className="absolute bottom-4 right-3 z-10">
+          {/* BOTÓN FLOTANTE INFERIOR: BRÚJULA RE-CENTRADORA */}
+          <div className="absolute bottom-20 lg:bottom-6 right-4 z-20 pointer-events-auto">
             <button
               type="button"
               onClick={handleUseCurrentLocation}
-              className="bg-white hover:bg-gray-50 text-[#064e3b] w-10 h-10 rounded-full shadow-lg border border-gray-100 flex items-center justify-center transition-all active:scale-95"
+              className="bg-white hover:bg-gray-50 text-[#064e3b] w-10 h-10 rounded-full shadow-lg border border-gray-200 flex items-center justify-center transition-all active:scale-95"
               title="Mi ubicación actual"
             >
-              <Compass className="w-5 h-5 text-[#064e3b]" />
+              <Compass className="w-5 h-5 text-emerald-700" />
             </button>
           </div>
 
-          {/* CARTITA FLOTANTE DE RUTA SELECCIONADA / PREVIEW */}
+          {/* TARJETA FLOTANTE DE RUTA SELECCIONADA / PREVIEW */}
           {previewRoute && (
-            <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-md animate-in slide-in-from-bottom-5 fade-in duration-300">
-              <div className="bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-2xl border border-gray-100 flex flex-col gap-3 relative">
+            <div className="absolute top-16 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 z-30 animate-in slide-in-from-top-2 fade-in duration-200">
+              <div className="bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-2xl border border-gray-200 flex flex-col gap-3 relative">
                 <button
                   type="button"
                   onClick={() => setPreviewRoute(null)}
@@ -1264,157 +1512,50 @@ export function ExploreMapScreen({ onBack, onNavigate }: ExploreMapScreenProps) 
               </div>
             </div>
           )}
-        </div>
 
-        {/* BOTTOM SHEET INFERIOR: DESCUBRE PALENQUE & DESTINOS PARA EXPLORAR */}
-        <div className="relative z-30 bg-white rounded-t-[32px] shadow-2xl border-t border-gray-100 flex flex-col shrink-0 max-h-[46vh] overflow-y-auto">
-          {/* Barra Handle */}
-          <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto my-2.5 shrink-0" />
-
-          {/* Título: Descubre Palenque */}
-          <div className="px-4 mb-3 shrink-0">
-            <h2 className="text-xl font-black text-gray-900 tracking-tight leading-none">
-              Descubre <span className="text-[#16a34a]">Palenque</span>
-            </h2>
-            <p className="text-xs text-gray-400 font-medium mt-1">Ejemplo ilustrativo</p>
-          </div>
-
-          {/* 3 Tarjetas de Acción Rápida */}
-          <div className="grid grid-cols-3 gap-2 px-4 mb-4 shrink-0">
-            <button
-              type="button"
-              onClick={() => {
-                setSuperCategory('INTERURBANO')
-                setView('list')
-              }}
-              className="bg-[#ecfdf5] hover:bg-[#d1fae5] border border-emerald-100 rounded-2xl p-2.5 flex items-center justify-between text-left transition-all active:scale-95 shadow-2xs"
+          {/* ═════════════════════════════════════════════════════════════ */}
+          {/* BOTTOM SHEET INFERIOR COLAPSABLE (SOLO MOBILE, LIBERA 88% MAPA) */}
+          {/* ═════════════════════════════════════════════════════════════ */}
+          <div 
+            className={`lg:hidden absolute bottom-0 left-0 right-0 z-30 bg-white shadow-2xl border-t border-gray-200 transition-all duration-300 ease-out flex flex-col ${
+              isSheetExpanded 
+                ? 'max-h-[55vh] rounded-t-[28px] overflow-y-auto px-4 pt-2.5 pb-6' 
+                : 'h-14 rounded-t-2xl overflow-hidden px-4 py-2 cursor-pointer'
+            }`}
+          >
+            {/* Barra Handle / Toggle */}
+            <div 
+              onClick={() => setIsSheetExpanded(prev => !prev)}
+              className="w-full flex items-center justify-between py-1 cursor-pointer select-none shrink-0"
             >
-              <div className="flex items-center gap-1.5 min-w-0">
-                <div className="w-6 h-6 rounded-lg bg-emerald-600/10 text-[#064e3b] flex items-center justify-center shrink-0">
-                  <Bus className="w-3.5 h-3.5" />
-                </div>
-                <span className="text-[10px] font-bold text-gray-800 leading-tight">Viaja entre ciudades</span>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-1 bg-gray-300 rounded-full" />
+                <h2 className="text-sm font-black text-gray-900 tracking-tight leading-none">
+                  Descubre <span className="text-[#16a34a]">Palenque</span>
+                </h2>
               </div>
-              <ChevronRight className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setSuperCategory('URBANO')
-                setIsUserRoutesModalOpen(true)
-              }}
-              className="bg-[#f7fee7] hover:bg-[#ecfccb] border border-lime-100 rounded-2xl p-2.5 flex items-center justify-between text-left transition-all active:scale-95 shadow-2xs"
-            >
-              <div className="flex items-center gap-1.5 min-w-0">
-                <div className="w-6 h-6 rounded-lg bg-lime-600/10 text-lime-800 flex items-center justify-center shrink-0">
-                  <Building2 className="w-3.5 h-3.5" />
-                </div>
-                <span className="text-[10px] font-bold text-gray-800 leading-tight">Muévete en la ciudad</span>
-              </div>
-              <ChevronRight className="w-3.5 h-3.5 text-lime-800 shrink-0" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setSuperCategory('TOUR')
-                onNavigate('marketplace')
-              }}
-              className="bg-[#fffbeb] hover:bg-[#fef3c7] border border-amber-100 rounded-2xl p-2.5 flex items-center justify-between text-left transition-all active:scale-95 shadow-2xs"
-            >
-              <div className="flex items-center gap-1.5 min-w-0">
-                <div className="w-6 h-6 rounded-lg bg-amber-600/10 text-amber-800 flex items-center justify-center shrink-0">
-                  <Camera className="w-3.5 h-3.5" />
-                </div>
-                <span className="text-[10px] font-bold text-gray-800 leading-tight">Explora tours</span>
-              </div>
-              <ChevronRight className="w-3.5 h-3.5 text-amber-800 shrink-0" />
-            </button>
-          </div>
-
-          {/* Sección: Destinos para explorar */}
-          <div className="px-4 mb-4 shrink-0">
-            <div className="flex items-center justify-between mb-2.5">
-              <h3 className="text-sm font-black text-gray-900 tracking-tight">Destinos para explorar</h3>
-              <button 
+              <button
                 type="button"
-                onClick={() => setView('list')} 
-                className="w-6 h-6 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setIsSheetExpanded(prev => !prev)
+                }}
+                className="flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100 transition-colors"
               >
-                <ChevronRight className="w-3.5 h-3.5" />
+                <span>{isSheetExpanded ? 'Bajar' : 'Ver opciones'}</span>
+                {isSheetExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5">
-              {FEATURED_DESTINATIONS.slice(0, 2).map((dest) => (
-                <div
-                  key={dest.id}
-                  className="relative h-36 rounded-2xl overflow-hidden shadow-md group cursor-pointer border border-gray-100"
-                  onClick={() => handleSelectDestination(dest)}
-                >
-                  <img
-                    src={dest.image}
-                    alt={dest.name}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent p-2.5 flex flex-col justify-end text-white">
-                    <span className="text-xs font-black text-white leading-tight mb-1.5 drop-shadow-sm">{dest.name}</span>
-                    <button
-                      type="button"
-                      className="bg-[#a3e635] hover:bg-[#86efac] text-[#064e3b] font-black text-[10px] py-1 px-2.5 rounded-full flex items-center justify-center gap-1 shadow-xs transition-transform active:scale-95 w-fit"
-                    >
-                      <span>Ver opciones</span>
-                      <ChevronRight className="w-3 h-3" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+            {/* Contenido Completo del Sheet cuando está Expandido */}
+            {isSheetExpanded && (
+              <div className="flex flex-col gap-3.5 mt-2 animate-in fade-in duration-200">
+                {renderQuickActions()}
+                {renderFeaturedDestinations()}
+                {renderPromoSliderBanner()}
+              </div>
+            )}
           </div>
-
-          {/* Slider Publicitario (al hacer scroll hacia abajo) */}
-          {showPromoBanner && (
-            <div className="px-4 pb-6 pt-1 shrink-0">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Promociones & Experiencias</span>
-              </div>
-              <div 
-                onClick={() => handlePromoSlideClick(currentPromoSlide)}
-                className="relative w-full h-[95px] rounded-2xl overflow-hidden shadow-sm border border-gray-100 group cursor-pointer bg-gray-100"
-              >
-                <img 
-                  src={currentPromoSlide.image} 
-                  alt={currentPromoSlide.title || "Banner Publicidad"}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent p-3 flex flex-col justify-end text-white pointer-events-none">
-                  <h4 className="text-xs sm:text-sm font-black tracking-tight leading-tight drop-shadow-sm">
-                    {currentPromoSlide.title}
-                  </h4>
-                  <p className="text-[10px] text-white/90 line-clamp-1 font-medium drop-shadow-xs">
-                    {currentPromoSlide.subtitle}
-                  </p>
-                </div>
-                {/* Indicadores de slides */}
-                <div className="absolute bottom-2 right-3 z-20 flex gap-1 bg-black/40 px-2 py-0.5 rounded-full backdrop-blur-xs">
-                  {promoSlides.map((_, i) => (
-                    <button 
-                      key={i} 
-                      type="button"
-                      onClick={(e) => { 
-                        e.stopPropagation(); 
-                        setCurrentPromoIndex(i); 
-                      }}
-                      className={`h-1.5 rounded-full transition-all ${
-                        i === (currentPromoIndex % promoSlides.length) ? 'w-4 bg-[#a3e635]' : 'w-1.5 bg-white/60'
-                      }`} 
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* MODAL DE MIS RUTAS Y TAXI URBANO */}
