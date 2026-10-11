@@ -441,26 +441,35 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
   useEffect(() => {
     if (mapRef.current && routes.length > 0 && isLoaded) {
       const bounds = new window.google.maps.LatLngBounds()
-      let hasValidStops = false
+      let validCount = 0
       routes.forEach(route => {
         if (route.stops?.length) {
           const lat = route.stops[0].latitude
           const lng = route.stops[0].longitude
           // Filtrar estrictamente coordenadas reales dentro de El Salvador
-          if (lat >= 13.0 && lat <= 14.6 && lng >= -90.2 && lng <= -87.5) {
+          if (lat >= 13.1 && lat <= 14.5 && lng >= -90.1 && lng <= -87.6) {
             bounds.extend({ lat, lng })
-            hasValidStops = true
+            validCount++
           }
         }
       })
-      if (hasValidStops) {
-        mapRef.current.fitBounds(bounds, { top: 80, bottom: 80, left: 40, right: 40 })
+      if (validCount > 3) {
+        mapRef.current.fitBounds(bounds, { top: 60, bottom: 60, left: 40, right: 40 })
+        const listener = google.maps.event.addListenerOnce(mapRef.current, 'idle', () => {
+          if (mapRef.current) {
+            const z = mapRef.current.getZoom()
+            if (typeof z === 'number' && (z < 9 || z > 14)) {
+              mapRef.current.setCenter({ lat: 13.6929, lng: -89.2182 })
+              mapRef.current.setZoom(10)
+            }
+          }
+        })
       } else {
         mapRef.current.setCenter({ lat: 13.6929, lng: -89.2182 })
         mapRef.current.setZoom(10)
       }
     }
-  }, [routes, isLoaded, view])
+  }, [routes, isLoaded])
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -1058,18 +1067,28 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
   // ─────────────────────────────────────────────
   // PANTALLA 1 — MAPA
   // ─────────────────────────────────────────────
-  if (view === 'map') {
+  if (view === 'map' || view === 'list') {
     return (
       <div className="relative w-full h-full flex flex-col lg:flex-row bg-[#F8FAF9] overflow-hidden">
 
         {/* ═════════════════════════════════════════════════════════════ */}
-        {/* COLUMNA IZQUIERDA (DESKTOP SOLO): PANEL LATERAL ELEGANTE */}
+        {/* COLUMNA IZQUIERDA: PANEL LATERAL ELEGANTE */}
+        {/* Desktop (lg:): Siempre visible (w-[420px] xl:w-[450px] 2xl:w-[480px]) */}
+        {/* Mobile: Visible solo si view === 'list' (w-full h-full) */}
         {/* ═════════════════════════════════════════════════════════════ */}
-        <aside className="hidden lg:flex lg:w-[420px] xl:w-[450px] 2xl:w-[480px] h-full flex-col bg-white border-r border-gray-200 shrink-0 z-20 shadow-xl overflow-y-auto p-4 gap-3.5 custom-scrollbar">
-          {/* Fila Superior: Breadcrumb y Badge */}
+        <aside className={`${view === 'list' ? 'flex w-full' : 'hidden lg:flex'} lg:w-[420px] xl:w-[450px] 2xl:w-[480px] h-full flex-col bg-white border-r border-gray-200 shrink-0 z-20 shadow-xl overflow-y-auto p-4 gap-3.5 custom-scrollbar`}>
+          {/* Fila Superior: Breadcrumb y Badge Movilidad El Salvador (INMUTABLE Y PERMANENTE) */}
           <div className="flex items-center justify-between shrink-0">
             <button
-              onClick={onBack}
+              onClick={() => {
+                if (view === 'list' && typeof window !== 'undefined' && window.innerWidth < 1024) {
+                  setView('map')
+                } else if (onBack) {
+                  onBack()
+                } else {
+                  setView('map')
+                }
+              }}
               className="flex items-center gap-1.5 text-xs font-black text-gray-900 hover:text-[#064e3b] transition-all py-1.5 px-3 rounded-xl bg-gray-100/90 hover:bg-emerald-50 border border-gray-200/90 shadow-2xs group"
             >
               <ChevronLeft className="w-4 h-4 text-emerald-700 group-hover:-translate-x-0.5 transition-transform" />
@@ -1113,114 +1132,305 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
                   ¿A dónde <span className="text-[#a3e635]">vamos?</span>
                 </h1>
                 <p className="text-xs text-white/85 mt-0.5 font-medium">
-                  Explora rutas, traslados y experiencias
+                  {view === 'list' ? 'Tu próxima ruta empieza aquí.' : 'Explora rutas, traslados y experiencias'}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Tarjeta Unificada de Búsqueda */}
-          <div className="shrink-0">
-            {renderSearchCardUnified()}
-          </div>
-
-          {/* Chip de Campaña Activa si proviene de Publicidad */}
-          {activeCampaign && (
-            <div className="shrink-0 bg-gradient-to-r from-emerald-600/90 to-teal-700/90 text-white p-2 px-3 rounded-2xl border border-emerald-300/30 flex items-center justify-between shadow-md">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-[#a3e635] shrink-0" />
-                <div>
-                  <span className="text-xs font-black block leading-none">{activeCampaign.name}</span>
-                  <span className="text-[10px] text-white/80 block mt-0.5">Mostrando experiencias para {activeCampaign.target}</span>
-                </div>
+          {/* ─── VISTA MAPA: BUSCADOR UNIFICADO Y DESCUBRE PALENQUE ─── */}
+          {view === 'map' && (
+            <>
+              {/* Tarjeta Unificada de Búsqueda */}
+              <div className="shrink-0">
+                {renderSearchCardUnified()}
               </div>
-              <button 
-                onClick={() => setActiveCampaign(null)} 
-                className="p-1 hover:bg-white/20 rounded-full text-white/80 hover:text-white"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
+
+              {/* Chip de Campaña Activa si proviene de Publicidad */}
+              {activeCampaign && (
+                <div className="shrink-0 bg-gradient-to-r from-emerald-600/90 to-teal-700/90 text-white p-2 px-3 rounded-2xl border border-emerald-300/30 flex items-center justify-between shadow-md">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-[#a3e635] shrink-0" />
+                    <div>
+                      <span className="text-xs font-black block leading-none">{activeCampaign.name}</span>
+                      <span className="text-[10px] text-white/80 block mt-0.5">Mostrando experiencias para {activeCampaign.target}</span>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setActiveCampaign(null)} 
+                    className="p-1 hover:bg-white/20 rounded-full text-white/80 hover:text-white"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+
+              {/* Banner Dinámico Modo Urbano / Taxi */}
+              {superCategory === 'URBANO' && (
+                <div className="shrink-0 bg-gradient-to-r from-[#04281a] to-[#064e3b] text-white p-2.5 px-3 rounded-2xl border border-emerald-400/30 flex items-center justify-between shadow-md">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-xl bg-white/10 flex items-center justify-center text-[#a3e635]">
+                      <Car className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-black text-white leading-tight">Taxi & Rutas Urbanas</p>
+                      <p className="text-[9px] text-white/70">Pide a demanda o propón tu tarifa</p>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => setIsUserRoutesModalOpen(true)}
+                    className="bg-[#a3e635] hover:bg-[#86efac] text-[#064e3b] font-black text-[11px] h-7 px-2.5 rounded-xl shadow-xs"
+                  >
+                    + Pedir Viaje
+                  </Button>
+                </div>
+              )}
+
+              {/* Sección: Descubre Palenque (3 Cards) */}
+              <div className="flex flex-col gap-2 shrink-0">
+                <div>
+                  <h2 className="text-base font-black text-gray-900 tracking-tight leading-none">
+                    Descubre <span className="text-[#16a34a]">Palenque</span>
+                  </h2>
+                  <p className="text-[11px] text-gray-400 font-medium mt-0.5">Servicios de movilidad y turismo</p>
+                </div>
+                {renderQuickActions()}
+              </div>
+
+              {/* Sección: Destinos para Explorar */}
+              {renderFeaturedDestinations()}
+
+              {/* Banner Promocional Slider */}
+              {renderPromoSliderBanner()}
+            </>
           )}
 
-          {/* Banner Dinámico Modo Urbano / Taxi */}
-          {superCategory === 'URBANO' && (
-            <div className="shrink-0 bg-gradient-to-r from-[#04281a] to-[#064e3b] text-white p-2.5 px-3 rounded-2xl border border-emerald-400/30 flex items-center justify-between shadow-md">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-xl bg-white/10 flex items-center justify-center text-[#a3e635]">
-                  <Car className="h-4 w-4" />
-                </div>
+          {/* ─── VISTA LISTA: CATEGORÍAS, RUTAS PARA TU VIAJE, FILTROS Y TARJETAS ─── */}
+          {view === 'list' && (
+            <>
+              {/* BARRA DE LAS 3 SUPER CATEGORÍAS */}
+              <div className="bg-gray-100/90 rounded-2xl p-1.5 flex items-center justify-between gap-1 border border-gray-200 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setSuperCategory(prev => prev === 'INTERURBANO' ? null : 'INTERURBANO')}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-1 rounded-xl text-xs font-bold transition-all ${
+                    superCategory === 'INTERURBANO'
+                      ? 'bg-white text-[#064e3b] shadow-xs border border-emerald-200'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
+                  }`}
+                >
+                  <Bus className="h-3.5 w-3.5" />
+                  <span className="text-[11px]">Interurbano</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSuperCategory(prev => prev === 'URBANO' ? null : 'URBANO')}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-1 rounded-xl text-xs font-bold transition-all ${
+                    superCategory === 'URBANO'
+                      ? 'bg-white text-[#064e3b] shadow-xs border border-emerald-200'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
+                  }`}
+                >
+                  <Building2 className="h-3.5 w-3.5" />
+                  <span className="text-[11px]">Urbano</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSuperCategory(prev => prev === 'TOUR' ? null : 'TOUR')}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-1 rounded-xl text-xs font-bold transition-all ${
+                    superCategory === 'TOUR'
+                      ? 'bg-white text-[#064e3b] shadow-xs border border-emerald-200'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
+                  }`}
+                >
+                  <Camera className="h-3.5 w-3.5" />
+                  <span className="text-[11px]">Tours</span>
+                </button>
+              </div>
+
+              {/* BARRA: "Rutas para tu viaje" + Botones Filtros & Mapa */}
+              <div className="flex items-center justify-between pt-1 pb-1 shrink-0">
                 <div>
-                  <p className="text-xs font-black text-white leading-tight">Taxi & Rutas Urbanas</p>
-                  <p className="text-[9px] text-white/70">Pide a demanda o propón tu tarifa</p>
+                  <h2 className="text-base font-extrabold text-gray-900">Rutas para tu viaje</h2>
+                  <span className="inline-block text-[11px] font-bold text-[#064e3b] bg-emerald-100/70 px-2 py-0.5 rounded-md mt-0.5">
+                    {superCategory === 'INTERURBANO' ? 'Interurbano' : superCategory === 'URBANO' ? 'Urbano' : 'Tours'}
+                    {activeCategory && ` · ${activeCategory}`}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setIsUserRoutesModalOpen(true)}
+                    className="flex items-center gap-1 bg-white hover:bg-gray-50 text-[#064e3b] font-bold text-xs px-2.5 py-1.5 rounded-xl shadow-xs border border-emerald-100 transition-all active:scale-95"
+                  >
+                    <Car className="h-3.5 w-3.5 text-[#059669]" />
+                    <span>Mis Rutas</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsFilterModalOpen(true)}
+                    className="flex items-center gap-1 bg-white hover:bg-gray-50 text-gray-800 font-bold text-xs px-2.5 py-1.5 rounded-xl shadow-xs border border-gray-200 transition-all active:scale-95"
+                  >
+                    <SlidersHorizontal className="h-3.5 w-3.5 text-[#059669]" />
+                    <span>Filtros</span>
+                  </button>
+
+                  {/* Botón Mapa solo en móvil para regresar */}
+                  <button
+                    type="button"
+                    onClick={() => setView('map')}
+                    className="lg:hidden flex items-center gap-1 bg-white hover:bg-gray-50 text-gray-800 font-bold text-xs px-2.5 py-1.5 rounded-xl shadow-xs border border-gray-200 transition-all active:scale-95"
+                  >
+                    <Map className="h-3.5 w-3.5 text-[#059669]" />
+                    <span>Mapa</span>
+                  </button>
                 </div>
               </div>
-              <Button
-                size="sm"
-                onClick={() => setIsUserRoutesModalOpen(true)}
-                className="bg-[#a3e635] hover:bg-[#86efac] text-[#064e3b] font-black text-[11px] h-7 px-2.5 rounded-xl shadow-xs"
-              >
-                + Pedir Viaje
-              </Button>
-            </div>
+
+              {/* Buscador Rápido de Rutas */}
+              <div className="relative shrink-0">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                <Input
+                  placeholder="Buscar rutas o destinos..."
+                  className="w-full bg-white border-gray-200 text-gray-800 placeholder:text-gray-400 rounded-xl h-10 pl-10 pr-10 shadow-2xs text-xs focus-visible:ring-1 focus-visible:ring-[#059669]"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                {searchQuery && (
+                  <button className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" onClick={() => setSearchQuery('')}>
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* LISTA DE RUTAS DISPONIBLES */}
+              <div className="flex-1 flex flex-col gap-2.5 overflow-y-auto min-h-0 pr-1">
+                {filteredRoutes.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                    <MapPin className="h-10 w-10 mb-2 opacity-30 text-gray-400" />
+                    <p className="text-sm font-bold text-gray-700">No se encontraron rutas</p>
+                    <p className="text-xs text-gray-500 mt-1">Prueba cambiando los filtros o la búsqueda</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setActiveCategory(null);
+                        setDestination("");
+                        setSearchQuery("");
+                        setFilterService('todos');
+                      }}
+                      className="mt-3 rounded-xl text-xs font-bold"
+                    >
+                      Restablecer filtros
+                    </Button>
+                  </div>
+                ) : (
+                  filteredRoutes.map((route) => {
+                    const rColor = route.category?.color || '#059669';
+                    const isPreview = previewRoute?.id === route.id;
+                    return (
+                      <div
+                        key={route.id}
+                        onMouseEnter={() => setHoveredRouteId(route.id)}
+                        onMouseLeave={() => setHoveredRouteId(null)}
+                        onClick={() => {
+                          setPreviewRoute(route);
+                          if (mapRef.current && route.stops?.length) {
+                            mapRef.current.panTo({ lat: route.stops[0].latitude, lng: route.stops[0].longitude });
+                          }
+                        }}
+                        className={`bg-white rounded-2xl p-3 shadow-xs border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                          isPreview ? 'border-emerald-500 ring-2 ring-emerald-200' : 'border-gray-100 hover:border-gray-200 hover:shadow-md'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <div 
+                            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                            style={{ backgroundColor: `${rColor}15` }}
+                          >
+                            <Bus className="h-5 w-5" style={{ color: rColor }} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h3 className="font-extrabold text-gray-900 text-sm leading-tight truncate">
+                              {route.name}
+                            </h3>
+                            <p className="text-[11px] text-gray-500 mt-0.5 truncate">
+                              Ruta {route.route_type ? route.route_type.toLowerCase() : 'interurbana'} · {route.stops?.length || 0} paradas y horarios
+                            </p>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedRoute(route);
+                            setView('detail');
+                          }}
+                          className="shrink-0 flex items-center gap-1 border border-[#064e3b] text-[#064e3b] hover:bg-emerald-50 active:scale-95 px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-2xs"
+                        >
+                          <span>Ver ruta</span>
+                          <ChevronRight className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* SLIDER PUBLICITARIO AL FONDO DE LA LISTA */}
+              {renderPromoSliderBanner()}
+            </>
           )}
-
-          {/* Sección: Descubre Palenque (3 Cards) */}
-          <div className="flex flex-col gap-2 shrink-0">
-            <div>
-              <h2 className="text-base font-black text-gray-900 tracking-tight leading-none">
-                Descubre <span className="text-[#16a34a]">Palenque</span>
-              </h2>
-              <p className="text-[11px] text-gray-400 font-medium mt-0.5">Servicios de movilidad y turismo</p>
-            </div>
-            {renderQuickActions()}
-          </div>
-
-          {/* Sección: Destinos para Explorar */}
-          {renderFeaturedDestinations()}
-
-          {/* Banner Promocional Slider */}
-          {renderPromoSliderBanner()}
         </aside>
 
         {/* ═════════════════════════════════════════════════════════════ */}
-        {/* CABECERA COMPACTA MOBILE (SOLO PANTALLAS PEQUEÑAS) */}
+        {/* CABECERA COMPACTA MOBILE (SOLO PANTALLAS PEQUEÑAS CUANDO VIEW === 'MAP') */}
         {/* ═════════════════════════════════════════════════════════════ */}
-        <div className="lg:hidden relative z-20 bg-[#063b27] bg-gradient-to-b from-[#04281a] via-[#064e3b] to-[#043324] w-full pt-3 pb-3 px-3.5 shadow-xl shrink-0 rounded-b-[24px]">
-          <div 
-            className="absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none opacity-85 z-0 rounded-b-[24px] overflow-hidden"
-            style={{ backgroundImage: `url('/banner-panda.png')` }}
-          />
-          <div className="relative z-10 flex flex-col gap-2">
-            <div className="flex items-center justify-between text-white">
-              <div className="flex items-center gap-1.5">
-                <div className="w-7 h-7 rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center shadow-xs">
-                  <Navigation2 className="h-3.5 w-3.5 text-[#a3e635] rotate-45" />
+        {view === 'map' && (
+          <div className="lg:hidden relative z-20 bg-[#063b27] bg-gradient-to-b from-[#04281a] via-[#064e3b] to-[#043324] w-full pt-3 pb-3 px-3.5 shadow-xl shrink-0 rounded-b-[24px]">
+            <div 
+              className="absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none opacity-85 z-0 rounded-b-[24px] overflow-hidden"
+              style={{ backgroundImage: `url('/banner-panda.png')` }}
+            />
+            <div className="relative z-10 flex flex-col gap-2">
+              <div className="flex items-center justify-between text-white">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-7 h-7 rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center shadow-xs">
+                    <Navigation2 className="h-3.5 w-3.5 text-[#a3e635] rotate-45" />
+                  </div>
+                  <span className="text-base font-black tracking-tight text-white flex items-center">
+                    Palenque<span className="text-[#a3e635]">Go</span>
+                  </span>
                 </div>
-                <span className="text-base font-black tracking-tight text-white flex items-center">
-                  Palenque<span className="text-[#a3e635]">Go</span>
-                </span>
+                <button 
+                  onClick={() => onNavigate('profile')} 
+                  className="w-7 h-7 rounded-full bg-amber-700/80 border border-amber-500/40 flex items-center justify-center text-[11px] font-bold text-white shadow-sm overflow-hidden"
+                  title="Mi Perfil"
+                >
+                  {currentUser?.avatar ? (
+                    <img src={currentUser.avatar} alt="Perfil" className="w-full h-full object-cover" />
+                  ) : (
+                    currentUser?.name?.[0]?.toUpperCase() || 'M'
+                  )}
+                </button>
               </div>
-              <button 
-                onClick={() => onNavigate('profile')} 
-                className="w-7 h-7 rounded-full bg-amber-700/80 border border-amber-500/40 flex items-center justify-center text-[11px] font-bold text-white shadow-sm overflow-hidden"
-                title="Mi Perfil"
-              >
-                {currentUser?.avatar ? (
-                  <img src={currentUser.avatar} alt="Perfil" className="w-full h-full object-cover" />
-                ) : (
-                  currentUser?.name?.[0]?.toUpperCase() || 'M'
-                )}
-              </button>
+              {renderSearchCardUnified()}
             </div>
-            {renderSearchCardUnified()}
           </div>
-        </div>
+        )}
 
         {/* ═════════════════════════════════════════════════════════════ */}
         {/* ÁREA CENTRAL: MAPA COMPLETO INTERACTIVO (100% VISIBILIDAD) */}
+        {/* En Desktop: Siempre visible y activo */}
+        {/* En Mobile: Visible solo si view === 'map' */}
         {/* ═════════════════════════════════════════════════════════════ */}
-        <div className="relative flex-1 h-full w-full overflow-hidden z-0 min-h-[220px]">
+        <div className={`relative flex-1 h-full w-full overflow-hidden z-0 min-h-[220px] ${view === 'list' ? 'hidden lg:block' : 'block'}`}>
           {isLoaded ? (
             <GoogleMap 
               mapContainerStyle={containerStyle} 
@@ -1383,7 +1593,12 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
             <div className="bg-white/95 backdrop-blur-md rounded-2xl p-1 shadow-lg border border-gray-200/80 flex items-center gap-0.5 pointer-events-auto">
               <button
                 type="button"
-                className="px-3.5 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 bg-[#dcfce7] text-[#064e3b] shadow-xs"
+                onClick={() => setView('map')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs transition-all flex items-center gap-1.5 ${
+                  view === 'map'
+                    ? 'bg-[#dcfce7] text-[#064e3b] font-black shadow-xs'
+                    : 'font-bold text-gray-600 hover:text-gray-900 hover:bg-gray-100/70'
+                }`}
               >
                 <Map className="w-3.5 h-3.5" />
                 <span>Mapa</span>
@@ -1391,7 +1606,11 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
               <button
                 type="button"
                 onClick={() => setView('list')}
-                className="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100/70"
+                className={`px-3.5 py-1.5 rounded-xl text-xs transition-all flex items-center gap-1.5 ${
+                  view === 'list'
+                    ? 'bg-[#dcfce7] text-[#064e3b] font-black shadow-xs'
+                    : 'font-bold text-gray-600 hover:text-gray-900 hover:bg-gray-100/70'
+                }`}
               >
                 <List className="w-3.5 h-3.5" />
                 <span>Lista</span>
@@ -1501,379 +1720,53 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
           )}
 
           {/* ═════════════════════════════════════════════════════════════ */}
-          {/* BOTTOM SHEET INFERIOR COLAPSABLE (SOLO MOBILE, LIBERA 88% MAPA) */}
+          {/* BOTTOM SHEET INFERIOR COLAPSABLE (SOLO MOBILE EN MODO MAPA) */}
           {/* ═════════════════════════════════════════════════════════════ */}
-          <div 
-            className={`lg:hidden absolute bottom-0 left-0 right-0 z-30 bg-white shadow-2xl border-t border-gray-200 transition-all duration-300 ease-out flex flex-col ${
-              isSheetExpanded 
-                ? 'max-h-[55vh] rounded-t-[28px] overflow-y-auto px-4 pt-2.5 pb-6' 
-                : 'h-14 rounded-t-2xl overflow-hidden px-4 py-2 cursor-pointer'
-            }`}
-          >
-            {/* Barra Handle / Toggle */}
+          {view === 'map' && (
             <div 
-              onClick={() => setIsSheetExpanded(prev => !prev)}
-              className="w-full flex items-center justify-between py-1 cursor-pointer select-none shrink-0"
-            >
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-1 bg-gray-300 rounded-full" />
-                <h2 className="text-sm font-black text-gray-900 tracking-tight leading-none">
-                  Descubre <span className="text-[#16a34a]">Palenque</span>
-                </h2>
-              </div>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setIsSheetExpanded(prev => !prev)
-                }}
-                className="flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100 transition-colors"
-              >
-                <span>{isSheetExpanded ? 'Ocultar' : 'Ver opciones'}</span>
-                {isSheetExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
-              </button>
-            </div>
-
-            {/* Contenido Completo del Sheet cuando está Expandido */}
-            {isSheetExpanded && (
-              <div className="flex flex-col gap-3.5 mt-2 animate-in fade-in duration-200">
-                {renderQuickActions()}
-                {renderFeaturedDestinations()}
-                {renderPromoSliderBanner()}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* MODAL DE MIS RUTAS Y TAXI URBANO */}
-        <UserRoutesModal
-          isOpen={isUserRoutesModalOpen}
-          onClose={() => setIsUserRoutesModalOpen(false)}
-          onSelectRouteOnMap={(route) => {
-            setSelectedRoute(route)
-            setView('detail')
-          }}
-          onStartMapPickMode={(mode, center) => {
-            setMapPickMode(mode)
-            if (center && mapRef.current) {
-              mapRef.current.panTo(center)
-              mapRef.current.setZoom(15)
-            }
-          }}
-          currentPickedOrigin={currentPickedOrigin}
-          currentPickedDestination={currentPickedDestination}
-        />
-      </div>
-    )
-  }
-
-  // ─────────────────────────────────────────────
-  // PANTALLA 2 — LISTA DE RUTAS
-  // ─────────────────────────────────────────────
-  if (view === 'list') {
-    return (
-      <div className="w-full h-full flex flex-col bg-[#F8FAF9] overflow-hidden">
-        {/* Fila Superior: Breadcrumb y Badge Movilidad El Salvador */}
-        <div className="flex items-center justify-between px-4 pt-3.5 pb-2.5 bg-white border-b border-gray-100 shrink-0">
-          <button
-            onClick={() => setView('map')}
-            className="flex items-center gap-1.5 text-xs font-black text-gray-900 hover:text-[#064e3b] transition-all py-1.5 px-3 rounded-xl bg-gray-100/90 hover:bg-emerald-50 border border-gray-200/90 shadow-2xs group"
-          >
-            <ChevronLeft className="w-4 h-4 text-emerald-700 group-hover:-translate-x-0.5 transition-transform" />
-            <span className="font-extrabold tracking-tight">Inicio / Explorar</span>
-          </button>
-          <span className="text-[10px] font-black uppercase tracking-wider text-emerald-900 bg-emerald-100/80 px-2.5 py-1 rounded-full border border-emerald-300/50 shadow-2xs">
-            Movilidad El Salvador
-          </span>
-        </div>
-
-        {/* HEADER SUPERIOR VERDE CON LOGO Y AVATAR */}
-        <div className="relative z-20 bg-[#063b27] bg-gradient-to-b from-[#04281a] via-[#064e3b] to-[#043324] w-full pt-4 pb-4 px-4 shadow-xl shrink-0 rounded-b-[28px] overflow-hidden">
-          {/* Fondo decorativo con banner-panda.png */}
-          <div 
-            className="absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none opacity-85 z-0"
-            style={{ backgroundImage: `url('/banner-panda.png')` }}
-          />
-
-          <div className="relative z-10">
-            {/* Fila superior: Logo y Avatar */}
-          <div className="flex items-center justify-between text-white mb-2.5">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center shadow-xs">
-                <Navigation2 className="h-4 w-4 text-[#a3e635] rotate-45" />
-              </div>
-              <span className="text-lg font-black tracking-tight text-white flex items-center">
-                Palenque<span className="text-[#a3e635]">Go</span>
-              </span>
-            </div>
-
-            <button 
-              onClick={() => onNavigate('profile')} 
-              className="w-8 h-8 rounded-full bg-amber-700/80 border border-amber-500/40 flex items-center justify-center text-xs font-bold text-white shadow-sm hover:scale-105 transition-transform overflow-hidden"
-              title="Mi Perfil"
-            >
-              {currentUser?.avatar ? (
-                <img src={currentUser.avatar} alt="Perfil" className="w-full h-full object-cover" />
-              ) : (
-                currentUser?.name?.[0]?.toUpperCase() || 'M'
-              )}
-            </button>
-          </div>
-
-          {/* Saludo y Pregunta */}
-          <div className="mb-3">
-            <h1 className="text-xl font-black text-white leading-tight">
-              ¿A dónde <span className="text-[#a3e635]">vamos?</span>
-            </h1>
-            <p className="text-xs text-white/75 mt-0.5 font-medium">
-              Tu próxima ruta empieza aquí.
-            </p>
-          </div>
-
-          {/* BARRA DE LAS 3 SUPER CATEGORÍAS */}
-          <div className="bg-white rounded-2xl shadow-md p-1.5 flex items-center justify-between gap-1 border border-gray-100">
-            <button
-              type="button"
-              onClick={() => setSuperCategory(prev => prev === 'INTERURBANO' ? null : 'INTERURBANO')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-1 rounded-xl text-xs font-bold transition-all ${
-                superCategory === 'INTERURBANO'
-                  ? 'bg-[#dcfce7] text-[#064e3b] shadow-xs'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              className={`lg:hidden absolute bottom-0 left-0 right-0 z-30 bg-white shadow-2xl border-t border-gray-200 transition-all duration-300 ease-out flex flex-col ${
+                isSheetExpanded 
+                  ? 'max-h-[55vh] rounded-t-[28px] overflow-y-auto px-4 pt-2.5 pb-6' 
+                  : 'h-14 rounded-t-2xl overflow-hidden px-4 py-2 cursor-pointer'
               }`}
             >
-              <Bus className="h-3.5 w-3.5" />
-              <span className="text-[11px]">Interurbano</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setSuperCategory(prev => prev === 'URBANO' ? null : 'URBANO')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-1 rounded-xl text-xs font-bold transition-all ${
-                superCategory === 'URBANO'
-                  ? 'bg-[#dcfce7] text-[#064e3b] shadow-xs'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              <Building2 className="h-3.5 w-3.5" />
-              <span className="text-[11px]">Urbano</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setSuperCategory(prev => prev === 'TOUR' ? null : 'TOUR')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-1 rounded-xl text-xs font-bold transition-all ${
-                superCategory === 'TOUR'
-                  ? 'bg-[#dcfce7] text-[#064e3b] shadow-xs'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              <Camera className="h-3.5 w-3.5" />
-              <span className="text-[11px]">Tours</span>
-            </button>
-
-            {/* Flechita al lado derecho de todo */}
-            <button
-              type="button"
-              onClick={() => {
-                setView('map');
-                handleToggleClick();
-              }}
-              className="w-7 h-7 rounded-full bg-[#dcfce7] text-[#064e3b] hover:bg-emerald-200 flex items-center justify-center shrink-0 shadow-xs transition-all active:scale-95"
-              title="Ver en mapa"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
-          </div>
-        </div>
-
-        {/* CONTENIDO DE LA LISTA */}
-        <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3 min-h-0">
-          {/* BARRA: "Rutas para tu viaje" + Botones Filtros & Mapa */}
-          <div className="flex items-center justify-between pt-1 pb-1">
-            <div>
-              <h2 className="text-base font-extrabold text-gray-900">Rutas para tu viaje</h2>
-              <span className="inline-block text-[11px] font-bold text-[#064e3b] bg-emerald-100/70 px-2 py-0.5 rounded-md mt-0.5">
-                {superCategory === 'INTERURBANO' ? 'Interurbano' : superCategory === 'URBANO' ? 'Urbano' : 'Tours'}
-                {activeCategory && ` · ${activeCategory}`}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {/* Botón Mis Rutas */}
-              <button
-                type="button"
-                onClick={() => setIsUserRoutesModalOpen(true)}
-                className="flex items-center gap-1.5 bg-white hover:bg-gray-50 text-[#064e3b] font-bold text-xs px-3 py-1.5 rounded-xl shadow-xs border border-emerald-100 transition-all active:scale-95"
+              {/* Barra Handle / Toggle */}
+              <div 
+                onClick={() => setIsSheetExpanded(prev => !prev)}
+                className="w-full flex items-center justify-between py-1 cursor-pointer select-none shrink-0"
               >
-                <Car className="h-3.5 w-3.5 text-[#059669]" />
-                <span>Mis Rutas</span>
-              </button>
-
-              {/* Botón Filtros */}
-              <button
-                type="button"
-                onClick={() => setIsFilterModalOpen(true)}
-                className="flex items-center gap-1.5 bg-white hover:bg-gray-50 text-gray-800 font-bold text-xs px-3 py-1.5 rounded-xl shadow-xs border border-gray-200 transition-all active:scale-95"
-              >
-                <SlidersHorizontal className="h-3.5 w-3.5 text-[#059669]" />
-                <span>Filtros</span>
-              </button>
-
-              {/* Botón Mapa */}
-              <button
-                type="button"
-                onClick={() => setView('map')}
-                className="flex items-center gap-1.5 bg-white hover:bg-gray-50 text-gray-800 font-bold text-xs px-3 py-1.5 rounded-xl shadow-xs border border-gray-200 transition-all active:scale-95"
-              >
-                <Map className="h-3.5 w-3.5 text-[#059669]" />
-                <span>Mapa</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Buscador Rápido de Rutas */}
-          <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-            <Input
-              placeholder="Buscar rutas o destinos..."
-              className="w-full bg-white border-gray-200 text-gray-800 placeholder:text-gray-400 rounded-xl h-10 pl-10 pr-10 shadow-2xs text-xs focus-visible:ring-1 focus-visible:ring-[#059669]"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            {searchQuery && (
-              <button className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" onClick={() => setSearchQuery('')}>
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
-
-          {/* LISTA DE RUTAS DISPONIBLES */}
-          {filteredRoutes.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-              <MapPin className="h-12 w-12 mb-3 opacity-30 text-gray-400" />
-              <p className="text-sm font-bold text-gray-700">No se encontraron rutas</p>
-              <p className="text-xs text-gray-500 mt-1">Prueba cambiando los filtros o la búsqueda</p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setActiveCategory(null);
-                  setDestination("");
-                  setSearchQuery("");
-                  setFilterService('todos');
-                }}
-                className="mt-4 rounded-xl text-xs font-bold"
-              >
-                Restablecer filtros
-              </Button>
-            </div>
-          ) : (
-            filteredRoutes.map((route) => {
-              const rColor = route.category?.color || '#059669';
-              return (
-                <div
-                  key={route.id}
-                  className="bg-white rounded-2xl p-3.5 shadow-xs border border-gray-100 flex items-center justify-between gap-3 hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div 
-                      className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-                      style={{ backgroundColor: `${rColor}15` }}
-                    >
-                      <Bus className="h-5 w-5" style={{ color: rColor }} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-extrabold text-gray-900 text-sm leading-tight truncate">
-                        {route.name}
-                      </h3>
-                      <p className="text-[11px] text-gray-500 mt-0.5 truncate">
-                        Ruta {route.route_type ? route.route_type.toLowerCase() : 'interurbana'} · {route.stops?.length || 0} paradas y horarios
-                      </p>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedRoute(route);
-                      setView('detail');
-                    }}
-                    className="shrink-0 flex items-center gap-1 border border-[#064e3b] text-[#064e3b] hover:bg-emerald-50 active:scale-95 px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-2xs"
-                  >
-                    <span>Ver ruta</span>
-                    <ChevronRight className="h-3.5 w-3.5" />
-                  </button>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-1 bg-gray-300 rounded-full" />
+                  <h2 className="text-sm font-black text-gray-900 tracking-tight leading-none">
+                    Descubre <span className="text-[#16a34a]">Palenque</span>
+                  </h2>
                 </div>
-              );
-            })
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setIsSheetExpanded(prev => !prev)
+                  }}
+                  className="flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100 transition-colors"
+                >
+                  <span>{isSheetExpanded ? 'Ocultar' : 'Ver opciones'}</span>
+                  {isSheetExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+
+              {/* Contenido Completo del Sheet cuando está Expandido */}
+              {isSheetExpanded && (
+                <div className="flex flex-col gap-3.5 mt-2 animate-in fade-in duration-200">
+                  {renderQuickActions()}
+                  {renderFeaturedDestinations()}
+                  {renderPromoSliderBanner()}
+                </div>
+              )}
+            </div>
           )}
         </div>
 
-        {/* SLIDER PUBLICITARIO AL FONDO */}
-        {showPromoBanner && (
-          <div className="relative z-10 w-full px-3 py-2 bg-white shrink-0 border-t border-gray-100 shadow-sm animate-in slide-in-from-bottom duration-300">
-            <div 
-              onClick={() => {
-                handlePromoSlideClick(currentPromoSlide);
-                setView('map');
-              }}
-              className="relative w-full h-[84px] rounded-2xl overflow-hidden shadow-sm border border-gray-100 group cursor-pointer bg-gray-100"
-            >
-              <img 
-                src={currentPromoSlide.image} 
-                alt={currentPromoSlide.title || "Banner Publicidad"}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-              />
-
-              {/* Título y subtítulo dinámicos configurados en el backend */}
-              {(currentPromoSlide.title || currentPromoSlide.subtitle) && (
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent p-3 flex flex-col justify-end text-white pointer-events-none">
-                  {currentPromoSlide.title && (
-                    <h4 className="text-xs sm:text-sm font-black tracking-tight leading-tight drop-shadow-sm">
-                      {currentPromoSlide.title}
-                    </h4>
-                  )}
-                  {currentPromoSlide.subtitle && (
-                    <p className="text-[10px] sm:text-[11px] text-white/90 line-clamp-1 font-medium drop-shadow-xs">
-                      {currentPromoSlide.subtitle}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowPromoBanner(false);
-                }}
-                className="absolute top-2 right-2 z-30 w-6 h-6 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center transition-all shadow-md active:scale-95"
-                title="Cerrar publicidad"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-
-              <div className="absolute bottom-2 right-3 z-20 flex gap-1 bg-black/40 px-2 py-0.5 rounded-full backdrop-blur-xs">
-                {promoSlides.map((_, i) => (
-                  <button 
-                    key={i} 
-                    type="button"
-                    onClick={(e) => { 
-                      e.stopPropagation(); 
-                      setCurrentPromoIndex(i); 
-                    }}
-                    className={`h-1.5 rounded-full transition-all ${
-                      i === (currentPromoIndex % promoSlides.length) ? 'w-4 bg-[#a3e635]' : 'w-1.5 bg-white/60'
-                    }`} 
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* MODAL / DRAWER DE FILTROS (Wireframe media_1791123281831.jpg) */}
+        {/* MODAL / DRAWER DE FILTROS */}
         {isFilterModalOpen && (
           <div 
             className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-end justify-center animate-in fade-in duration-200"
@@ -1975,9 +1868,12 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
             setSelectedRoute(route)
             setView('detail')
           }}
-          onStartMapPickMode={(mode) => {
+          onStartMapPickMode={(mode, center) => {
             setMapPickMode(mode)
-            setView('map')
+            if (center && mapRef.current) {
+              mapRef.current.panTo(center)
+              mapRef.current.setZoom(15)
+            }
           }}
           currentPickedOrigin={currentPickedOrigin}
           currentPickedDestination={currentPickedDestination}
