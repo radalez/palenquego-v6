@@ -1070,12 +1070,12 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
           <div className="flex items-center justify-between shrink-0">
             <button
               onClick={onBack}
-              className="flex items-center gap-1 text-xs font-bold text-gray-500 hover:text-emerald-700 transition-colors py-1 px-2 rounded-xl hover:bg-gray-100"
+              className="flex items-center gap-1.5 text-xs font-black text-gray-900 hover:text-[#064e3b] transition-all py-1.5 px-3 rounded-xl bg-gray-100/90 hover:bg-emerald-50 border border-gray-200/90 shadow-2xs group"
             >
-              <ChevronLeft className="w-4 h-4" />
-              <span>Inicio / Explorar</span>
+              <ChevronLeft className="w-4 h-4 text-emerald-700 group-hover:-translate-x-0.5 transition-transform" />
+              <span className="font-extrabold tracking-tight">Inicio / Explorar</span>
             </button>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
+            <span className="text-[10px] font-black uppercase tracking-wider text-emerald-900 bg-emerald-100/80 px-2.5 py-1 rounded-full border border-emerald-300/50 shadow-2xs">
               Movilidad El Salvador
             </span>
           </div>
