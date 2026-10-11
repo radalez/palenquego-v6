@@ -576,6 +576,15 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
     let destination = ''
     let origin = ''
 
+    // Detectar si es un Tour turístico
+    if (routeName.toLowerCase().startsWith('tour')) {
+      return {
+        badge: 'Tour',
+        origin: 'San Salvador',
+        destination: routeName.replace(/^Tour\s+/i, '').trim(),
+      }
+    }
+
     // Detectar patrones como "Ruta 117-A", "Ruta 2-A", "Ruta 900-1", "Ruta 12", etc.
     const routeNumMatch = routeName.match(/Ruta\s+([0-9]+[A-Za-z0-9\-\/]*)/i)
     if (routeNumMatch) {
@@ -1350,17 +1359,35 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
                       >
                         <div className="flex items-center gap-3 min-w-0 flex-1">
                           <div 
-                            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                            className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 overflow-hidden relative border border-gray-100 shadow-2xs"
                             style={{ backgroundColor: `${rColor}15` }}
                           >
-                            <Bus className="h-5 w-5" style={{ color: rColor }} />
+                            {route.imagen_portada ? (
+                              <img
+                                src={route.imagen_portada}
+                                alt={route.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  (e.currentTarget as HTMLElement).style.display = 'none';
+                                }}
+                              />
+                            ) : (
+                              <DynamicIcon name={route.category?.icon || (route.route_type === 'TOUR' ? 'Camera' : 'Bus')} className="h-5 w-5" style={{ color: rColor }} />
+                            )}
                           </div>
                           <div className="min-w-0 flex-1">
                             <h3 className="font-extrabold text-gray-900 text-sm leading-tight truncate">
                               {route.name}
                             </h3>
-                            <p className="text-[11px] text-gray-500 mt-0.5 truncate">
-                              Ruta {route.route_type ? route.route_type.toLowerCase() : 'interurbana'} · {route.stops?.length || 0} paradas y horarios
+                            <p className="text-[11px] text-gray-500 mt-0.5 truncate flex items-center gap-1.5 flex-wrap">
+                              {route.duracion && (
+                                <span className="font-bold text-amber-800 bg-amber-50 border border-amber-200/60 px-1.5 py-0.5 rounded text-[10px] shrink-0">
+                                  ⏱️ {route.duracion}
+                                </span>
+                              )}
+                              <span>
+                                {route.route_type === 'TOUR' ? 'Tour oficial' : `Ruta ${route.route_type ? route.route_type.toLowerCase() : 'interurbana'}`} · {route.stops?.length || 0} paradas {route.price_one_way ? `· $${route.price_one_way}` : ''}
+                              </span>
                             </p>
                           </div>
                         </div>
@@ -1374,7 +1401,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
                           }}
                           className="shrink-0 flex items-center gap-1 border border-[#064e3b] text-[#064e3b] hover:bg-emerald-50 active:scale-95 px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-2xs"
                         >
-                          <span>Ver ruta</span>
+                          <span>Ver {route.route_type === 'TOUR' ? 'tour' : 'ruta'}</span>
                           <ChevronRight className="h-3.5 w-3.5" />
                         </button>
                       </div>
@@ -1644,12 +1671,31 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
 
           {/* TARJETA FLOTANTE DE RUTA SELECCIONADA / PREVIEW */}
           {previewRoute && (
-            <div className="absolute top-16 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 z-30 animate-in slide-in-from-top-2 fade-in duration-200">
-              <div className="bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-2xl border border-gray-200 flex flex-col gap-3 relative">
+            <div className="absolute top-16 left-4 right-4 sm:left-auto sm:right-4 sm:w-84 z-30 animate-in slide-in-from-top-2 fade-in duration-200">
+              <div className="bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-2xl border border-gray-200 flex flex-col gap-3 relative overflow-hidden">
+                {previewRoute.imagen_portada && (
+                  <div className="relative -mx-4 -mt-4 h-28 overflow-hidden mb-0.5">
+                    <img 
+                      src={previewRoute.imagen_portada} 
+                      alt={previewRoute.name} 
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.currentTarget.parentElement as HTMLElement).style.display = 'none';
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
+                    {previewRoute.duracion && (
+                      <span className="absolute bottom-2 left-3 bg-black/65 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-full border border-white/20 flex items-center gap-1">
+                        ⏱️ {previewRoute.duracion}
+                      </span>
+                    )}
+                  </div>
+                )}
+
                 <button
                   type="button"
                   onClick={() => setPreviewRoute(null)}
-                  className="absolute top-3 right-3 p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors"
+                  className="absolute top-3 right-3 p-1.5 rounded-full bg-white/80 hover:bg-white text-gray-700 shadow-xs z-10 transition-colors"
                   title="Cerrar vista previa"
                 >
                   <X className="h-4 w-4" />
@@ -1658,13 +1704,13 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
                 <div className="flex items-center gap-2 pr-8">
                   <div
                     className="px-2.5 py-1 rounded-full text-white text-xs font-black flex items-center gap-1.5 shadow-sm"
-                    style={{ backgroundColor: previewRoute.category?.color || '#059669' }}
+                    style={{ backgroundColor: previewRoute.category?.color || (previewRoute.route_type === 'TOUR' ? '#d97706' : '#059669') }}
                   >
-                    <DynamicIcon name={previewRoute.category?.icon || 'Bus'} className="h-3.5 w-3.5" />
+                    <DynamicIcon name={previewRoute.category?.icon || (previewRoute.route_type === 'TOUR' ? 'Camera' : 'Bus')} className="h-3.5 w-3.5" />
                     <span>{parseRouteDisplay(previewRoute.name).badge}</span>
                   </div>
                   <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500 truncate">
-                    {previewRoute.category?.name || 'Transporte Colectivo'}
+                    {previewRoute.category?.name || (previewRoute.route_type === 'TOUR' ? 'Tours & Experiencias' : 'Transporte Colectivo')}
                   </span>
                 </div>
 
@@ -1684,17 +1730,27 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
                   </div>
                 </div>
 
+                {previewRoute.descripcion && (
+                  <p className="text-[11px] text-gray-600 line-clamp-2 leading-relaxed bg-amber-50/50 p-2 rounded-lg border border-amber-100/50">
+                    {previewRoute.descripcion}
+                  </p>
+                )}
+
                 <div className="grid grid-cols-3 gap-2 py-1 text-center border-y border-gray-100">
                   <div>
-                    <span className="text-[10px] text-gray-500 block uppercase font-medium">Tarifa Ida</span>
+                    <span className="text-[10px] text-gray-500 block uppercase font-medium">
+                      {previewRoute.route_type === 'TOUR' ? 'Tarifa Tour' : 'Tarifa Ida'}
+                    </span>
                     <span className="text-sm font-black text-emerald-600">
                       ${previewRoute.price_one_way || '0.25'}
                     </span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-gray-500 block uppercase font-medium">Tarifa Vuelta</span>
+                    <span className="text-[10px] text-gray-500 block uppercase font-medium">
+                      {previewRoute.route_type === 'TOUR' ? 'Duración' : 'Tarifa Vuelta'}
+                    </span>
                     <span className="text-sm font-black text-gray-700">
-                      ${previewRoute.price_round_trip || '0.50'}
+                      {previewRoute.route_type === 'TOUR' ? (previewRoute.duracion || '-') : `$${previewRoute.price_round_trip || '0.50'}`}
                     </span>
                   </div>
                   <div>
@@ -1917,20 +1973,37 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
       </div>
 
       {/* HEADER OVERLAY sobre el mapa */}
-      <div className="relative z-20 bg-[#0B1F15] px-4 pt-12 pb-4 flex items-center gap-3">
-        <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 shrink-0" onClick={() => setView('list')}>
+      <div className="relative z-20 bg-[#0B1F15] px-4 pt-12 pb-4 flex items-center gap-3 overflow-hidden">
+        {selectedRoute?.imagen_portada && (
+          <div className="absolute inset-0 pointer-events-none z-0">
+            <img 
+              src={selectedRoute.imagen_portada} 
+              alt={selectedRoute.name} 
+              className="w-full h-full object-cover opacity-30"
+              onError={(e) => {
+                (e.currentTarget.parentElement as HTMLElement).style.display = 'none';
+              }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0B1F15] via-[#0B1F15]/80 to-transparent" />
+          </div>
+        )}
+        <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 shrink-0 relative z-10" onClick={() => setView('list')}>
           <ChevronLeft className="h-6 w-6" />
         </Button>
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="w-10 h-10 rounded-full flex items-center justify-center text-white shadow-md shrink-0" style={{ backgroundColor: catColor }}>
-            <DynamicIcon name={catIcon} className="h-5 w-5" />
+        <div className="flex items-center gap-3 flex-1 min-w-0 relative z-10">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-md shrink-0 overflow-hidden" style={{ backgroundColor: catColor }}>
+            {selectedRoute?.imagen_portada ? (
+              <img src={selectedRoute.imagen_portada} alt={selectedRoute.name} className="w-full h-full object-cover" />
+            ) : (
+              <DynamicIcon name={catIcon} className="h-5 w-5" />
+            )}
           </div>
           <div className="min-w-0">
             <h2 className="text-white font-bold text-base leading-tight truncate">{selectedRoute?.name}</h2>
-            <p className="text-gray-400 text-xs">{selectedRoute?.category?.name || 'Ruta turística'}</p>
+            <p className="text-gray-300 text-xs">{selectedRoute?.category?.name || (selectedRoute?.route_type === 'TOUR' ? 'Tours & Experiencias' : 'Ruta turística')}</p>
           </div>
         </div>
-        <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 shrink-0">
+        <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 shrink-0 relative z-10">
           <Bookmark className="h-5 w-5" />
         </Button>
       </div>
@@ -1951,11 +2024,13 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
         <div className="w-px h-8 bg-gray-100" />
         <div className="flex flex-col items-center">
           <span className="text-lg font-bold text-gray-900">
-            {selectedRoute?.stops?.length > 1
-              ? `${(selectedRoute.stops.length - 1) * 20} min`
-              : '—'}
+            {selectedRoute?.duracion
+              ? selectedRoute.duracion
+              : (selectedRoute?.stops?.length > 1
+                ? `${(selectedRoute.stops.length - 1) * 20} min`
+                : '—')}
           </span>
-          <span className="text-[10px] text-gray-500">Estimado</span>
+          <span className="text-[10px] text-gray-500">{selectedRoute?.duracion ? 'Duración' : 'Estimado'}</span>
         </div>
       </div>
 
@@ -2009,6 +2084,15 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
         {isSheetExpanded && (
           <>
             <div className="flex-1 overflow-y-auto px-5 pb-2 min-h-0">
+              {selectedRoute?.descripcion && (
+                <div className="mb-4 bg-emerald-50/80 border border-emerald-100 rounded-2xl p-3.5 text-xs text-emerald-950 leading-relaxed shadow-2xs">
+                  <p className="font-bold text-emerald-900 mb-1 flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
+                    Descripción de la Experiencia
+                  </p>
+                  {selectedRoute.descripcion}
+                </div>
+              )}
               <div className="relative flex flex-col">
             <div className="absolute left-[15px] top-4 bottom-4 w-0.5 bg-gray-200 z-0" />
             {selectedRoute?.stops?.map((stop: any, idx: number) => (
