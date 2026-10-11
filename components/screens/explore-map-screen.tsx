@@ -229,9 +229,15 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
   // Estado para Nivel de Detalle (LOD) y Cartita Flotante de Ruta
   const [mapZoom, setMapZoom] = useState<number>(9)
   const [previewRoute, setPreviewRoute] = useState<any | null>(null)
+  const [previewImageIdx, setPreviewImageIdx] = useState<number>(0)
   const [hoveredRouteId, setHoveredRouteId] = useState<any | null>(null)
   const [activeCampaign, setActiveCampaign] = useState<{ id: string; name: string; target: string } | null>(null)
   const [isSearchFocused, setIsSearchFocused] = useState(false)
+
+  // Resetear índice de imagen al cambiar de ruta en preview
+  useEffect(() => {
+    setPreviewImageIdx(0)
+  }, [previewRoute?.id])
 
   // Detector de campañas publicitarias & procedencia de enlaces (?campaign=..., ?tour=..., ?category=...)
   useEffect(() => {
@@ -1670,110 +1676,188 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
           </div>
 
           {/* TARJETA FLOTANTE DE RUTA SELECCIONADA / PREVIEW */}
-          {previewRoute && (
-            <div className="absolute top-16 left-4 right-4 sm:left-auto sm:right-4 sm:w-84 z-30 animate-in slide-in-from-top-2 fade-in duration-200">
-              <div className="bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-2xl border border-gray-200 flex flex-col gap-3 relative overflow-hidden">
-                {previewRoute.imagen_portada && (
-                  <div className="relative -mx-4 -mt-4 h-28 overflow-hidden mb-0.5">
-                    <img 
-                      src={previewRoute.imagen_portada} 
-                      alt={previewRoute.name} 
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.currentTarget.parentElement as HTMLElement).style.display = 'none';
-                      }}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
-                    {previewRoute.duracion && (
-                      <span className="absolute bottom-2 left-3 bg-black/65 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-full border border-white/20 flex items-center gap-1">
-                        ⏱️ {previewRoute.duracion}
-                      </span>
-                    )}
-                  </div>
-                )}
+          {previewRoute && (() => {
+            // Extraer todas las imágenes disponibles (múltiples separadas por coma, campo imagenes, o paradas)
+            const previewImages: string[] = [];
+            if (previewRoute.imagenes && Array.isArray(previewRoute.imagenes)) {
+              previewImages.push(...previewRoute.imagenes);
+            } else if (previewRoute.imagen_portada) {
+              const parts = previewRoute.imagen_portada.split(/[,;\n]/).map((s: string) => s.trim()).filter(Boolean);
+              previewImages.push(...parts);
+            }
+            if (previewRoute.stops && Array.isArray(previewRoute.stops)) {
+              previewRoute.stops.forEach((s: any) => {
+                if (s.imagen && !previewImages.includes(s.imagen)) previewImages.push(s.imagen);
+                if (s.image && !previewImages.includes(s.image)) previewImages.push(s.image);
+              });
+            }
 
-                <button
-                  type="button"
-                  onClick={() => setPreviewRoute(null)}
-                  className="absolute top-3 right-3 p-1.5 rounded-full bg-white/80 hover:bg-white text-gray-700 shadow-xs z-10 transition-colors"
-                  title="Cerrar vista previa"
-                >
-                  <X className="h-4 w-4" />
-                </button>
+            const currentImage = previewImages[previewImageIdx] || previewImages[0];
 
-                <div className="flex items-center gap-2 pr-8">
-                  <div
-                    className="px-2.5 py-1 rounded-full text-white text-xs font-black flex items-center gap-1.5 shadow-sm"
-                    style={{ backgroundColor: previewRoute.category?.color || (previewRoute.route_type === 'TOUR' ? '#d97706' : '#059669') }}
+            return (
+              <div className="absolute top-16 left-4 right-4 sm:left-auto sm:right-4 sm:w-92 z-30 animate-in slide-in-from-top-2 fade-in duration-200">
+                <div className="bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-2xl border border-gray-200 flex flex-col gap-3 relative overflow-hidden">
+                  
+                  {/* CARRUSEL / SLIDER DE IMÁGENES */}
+                  {previewImages.length > 0 && (
+                    <div className="relative -mx-4 -mt-4 h-36 overflow-hidden mb-0.5 group bg-gray-900">
+                      <img 
+                        src={currentImage} 
+                        alt={previewRoute.name} 
+                        className="w-full h-full object-cover transition-all duration-300 select-none"
+                        onError={(e) => {
+                          (e.currentTarget.parentElement as HTMLElement).style.display = 'none';
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/30 pointer-events-none" />
+                      
+                      {/* Botones Prev / Next del Slider */}
+                      {previewImages.length > 1 && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPreviewImageIdx((prev) => (prev > 0 ? prev - 1 : previewImages.length - 1));
+                            }}
+                            className="absolute left-2.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-sm transition-all active:scale-90 shadow-md z-10"
+                            title="Foto anterior"
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPreviewImageIdx((prev) => (prev < previewImages.length - 1 ? prev + 1 : 0));
+                            }}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-sm transition-all active:scale-90 shadow-md z-10"
+                            title="Siguiente foto"
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </button>
+
+                          {/* Dots indicadores */}
+                          <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-10">
+                            {previewImages.map((_, i) => (
+                              <button
+                                key={i}
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPreviewImageIdx(i);
+                                }}
+                                className={`transition-all rounded-full ${
+                                  i === (previewImageIdx % previewImages.length)
+                                    ? 'w-4 h-1.5 bg-white shadow-sm'
+                                    : 'w-1.5 h-1.5 bg-white/60 hover:bg-white/80'
+                                }`}
+                              />
+                            ))}
+                          </div>
+
+                          {/* Contador de fotos */}
+                          <span className="absolute top-2.5 left-3 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-full border border-white/20 z-10">
+                            📷 {(previewImageIdx % previewImages.length) + 1}/{previewImages.length}
+                          </span>
+                        </>
+                      )}
+
+                      {previewRoute.duracion && (
+                        <span className="absolute bottom-2.5 left-3 bg-black/65 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-full border border-white/20 flex items-center gap-1 z-10">
+                          ⏱️ {previewRoute.duracion}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setPreviewRoute(null)}
+                    className="absolute top-3 right-3 p-1.5 rounded-full bg-white/80 hover:bg-white text-gray-700 shadow-xs z-20 transition-colors"
+                    title="Cerrar vista previa"
                   >
-                    <DynamicIcon name={previewRoute.category?.icon || (previewRoute.route_type === 'TOUR' ? 'Camera' : 'Bus')} className="h-3.5 w-3.5" />
-                    <span>{parseRouteDisplay(previewRoute.name).badge}</span>
+                    <X className="h-4 w-4" />
+                  </button>
+
+                  <div className="flex items-center gap-2 pr-8">
+                    <div
+                      className="px-2.5 py-1 rounded-full text-white text-xs font-black flex items-center gap-1.5 shadow-sm"
+                      style={{ backgroundColor: previewRoute.category?.color || (previewRoute.route_type === 'TOUR' ? '#d97706' : '#059669') }}
+                    >
+                      <DynamicIcon name={previewRoute.category?.icon || (previewRoute.route_type === 'TOUR' ? 'Camera' : 'Bus')} className="h-3.5 w-3.5" />
+                      <span>{parseRouteDisplay(previewRoute.name).badge}</span>
+                    </div>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500 truncate">
+                      {previewRoute.category?.name || (previewRoute.route_type === 'TOUR' ? 'Tours & Experiencias' : 'Transporte Colectivo')}
+                    </span>
                   </div>
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500 truncate">
-                    {previewRoute.category?.name || (previewRoute.route_type === 'TOUR' ? 'Tours & Experiencias' : 'Transporte Colectivo')}
-                  </span>
+
+                  {/* Origen y Destino */}
+                  <div className="flex flex-col gap-1.5 bg-gray-50/80 rounded-xl p-2.5 border border-gray-100">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-200 shrink-0" />
+                      <span className="text-xs font-bold text-gray-800">
+                        {parseRouteDisplay(previewRoute.name).origin}
+                      </span>
+                    </div>
+                    <div className="w-0.5 h-3 bg-gray-300 ml-1 rounded-full" />
+                    <div className="flex items-start gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-rose-200 shrink-0 mt-0.5" />
+                      <span className="text-xs font-bold text-gray-800 leading-tight">
+                        {parseRouteDisplay(previewRoute.name).destination}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Descripción Completa con Scroll Limpio */}
+                  {previewRoute.descripcion && (
+                    <div className="bg-amber-50/70 border border-amber-200/60 rounded-xl p-2.5 max-h-24 sm:max-h-28 overflow-y-auto pr-1">
+                      <p className="text-xs text-gray-700 leading-relaxed font-normal">
+                        {previewRoute.descripcion}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-3 gap-2 py-1 text-center border-y border-gray-100">
+                    <div>
+                      <span className="text-[10px] text-gray-500 block uppercase font-medium">
+                        {previewRoute.route_type === 'TOUR' ? 'Tarifa Tour' : 'Tarifa Ida'}
+                      </span>
+                      <span className="text-sm font-black text-emerald-600">
+                        ${previewRoute.price_one_way || '0.25'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-gray-500 block uppercase font-medium">
+                        {previewRoute.route_type === 'TOUR' ? 'Duración' : 'Tarifa Vuelta'}
+                      </span>
+                      <span className="text-sm font-black text-gray-700">
+                        {previewRoute.route_type === 'TOUR' ? (previewRoute.duracion || '-') : `$${previewRoute.price_round_trip || '0.50'}`}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-gray-500 block uppercase font-medium">Paradas</span>
+                      <span className="text-sm font-black text-gray-700">
+                        {previewRoute.stops?.length || 0}
+                      </span>
+                    </div>
+                  </div>
+
+                  <Button
+                    onClick={() => {
+                      setSelectedRoute(previewRoute);
+                      setView('detail');
+                    }}
+                    className="w-full bg-[#064e3b] hover:bg-[#043324] text-white font-bold text-xs h-10 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+                  >
+                    <span>Ver Recorrido & Paradas</span>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
                 </div>
-
-                <div className="flex flex-col gap-1.5 bg-gray-50/80 rounded-xl p-2.5 border border-gray-100">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-200 shrink-0" />
-                    <span className="text-xs font-bold text-gray-800 truncate">
-                      {parseRouteDisplay(previewRoute.name).origin}
-                    </span>
-                  </div>
-                  <div className="w-0.5 h-3 bg-gray-300 ml-1 rounded-full" />
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-rose-200 shrink-0" />
-                    <span className="text-xs font-bold text-gray-800 truncate">
-                      {parseRouteDisplay(previewRoute.name).destination}
-                    </span>
-                  </div>
-                </div>
-
-                {previewRoute.descripcion && (
-                  <p className="text-[11px] text-gray-600 line-clamp-2 leading-relaxed bg-amber-50/50 p-2 rounded-lg border border-amber-100/50">
-                    {previewRoute.descripcion}
-                  </p>
-                )}
-
-                <div className="grid grid-cols-3 gap-2 py-1 text-center border-y border-gray-100">
-                  <div>
-                    <span className="text-[10px] text-gray-500 block uppercase font-medium">
-                      {previewRoute.route_type === 'TOUR' ? 'Tarifa Tour' : 'Tarifa Ida'}
-                    </span>
-                    <span className="text-sm font-black text-emerald-600">
-                      ${previewRoute.price_one_way || '0.25'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-gray-500 block uppercase font-medium">
-                      {previewRoute.route_type === 'TOUR' ? 'Duración' : 'Tarifa Vuelta'}
-                    </span>
-                    <span className="text-sm font-black text-gray-700">
-                      {previewRoute.route_type === 'TOUR' ? (previewRoute.duracion || '-') : `$${previewRoute.price_round_trip || '0.50'}`}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-gray-500 block uppercase font-medium">Paradas</span>
-                    <span className="text-sm font-black text-gray-700">
-                      {previewRoute.stops?.length || 0}
-                    </span>
-                  </div>
-                </div>
-
-                <Button
-                  onClick={() => {
-                    setSelectedRoute(previewRoute);
-                    setView('detail');
-                  }}
-                  className="w-full bg-[#064e3b] hover:bg-[#043324] text-white font-bold text-xs h-10 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
-                >
-                  <span>Ver Recorrido & Paradas</span>
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* ═════════════════════════════════════════════════════════════ */}
           {/* BOTTOM SHEET INFERIOR COLAPSABLE (SOLO MOBILE EN MODO MAPA) */}
