@@ -221,7 +221,7 @@ export default function Home() {
       )}
 
       {/* Main Content Area */}
-      <main className={`flex-1 flex flex-col relative h-screen overflow-hidden w-full ${isMapExplorer ? 'max-w-none' : 'lg:max-w-none max-w-md'} mx-auto shadow-2xl lg:shadow-none bg-background lg:border-l lg:border-border`}>
+      <main className={`flex-1 flex flex-col relative h-screen overflow-hidden w-full ${isMapExplorer ? 'max-w-none' : 'lg:max-w-none max-w-md'} ${isDesktopSidebarCollapsed ? 'lg:pl-9' : ''} mx-auto shadow-2xl lg:shadow-none bg-background lg:border-l lg:border-border transition-all duration-200`}>
         <InstallPWABanner />
 
         {/* Widget GPS flotante para choferes (solo cuando NO están en su panel) */}

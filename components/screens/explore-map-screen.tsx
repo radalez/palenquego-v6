@@ -1573,6 +1573,20 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
   if (view === 'list') {
     return (
       <div className="w-full h-full flex flex-col bg-[#F8FAF9] overflow-hidden">
+        {/* Fila Superior: Breadcrumb y Badge Movilidad El Salvador */}
+        <div className="flex items-center justify-between px-4 pt-3.5 pb-2.5 bg-white border-b border-gray-100 shrink-0">
+          <button
+            onClick={() => setView('map')}
+            className="flex items-center gap-1.5 text-xs font-black text-gray-900 hover:text-[#064e3b] transition-all py-1.5 px-3 rounded-xl bg-gray-100/90 hover:bg-emerald-50 border border-gray-200/90 shadow-2xs group"
+          >
+            <ChevronLeft className="w-4 h-4 text-emerald-700 group-hover:-translate-x-0.5 transition-transform" />
+            <span className="font-extrabold tracking-tight">Inicio / Explorar</span>
+          </button>
+          <span className="text-[10px] font-black uppercase tracking-wider text-emerald-900 bg-emerald-100/80 px-2.5 py-1 rounded-full border border-emerald-300/50 shadow-2xs">
+            Movilidad El Salvador
+          </span>
+        </div>
+
         {/* HEADER SUPERIOR VERDE CON LOGO Y AVATAR */}
         <div className="relative z-20 bg-[#063b27] bg-gradient-to-b from-[#04281a] via-[#064e3b] to-[#043324] w-full pt-4 pb-4 px-4 shadow-xl shrink-0 rounded-b-[28px] overflow-hidden">
           {/* Fondo decorativo con banner-panda.png */}
