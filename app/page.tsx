@@ -187,7 +187,7 @@ export default function Home() {
   }
 
   const isMainTab =
-    activeTab === "marketplace" || activeTab === "businesses" || activeTab === "pool" || activeTab === "safeflow" || activeTab === "profile" || activeTab === "rutas" || activeTab === "rutas-classic"
+    activeTab === "marketplace" || activeTab === "businesses" || activeTab === "pool" || activeTab === "safeflow" || activeTab === "profile" || activeTab === "rutas" || activeTab === "rutas-classic" || activeTab === "map-explorer"
 
   const isMapExplorer = activeTab === "map-explorer"
 
@@ -212,7 +212,7 @@ export default function Home() {
         )}
 
         {/* Screen Content */}
-        <div className={`flex-1 overflow-y-auto ${isMapExplorer ? '' : 'pb-20 lg:pb-0'}`}>
+        <div className={`flex-1 overflow-y-auto pb-16 lg:pb-0`}>
         {activeTab === "marketplace" && (
           <MarketplaceScreen
             onNavigate={(tab) => setActiveTab(tab as ActiveTab)}
