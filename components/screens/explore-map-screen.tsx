@@ -642,9 +642,26 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
     return matches.slice(0, 20)
   }, [origin, routes])
 
+  // Lista memoizada de tours turísticos oficiales
+  const tourRoutes = useMemo(() => {
+    return routes.filter(r => r.route_type === 'TOUR' || r.name?.toLowerCase().startsWith('tour'))
+  }, [routes])
+
   // Sugerencias predictivas en vivo para Destino
   const destSuggestions = useMemo(() => {
     if (!destination || destination.trim().length === 0) {
+      if (superCategory === 'TOUR') {
+        const tourMatches = routes
+          .filter(r => r.route_type === 'TOUR' || r.name?.toLowerCase().startsWith('tour'))
+          .slice(0, 10)
+          .map(r => ({
+            name: r.name,
+            category: r.duracion ? `Tour Oficial • ${r.duracion}` : 'Tour Oficial',
+            icon: "Camera",
+            route: r
+          }))
+        if (tourMatches.length > 0) return tourMatches
+      }
       return POPULAR_SALVADOR_PLACES
     }
     const q = destination.toLowerCase()
@@ -653,13 +670,23 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
       if (p.name.toLowerCase().includes(q)) matches.push(p)
     }
     for (const r of routes) {
+      const isTour = r.route_type === 'TOUR' || r.name?.toLowerCase().startsWith('tour')
       const disp = parseRouteDisplay(r.name)
-      if ((disp.destination.toLowerCase().includes(q) || r.name.toLowerCase().includes(q)) && !matches.some(m => m.name === disp.destination)) {
-        matches.push({ name: disp.destination, category: `Ruta ${disp.badge}`, icon: "Bus", route: r })
+      const label = isTour ? r.name : disp.destination
+      const matchCriteria = label.toLowerCase().includes(q) || 
+                            r.name?.toLowerCase().includes(q) || 
+                            r.stops?.some((s: any) => s.name?.toLowerCase().includes(q))
+      if (matchCriteria && !matches.some(m => m.name === label)) {
+        matches.push({
+          name: label,
+          category: isTour ? (r.duracion ? `Tour Oficial • ${r.duracion} • $${r.price_one_way || 0}` : `Tour Oficial • $${r.price_one_way || 0}`) : `Ruta ${disp.badge}`,
+          icon: isTour ? "Camera" : "Bus",
+          route: r
+        })
       }
     }
     return matches.slice(0, 20)
-  }, [destination, routes])
+  }, [destination, routes, superCategory])
 
   const handleUseCurrentLocation = () => {
     if (typeof window !== 'undefined' && navigator.geolocation) {
@@ -730,13 +757,18 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
     }
   }
 
-  // Precalcular micro-dispersión orbital para evitar amontonamiento en terminales con coordenadas idénticas
+  // Precalcular micro-dispersión orbital para evitar amontonamiento en terminales o destinos con coordenadas idénticas
   const routePositions = useMemo(() => {
     const coordGroups: { [key: string]: number[] } = {}
     filteredRoutes.forEach((route, i) => {
       if (!route.stops?.length) return
-      const lat = route.stops[0].latitude
-      const lng = route.stops[0].longitude
+      // Para tours turísticos, posicionar el marcador en la parada 2 (destino emblemático)
+      // para evitar que los 69 tours se amontonen en el punto de recogida general de San Salvador (parada 1)
+      const primaryStop = (route.route_type === 'TOUR' && route.stops.length > 1) 
+        ? route.stops[1] 
+        : route.stops[0]
+      const lat = primaryStop.latitude
+      const lng = primaryStop.longitude
       // Agrupar rutas en un radio estrecho (~150m)
       const key = `${lat.toFixed(3)},${lng.toFixed(3)}`
       if (!coordGroups[key]) coordGroups[key] = []
@@ -745,8 +777,11 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
 
     return filteredRoutes.map((route, i) => {
       if (!route.stops?.length) return { pos: { lat: 13.6893, lng: -89.1872 }, offsetX: 0, offsetY: 0 }
-      const lat = route.stops[0].latitude
-      const lng = route.stops[0].longitude
+      const primaryStop = (route.route_type === 'TOUR' && route.stops.length > 1) 
+        ? route.stops[1] 
+        : route.stops[0]
+      const lat = primaryStop.latitude
+      const lng = primaryStop.longitude
       const key = `${lat.toFixed(3)},${lng.toFixed(3)}`
       const group = coordGroups[key] || [i]
       const indexInGroup = group.indexOf(i)
@@ -755,8 +790,8 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
       let offsetX = 0
       let offsetY = 0
       if (countInGroup > 1) {
-        // Dispersión radial limpia y estética solo para las que comparten el mismo punto de origen
-        const radius = Math.min(24, 12 + countInGroup * 2)
+        // Dispersión radial limpia y estética solo para las que comparten el mismo punto de origen o destino
+        const radius = Math.min(26, 14 + countInGroup * 2)
         const angle = (indexInGroup / countInGroup) * 2 * Math.PI
         offsetX = Math.round(Math.cos(angle) * radius)
         offsetY = Math.round(Math.sin(angle) * radius)
@@ -797,7 +832,9 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
           setSuperCategory('INTERURBANO')
           setView('list')
         }}
-        className="bg-[#ecfdf5] hover:bg-[#d1fae5] border border-emerald-100 rounded-2xl p-2.5 flex items-center justify-between text-left transition-all active:scale-95 shadow-2xs group"
+        className={`border rounded-2xl p-2.5 flex items-center justify-between text-left transition-all active:scale-95 shadow-2xs group ${
+          superCategory === 'INTERURBANO' ? 'bg-[#d1fae5] border-emerald-300 ring-2 ring-emerald-200' : 'bg-[#ecfdf5] hover:bg-[#d1fae5] border-emerald-100'
+        }`}
       >
         <div className="flex items-center gap-1.5 min-w-0">
           <div className="w-6 h-6 rounded-lg bg-emerald-600/10 text-[#064e3b] flex items-center justify-center shrink-0">
@@ -814,7 +851,9 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
           setSuperCategory('URBANO')
           setIsUserRoutesModalOpen(true)
         }}
-        className="bg-[#f7fee7] hover:bg-[#ecfccb] border border-lime-100 rounded-2xl p-2.5 flex items-center justify-between text-left transition-all active:scale-95 shadow-2xs group"
+        className={`border rounded-2xl p-2.5 flex items-center justify-between text-left transition-all active:scale-95 shadow-2xs group ${
+          superCategory === 'URBANO' ? 'bg-[#ecfccb] border-lime-300 ring-2 ring-lime-200' : 'bg-[#f7fee7] hover:bg-[#ecfccb] border-lime-100'
+        }`}
       >
         <div className="flex items-center gap-1.5 min-w-0">
           <div className="w-6 h-6 rounded-lg bg-lime-600/10 text-lime-800 flex items-center justify-center shrink-0">
@@ -829,9 +868,11 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
         type="button"
         onClick={() => {
           setSuperCategory('TOUR')
-          onNavigate('marketplace')
+          if (view !== 'map') setView('map')
         }}
-        className="bg-[#fffbeb] hover:bg-[#fef3c7] border border-amber-100 rounded-2xl p-2.5 flex items-center justify-between text-left transition-all active:scale-95 shadow-2xs group"
+        className={`border rounded-2xl p-2.5 flex items-center justify-between text-left transition-all active:scale-95 shadow-2xs group ${
+          superCategory === 'TOUR' ? 'bg-[#fef3c7] border-amber-300 ring-2 ring-amber-200' : 'bg-[#fffbeb] hover:bg-[#fef3c7] border-amber-100'
+        }`}
       >
         <div className="flex items-center gap-1.5 min-w-0">
           <div className="w-6 h-6 rounded-lg bg-amber-600/10 text-amber-800 flex items-center justify-center shrink-0">
@@ -844,51 +885,145 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
     </div>
   )
 
-  // Componente reutilizable para los destinos destacados
-  const renderFeaturedDestinations = () => (
-    <div className="flex flex-col gap-2 shrink-0">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-black text-gray-900 tracking-tight">Destinos para explorar</h3>
-        <button 
-          type="button"
-          onClick={() => setView('list')} 
-          className="w-6 h-6 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition-colors"
-        >
-          <ChevronRight className="w-3.5 h-3.5" />
-        </button>
-      </div>
+  // Componente reutilizable para los destinos destacados / tours reales
+  const renderFeaturedDestinations = () => {
+    const isTourCategory = superCategory === 'TOUR'
+    const tourCards = tourRoutes.slice(0, 4)
 
-      <div className="grid grid-cols-2 gap-2.5">
-        {FEATURED_DESTINATIONS.slice(0, 2).map((dest) => (
-          <div
-            key={dest.id}
-            className="relative h-32 lg:h-36 rounded-2xl overflow-hidden shadow-md group cursor-pointer border border-gray-100"
-            onClick={() => handleSelectDestination(dest)}
+    return (
+      <div className="flex flex-col gap-2 shrink-0">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <h3 className="text-sm font-black text-gray-900 tracking-tight">
+              {isTourCategory ? 'Tours para explorar' : 'Destinos para explorar'}
+            </h3>
+            {isTourCategory && tourRoutes.length > 0 && (
+              <span className="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-1.5 py-0.5 rounded-md">
+                {tourRoutes.length}
+              </span>
+            )}
+          </div>
+          <button 
+            type="button"
+            onClick={() => setView('list')} 
+            className="w-6 h-6 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition-colors"
+            title="Ver en lista"
           >
-            <img
-              src={dest.image}
-              alt={dest.name}
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent p-2.5 flex flex-col justify-end text-white">
-              <span className="text-xs font-black text-white leading-tight mb-1.5 drop-shadow-sm">{dest.name}</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {isTourCategory && tourCards.length > 0 ? (
+          <div className="grid grid-cols-2 gap-2.5">
+            {tourCards.map((tour) => {
+              const targetStop = (tour.stops && tour.stops.length > 1) ? tour.stops[1] : tour.stops?.[0]
+              const coverImg = tour.imagen_portada || (tour.stops_images && tour.stops_images[0]) || '/placeholder.svg'
+              return (
+                <div
+                  key={tour.id}
+                  className="relative h-36 lg:h-40 rounded-2xl overflow-hidden shadow-md group cursor-pointer border border-amber-100/70 bg-gray-900 transition-all hover:shadow-lg hover:border-amber-400"
+                  onClick={() => {
+                    setSelectedRoute(tour)
+                    setPreviewRoute(tour)
+                    if (view !== 'map') setView('map')
+                    if (mapRef.current && targetStop) {
+                      mapRef.current.panTo({ lat: targetStop.latitude, lng: targetStop.longitude })
+                      mapRef.current.setZoom(13)
+                    }
+                  }}
+                >
+                  <img
+                    src={coverImg}
+                    alt={tour.name}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = 'https://res.cloudinary.com/dacanh1gn/image/upload/v1791135831/palenque_banners/slide_3_tours_costa.webp'
+                    }}
+                  />
+                  {/* Badges superiores: Precio y Duración */}
+                  <div className="absolute top-2 left-2 right-2 flex items-center justify-between gap-1 pointer-events-none z-10">
+                    {tour.price_one_way ? (
+                      <span className="bg-black/75 backdrop-blur-md text-amber-300 font-black text-[10px] px-2 py-0.5 rounded-full border border-amber-400/30 shadow-xs">
+                        ${tour.price_one_way}
+                      </span>
+                    ) : <span />}
+                    {tour.duracion ? (
+                      <span className="bg-black/60 backdrop-blur-md text-white/90 font-bold text-[9px] px-1.5 py-0.5 rounded-full flex items-center gap-1 border border-white/20">
+                        <Clock className="w-2.5 h-2.5 text-amber-300" />
+                        {tour.duracion}
+                      </span>
+                    ) : null}
+                  </div>
+
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent p-2.5 flex flex-col justify-end text-white z-0">
+                    <span className="text-[11px] sm:text-xs font-black text-white leading-tight mb-1.5 drop-shadow-sm line-clamp-2">
+                      {tour.name.replace(/^Tour\s+/i, '')}
+                    </span>
+                    <button
+                      type="button"
+                      className="bg-[#a3e635] hover:bg-[#86efac] text-[#064e3b] font-black text-[10px] py-1 px-2.5 rounded-full flex items-center justify-center gap-1 shadow-xs transition-transform active:scale-95 w-fit"
+                    >
+                      <span>Ver tour</span>
+                      <ChevronRight className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2.5">
+            {FEATURED_DESTINATIONS.slice(0, 2).map((dest) => (
+              <div
+                key={dest.id}
+                className="relative h-32 lg:h-36 rounded-2xl overflow-hidden shadow-md group cursor-pointer border border-gray-100"
+                onClick={() => handleSelectDestination(dest)}
+              >
+                <img
+                  src={dest.image}
+                  alt={dest.name}
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent p-2.5 flex flex-col justify-end text-white">
+                  <span className="text-xs font-black text-white leading-tight mb-1.5 drop-shadow-sm">{dest.name}</span>
+                  <button
+                    type="button"
+                    className="bg-[#a3e635] hover:bg-[#86efac] text-[#064e3b] font-black text-[10px] py-1 px-2.5 rounded-full flex items-center justify-center gap-1 shadow-xs transition-transform active:scale-95 w-fit"
+                  >
+                    <span>Ver opciones</span>
+                    <ChevronRight className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="flex items-center justify-between text-gray-400 text-[11px] font-medium mt-0.5">
+          {isTourCategory ? (
+            <>
+              <span className="flex items-center gap-1 text-emerald-800 font-semibold text-[10px]">
+                <Sparkles className="w-3 h-3 text-amber-500" />
+                Tours oficiales con fotos reales y precios USD
+              </span>
               <button
                 type="button"
-                className="bg-[#a3e635] hover:bg-[#86efac] text-[#064e3b] font-black text-[10px] py-1 px-2.5 rounded-full flex items-center justify-center gap-1 shadow-xs transition-transform active:scale-95 w-fit"
+                onClick={() => setView('list')}
+                className="text-emerald-700 font-bold text-[10px] hover:underline"
               >
-                <span>Ver opciones</span>
-                <ChevronRight className="w-3 h-3" />
+                Ver los {tourRoutes.length} tours ›
               </button>
+            </>
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <ImageIcon className="w-3.5 h-3.5" />
+              <span>Vista de ejemplo</span>
             </div>
-          </div>
-        ))}
+          )}
+        </div>
       </div>
-      <div className="flex items-center gap-1.5 text-gray-400 text-[11px] font-medium mt-0.5">
-        <ImageIcon className="w-3.5 h-3.5" />
-        <span>Vista de ejemplo</span>
-      </div>
-    </div>
-  )
+    )
+  }
 
   // Componente reutilizable para el slider de publicidad
   const renderPromoSliderBanner = () => {
@@ -1052,10 +1187,16 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
                 if (item.route) {
                   setSelectedRoute(item.route)
                   setPreviewRoute(item.route)
-                  if (mapRef.current && item.route.stops?.length) {
-                    mapRef.current.panTo({ lat: item.route.stops[0].latitude, lng: item.route.stops[0].longitude })
+                  if (view !== 'map') setView('map')
+                  const targetStop = (item.route.route_type === 'TOUR' && item.route.stops?.length > 1)
+                    ? item.route.stops[1]
+                    : item.route.stops?.[0]
+                  if (mapRef.current && targetStop) {
+                    mapRef.current.panTo({ lat: targetStop.latitude, lng: targetStop.longitude })
                     mapRef.current.setZoom(13)
                   }
+                } else {
+                  if (view !== 'map') setView('map')
                 }
               }}
               className="w-full text-left px-3 py-2 hover:bg-emerald-50/80 active:bg-emerald-100 flex items-center gap-2.5 transition-colors rounded-xl group"
@@ -1355,8 +1496,12 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
                         onMouseLeave={() => setHoveredRouteId(null)}
                         onClick={() => {
                           setPreviewRoute(route);
-                          if (mapRef.current && route.stops?.length) {
-                            mapRef.current.panTo({ lat: route.stops[0].latitude, lng: route.stops[0].longitude });
+                          const targetStop = (route.route_type === 'TOUR' && route.stops?.length > 1) 
+                            ? route.stops[1] 
+                            : route.stops?.[0];
+                          if (mapRef.current && targetStop) {
+                            mapRef.current.panTo({ lat: targetStop.latitude, lng: targetStop.longitude });
+                            mapRef.current.setZoom(13);
                           }
                         }}
                         className={`bg-white rounded-2xl p-3 shadow-xs border transition-all cursor-pointer flex items-center justify-between gap-3 ${
@@ -1542,8 +1687,9 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
               {(mapZoom >= 12 || activeCategory || searchQuery || superCategory) && filteredRoutes.map((route, idx) => {
                 if (!route.stops?.length) return null
                 const { pos, offsetX, offsetY } = routePositions[idx] || { pos: { lat: route.stops[0].latitude, lng: route.stops[0].longitude }, offsetX: 0, offsetY: 0 }
-                const rColor = route.category?.color || '#059669'
-                const rIcon  = route.category?.icon  || 'Bus'
+                const isTour = route.route_type === 'TOUR' || route.name?.toLowerCase().startsWith('tour')
+                const rColor = isTour ? '#ea580c' : (route.category?.color || '#059669')
+                const rIcon  = isTour ? 'Camera' : (route.category?.icon  || 'Bus')
                 const info   = parseRouteDisplay(route.name)
                 const isPreview = previewRoute?.id === route.id
                 const isHovered = hoveredRouteId === route.id
@@ -1561,8 +1707,11 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
                       onClick={(e) => {
                         e.stopPropagation()
                         setPreviewRoute(route)
-                        if (mapRef.current && route.stops?.length) {
-                          mapRef.current.panTo({ lat: route.stops[0].latitude, lng: route.stops[0].longitude })
+                        const primaryStop = (route.route_type === 'TOUR' && route.stops?.length > 1) 
+                          ? route.stops[1] 
+                          : route.stops[0]
+                        if (mapRef.current && primaryStop) {
+                          mapRef.current.panTo({ lat: primaryStop.latitude, lng: primaryStop.longitude })
                         }
                       }}
                     >
@@ -1570,12 +1719,12 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
                         <div className="flex flex-col items-center">
                           <div
                             className={`flex items-center justify-center gap-1 px-2 py-0.5 rounded-full text-white font-extrabold text-[11px] shadow-md border-2 transition-all ${
-                              isHighlighted ? 'ring-4 ring-emerald-300 scale-110' : 'border-white'
+                              isHighlighted ? 'ring-4 ring-orange-300 scale-110' : 'border-white'
                             }`}
                             style={{ backgroundColor: rColor }}
                           >
                             <DynamicIcon name={rIcon} className="h-3 w-3 shrink-0" />
-                            <span className="leading-tight tracking-tight">{info.badge}</span>
+                            <span className="leading-tight tracking-tight">{isTour ? 'Tour' : info.badge}</span>
                           </div>
                           <div
                             className="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[5px]"
@@ -1586,18 +1735,18 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
                         <div className="flex flex-col items-center">
                           <div
                             className={`flex items-center gap-1.5 bg-white rounded-full p-1 pr-2.5 shadow-lg border transition-all ${
-                              isHighlighted ? 'ring-2 ring-emerald-400 border-emerald-500 scale-105' : 'border-gray-200'
+                              isHighlighted ? 'ring-2 ring-orange-400 border-orange-500 scale-105' : 'border-gray-200'
                             }`}
                           >
                             <div
                               className="h-6 px-2 rounded-full flex items-center justify-center text-white text-[10px] font-black shrink-0 shadow-xs"
                               style={{ backgroundColor: rColor }}
                             >
-                              <span>{info.badge}</span>
+                              <span>{isTour ? 'Tour' : info.badge}</span>
                             </div>
                             <div className="flex flex-col text-left leading-none">
                               <span className="text-[11px] font-bold text-gray-800 whitespace-nowrap max-w-[130px] truncate">
-                                {info.destination || info.origin}
+                                {isTour ? (route.stops?.[1]?.name || info.destination) : (info.destination || info.origin)}
                               </span>
                               {route.price_one_way ? (
                                 <span className="text-[9px] font-semibold text-emerald-600">
