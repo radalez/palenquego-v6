@@ -102,6 +102,7 @@ export default function Home() {
   const [showShareModal, setShowShareModal] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [showChoferModal, setShowChoferModal] = useState(false)
+  const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false)
 
   // Mostrar modal de bienvenida explicativo únicamente a choferes con KYC sin verificar (UNVERIFIED)
   useEffect(() => {
@@ -190,8 +191,6 @@ export default function Home() {
 
   const isMainTab =
     (activeTab === "marketplace" || activeTab === "businesses" || activeTab === "pool" || activeTab === "safeflow" || activeTab === "profile" || activeTab === "rutas" || activeTab === "rutas-classic") && !isMapExplorer
-
-  const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false)
 
   return (
     <div className="min-h-screen bg-background flex w-full overflow-hidden">
