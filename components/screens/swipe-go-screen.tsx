@@ -6,7 +6,7 @@ import { motion, useMotionValue, useTransform, AnimatePresence } from "framer-mo
 import { 
   X, Heart, Info, MapPin, Users, HelpCircle, 
   ChevronLeft, ChevronRight, Share2, 
-  RotateCcw, Compass, Check, SlidersHorizontal,
+  RotateCcw, Compass, Check, SlidersHorizontal, Settings,
   Flame, Bed, Waves, Utensils, Coffee, TreePine, Ticket, Bus, Play,
   Search, Navigation, Car, History
 } from "lucide-react"
@@ -94,7 +94,7 @@ const PRICE_OPTIONS: { id: "ALL" | "ECO" | "MID" | "PREMIUM"; label: string; des
 
 export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
   const router = useRouter()
-  const sessionSeedRef = useRef(Math.random())
+  const [deckSeed, setDeckSeed] = useState(1)
   const { 
     services, 
     pools, 
@@ -222,11 +222,44 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
     })
   }, [routes, routeTypeFilter, routeSearchTerm])
 
-  // Generar mazo dinámico con afinidad contextual estricta (Categoría, Ruta y Precio) y ordenamiento no estático
+  // Generar mazo dinámico según modo: "Para ti" (afinidades personales y de mapa) o "Todos" (catálogo completo)
   const dynamicDeck = useMemo(() => {
     let list = [...allPlayableItems]
 
-    // 1. Filtrar por categoría oficial seleccionada de manera ESTRICTA
+    // ==========================================
+    // MODO "TODOS": Explorar todo el catálogo libremente
+    // ==========================================
+    if (deckFilter === "ALL") {
+      if (selectedPriceRange === "ECO") {
+        list = list.filter((s) => (s.price || 0) <= 5)
+      } else if (selectedPriceRange === "MID") {
+        list = list.filter((s) => (s.price || 0) > 5 && (s.price || 0) <= 25)
+      } else if (selectedPriceRange === "PREMIUM") {
+        list = list.filter((s) => (s.price || 0) > 25)
+      }
+
+      // Barajado dinámico para exploración amplia de todo El Salvador
+      const scoredAll = list.map((s) => {
+        let score = (s.rating || 4) * 5
+        const hashKey = `${s.id}-${s.name}-${deckSeed}`
+        let hash = 0
+        for (let i = 0; i < hashKey.length; i++) {
+          hash = (hash << 5) - hash + hashKey.charCodeAt(i)
+          hash |= 0
+        }
+        score += Math.abs(hash % 100)
+        return { service: s, score }
+      })
+
+      scoredAll.sort((a, b) => b.score - a.score)
+      return scoredAll.map((item) => item.service)
+    }
+
+    // ==========================================
+    // MODO "PARA TI" (Personalizado & Afinidad del Mapa)
+    // ==========================================
+
+    // 1. Filtrar por categoría oficial seleccionada de manera ESTRICTA si se eligió una
     if (selectedPrefCategory && selectedPrefCategory !== "all") {
       list = list.filter((s) => matchesCategory(s, selectedPrefCategory))
     }
@@ -245,7 +278,6 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
     const rCtx = hasRouteSelected ? getRouteContext(selectedPrefRoute) : null
 
     // Si la ruta seleccionada es playera (ej. Ruta 102 al Tunco, Costa del Bálsamo):
-    // "si eligio una ruta interurbana y es playera entonces solo muestra los playeros"
     if (rCtx?.isPlaya) {
       const beachMatches = list.filter((s) => {
         const sLoc = (s.location || "").toLowerCase()
@@ -259,9 +291,7 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
           sName.includes("playa") || sName.includes("tunco") || sDesc.includes("playa") || sDesc.includes("surf")
         )
       })
-      if (beachMatches.length > 0) {
-        list = beachMatches
-      }
+      if (beachMatches.length > 0) list = beachMatches
     } else if (rCtx?.isMontana) {
       const mountainMatches = list.filter((s) => {
         const sLoc = (s.location || "").toLowerCase()
@@ -274,22 +304,17 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
           sCat.includes("eco") || sCat.includes("aventura") || sDesc.includes("montaña") || sDesc.includes("volcan")
         )
       })
-      if (mountainMatches.length > 0) {
-        list = mountainMatches
-      }
+      if (mountainMatches.length > 0) list = mountainMatches
     } else if (hasRouteSelected) {
-      // Coincidencia por nombre de ruta / destino específico
       const target = selectedPrefRoute.toLowerCase()
       const directMatches = list.filter((s) => {
         return (s.name || "").toLowerCase().includes(target) || (s.location || "").toLowerCase().includes(target)
       })
-      if (directMatches.length > 0) {
-        list = directMatches
-      }
+      if (directMatches.length > 0) list = directMatches
     }
 
     // 4. Si el usuario está en "all" y tiene interacción previa en el mapa
-    if (selectedPrefCategory === "all" && deckFilter === "MAP_MATCH" && (lastMapCategory || lastMapSuperCategory || lastMapDestination)) {
+    if (selectedPrefCategory === "all" && (lastMapCategory || lastMapSuperCategory || lastMapDestination)) {
       const cat = (lastMapCategory || "").toLowerCase()
       const superCat = (lastMapSuperCategory || "").toLowerCase()
       const dest = (lastMapDestination || "").toLowerCase()
@@ -313,49 +338,52 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
       list = matched.length > 0 ? [...matched, ...remaining] : list
     }
 
-    // 5. Algoritmo de afinidad dinámica y variación no estática (resuelve "siempre inicio desde el mismo lugar")
-    const seed = sessionSeedRef.current
-    const scoredList = list.map((s, idx) => {
+    // 5. Algoritmo de puntuación de afinidad para "Para ti":
+    const scoredList = list.map((s) => {
       let score = 0
       const sName = (s.name || "").toLowerCase()
       const sLoc = (s.location || "").toLowerCase()
       const sCat = (s.category || "").toLowerCase()
+      const sDesc = (s.description || (s as any).descripcion || "").toLowerCase()
+
+      // Prioridad máxima: lo que el usuario exploró en el mapa recientemente
+      if (lastMapDestination) {
+        const dest = lastMapDestination.toLowerCase()
+        if (sLoc.includes(dest) || sName.includes(dest) || sDesc.includes(dest)) score += 300
+      }
+      if (lastMapCategory) {
+        const cat = lastMapCategory.toLowerCase()
+        if (sCat.includes(cat) || sName.includes(cat) || sDesc.includes(cat)) score += 200
+      }
 
       // Afinidad con ruta
       if (hasRouteSelected) {
-        if (sName.includes(selectedPrefRoute.toLowerCase()) || sLoc.includes(selectedPrefRoute.toLowerCase())) {
-          score += 200
-        }
-        if (rCtx?.isPlaya && (sLoc.includes("playa") || sLoc.includes("tunco") || sCat.includes("surf"))) score += 150
-        if (rCtx?.isMontana && (sLoc.includes("montaña") || sLoc.includes("volcan"))) score += 150
+        if (sName.includes(selectedPrefRoute.toLowerCase()) || sLoc.includes(selectedPrefRoute.toLowerCase())) score += 200
+        if (rCtx?.isPlaya && (sLoc.includes("playa") || sLoc.includes("tunco") || sCat.includes("surf"))) score += 180
+        if (rCtx?.isMontana && (sLoc.includes("montaña") || sLoc.includes("volcan"))) score += 180
       }
 
-      // Afinidad con mapa
-      if (lastMapCategory && (sCat.includes(lastMapCategory.toLowerCase()) || sName.includes(lastMapCategory.toLowerCase()))) score += 60
-      if (lastMapDestination && (sLoc.includes(lastMapDestination.toLowerCase()) || sName.includes(lastMapDestination.toLowerCase()))) score += 80
-
-      // Favoritos
-      if (favorites.includes(s.id)) score += 30
+      // Favoritos y likes previos
+      if (favorites.includes(s.id)) score += 100
 
       // Rating
-      score += (s.rating || 4) * 4
+      score += (s.rating || 4) * 5
 
-      // Entropía de sesión pseudo-aleatoria para que el mazo sea dinámico y no estático
-      const hashKey = `${s.id}-${s.name}-${seed}`
+      // Entropía de sesión con deckSeed para variación aleatoria reactiva
+      const hashKey = `${s.id}-${s.name}-${deckSeed}`
       let hash = 0
       for (let i = 0; i < hashKey.length; i++) {
         hash = (hash << 5) - hash + hashKey.charCodeAt(i)
         hash |= 0
       }
-      const jitter = Math.abs(hash % 90)
-      score += jitter
+      score += Math.abs(hash % 90)
 
       return { service: s, score }
     })
 
     scoredList.sort((a, b) => b.score - a.score)
     return scoredList.map((item) => item.service)
-  }, [allPlayableItems, lastMapCategory, lastMapSuperCategory, lastMapDestination, deckFilter, selectedPrefCategory, selectedPrefRoute, selectedPriceRange, favorites])
+  }, [allPlayableItems, lastMapCategory, lastMapSuperCategory, lastMapDestination, deckFilter, selectedPrefCategory, selectedPrefRoute, selectedPriceRange, favorites, deckSeed])
 
   // Cargar servicios en el deck cuando se calcule o cambie el mazo dinámico
   useEffect(() => {
@@ -373,6 +401,7 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
     setShowPreferenceModal(false)
     setHasConfirmedPreference(true)
     setDeckFilter("MAP_MATCH")
+    setDeckSeed((prev) => prev + 1)
     setCurrentIndex(0)
 
     // Grabar interacción en el store y localStorage
@@ -382,16 +411,30 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
     setLastMapInteraction(catToSave, null, routeToSave)
   }
 
+  // Alternar entre modo personalizado ("Para ti") y catálogo amplio ("Todos")
+  const handleToggleDeckFilter = (mode: "MAP_MATCH" | "ALL") => {
+    // Si pulsa "Para ti" y no tiene interacción previa ni preferencias configuradas, abrir cuestionario
+    const hasPrior = Boolean(lastMapCategory || lastMapSuperCategory || lastMapDestination || recentMapRoutes.length > 0)
+    if (mode === "MAP_MATCH" && !hasPrior && selectedPrefCategory === "all" && selectedPrefRoute === "ALL") {
+      setShowPreferenceModal(true)
+      return
+    }
+
+    setDeckFilter(mode)
+    setDeckSeed((prev) => prev + 1)
+    setCurrentIndex(0)
+  }
+
   // Reiniciar preferencias a cero y reabrir el selector con nuevo orden dinámico
   const handleResetPreferences = () => {
-    sessionSeedRef.current = Math.random()
+    setDeckSeed((prev) => prev + 1)
     resetMapInteraction()
     setSelectedPrefCategory("all")
     setSelectedPrefRoute("ALL")
     setSelectedPriceRange("ALL")
     setRouteSearchTerm("")
     setRouteTypeFilter("ALL")
-    setDeckFilter("ALL")
+    setDeckFilter("MAP_MATCH")
     setCurrentIndex(0)
     setHasConfirmedPreference(false)
     setShowPriorInteractionPrompt(false)
@@ -488,21 +531,24 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
           <Compass className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
           <span className="truncate">
             {(() => {
-              const activeCat = OFFICIAL_CATEGORIES.find(c => c.id === selectedPrefCategory);
-              const catLabel = selectedPrefCategory !== "all" && activeCat ? activeCat.label : null;
+              if (deckFilter === "ALL") {
+                return "Explorando todo el catálogo"
+              }
+              const activeCat = OFFICIAL_CATEGORIES.find(c => c.id === selectedPrefCategory)
+              const catLabel = selectedPrefCategory !== "all" && activeCat ? activeCat.label : null
               if (catLabel || selectedPrefRoute !== "ALL" || selectedPriceRange !== "ALL") {
-                const parts = [];
-                if (catLabel) parts.push(catLabel);
-                if (selectedPrefRoute !== "ALL") parts.push(selectedPrefRoute);
+                const parts = []
+                if (catLabel) parts.push(catLabel)
+                if (selectedPrefRoute !== "ALL") parts.push(selectedPrefRoute)
                 if (selectedPriceRange !== "ALL") {
-                  parts.push(selectedPriceRange === "ECO" ? "<$5" : selectedPriceRange === "MID" ? "$5-$25" : ">$25");
+                  parts.push(selectedPriceRange === "ECO" ? "<$5" : selectedPriceRange === "MID" ? "$5-$25" : ">$25")
                 }
-                return `Filtro: ${parts.join(" · ")}`;
+                return `Para ti: ${parts.join(" · ")}`
               }
               if (lastMapCategory || lastMapDestination) {
-                return `Recomendado: ${lastMapCategory || lastMapDestination}`;
+                return `Para ti: ${lastMapCategory || lastMapDestination}`
               }
-              return "Explorando todo";
+              return "Para ti: Recomendado"
             })()}
           </span>
         </div>
@@ -511,17 +557,17 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
           <button
             type="button"
             onClick={handleResetPreferences}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full font-bold bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 transition-all shadow-2xs active:scale-95"
-            title="Reiniciar y elegir qué te gustaría"
+            className="flex items-center gap-1.5 px-3 py-1 rounded-full font-bold bg-white border border-gray-200 text-gray-700 hover:bg-emerald-50 hover:border-emerald-300 transition-all shadow-2xs active:scale-95"
+            title="Configurar qué te gustaría ver"
           >
-            <RotateCcw className="w-3 h-3 text-emerald-600" />
-            <span className="hidden sm:inline">Reiniciar</span>
+            <Settings className="w-3.5 h-3.5 text-emerald-600" />
+            <span className="hidden sm:inline">Configurar</span>
           </button>
 
           <button
             type="button"
-            onClick={() => setDeckFilter("MAP_MATCH")}
-            className={`px-2.5 py-1 rounded-full font-bold transition-all ${
+            onClick={() => handleToggleDeckFilter("MAP_MATCH")}
+            className={`px-3 py-1 rounded-full font-bold transition-all text-xs flex items-center gap-1 active:scale-95 ${
               deckFilter === "MAP_MATCH"
                 ? "bg-emerald-600 text-white shadow-xs"
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -531,8 +577,8 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
           </button>
           <button
             type="button"
-            onClick={() => setDeckFilter("ALL")}
-            className={`px-2.5 py-1 rounded-full font-bold transition-all ${
+            onClick={() => handleToggleDeckFilter("ALL")}
+            className={`px-3 py-1 rounded-full font-bold transition-all text-xs flex items-center gap-1 active:scale-95 ${
               deckFilter === "ALL"
                 ? "bg-emerald-600 text-white shadow-xs"
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
