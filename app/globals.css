@@ -156,4 +156,19 @@
     scrollbar-width: thin;
     scrollbar-color: rgba(18, 82, 56, 0.2) transparent;
   }
+
+  /* Instagram-like Story Gradient Ring for Central Go Button */
+  @keyframes instagram-gradient-spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  .go-instagram-ring {
+    background: conic-gradient(from 0deg, #064e3b, #10b981, #84cc16, #34d399, #10b981, #064e3b);
+    animation: instagram-gradient-spin 4s linear infinite;
+  }
 }

@@ -39,22 +39,34 @@ export function MobileNav({ activeTab, setActiveTab }: MobileNavProps) {
           if (tab.isCenter) {
             return (
               <div key={tab.id} className="relative flex-1 flex justify-center h-full z-10">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  className={cn(
-                    "absolute -top-7 flex flex-col items-center justify-center w-[72px] h-[72px] rounded-full bg-white shadow-[0_-4px_14px_rgba(0,0,0,0.1)] transition-all active:scale-95 border-2",
-                    isActive ? "border-[#064e3b] shadow-emerald-900/20" : "border-gray-200 shadow-gray-400/20"
+                <div className="absolute -top-7 flex items-center justify-center">
+                  {isActive ? (
+                    <div className="relative w-[76px] h-[76px] rounded-full p-[3px] flex items-center justify-center shadow-[0_0_18px_rgba(16,185,129,0.45)]">
+                      <div className="absolute inset-0 rounded-full go-instagram-ring" />
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab(tab.id)}
+                        className="relative z-10 flex flex-col items-center justify-center w-[70px] h-[70px] rounded-full bg-white transition-all active:scale-95"
+                      >
+                        <img src="/icon-192.png" alt="Palenque Go" className="w-11 h-11 object-contain -translate-y-2" />
+                        <span className="text-[15px] font-extrabold absolute bottom-1.5 leading-none text-[#064e3b]">
+                          Go
+                        </span>
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab(tab.id)}
+                      className="flex flex-col items-center justify-center w-[72px] h-[72px] rounded-full bg-white shadow-[0_-4px_14px_rgba(0,0,0,0.1)] transition-all active:scale-95 border-2 border-gray-200 shadow-gray-400/20"
+                    >
+                      <img src="/icon-192.png" alt="Palenque Go" className="w-11 h-11 object-contain -translate-y-2" />
+                      <span className="text-[15px] font-extrabold absolute bottom-1.5 leading-none text-[#125238]">
+                        Go
+                      </span>
+                    </button>
                   )}
-                >
-                  <img src="/icon-192.png" alt="Palenque Go" className="w-11 h-11 object-contain -translate-y-2" />
-                  <span className={cn(
-                    "text-[15px] font-extrabold absolute bottom-1.5 leading-none",
-                    isActive ? "text-[#064e3b]" : "text-[#125238]"
-                  )}>
-                    Go
-                  </span>
-                </button>
+                </div>
               </div>
             )
           }

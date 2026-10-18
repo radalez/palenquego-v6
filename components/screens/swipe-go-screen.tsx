@@ -32,24 +32,38 @@ export const OFFICIAL_CATEGORIES = [
   { id: "transporte", label: "Rutas & Transporte", icon: Bus, iconColor: "text-emerald-700" },
 ]
 
+export function normalizeCategoryKey(cat: string): string {
+  const c = (cat || "").toLowerCase().trim()
+  if (c === "hotel" || c.includes("hotel") || c.includes("hospedaj") || c.includes("posada") || c.includes("resort") || c.includes("hostal")) return "hotel"
+  if (c === "playa" || c.includes("playa")) return "playa"
+  if (c === "surf" || c.includes("surf")) return "surf"
+  if (c === "cafe" || c.includes("café") || c.includes("cafe")) return "cafe"
+  if (c === "food" || c.includes("gastro") || c.includes("restauran") || c.includes("comida")) return "food"
+  if (c === "eco" || c.includes("eco") || c.includes("naturaleza") || c.includes("tour")) return "eco"
+  if (c === "aventura" || c.includes("aventura") || c.includes("caminata") || c.includes("volcan") || c.includes("volcán")) return "aventura"
+  if (c === "transporte" || c.includes("transporte") || c.includes("ruta") || c.includes("bus")) return "transporte"
+  return c
+}
+
 export function matchesCategory(service: Service, selectedCategory: string): boolean {
   if (!selectedCategory || selectedCategory === "all") return true
 
+  const normKey = normalizeCategoryKey(selectedCategory)
   const catName = (service.category || (service as any).categoria?.nombre || (service as any).categoria_nombre || "").toLowerCase()
   const sName = (service.name || "").toLowerCase()
   const sDesc = (service.description || (service as any).descripcion || "").toLowerCase()
   const sLoc = (service.location || "").toLowerCase()
   const catId = (service as any).categoria?.id
 
-  switch (selectedCategory) {
+  switch (normKey) {
     case "hotel":
-      return catName.includes("hotel") || catName.includes("hospedaj") || sName.includes("hotel") || sDesc.includes("hotel") || catId === 5
+      return catName.includes("hotel") || catName.includes("hospedaj") || catName.includes("posada") || catName.includes("resort") || catName.includes("hostal") || sName.includes("hotel") || sDesc.includes("hotel") || sName.includes("resort") || sName.includes("hostal") || catId === 5
     case "surf":
       return catName.includes("surf") || sName.includes("surf") || sDesc.includes("surf") || catId === 7
     case "cafe":
       return catName.includes("café") || catName.includes("cafe") || sName.includes("café") || sDesc.includes("cafe") || catId === 10
     case "eco":
-      return catName.includes("eco") || catName.includes("tour") || catName.includes("naturaleza") || catId === 4 || catId === 3
+      return catName.includes("eco") || catName.includes("tour") || catName.includes("naturaleza") || sName.includes("tour") || sDesc.includes("tour") || catId === 4 || catId === 3
     case "food":
       return catName.includes("gastro") || catName.includes("restauran") || catName.includes("comida") || sName.includes("restauran") || sDesc.includes("comida") || sName.includes("asado") || sName.includes("pizza") || sName.includes("hamburguesa") || catId === 6 || catId === 1
     case "playa":
@@ -59,7 +73,7 @@ export function matchesCategory(service: Service, selectedCategory: string): boo
     case "transporte":
       return catName.includes("transporte") || catName.includes("ruta") || catName.includes("interurbano") || catName.includes("urbano") || (service as any).id >= 100000 || (service as any).price_one_way !== undefined
     default:
-      return catName.includes(selectedCategory.toLowerCase()) || sName.includes(selectedCategory.toLowerCase())
+      return catName.includes(normKey) || sName.includes(normKey) || sDesc.includes(normKey) || sLoc.includes(normKey)
   }
 }
 
@@ -123,17 +137,38 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
   const [deckFilter, setDeckFilter] = useState<"MAP_MATCH" | "ALL">("MAP_MATCH")
   const [poolModalService, setPoolModalService] = useState<Service | null>(null)
 
-  // Modales/Tooltips
-  const [showPoolTooltip, setShowPoolTooltip] = useState(false)
+  // Modales
+  const [showPoolInfoModal, setShowPoolInfoModal] = useState(false)
 
   // Estados de Onboarding / Cuestionario interactivo
-  const [hasConfirmedPreference, setHasConfirmedPreference] = useState(false)
+  const [hasConfirmedPreference, setHasConfirmedPreference] = useState(() => {
+    if (typeof window !== "undefined") {
+      return sessionStorage.getItem("palenque_go_preferences_confirmed") === "true"
+    }
+    return false
+  })
   const [showPreferenceModal, setShowPreferenceModal] = useState(false)
   const [showPriorInteractionPrompt, setShowPriorInteractionPrompt] = useState(false)
 
   // Filtros interactivos de usuario (categoría oficial, ruta y precio)
-  const [selectedPrefCategory, setSelectedPrefCategory] = useState<string>("all")
-  const [selectedPrefRoute, setSelectedPrefRoute] = useState<string>("ALL")
+  const [selectedPrefCategory, setSelectedPrefCategory] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      const saved = sessionStorage.getItem("palenque_go_selected_category")
+      if (saved) return saved
+    }
+    if (lastMapCategory) {
+      const norm = normalizeCategoryKey(lastMapCategory)
+      if (norm && norm !== "all") return norm
+    }
+    return "all"
+  })
+  const [selectedPrefRoute, setSelectedPrefRoute] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      const saved = sessionStorage.getItem("palenque_go_selected_route")
+      if (saved) return saved
+    }
+    return "ALL"
+  })
   const [selectedPriceRange, setSelectedPriceRange] = useState<"ALL" | "ECO" | "MID" | "PREMIUM">("ALL")
  
   // Cargar servicios, pools y rutas del API al montar
@@ -169,6 +204,19 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
 
   // Detectar al inicio si tiene interacción previa en el mapa o abrir el cuestionario "¿Qué te gustaría?"
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const isConfirmed = sessionStorage.getItem("palenque_go_preferences_confirmed") === "true"
+      if (isConfirmed) {
+        setHasConfirmedPreference(true)
+        const savedIdx = sessionStorage.getItem("palenque_go_card_index")
+        if (savedIdx) {
+          const num = parseInt(savedIdx, 10)
+          if (!isNaN(num)) setCurrentIndex(num)
+        }
+        return
+      }
+    }
+
     if (hasConfirmedPreference) return
 
     const hasPrior = Boolean(lastMapCategory || lastMapSuperCategory || lastMapDestination)
@@ -262,9 +310,17 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
     // MODO "PARA TI" (Personalizado & Afinidad del Mapa)
     // ==========================================
 
-    // 1. Filtrar por categoría oficial seleccionada de manera ESTRICTA si se eligió una
-    if (selectedPrefCategory && selectedPrefCategory !== "all") {
-      list = list.filter((s) => matchesCategory(s, selectedPrefCategory))
+    // 1. Determinar categoría objetivo (de preferencia o del mapa)
+    const effectiveCategory = selectedPrefCategory !== "all" 
+      ? selectedPrefCategory 
+      : (lastMapCategory ? normalizeCategoryKey(lastMapCategory) : "all")
+
+    // Filtrar de forma ESTRICTA si hay categoría elegida (ej. "hotel", "playa", etc.)
+    if (effectiveCategory && effectiveCategory !== "all") {
+      const categoryMatches = list.filter((s) => matchesCategory(s, effectiveCategory))
+      if (categoryMatches.length > 0) {
+        list = categoryMatches
+      }
     }
 
     // 2. Filtrar por rango de precio de manera ESTRICTA
@@ -316,9 +372,8 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
       if (directMatches.length > 0) list = directMatches
     }
 
-    // 4. Si el usuario está en "all" y tiene interacción previa en el mapa
-    if (selectedPrefCategory === "all" && (lastMapCategory || lastMapSuperCategory || lastMapDestination)) {
-      const cat = (lastMapCategory || "").toLowerCase()
+    // 4. Si el usuario está en "all" y tiene interacción previa en el mapa (destino o supercategoría)
+    if (effectiveCategory === "all" && (lastMapSuperCategory || lastMapDestination)) {
       const superCat = (lastMapSuperCategory || "").toLowerCase()
       const dest = (lastMapDestination || "").toLowerCase()
 
@@ -328,7 +383,6 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
         const sLoc = (s.location || "").toLowerCase()
         const sDesc = (s.description || (s as any).descripcion || "").toLowerCase()
 
-        if (cat && (sCat.includes(cat) || sName.includes(cat) || sLoc.includes(cat) || sDesc.includes(cat))) return true
         if (dest && (sLoc.includes(dest) || sName.includes(dest))) return true
         if (superCat === "tour" && (sCat.includes("tour") || sCat.includes("experiencia") || sDesc.includes("tour"))) return true
         if (superCat === "urbano" && (sCat.includes("urbano") || sCat.includes("ciudad") || sCat.includes("centro"))) return true
@@ -337,8 +391,9 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
       }
 
       const matched = list.filter(isMatch)
-      const remaining = list.filter((s) => !isMatch(s))
-      list = matched.length > 0 ? [...matched, ...remaining] : list
+      if (matched.length > 0) {
+        list = matched
+      }
     }
 
     // 5. Algoritmo de puntuación de afinidad para "Para ti":
@@ -392,6 +447,16 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
   useEffect(() => {
     if (dynamicDeck.length > 0) {
       setDeck(dynamicDeck)
+      if (typeof window !== "undefined") {
+        const savedIdx = sessionStorage.getItem("palenque_go_card_index")
+        if (savedIdx) {
+          const num = parseInt(savedIdx, 10)
+          if (!isNaN(num) && num < dynamicDeck.length) {
+            setCurrentIndex(num)
+            return
+          }
+        }
+      }
       setCurrentIndex(0)
     } else {
       setDeck([])
@@ -407,6 +472,13 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
     setDeckSeed((prev) => prev + 1)
     setCurrentIndex(0)
 
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("palenque_go_preferences_confirmed", "true")
+      sessionStorage.setItem("palenque_go_selected_category", selectedPrefCategory)
+      sessionStorage.setItem("palenque_go_selected_route", selectedPrefRoute)
+      sessionStorage.setItem("palenque_go_card_index", "0")
+    }
+
     // Grabar interacción en el store y localStorage
     const activeCat = OFFICIAL_CATEGORIES.find(c => c.id === selectedPrefCategory)
     const catToSave = selectedPrefCategory !== "all" && activeCat ? activeCat.label : null
@@ -416,16 +488,12 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
 
   // Alternar entre modo personalizado ("Para ti") y catálogo amplio ("Todos")
   const handleToggleDeckFilter = (mode: "MAP_MATCH" | "ALL") => {
-    // Si pulsa "Para ti" y no tiene interacción previa ni preferencias configuradas, abrir cuestionario
-    const hasPrior = Boolean(lastMapCategory || lastMapSuperCategory || lastMapDestination || recentMapRoutes.length > 0)
-    if (mode === "MAP_MATCH" && !hasPrior && selectedPrefCategory === "all" && selectedPrefRoute === "ALL") {
-      setShowPreferenceModal(true)
-      return
-    }
-
     setDeckFilter(mode)
     setDeckSeed((prev) => prev + 1)
     setCurrentIndex(0)
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("palenque_go_card_index", "0")
+    }
   }
 
   // Reiniciar preferencias a cero y reabrir el selector con nuevo orden dinámico
@@ -442,6 +510,12 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
     setHasConfirmedPreference(false)
     setShowPriorInteractionPrompt(false)
     setShowPreferenceModal(true)
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem("palenque_go_preferences_confirmed")
+      sessionStorage.removeItem("palenque_go_selected_category")
+      sessionStorage.removeItem("palenque_go_selected_route")
+      sessionStorage.setItem("palenque_go_card_index", "0")
+    }
   }
 
   // Swipe logic
@@ -481,9 +555,25 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
     }
 
     setTimeout(() => {
-      setCurrentIndex((prev) => prev + 1)
-      setShowPoolTooltip(false)
+      const nextIdx = currentIndex + 1
+      setCurrentIndex(nextIdx)
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("palenque_go_card_index", String(nextIdx))
+      }
     }, 200)
+  }
+
+  // Evitar parpadeo falso de "No hay servicios" mientras se cargan los servicios iniciales del catálogo
+  if (services.length === 0 && (!routes || routes.length === 0)) {
+    return (
+      <div className="flex flex-col h-full bg-[#f8f9fa]">
+        <HeaderWithMenu title="Go" onNavigate={onNavigate} />
+        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-3">
+          <div className="w-10 h-10 rounded-full border-4 border-emerald-600 border-t-transparent animate-spin" />
+          <p className="text-sm font-semibold text-gray-600">Cargando experiencias en El Salvador...</p>
+        </div>
+      </div>
+    )
   }
 
   if (currentIndex >= deck.length || deck.length === 0) {
@@ -608,8 +698,7 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
                   }
                   router.push(`/s/${service.id}?from=rutas`)
                 }}
-                showPoolTooltip={isFront ? showPoolTooltip : false}
-                setShowPoolTooltip={setShowPoolTooltip}
+                onOpenPoolInfo={() => setShowPoolInfoModal(true)}
                 pools={pools}
                 onNavigate={onNavigate}
                 registerPoolInterest={registerPoolInterest}
@@ -715,6 +804,10 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
                     setHasConfirmedPreference(true)
                     setDeckFilter("MAP_MATCH")
                     setCurrentIndex(0)
+                    if (typeof window !== "undefined") {
+                      sessionStorage.setItem("palenque_go_preferences_confirmed", "true")
+                      sessionStorage.setItem("palenque_go_card_index", "0")
+                    }
                   }}
                   className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-2xl py-3 text-sm shadow-md flex items-center justify-center gap-2"
                 >
@@ -739,6 +832,66 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
         )}
       </AnimatePresence>
 
+      {/* Modal Informativo: ¿Qué es un Pool? (Visible al 100% sin ser recortado por overflow) */}
+      <AnimatePresence>
+        {showPoolInfoModal && (
+          <div 
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
+            onClick={() => setShowPoolInfoModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-emerald-100 text-left relative"
+            >
+              <button
+                type="button"
+                onClick={() => setShowPoolInfoModal(false)}
+                className="absolute top-4 right-4 p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="w-12 h-12 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-800 mb-3 shadow-inner">
+                <Users className="w-6 h-6" />
+              </div>
+
+              <h3 className="text-lg font-black text-gray-900 mb-1">
+                ¿Qué es un Pool en Palenque Go?
+              </h3>
+              <p className="text-xs text-gray-500 mb-4">
+                Ahorra hasta un 20% compartiendo gastos de transporte y tours.
+              </p>
+
+              <div className="space-y-3 text-xs text-gray-700">
+                <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200/80 flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">1</span>
+                  <p><strong>Presiona &ldquo;Me interesa&rdquo;:</strong> Te avisamos en cuanto otros usuarios quieran viajar al mismo destino o ruta.</p>
+                </div>
+                <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200/80 flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">2</span>
+                  <p><strong>División Justa:</strong> Los costos del traslado o entrada se reparten equitativamente entre los miembros del grupo.</p>
+                </div>
+                <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200/80 flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">3</span>
+                  <p><strong>Líderes de Grupo:</strong> Si tú creas y completas el grupo, ganas una comisión del 7% sobre el total.</p>
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                onClick={() => setShowPoolInfoModal(false)}
+                className="w-full mt-5 bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold rounded-2xl py-3 text-sm shadow-md"
+              >
+                Entendido
+              </Button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Modal: ¿Qué te gustaría descubrir hoy en Palenque Go? */}
       <AnimatePresence>
         {showPreferenceModal && (
@@ -752,7 +905,13 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
               {/* Botón cerrar */}
               <button
                 type="button"
-                onClick={() => setShowPreferenceModal(false)}
+                onClick={() => {
+                  setShowPreferenceModal(false)
+                  setHasConfirmedPreference(true)
+                  if (typeof window !== "undefined") {
+                    sessionStorage.setItem("palenque_go_preferences_confirmed", "true")
+                  }
+                }}
                 className="absolute top-4 right-4 p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
               >
                 <X className="w-5 h-5" />
@@ -772,12 +931,12 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
                 </div>
               </div>
 
-              {/* Paso 1: Categorías */}
+              {/* Paso 1: Categorías estilo Tinder Explore con tarjetas grandes y tocables */}
               <div className="mb-4">
                 <label className="text-xs font-extrabold text-gray-800 uppercase tracking-wider block mb-2">
                   1. Elige una categoría o experiencia
                 </label>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-[290px] overflow-y-auto pr-1 custom-scrollbar">
                   {OFFICIAL_CATEGORIES.map((cat) => {
                     const isSelected = selectedPrefCategory === cat.id
                     const IconComp = cat.icon
@@ -787,18 +946,34 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
                         type="button"
                         onClick={() => setSelectedPrefCategory(cat.id)}
                         className={cn(
-                          "px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 active:scale-95",
+                          "p-3 rounded-2xl border-2 text-left transition-all active:scale-95 flex items-center gap-3 relative overflow-hidden group shadow-2xs",
                           isSelected
-                            ? "bg-emerald-600 text-white shadow-xs"
-                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            ? "bg-emerald-50/95 border-emerald-600 shadow-xs"
+                            : "bg-white border-gray-200 hover:border-emerald-300 hover:bg-gray-50/80"
                         )}
                       >
-                        {isSelected ? (
-                          <Check className="w-3.5 h-3.5 text-white" />
-                        ) : (
-                          <IconComp className={cn("w-3.5 h-3.5", cat.iconColor)} />
+                        <div className={cn(
+                          "w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105",
+                          isSelected ? "bg-emerald-600 text-white" : "bg-gray-100 text-gray-700"
+                        )}>
+                          <IconComp className={cn("w-6 h-6", !isSelected && cat.iconColor)} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <span className={cn(
+                            "text-sm font-extrabold block leading-tight truncate",
+                            isSelected ? "text-emerald-950" : "text-gray-800"
+                          )}>
+                            {cat.label}
+                          </span>
+                          <span className="text-[10px] text-gray-400 font-medium block">
+                            {isSelected ? "Seleccionado" : "Explorar"}
+                          </span>
+                        </div>
+                        {isSelected && (
+                          <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center">
+                            <Check className="w-2.5 h-2.5 stroke-[3]" />
+                          </div>
                         )}
-                        <span>{cat.label}</span>
                       </button>
                     )
                   })}
@@ -1035,8 +1210,7 @@ interface SwipeableServiceCardProps {
   isFront: boolean
   onSwipe: (direction: "left" | "right") => void
   onInfoClick: () => void
-  showPoolTooltip: boolean
-  setShowPoolTooltip: (val: boolean) => void
+  onOpenPoolInfo?: () => void
   pools: Pool[]
   onNavigate?: (tab: string) => void
   registerPoolInterest: (serviceId: number) => Promise<boolean>
@@ -1050,8 +1224,7 @@ function SwipeableServiceCard({
   isFront,
   onSwipe,
   onInfoClick,
-  showPoolTooltip,
-  setShowPoolTooltip,
+  onOpenPoolInfo,
   pools,
   onNavigate,
   registerPoolInterest,
@@ -1222,7 +1395,7 @@ function SwipeableServiceCard({
                     e.stopPropagation();
                     onNavigate?.("pool");
                   }}
-                  className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold rounded-xl transition-all shadow-sm active:scale-95"
+                  className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-xl transition-all shadow-xs active:scale-95"
                 >
                   Únete aquí
                 </button>
@@ -1236,9 +1409,9 @@ function SwipeableServiceCard({
                     e.stopPropagation();
                     onOpenCreatePool?.(service);
                   }}
-                  className="px-2.5 py-1.5 bg-gradient-to-r from-emerald-700 to-[#064e3b] hover:from-emerald-800 hover:to-[#043324] text-white text-[10px] font-extrabold rounded-xl transition-all shadow-sm active:scale-95 flex items-center gap-1"
+                  className="px-3.5 py-2 bg-gradient-to-r from-emerald-700 to-[#064e3b] hover:from-emerald-800 hover:to-[#043324] text-white text-xs font-black rounded-xl transition-all shadow-xs active:scale-95 flex items-center gap-1"
                 >
-                  <Users className="w-3 h-3" />
+                  <Users className="w-3.5 h-3.5" />
                   <span>Armar Pool</span>
                 </button>
               ) : null}
@@ -1254,10 +1427,10 @@ function SwipeableServiceCard({
                     }
                   }}
                   className={cn(
-                    "px-2.5 py-1.5 text-[10px] font-bold rounded-xl transition-all shadow-sm active:scale-95",
+                    "px-3.5 py-2 text-xs font-black rounded-xl transition-all shadow-xs active:scale-95 flex items-center gap-1",
                     service && registeredPools.has(service.id)
                       ? "bg-emerald-600 text-white"
-                      : "bg-white border border-emerald-600 text-emerald-900 hover:bg-emerald-50"
+                      : "bg-white border-2 border-emerald-600 text-emerald-950 hover:bg-emerald-50"
                   )}
                 >
                   {service && registeredPools.has(service.id) ? "✓ Te avisaremos" : "Me interesa"}
@@ -1268,46 +1441,26 @@ function SwipeableServiceCard({
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setShowPoolTooltip(!showPoolTooltip);
+                  onOpenPoolInfo?.();
                 }}
-                className="p-1 rounded-full bg-emerald-100 hover:bg-emerald-200 text-emerald-800 transition-colors shrink-0"
+                className="w-8 h-8 rounded-full bg-emerald-100 hover:bg-emerald-200 text-emerald-900 flex items-center justify-center transition-all shrink-0 active:scale-95"
                 title="¿Qué es un Pool?"
               >
-                <HelpCircle className="w-3.5 h-3.5" />
+                <HelpCircle className="w-4 h-4 stroke-[2.5]" />
               </button>
             </div>
-
-            {/* Tooltip Gamificado */}
-            <AnimatePresence>
-              {showPoolTooltip && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 5, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 3, scale: 0.95 }}
-                  className="absolute bottom-full mb-2 right-0 w-[240px] bg-[#064e3b] text-white p-3 rounded-2xl shadow-xl z-50 text-xs"
-                >
-                  <div className="absolute -bottom-1 right-4 w-3 h-3 bg-[#064e3b] rotate-45" />
-                  <p className="font-bold mb-1 flex items-center gap-1.5 text-emerald-200">
-                    <Users className="w-3.5 h-3.5"/> ¿Qué es un Pool?
-                  </p>
-                  <p className="opacity-90 leading-snug">
-                    Un pool es una compra grupal para ahorrar hasta un {discountPct}%. ¡Puedes unirte o armar el grupo tú mismo!
-                  </p>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </div>
         </div>
 
-        {/* Descripción & Features en el medio — CON SCROLL INDEPENDIENTE PARA QUE NUNCA SE PIERDAN LOS BOTONES NI EL BANNER */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-1 py-1 my-1 custom-scrollbar space-y-1.5 overscroll-contain">
-          <p className="text-muted-foreground text-xs leading-relaxed">
+        {/* Descripción & Features en el medio — CON SCROLL INDEPENDIENTE Y LETRA VISIBLE Y GRANDE */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-1.5 py-1.5 my-1 custom-scrollbar space-y-2 overscroll-contain">
+          <p className="text-[14px] sm:text-[15px] text-gray-800 font-medium leading-relaxed">
             {service.description || service.descripcion || "Sin descripción disponible"}
           </p>
           {service.features && service.features.length > 0 && (
-            <div className="flex flex-wrap gap-1 pt-0.5">
+            <div className="flex flex-wrap gap-1.5 pt-0.5">
               {service.features.map((f, i) => (
-                <span key={i} className="text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-200/60 px-2 py-0.5 rounded-full font-medium">{f}</span>
+                <span key={i} className="text-[11px] bg-emerald-50 text-emerald-900 border border-emerald-200/80 px-2.5 py-1 rounded-full font-bold">{f}</span>
               ))}
             </div>
           )}
