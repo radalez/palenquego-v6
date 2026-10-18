@@ -71,3 +71,54 @@ export function handleImageFallback(e: React.SyntheticEvent<HTMLImageElement, Ev
     target.src = fallback
   }
 }
+
+/**
+ * Reproduce un tono chime de notificación suave y elegante usando la Web Audio API
+ * e invoca la vibración háptica en dispositivos móviles sin depender de archivos de audio externos.
+ */
+export function playNotificationSound() {
+  if (typeof window === "undefined") return
+
+  // 1. Vibración háptica en teléfonos móviles
+  if ("vibrate" in navigator) {
+    try {
+      navigator.vibrate([70, 40, 70])
+    } catch (e) {}
+  }
+
+  // 2. Chime armónico sintético nativo (D5 -> A5)
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext
+    if (!AudioCtx) return
+    const ctx = new AudioCtx()
+
+    const now = ctx.currentTime
+
+    // Tono base (587.33 Hz - D5)
+    const osc1 = ctx.createOscillator()
+    const gain1 = ctx.createGain()
+    osc1.type = "sine"
+    osc1.frequency.setValueAtTime(587.33, now)
+    gain1.gain.setValueAtTime(0.18, now)
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35)
+    osc1.connect(gain1)
+    gain1.connect(ctx.destination)
+    osc1.start(now)
+    osc1.stop(now + 0.35)
+
+    // Tono armónico superior (880 Hz - A5)
+    const osc2 = ctx.createOscillator()
+    const gain2 = ctx.createGain()
+    osc2.type = "sine"
+    osc2.frequency.setValueAtTime(880, now + 0.08)
+    gain2.gain.setValueAtTime(0.22, now + 0.08)
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.55)
+    osc2.connect(gain2)
+    gain2.connect(ctx.destination)
+    osc2.start(now + 0.08)
+    osc2.stop(now + 0.55)
+  } catch (e) {
+    // Si el navegador bloquea audio antes de interacción, se maneja de forma segura
+  }
+}
+

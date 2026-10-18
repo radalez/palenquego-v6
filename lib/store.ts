@@ -1,5 +1,6 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
+import { playNotificationSound } from "@/lib/utils"
 
 const API_BASE = "/api-proxy";
 const MEDIA_BASE = "/media-proxy";
@@ -60,6 +61,10 @@ export interface Service {
   price: number
   precio_base?: string // <-- AÑADIR ESTO
   image: string
+  imagen_cloudinary_url?: string
+  imagen_principal?: string
+  portada?: string
+  ubicacion?: string
   isRemate?: boolean
   discount?: number
   poolDiscount?: number
@@ -317,7 +322,10 @@ interface AppState {
   }>) => void
   registeredRouteInterests: number[]
   registerRouteInterest: (routeId: number) => Promise<boolean>
+  registeredPoolInterests: number[]
   registerPoolInterest: (serviceId: number) => Promise<boolean>
+  removePoolInterest: (serviceId: number) => void
+  fetchMyPoolInterests: () => Promise<void>
   paymentMethods: Array<{ id: string; type: string; last4: string; isDefault: boolean }>
   notifications: { email: boolean; sms: boolean; push: boolean }
   poolPaymentPending: { poolId: number; options: "FULL" | "PERSONAL" }[]
@@ -551,6 +559,13 @@ export const useAppStore = create<AppState>()(
         isBusinessOwner: false,
       },
       registeredRouteInterests: [],
+      registeredPoolInterests: typeof window !== "undefined" ? (() => {
+        try {
+          return JSON.parse(localStorage.getItem("palenque_registered_pool_interests") || "[]")
+        } catch (e) {
+          return []
+        }
+      })() : [],
       paymentMethods: [
         { id: "1", type: "Visa", last4: "4242", isDefault: true },
         { id: "2", type: "Mastercard", last4: "5555", isDefault: false },
@@ -1394,14 +1409,17 @@ export const useAppStore = create<AppState>()(
       sendNotification: (title: string, message: string) => {
         const { notifications } = get();
         
-        // NotificaciÃ³n Push si hay permiso en el navegador
-        if (notifications.push && "Notification" in window && Notification.permission === "granted") {
+        // Sonido suave de notificación (chime) y vibración en móvil
+        playNotificationSound();
+
+        // Notificación Push si hay permiso en el navegador
+        if (notifications.push && typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
           new Notification(title, { body: message });
         }
 
         // Logs de respaldo para Email y SMS
-        if (notifications.email) console.log(`ðŸ“§ [EMAIL] ${title}: ${message}`);
-        if (notifications.sms) console.log(`ðŸ“± [SMS] ${title}: ${message}`);
+        if (notifications.email) console.log(`[EMAIL] ${title}: ${message}`);
+        if (notifications.sms) console.log(`[SMS] ${title}: ${message}`);
       },
 
       addPaymentMethod: (method) =>
@@ -1523,9 +1541,9 @@ export const useAppStore = create<AppState>()(
           }
         }),
 
-      registerPoolInterest: async (serviceId) => {
+      registerPoolInterest: async (serviceId: number) => {
         const state = get();
-        // Agregar localmente a favoritos si no estaba
+        // 1. Agregar localmente a favoritos si no estaba
         const exists = state.userFavorites.some((f) => f.serviceId === serviceId)
         if (!exists) {
           set({
@@ -1535,6 +1553,31 @@ export const useAppStore = create<AppState>()(
             ],
           });
         }
+
+        // 2. Agregar a registeredPoolInterests y persistir en localStorage
+        const currentInterests = state.registeredPoolInterests || [];
+        if (!currentInterests.includes(serviceId)) {
+          const updated = [...currentInterests, serviceId];
+          set({ registeredPoolInterests: updated });
+          if (typeof window !== "undefined") {
+            try {
+              localStorage.setItem("palenque_registered_pool_interests", JSON.stringify(updated));
+            } catch (e) {}
+          }
+        }
+
+        // 3. Sonido chime Web Audio API y vibración háptica
+        playNotificationSound();
+
+        // 4. Enviar notificación visual / in-app
+        const targetService = state.services.find((s) => s.id === serviceId);
+        const serviceName = targetService ? (targetService.nombre || targetService.name) : "el servicio seleccionado";
+        state.sendNotification(
+          "¡Te anotamos al Pool grupal!",
+          `Te avisaremos cuando se sumen más viajeros para "${serviceName}" y activar tu 20% de descuento.`
+        );
+
+        // 5. Enviar al backend (UserSwipe con es_pool=True, que envía el correo Brevo)
         try {
           if (state.accessToken) {
             await fetch(`${API_BASE}/services/services/${serviceId}/swipe/`, {
@@ -1550,6 +1593,45 @@ export const useAppStore = create<AppState>()(
         } catch (e) {
           console.error("Error al registrar intencion de pool:", e);
           return false;
+        }
+      },
+
+      removePoolInterest: (serviceId: number) => {
+        const state = get();
+        const updated = (state.registeredPoolInterests || []).filter(id => id !== serviceId);
+        set({ registeredPoolInterests: updated });
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem("palenque_registered_pool_interests", JSON.stringify(updated));
+          } catch (e) {}
+        }
+      },
+
+      fetchMyPoolInterests: async () => {
+        const state = get();
+        if (!state.accessToken) return;
+        try {
+          const res = await fetch(`${API_BASE}/services/services/my_interests/`, {
+            headers: {
+              Authorization: `Bearer ${state.accessToken}`,
+            },
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data)) {
+              const backendIds = data.map((item: any) => item.id);
+              const currentInterests = state.registeredPoolInterests || [];
+              const merged = Array.from(new Set([...currentInterests, ...backendIds]));
+              set({ registeredPoolInterests: merged });
+              if (typeof window !== "undefined") {
+                try {
+                  localStorage.setItem("palenque_registered_pool_interests", JSON.stringify(merged));
+                } catch (e) {}
+              }
+            }
+          }
+        } catch (e) {
+          console.error("Error fetching my pool interests:", e);
         }
       },
 

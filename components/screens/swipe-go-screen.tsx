@@ -103,6 +103,8 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
     accessToken, 
     fetchServices, 
     fetchPools,
+    registeredPoolInterests = [],
+    fetchMyPoolInterests,
     routes,
     fetchRoutes,
     lastMapCategory,
@@ -117,7 +119,7 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
   // Maintain deck state — con servicios y experiencias del mapa
   const [deck, setDeck] = useState<Service[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [registeredPools, setRegisteredPools] = useState<Set<number>>(new Set())
+  const registeredPools = useMemo(() => new Set(registeredPoolInterests), [registeredPoolInterests])
   const [deckFilter, setDeckFilter] = useState<"MAP_MATCH" | "ALL">("MAP_MATCH")
   const [poolModalService, setPoolModalService] = useState<Service | null>(null)
 
@@ -138,6 +140,7 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
   useEffect(() => {
     fetchServices()
     fetchPools()
+    fetchMyPoolInterests()
     if (fetchRoutes) fetchRoutes()
   }, [fetchServices, fetchPools, fetchRoutes])
 
@@ -606,7 +609,6 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
                 onNavigate={onNavigate}
                 registerPoolInterest={registerPoolInterest}
                 registeredPools={registeredPools}
-                setRegisteredPools={setRegisteredPools}
                 onOpenCreatePool={(svc) => setPoolModalService(svc)}
                 userIntentions={userIntentions}
               />
@@ -1028,7 +1030,6 @@ interface SwipeableServiceCardProps {
   onNavigate?: (tab: string) => void
   registerPoolInterest: (serviceId: number) => Promise<boolean>
   registeredPools: Set<number>
-  setRegisteredPools: React.Dispatch<React.SetStateAction<Set<number>>>
   onOpenCreatePool?: (service: Service) => void
   userIntentions?: any
 }
@@ -1044,7 +1045,6 @@ function SwipeableServiceCard({
   onNavigate,
   registerPoolInterest,
   registeredPools,
-  setRegisteredPools,
   onOpenCreatePool,
   userIntentions,
 }: SwipeableServiceCardProps) {
@@ -1253,7 +1253,6 @@ function SwipeableServiceCard({
                     e.stopPropagation();
                     if (service) {
                       registerPoolInterest(service.id);
-                      setRegisteredPools((prev: Set<number>) => new Set(prev).add(service.id));
                     }
                   }}
                   className={cn(

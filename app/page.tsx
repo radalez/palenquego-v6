@@ -115,28 +115,23 @@ export default function Home() {
     }
   }, [currentUser])
 
-  // Restaurar la pestaña previa o redirigir al chofer
+  // Mantener al chofer en su panel si el GPS está apagado, por defecto siempre iniciar en el mapa
   useEffect(() => {
     if (currentUser?.tipo === 'CHOFER') {
       const gpsActive = sessionStorage.getItem('chofer-gps-active');
       if (!gpsActive) {
-        // Obligar a ir al panel del chofer si el GPS está apagado
         setActiveTab('conductor' as ActiveTab);
         return;
       }
     }
-    
-    // Si no es chofer, o si es chofer pero el GPS ya está activo, respetamos la pestaña guardada
-    const savedTab = sessionStorage.getItem("palenque-active-tab") as ActiveTab;
-    if (savedTab) {
-      setActiveTab(savedTab);
-    }
   }, [currentUser]);
 
-  // Guardar la pestaña activa actual en sessionStorage
+  // Guardar la pestaña activa actual en sessionStorage solo para chofer
   useEffect(() => {
-    sessionStorage.setItem("palenque-active-tab", activeTab);
-  }, [activeTab]);
+    if (currentUser?.tipo === 'CHOFER') {
+      sessionStorage.setItem("palenque-active-tab", activeTab);
+    }
+  }, [activeTab, currentUser]);
   const [selectedPoolForShare, setSelectedPoolForShare] = useState<any>(null)
   const [selectedPoolForPayment, setSelectedPoolForPayment] = useState<any>(null)
   
@@ -253,7 +248,7 @@ export default function Home() {
         {/* Vista Exploración Mapa Rutas */}
         {activeTab === "map-explorer" && (
           <ExploreMapScreen
-             onBack={() => setActiveTab("rutas")}
+             onBack={() => {}}
              onNavigate={(tab) => setActiveTab(tab as ActiveTab)}
              onToggleDesktopSidebar={() => setIsDesktopSidebarCollapsed(prev => !prev)}
              isDesktopSidebarCollapsed={isDesktopSidebarCollapsed}

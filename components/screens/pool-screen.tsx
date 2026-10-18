@@ -1,11 +1,11 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import { Users, Clock, MapPin, ChevronRight, Zap, Share2, Plus, Check, Sparkles } from "lucide-react"
+import { Users, Clock, MapPin, ChevronRight, Zap, Share2, Plus, Check, Sparkles, Bell, Trash2, MessageCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { cn, formatImageUrl, handleImageFallback } from "@/lib/utils"
-import { useAppStore, type Pool } from "@/lib/store"
+import { useAppStore, type Pool, type Service } from "@/lib/store"
 import { CreatePoolModal } from "@/components/create-pool-modal"
 import { HeaderWithMenu } from "@/components/header-with-menu"
 
@@ -19,14 +19,32 @@ interface PoolScreenProps {
 export function PoolScreen({ onOpenShare, onOpenPayment, onNavigate }: PoolScreenProps) {
   const [selectedPool, setSelectedPool] = useState<Pool | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [modalService, setModalService] = useState<Service | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<string>("FOR_YOU")
 
-  const { pools, joinPool, currentUser, fetchPools, fetchServices, lastMapCategory, lastMapSuperCategory } = useAppStore()
+  const { 
+    pools, 
+    joinPool, 
+    currentUser, 
+    fetchPools, 
+    fetchServices, 
+    services,
+    registeredPoolInterests = [],
+    fetchMyPoolInterests,
+    removePoolInterest,
+    lastMapCategory, 
+    lastMapSuperCategory 
+  } = useAppStore()
 
   useEffect(() => {
     fetchPools();    // Trae los pools reales de https://palenquego.com/api/v1/pools/
     fetchServices(); // Trae las rutas reales para el modal de "+"
-  }, [fetchPools, fetchServices]);
+    fetchMyPoolInterests();
+  }, [fetchPools, fetchServices, fetchMyPoolInterests]);
+
+  const myInterestedServices = useMemo(() => {
+    return services.filter((s) => (registeredPoolInterests || []).includes(s.id))
+  }, [services, registeredPoolInterests])
 
   const getProgressColor = (current: number, target: number) => {
     const percentage = (current / target) * 100
@@ -164,6 +182,20 @@ export function PoolScreen({ onOpenShare, onOpenPayment, onNavigate }: PoolScree
 
       {/* Píldoras de Filtro Dinámico */}
       <div className="px-4 flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
+        {/* Píldora Mis Intereses (Me interesa) */}
+        <button
+          type="button"
+          onClick={() => setSelectedCategory("MY_INTERESTS")}
+          className={`px-3 py-1.5 rounded-full font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+            selectedCategory === "MY_INTERESTS"
+              ? "bg-emerald-700 text-white shadow-xs"
+              : "bg-emerald-50 text-emerald-800 border border-emerald-200/90 hover:bg-emerald-100"
+          }`}
+        >
+          <Bell className="w-3.5 h-3.5" />
+          <span>Mis Intereses ({myInterestedServices.length})</span>
+        </button>
+
         {(lastMapCategory || lastMapSuperCategory) && (
           <button
             type="button"
@@ -205,22 +237,146 @@ export function PoolScreen({ onOpenShare, onOpenPayment, onNavigate }: PoolScree
         ))}
       </div>
 
-      {/* Active Pools */}
+      {/* Active Pools or My Interests */}
       <div className="px-4 py-4">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-semibold text-lg text-foreground">
-            {selectedCategory === "FOR_YOU" && lastMapCategory
+            {selectedCategory === "MY_INTERESTS"
+              ? "Mis Intereses de Viaje (Espera de Grupo)"
+              : selectedCategory === "FOR_YOU" && lastMapCategory
               ? `Pools en ${lastMapCategory}`
               : selectedCategory === "ALL"
               ? "Todos los Pools Activos"
               : `Pools de ${selectedCategory}`}
           </h2>
           <span className="text-xs text-muted-foreground font-medium">
-            {filteredPools.length} {filteredPools.length === 1 ? 'grupo' : 'grupos'}
+            {selectedCategory === "MY_INTERESTS"
+              ? `${myInterestedServices.length} en espera`
+              : `${filteredPools.length} ${filteredPools.length === 1 ? 'grupo' : 'grupos'}`}
           </span>
         </div>
 
-        {filteredPools.length === 0 ? (
+        {selectedCategory === "MY_INTERESTS" ? (
+          myInterestedServices.length === 0 ? (
+            <div className="bg-muted/30 border border-dashed border-border rounded-2xl p-6 text-center space-y-3 mt-2">
+              <Bell className="w-8 h-8 text-emerald-600 mx-auto opacity-70" />
+              <h3 className="font-bold text-foreground text-sm">
+                No tienes viajes en tu lista de espera
+              </h3>
+              <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+                Cuando estés en la sección <strong>Explorar</strong> o en el <strong>Mapa</strong> y veas una experiencia o ruta que te guste, toca <strong>"Me interesa"</strong>. Te notificaremos al celular y por correo cuando se arme el grupo con hasta 20% de descuento.
+              </p>
+              <Button
+                onClick={() => onNavigate?.("rutas")}
+                className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-xs gap-1.5"
+              >
+                <span>Explorar Experiencias</span>
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+              {myInterestedServices.map((service) => {
+                const precioBase = Number(service.precio_base || service.price || 0)
+                const precioPool = precioBase > 0 ? precioBase * 0.8 : 0
+                const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(
+                  `¡Hola! Me interesa este viaje en Palenque Go: "${service.nombre || service.name}". Si nos unimos en grupo obtenemos hasta 20% de descuento. Míralo aquí: https://palenquego.com/s/${service.id}`
+                )}`
+
+                return (
+                  <div
+                    key={service.id}
+                    className="bg-card rounded-2xl p-4 shadow-sm border border-emerald-100/90 hover:border-emerald-300 transition-all flex flex-col justify-between gap-3"
+                  >
+                    <div className="flex gap-3.5">
+                      <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-muted">
+                        <img
+                          src={formatImageUrl(service.imagen_cloudinary_url || service.imagen_principal || service.image || service.portada)}
+                          alt={service.nombre || service.name}
+                          className="w-full h-full object-cover"
+                          onError={handleImageFallback}
+                        />
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                            {service.categoria?.nombre || service.category || "Experiencia"}
+                          </span>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                            -20% en Grupo
+                          </span>
+                        </div>
+                        <h3 className="font-bold text-foreground text-sm truncate">
+                          {service.nombre || service.name}
+                        </h3>
+                        <div className="flex items-center gap-1 text-muted-foreground text-xs mt-1">
+                          <MapPin className="w-3 h-3 shrink-0" />
+                          <span className="truncate">{service.ubicacion || service.location || "El Salvador"}</span>
+                        </div>
+
+                        {precioBase > 0 && (
+                          <div className="flex items-baseline gap-2 mt-1.5">
+                            <span className="text-sm font-black text-emerald-700">
+                              ${precioPool.toFixed(2)}
+                            </span>
+                            <span className="text-xs text-muted-foreground line-through">
+                              ${precioBase.toFixed(2)}
+                            </span>
+                            <span className="text-[10px] text-emerald-800 font-semibold">tarifa pool</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Estado de espera y notificación */}
+                    <div className="bg-emerald-50/90 border border-emerald-200/80 rounded-xl p-2.5 text-[11px] text-emerald-950 flex items-start gap-2">
+                      <Bell className="w-3.5 h-3.5 text-emerald-700 shrink-0 mt-0.5" />
+                      <p className="leading-snug">
+                        <strong>En espera de grupo:</strong> Te avisaremos con sonido al celular y correo cuando otros viajeros se sumen para activar la tarifa grupal.
+                      </p>
+                    </div>
+
+                    {/* Botones de acción: WhatsApp, Crear Pool, Desmarcar */}
+                    <div className="grid grid-cols-2 gap-2 pt-1 border-t border-border/60">
+                      <a
+                        href={whatsappUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-1.5 bg-[#25D366] hover:bg-[#20ba5a] text-white font-bold py-2 px-3 rounded-xl text-xs transition-colors shadow-2xs"
+                      >
+                        <MessageCircle className="w-3.5 h-3.5" />
+                        <span>Invitar amigos</span>
+                      </a>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setModalService(service)
+                          setShowCreateModal(true)
+                        }}
+                        className="flex items-center justify-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2 px-3 rounded-xl text-xs transition-colors shadow-2xs"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Armar Pool</span>
+                      </button>
+                    </div>
+
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => removePoolInterest(service.id)}
+                        className="text-[10px] text-muted-foreground hover:text-red-600 transition-colors flex items-center gap-1 py-0.5"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Ya no me interesa</span>
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )
+        ) : filteredPools.length === 0 ? (
           <div className="bg-muted/30 border border-dashed border-border rounded-2xl p-6 text-center space-y-3 mt-2">
             <Sparkles className="w-8 h-8 text-primary mx-auto opacity-70" />
             <h3 className="font-bold text-foreground text-sm">
@@ -357,7 +513,18 @@ export function PoolScreen({ onOpenShare, onOpenPayment, onNavigate }: PoolScree
 
       {/* Create Pool Modal */}
       {showCreateModal && (
-        <CreatePoolModal onClose={() => setShowCreateModal(false)} onSuccess={() => setShowCreateModal(false)} />
+        <CreatePoolModal
+          service={modalService || undefined}
+          onClose={() => {
+            setShowCreateModal(false)
+            setModalService(null)
+          }}
+          onSuccess={() => {
+            setShowCreateModal(false)
+            setModalService(null)
+            fetchPools()
+          }}
+        />
       )}
     </div>
   )
