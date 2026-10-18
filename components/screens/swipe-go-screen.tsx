@@ -143,7 +143,10 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
   // Estados de Onboarding / Cuestionario interactivo
   const [hasConfirmedPreference, setHasConfirmedPreference] = useState(() => {
     if (typeof window !== "undefined") {
-      return sessionStorage.getItem("palenque_go_preferences_confirmed") === "true"
+      return (
+        localStorage.getItem("palenque_go_preferences_confirmed") === "true" ||
+        Boolean(localStorage.getItem("palenque_go_selected_category"))
+      )
     }
     return false
   })
@@ -153,7 +156,7 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
   // Filtros interactivos de usuario (categoría oficial, ruta y precio)
   const [selectedPrefCategory, setSelectedPrefCategory] = useState<string>(() => {
     if (typeof window !== "undefined") {
-      const saved = sessionStorage.getItem("palenque_go_selected_category")
+      const saved = localStorage.getItem("palenque_go_selected_category")
       if (saved) return saved
     }
     if (lastMapCategory) {
@@ -164,12 +167,20 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
   })
   const [selectedPrefRoute, setSelectedPrefRoute] = useState<string>(() => {
     if (typeof window !== "undefined") {
-      const saved = sessionStorage.getItem("palenque_go_selected_route")
+      const saved = localStorage.getItem("palenque_go_selected_route")
       if (saved) return saved
     }
     return "ALL"
   })
-  const [selectedPriceRange, setSelectedPriceRange] = useState<"ALL" | "ECO" | "MID" | "PREMIUM">("ALL")
+  const [selectedPriceRange, setSelectedPriceRange] = useState<"ALL" | "ECO" | "MID" | "PREMIUM">(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("palenque_go_selected_price")
+      if (saved && (saved === "ALL" || saved === "ECO" || saved === "MID" || saved === "PREMIUM")) {
+        return saved as "ALL" | "ECO" | "MID" | "PREMIUM"
+      }
+    }
+    return "ALL"
+  })
  
   // Cargar servicios, pools y rutas del API al montar
   useEffect(() => {
@@ -205,10 +216,11 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
   // Detectar al inicio si tiene interacción previa en el mapa o abrir el cuestionario "¿Qué te gustaría?"
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const isConfirmed = sessionStorage.getItem("palenque_go_preferences_confirmed") === "true"
+      const isConfirmed = localStorage.getItem("palenque_go_preferences_confirmed") === "true" ||
+                          Boolean(localStorage.getItem("palenque_go_selected_category"))
       if (isConfirmed) {
         setHasConfirmedPreference(true)
-        const savedIdx = sessionStorage.getItem("palenque_go_card_index")
+        const savedIdx = localStorage.getItem("palenque_go_card_index")
         if (savedIdx) {
           const num = parseInt(savedIdx, 10)
           if (!isNaN(num)) setCurrentIndex(num)
@@ -448,7 +460,7 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
     if (dynamicDeck.length > 0) {
       setDeck(dynamicDeck)
       if (typeof window !== "undefined") {
-        const savedIdx = sessionStorage.getItem("palenque_go_card_index")
+        const savedIdx = localStorage.getItem("palenque_go_card_index")
         if (savedIdx) {
           const num = parseInt(savedIdx, 10)
           if (!isNaN(num) && num < dynamicDeck.length) {
@@ -473,10 +485,12 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
     setCurrentIndex(0)
 
     if (typeof window !== "undefined") {
-      sessionStorage.setItem("palenque_go_preferences_confirmed", "true")
-      sessionStorage.setItem("palenque_go_selected_category", selectedPrefCategory)
-      sessionStorage.setItem("palenque_go_selected_route", selectedPrefRoute)
-      sessionStorage.setItem("palenque_go_card_index", "0")
+      localStorage.setItem("palenque_go_preferences_confirmed", "true")
+      localStorage.setItem("palenque_go_selected_category", selectedPrefCategory)
+      localStorage.setItem("palenque_go_selected_route", selectedPrefRoute)
+      localStorage.setItem("palenque_go_selected_price", selectedPriceRange)
+      localStorage.setItem("palenque_go_deck_filter", "MAP_MATCH")
+      localStorage.setItem("palenque_go_card_index", "0")
     }
 
     // Grabar interacción en el store y localStorage
@@ -492,7 +506,8 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
     setDeckSeed((prev) => prev + 1)
     setCurrentIndex(0)
     if (typeof window !== "undefined") {
-      sessionStorage.setItem("palenque_go_card_index", "0")
+      localStorage.setItem("palenque_go_deck_filter", mode)
+      localStorage.setItem("palenque_go_card_index", "0")
     }
   }
 
@@ -511,10 +526,12 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
     setShowPriorInteractionPrompt(false)
     setShowPreferenceModal(true)
     if (typeof window !== "undefined") {
-      sessionStorage.removeItem("palenque_go_preferences_confirmed")
-      sessionStorage.removeItem("palenque_go_selected_category")
-      sessionStorage.removeItem("palenque_go_selected_route")
-      sessionStorage.setItem("palenque_go_card_index", "0")
+      localStorage.removeItem("palenque_go_preferences_confirmed")
+      localStorage.removeItem("palenque_go_selected_category")
+      localStorage.removeItem("palenque_go_selected_route")
+      localStorage.removeItem("palenque_go_selected_price")
+      localStorage.removeItem("palenque_go_deck_filter")
+      localStorage.setItem("palenque_go_card_index", "0")
     }
   }
 
@@ -558,7 +575,7 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
       const nextIdx = currentIndex + 1
       setCurrentIndex(nextIdx)
       if (typeof window !== "undefined") {
-        sessionStorage.setItem("palenque_go_card_index", String(nextIdx))
+        localStorage.setItem("palenque_go_card_index", String(nextIdx))
       }
     }, 200)
   }
@@ -649,7 +666,7 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
         <div className="flex items-center gap-1.5 text-[11px] shrink-0">
           <button
             type="button"
-            onClick={handleResetPreferences}
+            onClick={() => setShowPreferenceModal(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold bg-white border border-gray-200 text-gray-700 hover:bg-emerald-50 hover:border-emerald-300 transition-all shadow-2xs active:scale-95"
             title="Configurar qué te gustaría ver"
           >
@@ -805,8 +822,8 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
                     setDeckFilter("MAP_MATCH")
                     setCurrentIndex(0)
                     if (typeof window !== "undefined") {
-                      sessionStorage.setItem("palenque_go_preferences_confirmed", "true")
-                      sessionStorage.setItem("palenque_go_card_index", "0")
+                      localStorage.setItem("palenque_go_preferences_confirmed", "true")
+                      localStorage.setItem("palenque_go_card_index", "0")
                     }
                   }}
                   className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-2xl py-3 text-sm shadow-md flex items-center justify-center gap-2"
@@ -909,7 +926,10 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
                   setShowPreferenceModal(false)
                   setHasConfirmedPreference(true)
                   if (typeof window !== "undefined") {
-                    sessionStorage.setItem("palenque_go_preferences_confirmed", "true")
+                    localStorage.setItem("palenque_go_preferences_confirmed", "true")
+                    localStorage.setItem("palenque_go_selected_category", selectedPrefCategory)
+                    localStorage.setItem("palenque_go_selected_route", selectedPrefRoute)
+                    localStorage.setItem("palenque_go_selected_price", selectedPriceRange)
                   }
                 }}
                 className="absolute top-4 right-4 p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
@@ -944,7 +964,12 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
                       <button
                         key={cat.id}
                         type="button"
-                        onClick={() => setSelectedPrefCategory(cat.id)}
+                        onClick={() => {
+                          setSelectedPrefCategory(cat.id)
+                          if (typeof window !== "undefined") {
+                            localStorage.setItem("palenque_go_selected_category", cat.id)
+                          }
+                        }}
                         className={cn(
                           "p-3 rounded-2xl border-2 text-left transition-all active:scale-95 flex items-center gap-3 relative overflow-hidden group shadow-2xs",
                           isSelected
@@ -989,7 +1014,12 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
                   {selectedPrefRoute !== "ALL" && (
                     <button
                       type="button"
-                      onClick={() => setSelectedPrefRoute("ALL")}
+                      onClick={() => {
+                        setSelectedPrefRoute("ALL")
+                        if (typeof window !== "undefined") {
+                          localStorage.setItem("palenque_go_selected_route", "ALL")
+                        }
+                      }}
                       className="text-[11px] font-bold text-emerald-700 hover:underline"
                     >
                       Quitar ruta
@@ -1011,7 +1041,12 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
                           <button
                             key={`recent-${routeName}`}
                             type="button"
-                            onClick={() => setSelectedPrefRoute(routeName)}
+                            onClick={() => {
+                              setSelectedPrefRoute(routeName)
+                              if (typeof window !== "undefined") {
+                                localStorage.setItem("palenque_go_selected_route", routeName)
+                              }
+                            }}
                             className={cn(
                               "px-2.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 active:scale-95 border",
                               isSelected
@@ -1086,7 +1121,12 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
                 <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto p-1.5 bg-gray-50/70 rounded-2xl border border-gray-100">
                   <button
                     type="button"
-                    onClick={() => setSelectedPrefRoute("ALL")}
+                    onClick={() => {
+                      setSelectedPrefRoute("ALL")
+                      if (typeof window !== "undefined") {
+                        localStorage.setItem("palenque_go_selected_route", "ALL")
+                      }
+                    }}
                     className={cn(
                       "px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition-all flex items-center gap-1.5 active:scale-95 border",
                       selectedPrefRoute === "ALL"
@@ -1113,7 +1153,12 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
                         <button
                           key={r.id}
                           type="button"
-                          onClick={() => setSelectedPrefRoute(r.name)}
+                          onClick={() => {
+                            setSelectedPrefRoute(r.name)
+                            if (typeof window !== "undefined") {
+                              localStorage.setItem("palenque_go_selected_route", r.name)
+                            }
+                          }}
                           className={cn(
                             "px-2.5 py-1.5 rounded-xl text-[11px] font-semibold transition-all text-left truncate max-w-full flex items-center gap-1.5 active:scale-95 border",
                             isSelected
@@ -1154,7 +1199,12 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
                       <button
                         key={p.id}
                         type="button"
-                        onClick={() => setSelectedPriceRange(p.id)}
+                        onClick={() => {
+                          setSelectedPriceRange(p.id)
+                          if (typeof window !== "undefined") {
+                            localStorage.setItem("palenque_go_selected_price", p.id)
+                          }
+                        }}
                         className={cn(
                           "p-2.5 rounded-2xl text-left border transition-all active:scale-98 flex flex-col justify-between",
                           isSelected
