@@ -71,13 +71,26 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
 
   const service = services.find((s) => s.id === parseInt(resolvedParams.id))
 
+  const handleBack = () => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search)
+      const fromParam = urlParams.get("from") || sessionStorage.getItem("palenque_return_tab")
+      if (fromParam) {
+        sessionStorage.removeItem("palenque_return_tab")
+        router.push(`/?tab=${fromParam}`)
+        return
+      }
+    }
+    router.back()
+  }
+
   // Render not found state after all hooks
   if (!service) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center max-w-md mx-auto">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-foreground mb-4">Servicio no encontrado</h1>
-          <Button onClick={() => router.back()}>Volver</Button>
+          <Button onClick={handleBack}>Volver</Button>
         </div>
       </div>
     )
@@ -117,7 +130,7 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
       {/* Header with Back Button - Fixed */}
       <div className="sticky top-0 z-20 bg-background border-b border-border px-4 py-3 flex items-center justify-between">
         <button
-          onClick={() => router.back()}
+          onClick={handleBack}
           className="w-10 h-10 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
         >
           <ChevronLeft className="w-5 h-5 text-foreground" />

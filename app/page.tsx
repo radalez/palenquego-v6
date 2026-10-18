@@ -98,6 +98,25 @@ export default function Home() {
     }
   }, []);
 
+  // Soporte para regresar a la pestaña de origen (?tab=rutas o retorno desde detalle/sessionStorage)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get("tab") as ActiveTab;
+    const returnTab = sessionStorage.getItem("palenque_return_tab") as ActiveTab;
+
+    if (tabParam) {
+      setActiveTab(tabParam);
+      sessionStorage.removeItem("palenque_return_tab");
+      const url = new URL(window.location.href);
+      url.searchParams.delete("tab");
+      window.history.replaceState({}, document.title, url.pathname + (url.search ? url.search : ""));
+    } else if (returnTab) {
+      setActiveTab(returnTab);
+      sessionStorage.removeItem("palenque_return_tab");
+    }
+  }, []);
+
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [authView, setAuthView] = useState<"login" | "register">("register")
   const [showShareModal, setShowShareModal] = useState(false)

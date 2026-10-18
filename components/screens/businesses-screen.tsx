@@ -192,7 +192,12 @@ export function BusinessesScreen({ onNavigate }: BusinessesScreenProps) {
           filteredBusinesses.map((business) => (
           <div
             key={business.id}
-            onClick={() => router.push(`/b/${business.id}`)}
+            onClick={() => {
+              if (typeof window !== "undefined") {
+                sessionStorage.setItem("palenque_return_tab", "businesses")
+              }
+              router.push(`/b/${business.id}?from=businesses`)
+            }}
             className="bg-card rounded-2xl overflow-hidden shadow-sm border border-border hover:border-primary transition-colors cursor-pointer"
           >
               {/* Cover Image */}

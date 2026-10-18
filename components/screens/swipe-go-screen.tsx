@@ -602,7 +602,12 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
                 service={service}
                 isFront={isFront}
                 onSwipe={handleSwipe}
-                onInfoClick={() => router.push(`/s/${service.id}`)}
+                onInfoClick={() => {
+                  if (typeof window !== "undefined") {
+                    sessionStorage.setItem("palenque_return_tab", "rutas")
+                  }
+                  router.push(`/s/${service.id}?from=rutas`)
+                }}
                 showPoolTooltip={isFront ? showPoolTooltip : false}
                 setShowPoolTooltip={setShowPoolTooltip}
                 pools={pools}
@@ -637,10 +642,16 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
           </button>
           
           <button
-            onClick={() => router.push(`/s/${deck[currentIndex].id}`)}
+            onClick={() => {
+              if (typeof window !== "undefined") {
+                sessionStorage.setItem("palenque_return_tab", "rutas")
+              }
+              router.push(`/s/${deck[currentIndex].id}?from=rutas`)
+            }}
             className="w-12 h-12 rounded-full bg-white shadow-md flex items-center justify-center border border-gray-100 hover:scale-105 active:scale-95 transition-all text-blue-500"
+            title="Ver detalles"
           >
-            <Info className="w-6 h-6" />
+            <HelpCircle className="w-6 h-6" />
           </button>
           
           <button
@@ -1322,10 +1333,10 @@ function SwipeableServiceCard({
               e.stopPropagation();
               onInfoClick();
             }}
-            title="Más información"
+            title="Ver detalles"
             className="w-14 h-14 rounded-full bg-white shadow-lg border border-blue-200 flex items-center justify-center text-blue-500 hover:bg-blue-50 active:scale-95 transition-all shrink-0"
           >
-            <Info className="w-7 h-7 stroke-[2.5]" />
+            <HelpCircle className="w-8 h-8 stroke-[2.5]" />
           </button>
 
           <button

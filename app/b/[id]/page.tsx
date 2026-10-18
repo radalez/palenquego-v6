@@ -57,13 +57,26 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
     )
   }
 
+  const handleBack = () => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search)
+      const fromParam = urlParams.get("from") || sessionStorage.getItem("palenque_return_tab")
+      if (fromParam) {
+        sessionStorage.removeItem("palenque_return_tab")
+        router.push(`/?tab=${fromParam}`)
+        return
+      }
+    }
+    router.back()
+  }
+
   // Render not found state after all hooks
   if (!business) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center max-w-md mx-auto">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-foreground mb-4">Negocio no encontrado</h1>
-          <Button onClick={() => router.back()}>Volver</Button>
+          <Button onClick={handleBack}>Volver</Button>
         </div>
       </div>
     )
@@ -97,7 +110,7 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
       {/* Header with Back Button - Fixed con z-index superior para evitar solapamientos */}
       <div className="sticky top-0 z-40 bg-background border-b border-border px-4 py-3 flex items-center justify-between flex-shrink-0">
         <button
-          onClick={() => router.back()}
+          onClick={handleBack}
           className="w-10 h-10 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
         >
           <ChevronLeft className="w-5 h-5 text-foreground" />

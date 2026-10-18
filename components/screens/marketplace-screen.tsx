@@ -394,7 +394,15 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
 
               <div className="p-4">
                 <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1 cursor-pointer" onClick={() => router.push(`/s/${service.id}`)}>
+                  <div 
+                    className="flex-1 cursor-pointer" 
+                    onClick={() => {
+                      if (typeof window !== "undefined") {
+                        sessionStorage.setItem("palenque_return_tab", "marketplace");
+                      }
+                      router.push(`/s/${service.id}?from=marketplace`);
+                    }}
+                  >
                     {/* Usamos el nombre unificado */}
                     <h3 className="font-bold text-foreground hover:text-primary transition-colors text-lg">
                       {service.name}
@@ -455,7 +463,12 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
                     <Button
                       variant="outline"
                       className="flex-1 rounded-xl"
-                      onClick={() => router.push(`/s/${service.id}`)}
+                      onClick={() => {
+                        if (typeof window !== "undefined") {
+                          sessionStorage.setItem("palenque_return_tab", "marketplace");
+                        }
+                        router.push(`/s/${service.id}?from=marketplace`);
+                      }}
                     >
                       Ver Detalles
                     </Button>
