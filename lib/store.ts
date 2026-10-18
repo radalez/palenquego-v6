@@ -62,6 +62,7 @@ export interface Service {
   image: string
   isRemate?: boolean
   discount?: number
+  poolDiscount?: number
   allowsPool: boolean
   hasActivePool?: boolean
   spotsLeft: number
@@ -299,6 +300,22 @@ interface AppState {
   isAuthenticated: boolean
   hasCompletedOnboarding: boolean
   userPlan: "FREE" | "ORO" | "PLATINO" | "PRO"
+  hasChosenIntentions: boolean
+  setHasChosenIntentions: (chosen: boolean) => void
+  userIntentions: {
+    isTraveler: boolean;
+    wantsToLeadPools: boolean;
+    wantsToDrive: boolean;
+    isBusinessOwner: boolean;
+  }
+  setUserIntentions: (intentions: Partial<{
+    isTraveler: boolean;
+    wantsToLeadPools: boolean;
+    wantsToDrive: boolean;
+    isBusinessOwner: boolean;
+  }>) => void
+  registeredRouteInterests: number[]
+  registerRouteInterest: (routeId: number) => Promise<boolean>
   registerPoolInterest: (serviceId: number) => Promise<boolean>
   paymentMethods: Array<{ id: string; type: string; last4: string; isDefault: boolean }>
   notifications: { email: boolean; sms: boolean; push: boolean }
@@ -476,7 +493,15 @@ export const useAppStore = create<AppState>()(
       accessToken: null,
       refreshToken: null,      
       hasCompletedOnboarding: false,
+      hasChosenIntentions: false,
       userPlan: "FREE",
+      userIntentions: {
+        isTraveler: true,
+        wantsToLeadPools: false,
+        wantsToDrive: false,
+        isBusinessOwner: false,
+      },
+      registeredRouteInterests: [],
       paymentMethods: [
         { id: "1", type: "Visa", last4: "4242", isDefault: true },
         { id: "2", type: "Mastercard", last4: "5555", isDefault: false },
@@ -972,6 +997,39 @@ export const useAppStore = create<AppState>()(
       },
 
       completeOnboarding: () => set({ hasCompletedOnboarding: true }),
+      setHasChosenIntentions: (chosen: boolean) => set({ hasChosenIntentions: chosen }),
+      setUserIntentions: (newIntentions) =>
+        set((state) => ({
+          hasChosenIntentions: true,
+          userIntentions: {
+            ...state.userIntentions,
+            ...newIntentions,
+          },
+        })),
+      registerRouteInterest: async (routeId: number) => {
+        const state = get();
+        if (!state.registeredRouteInterests.includes(routeId)) {
+          set({
+            registeredRouteInterests: [...state.registeredRouteInterests, routeId],
+          });
+        }
+        try {
+          if (state.accessToken) {
+            await fetch(`${API_BASE}/transport/routes/${routeId}/interest/`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${state.accessToken}`,
+              },
+              body: JSON.stringify({ interest: true }),
+            });
+          }
+          return true;
+        } catch (e) {
+          console.error("Error al registrar intención de ruta:", e);
+          return true;
+        }
+      },
       logout: () => {
         try {
           if (typeof window !== "undefined") {

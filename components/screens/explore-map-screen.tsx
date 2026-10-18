@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useAppStore, fetchWithAuth } from "@/lib/store"
 import { UserRoutesModal } from "@/components/user-routes-modal"
+import { CreatePoolModal } from "@/components/create-pool-modal"
 
 const containerStyle = { width: '100%', height: '100%' }
 const API_BASE = "/api-proxy"
@@ -220,8 +221,12 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
   const fetchRequestedTrips = useAppStore((state) => state.fetchRequestedTrips)
   const homeSlides = useAppStore((state) => state.homeSlides)
   const fetchHomeSlides = useAppStore((state) => state.fetchHomeSlides)
+  const userIntentions = useAppStore((state) => state.userIntentions)
+  const registeredRouteInterests = useAppStore((state) => state.registeredRouteInterests) || []
+  const registerRouteInterest = useAppStore((state) => state.registerRouteInterest)
 
   const [isUserRoutesModalOpen, setIsUserRoutesModalOpen] = useState(false)
+  const [poolRouteForModal, setPoolRouteForModal] = useState<any | null>(null)
   const [mapPickMode, setMapPickMode] = useState<'origin' | 'destination' | null>(null)
   const [currentPickedOrigin, setCurrentPickedOrigin] = useState<{ name: string; lat: number; lng: number } | null>(null)
   const [currentPickedDestination, setCurrentPickedDestination] = useState<{ name: string; lat: number; lng: number } | null>(null)
@@ -1993,6 +1998,61 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
                     </div>
                   </div>
 
+                  {/* CINTILLO Y ACCIONES DE POOL SEGÚN INTENCIÓN DEL USUARIO */}
+                  {(() => {
+                    const isInterestMarked = registeredRouteInterests.includes(previewRoute.id);
+                    const discountPct = (previewRoute as any).descuento_pool || (previewRoute.route_type === 'TOUR' ? 20 : 15);
+                    const isLeader = userIntentions?.wantsToLeadPools;
+                    const isTraveler = userIntentions?.isTraveler ?? true;
+
+                    return (
+                      <div className="bg-emerald-50/80 border border-emerald-200/80 rounded-xl p-2.5 flex flex-col gap-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-emerald-900 flex items-center gap-1">
+                            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                            Ahorra hasta {discountPct}% en grupo
+                          </span>
+                          <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100/90 px-2 py-0.5 rounded-full">
+                            Tarifa Pool
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          {isTraveler && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                registerRouteInterest(previewRoute.id);
+                              }}
+                              className={`flex-1 text-[11px] font-bold py-1.5 px-2.5 rounded-lg transition-all flex items-center justify-center gap-1 shadow-2xs active:scale-95 ${
+                                isInterestMarked
+                                  ? "bg-emerald-600 text-white"
+                                  : "bg-white border border-emerald-300 text-emerald-900 hover:bg-emerald-100/50"
+                              }`}
+                            >
+                              <span>{isInterestMarked ? "✓ Te avisaremos" : "🔔 Me interesa"}</span>
+                            </button>
+                          )}
+
+                          {isLeader && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPoolRouteForModal(previewRoute);
+                              }}
+                              className="flex-1 bg-emerald-700 hover:bg-emerald-800 text-white text-[11px] font-bold py-1.5 px-2.5 rounded-lg transition-all flex items-center justify-center gap-1 shadow-2xs active:scale-95"
+                            >
+                              <Users className="w-3.5 h-3.5" />
+                              <span>Armar viaje</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   <Button
                     onClick={() => {
                       setSelectedRoute(previewRoute);
@@ -2167,6 +2227,34 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
           currentPickedOrigin={currentPickedOrigin}
           currentPickedDestination={currentPickedDestination}
         />
+
+        {/* MODAL DE CREACIÓN DE POOL PARA RUTA/TOUR */}
+        {poolRouteForModal && (
+          <CreatePoolModal
+            service={{
+              id: poolRouteForModal.id,
+              name: poolRouteForModal.name,
+              price: Number(poolRouteForModal.price_one_way) || 20,
+              image: poolRouteForModal.imagen_portada || '/placeholder.svg',
+              category: poolRouteForModal.category?.name || 'Ruta Turística',
+              rating: 4.9,
+              reviewsCount: 12,
+              businessId: 1,
+              businessName: 'PalenqueGo Transportes',
+              allowsPool: true,
+              maxPoolMembers: 14,
+              poolDiscount: poolRouteForModal.descuento_pool || 20,
+              description: poolRouteForModal.descripcion || poolRouteForModal.name,
+              location: 'El Salvador',
+              badge: 'Transporte Oficial',
+              featured: true,
+            } as any}
+            onClose={() => setPoolRouteForModal(null)}
+            onSuccess={() => {
+              setPoolRouteForModal(null)
+            }}
+          />
+        )}
       </div>
     )
   }
@@ -2266,6 +2354,60 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
           <span className="text-[10px] text-gray-500">{selectedRoute?.duracion ? 'Duración' : 'Estimado'}</span>
         </div>
       </div>
+
+      {/* TARJETA DE POOL & DEMANDA EN DETALLE DE RUTA */}
+      {selectedRoute && (() => {
+        const isInterestMarked = registeredRouteInterests.includes(selectedRoute.id);
+        const discountPct = (selectedRoute as any).descuento_pool || (selectedRoute.route_type === 'TOUR' ? 20 : 15);
+        const isLeader = userIntentions?.wantsToLeadPools;
+        const isTraveler = userIntentions?.isTraveler ?? true;
+
+        return (
+          <div className="relative z-20 mx-4 mt-2 bg-gradient-to-r from-[#064e3b] to-emerald-800 rounded-2xl shadow-lg p-3 text-white flex flex-col gap-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+                  <Users className="w-4 h-4 text-emerald-200" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold leading-tight">Viaja en Grupo (Pool Palenque)</p>
+                  <p className="text-[10px] text-emerald-200">Ahorra hasta {discountPct}% y comparte traslado</p>
+                </div>
+              </div>
+              <span className="text-[10px] font-extrabold uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full border border-white/30 shrink-0">
+                Ahorro {discountPct}%
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2 pt-1 border-t border-white/15">
+              {isTraveler && (
+                <button
+                  type="button"
+                  onClick={() => registerRouteInterest(selectedRoute.id)}
+                  className={`flex-1 text-xs font-bold py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95 ${
+                    isInterestMarked
+                      ? "bg-emerald-500 text-white"
+                      : "bg-white text-emerald-950 hover:bg-emerald-50"
+                  }`}
+                >
+                  <span>{isInterestMarked ? "✓ Te avisaremos" : "🔔 Me interesa"}</span>
+                </button>
+              )}
+
+              {isLeader && (
+                <button
+                  type="button"
+                  onClick={() => setPoolRouteForModal(selectedRoute)}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95 border border-emerald-400/40"
+                >
+                  <Users className="w-3.5 h-3.5" />
+                  <span>Armar viaje (Líder)</span>
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* TARJETA DE ESTADO DE VIAJE SI ES RUTA A DEMANDA */}
       {selectedRoute?.estado_viaje && (
@@ -2376,6 +2518,34 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
           </>
         )}
       </div>
+
+      {/* MODAL DE CREACIÓN DE POOL EN DETALLE DE RUTA */}
+      {poolRouteForModal && (
+        <CreatePoolModal
+          service={{
+            id: poolRouteForModal.id,
+            name: poolRouteForModal.name,
+            price: Number(poolRouteForModal.price_one_way) || 20,
+            image: poolRouteForModal.imagen_portada || '/placeholder.svg',
+            category: poolRouteForModal.category?.name || 'Ruta Turística',
+            rating: 4.9,
+            reviewsCount: 12,
+            businessId: 1,
+            businessName: 'PalenqueGo Transportes',
+            allowsPool: true,
+            maxPoolMembers: 14,
+            poolDiscount: poolRouteForModal.descuento_pool || 20,
+            description: poolRouteForModal.descripcion || poolRouteForModal.name,
+            location: 'El Salvador',
+            badge: 'Transporte Oficial',
+            featured: true,
+          } as any}
+          onClose={() => setPoolRouteForModal(null)}
+          onSuccess={() => {
+            setPoolRouteForModal(null)
+          }}
+        />
+      )}
     </div>
   )
 }

@@ -325,7 +325,7 @@ function SwipeableServiceCard({ service, isFront, onSwipe, onInfoClick, showPool
                 ? (spotsRemaining === 1 || spotsRemaining === 2
                     ? `Falta${spotsRemaining === 1 ? "" : "n"} ${spotsRemaining} ¡Únete ya!`
                     : "Pool Activo Disponible")
-                : "Ahorra desde 10% en tu viaje"}
+                : (service?.poolDiscount || service?.discount ? `Ahorra hasta ${service.poolDiscount || service.discount}% en tu viaje` : "Ahorra hasta 15% en tu viaje")}
             </span>
 
             {activePool && spotsRemaining > 0 ? (
@@ -348,13 +348,13 @@ function SwipeableServiceCard({ service, isFront, onSwipe, onInfoClick, showPool
                   }
                 }}
                 className={cn(
-                  "px-2 py-1 text-[10px] font-bold rounded-lg transition-all shadow-sm shrink-0",
+                  "px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all shadow-sm shrink-0",
                   service && registeredPools.has(service.id)
                     ? "bg-emerald-600 text-white"
                     : "bg-primary text-primary-foreground hover:bg-primary/90"
                 )}
               >
-                {service && registeredPools.has(service.id) ? "✓ Avisarme" : "Avisarme"}
+                {service && registeredPools.has(service.id) ? "✓ Te avisaremos" : "Me interesa"}
               </button>
             )}
 

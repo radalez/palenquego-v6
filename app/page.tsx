@@ -64,6 +64,7 @@ export default function Home() {
 
   const isAuthenticated = useAppStore((state) => state.isAuthenticated)
   const hasCompletedOnboarding = useAppStore((state) => state.hasCompletedOnboarding)
+  const hasChosenIntentions = useAppStore((state) => state.hasChosenIntentions)
   const completeOnboarding = useAppStore((state) => state.completeOnboarding)
   const currentUser = useAppStore((state) => state.currentUser)
   const fetchCurrentUser = useAppStore((state) => state.fetchCurrentUser)
@@ -183,7 +184,7 @@ export default function Home() {
     )
   }
 
-  if (showOnboarding || !hasCompletedOnboarding) {
+  if (showOnboarding || !hasCompletedOnboarding || !hasChosenIntentions) {
     return <OnboardingScreen onComplete={handleOnboardingComplete} />
   }
 

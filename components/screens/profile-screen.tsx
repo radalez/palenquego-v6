@@ -22,8 +22,13 @@ import {
   CheckCircle2,
   Clock,
   Truck,
-  AlertCircle,
   Store,
+  Palmtree,
+  Users,
+  Car,
+  Building2,
+  Sparkles,
+  Check,
 } from "lucide-react"
 import QRCode from "react-qr-code"
 import { Button } from "@/components/ui/button"
@@ -37,7 +42,7 @@ interface ProfileScreenProps {
 }
 
 export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: ProfileScreenProps) {
-  const { currentUser, logout, bookings, pools, userFavorites, recommendations, payServiceWompi, accessToken } = useAppStore()
+  const { currentUser, logout, bookings, pools, userFavorites, recommendations, payServiceWompi, accessToken, userIntentions, setUserIntentions } = useAppStore()
   const [selectedQrBooking, setSelectedQrBooking] = useState<Booking | null>(null)
   const [payingWompiId, setPayingWompiId] = useState<number | null>(null)
 
@@ -279,6 +284,134 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
             <p className="text-2xl font-bold text-foreground">${totalSpent}</p>
             <p className="text-xs text-muted-foreground">Gastado</p>
           </div>
+        </div>
+      </div>
+
+      {/* SECCIÓN: MIS PREFERENCIAS E INTENCIONES */}
+      <div className="px-4 mt-6 w-full max-w-3xl mx-auto">
+        <div className="bg-card rounded-2xl p-4 md:p-5 border border-border shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" />
+              <h3 className="text-sm font-bold text-foreground">MIS INTENCIONES EN PALENQUEGO</h3>
+            </div>
+            <span className="text-[10px] text-muted-foreground">Toca para cambiar</span>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+            Personaliza cómo interactúas con los mapas, rutas y compras grupales:
+          </p>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            {/* Viajero */}
+            <button
+              type="button"
+              onClick={() => setUserIntentions({ isTraveler: !userIntentions?.isTraveler })}
+              className={`p-2.5 rounded-xl border text-left transition-all flex flex-col gap-1.5 ${
+                userIntentions?.isTraveler
+                  ? "bg-emerald-500/10 border-emerald-500 text-emerald-900 dark:text-emerald-300"
+                  : "bg-muted/40 border-border text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <Palmtree className="w-4 h-4" />
+                {userIntentions?.isTraveler && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+              </div>
+              <span className="text-xs font-bold leading-tight">Viajero</span>
+              <span className="text-[10px] opacity-80 leading-none">Explorar y tours</span>
+            </button>
+
+            {/* Armar Pools */}
+            <button
+              type="button"
+              onClick={() => setUserIntentions({ wantsToLeadPools: !userIntentions?.wantsToLeadPools })}
+              className={`p-2.5 rounded-xl border text-left transition-all flex flex-col gap-1.5 ${
+                userIntentions?.wantsToLeadPools
+                  ? "bg-emerald-500/10 border-emerald-500 text-emerald-900 dark:text-emerald-300"
+                  : "bg-muted/40 border-border text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <Users className="w-4 h-4" />
+                {userIntentions?.wantsToLeadPools && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+              </div>
+              <span className="text-xs font-bold leading-tight">Líder Pool</span>
+              <span className="text-[10px] opacity-80 leading-none">Organizar grupos</span>
+            </button>
+
+            {/* Chofer */}
+            <button
+              type="button"
+              onClick={() => setUserIntentions({ wantsToDrive: !userIntentions?.wantsToDrive })}
+              className={`p-2.5 rounded-xl border text-left transition-all flex flex-col gap-1.5 ${
+                userIntentions?.wantsToDrive
+                  ? "bg-emerald-500/10 border-emerald-500 text-emerald-900 dark:text-emerald-300"
+                  : "bg-muted/40 border-border text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <Car className="w-4 h-4" />
+                {userIntentions?.wantsToDrive && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+              </div>
+              <span className="text-xs font-bold leading-tight">Conductor</span>
+              <span className="text-[10px] opacity-80 leading-none">Tengo vehículo</span>
+            </button>
+
+            {/* Negocio */}
+            <button
+              type="button"
+              onClick={() => setUserIntentions({ isBusinessOwner: !userIntentions?.isBusinessOwner })}
+              className={`p-2.5 rounded-xl border text-left transition-all flex flex-col gap-1.5 ${
+                userIntentions?.isBusinessOwner
+                  ? "bg-emerald-500/10 border-emerald-500 text-emerald-900 dark:text-emerald-300"
+                  : "bg-muted/40 border-border text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <Building2 className="w-4 h-4" />
+                {userIntentions?.isBusinessOwner && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+              </div>
+              <span className="text-xs font-bold leading-tight">Negocio</span>
+              <span className="text-[10px] opacity-80 leading-none">Transporte / Hotel</span>
+            </button>
+          </div>
+
+          {/* Prompt contextual para Chofer */}
+          {userIntentions?.wantsToDrive && currentUser?.tipo !== "CHOFER" && (
+            <div className="mt-3 bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Car className="w-5 h-5 text-amber-600 shrink-0" />
+                <p className="text-xs text-amber-950 dark:text-amber-200 leading-snug">
+                  <strong className="font-bold">Interés de Conductor:</strong> Inicia tu verificación de chofer para recibir solicitudes de viajes.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => onNavigateToSettings?.("kyc")}
+                className="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold h-8 px-3 rounded-lg shrink-0"
+              >
+                Verificar
+              </Button>
+            </div>
+          )}
+
+          {/* Prompt contextual para Negocio */}
+          {userIntentions?.isBusinessOwner && currentUser?.tipo !== "ALIADO" && (
+            <div className="mt-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Store className="w-5 h-5 text-emerald-600 shrink-0" />
+                <p className="text-xs text-emerald-950 dark:text-emerald-200 leading-snug">
+                  <strong className="font-bold">Interés de Negocio / Flota:</strong> Reclama tu comercio o publica tus salidas oficiales de transporte.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => window.open("/reclamar-negocio/", "_blank")}
+                className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold h-8 px-3 rounded-lg shrink-0"
+              >
+                Reclamar
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
