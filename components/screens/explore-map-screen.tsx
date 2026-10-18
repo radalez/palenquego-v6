@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button"
 import { useAppStore, fetchWithAuth } from "@/lib/store"
 import { UserRoutesModal } from "@/components/user-routes-modal"
 import { CreatePoolModal } from "@/components/create-pool-modal"
+import { formatImageUrl, getRouteImageUrl, handleImageFallback } from "@/lib/utils"
 
 const containerStyle = { width: '100%', height: '100%' }
 const API_BASE = "/api-proxy"
@@ -923,7 +924,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
           <div className="grid grid-cols-2 gap-2.5">
             {tourCards.map((tour) => {
               const targetStop = (tour.stops && tour.stops.length > 1) ? tour.stops[1] : tour.stops?.[0]
-              const coverImg = tour.imagen_portada || (tour.stops_images && tour.stops_images[0]) || '/placeholder.svg'
+              const coverImg = getRouteImageUrl(tour)
               return (
                 <div
                   key={tour.id}
@@ -942,9 +943,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
                     src={coverImg}
                     alt={tour.name}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src = 'https://res.cloudinary.com/dacanh1gn/image/upload/v1791135831/palenque_banners/slide_3_tours_costa.webp'
-                    }}
+                    onError={handleImageFallback}
                   />
                   {/* Badges superiores: Precio y Duración */}
                   <div className="absolute top-2 left-2 right-2 flex items-center justify-between gap-1 pointer-events-none z-10">
@@ -1521,12 +1520,10 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
                           >
                             {route.imagen_portada ? (
                               <img
-                                src={route.imagen_portada}
+                                src={formatImageUrl(route.imagen_portada)}
                                 alt={route.name}
                                 className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  (e.currentTarget as HTMLElement).style.display = 'none';
-                                }}
+                                onError={handleImageFallback}
                               />
                             ) : (
                               <DynamicIcon name={route.category?.icon || (route.route_type === 'TOUR' ? 'Camera' : 'Bus')} className="h-5 w-5" style={{ color: rColor }} />
@@ -1857,12 +1854,10 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
                   {previewImages.length > 0 && (
                     <div className="relative -mx-3 sm:-mx-3.5 -mt-3 sm:-mt-3.5 h-26 sm:h-28 overflow-hidden group bg-gray-900">
                       <img 
-                        src={currentImage} 
+                        src={formatImageUrl(currentImage)} 
                         alt={previewRoute.name} 
                         className="w-full h-full object-cover transition-all duration-300 select-none"
-                        onError={(e) => {
-                          (e.currentTarget.parentElement as HTMLElement).style.display = 'none';
-                        }}
+                        onError={handleImageFallback}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/30 pointer-events-none" />
                       
@@ -2237,7 +2232,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
               id: poolRouteForModal.id,
               name: poolRouteForModal.name,
               price: Number(poolRouteForModal.price_one_way) || 20,
-              image: poolRouteForModal.imagen_portada || '/placeholder.svg',
+              image: getRouteImageUrl(poolRouteForModal),
               category: poolRouteForModal.category?.name || 'Ruta Turística',
               rating: 4.9,
               reviewsCount: 12,
@@ -2297,15 +2292,13 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
 
       {/* HEADER OVERLAY sobre el mapa */}
       <div className="relative z-20 bg-[#0B1F15] px-4 pt-12 pb-4 flex items-center gap-3 overflow-hidden">
-        {selectedRoute?.imagen_portada && (
+        {selectedRoute && (
           <div className="absolute inset-0 pointer-events-none z-0">
             <img 
-              src={selectedRoute.imagen_portada} 
+              src={getRouteImageUrl(selectedRoute)} 
               alt={selectedRoute.name} 
               className="w-full h-full object-cover opacity-30"
-              onError={(e) => {
-                (e.currentTarget.parentElement as HTMLElement).style.display = 'none';
-              }}
+              onError={handleImageFallback}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#0B1F15] via-[#0B1F15]/80 to-transparent" />
           </div>
@@ -2315,11 +2308,12 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
         </Button>
         <div className="flex items-center gap-3 flex-1 min-w-0 relative z-10">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-md shrink-0 overflow-hidden" style={{ backgroundColor: catColor }}>
-            {selectedRoute?.imagen_portada ? (
-              <img src={selectedRoute.imagen_portada} alt={selectedRoute.name} className="w-full h-full object-cover" />
-            ) : (
-              <DynamicIcon name={catIcon} className="h-5 w-5" />
-            )}
+            <img 
+              src={getRouteImageUrl(selectedRoute)} 
+              alt={selectedRoute?.name || 'Ruta'} 
+              className="w-full h-full object-cover" 
+              onError={handleImageFallback}
+            />
           </div>
           <div className="min-w-0">
             <h2 className="text-white font-bold text-base leading-tight truncate">{selectedRoute?.name}</h2>
@@ -2564,7 +2558,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
             id: poolRouteForModal.id,
             name: poolRouteForModal.name,
             price: Number(poolRouteForModal.price_one_way) || 20,
-            image: poolRouteForModal.imagen_portada || '/placeholder.svg',
+            image: getRouteImageUrl(poolRouteForModal),
             category: poolRouteForModal.category?.name || 'Ruta Turística',
             rating: 4.9,
             reviewsCount: 12,

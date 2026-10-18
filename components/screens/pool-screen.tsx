@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Users, Clock, MapPin, ChevronRight, Zap, Share2, Plus, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
+import { cn, formatImageUrl, handleImageFallback } from "@/lib/utils"
 import { useAppStore, type Pool } from "@/lib/store"
 import { CreatePoolModal } from "@/components/create-pool-modal"
 import { HeaderWithMenu } from "@/components/header-with-menu"
@@ -124,9 +124,10 @@ const isUserInPool = (pool: Pool) => {
                   {/* Image */}
                   <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
                     <img
-                      src={pool.image || "/placeholder.svg"}
+                      src={formatImageUrl(pool.image)}
                       alt={pool.serviceName}
                       className="w-full h-full object-cover"
+                      onError={handleImageFallback}
                     />
                   </div>
 
@@ -255,9 +256,10 @@ function PoolDetail({
       {/* Header Image */}
       <div className="relative h-48">
         <img
-          src={currentPool.image || "/placeholder.svg"}
+          src={formatImageUrl(currentPool.image)}
           alt={currentPool.serviceName}
           className="w-full h-full object-cover"
+          onError={handleImageFallback}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         <button

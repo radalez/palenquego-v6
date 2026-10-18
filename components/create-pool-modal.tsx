@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { X, Users, Calendar, Clock, ChevronRight, Check, Share2, Copy } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+import { cn, formatImageUrl, handleImageFallback } from "@/lib/utils"
 import { useAppStore, type Service, type Pool } from "@/lib/store"
 
 interface CreatePoolModalProps {
@@ -108,9 +108,10 @@ export function CreatePoolModal({ service: initialService, onClose, onSuccess }:
                   className="w-full flex items-center gap-4 p-3 bg-card rounded-xl border border-border hover:border-primary transition-colors text-left"
                 >
                   <img
-                    src={svc.image || "/placeholder.svg"}
+                    src={formatImageUrl(svc.image)}
                     alt={svc.name}
                     className="w-16 h-16 rounded-lg object-cover"
+                    onError={handleImageFallback}
                   />
                   <div className="flex-1">
                     <h3 className="font-medium text-foreground">{svc.name}</h3>
@@ -130,9 +131,10 @@ export function CreatePoolModal({ service: initialService, onClose, onSuccess }:
             {/* Service Summary */}
             <div className="flex gap-4 p-3 bg-muted rounded-xl">
               <img
-                src={selectedService.image || "/placeholder.svg"}
+                src={formatImageUrl(selectedService.image)}
                 alt={selectedService.name}
                 className="w-20 h-20 rounded-lg object-cover"
+                onError={handleImageFallback}
               />
               <div>
                 <h3 className="font-semibold text-foreground">{selectedService.name}</h3>
@@ -388,9 +390,10 @@ export function CreatePoolModal({ service: initialService, onClose, onSuccess }:
             <div className="bg-card border border-border rounded-xl p-4">
               <div className="flex items-center gap-3 mb-4">
                 <img
-                  src={createdPool.image || "/placeholder.svg"}
+                  src={formatImageUrl(createdPool.image)}
                   alt={createdPool.serviceName}
                   className="w-16 h-16 rounded-lg object-cover"
+                  onError={handleImageFallback}
                 />
                 <div className="text-left">
                   <h4 className="font-semibold text-foreground">{createdPool.serviceName}</h4>
