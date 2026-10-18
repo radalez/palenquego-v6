@@ -14,24 +14,43 @@ interface CreatePoolModalProps {
 
 type CreatePoolStep = "select-service" | "config" | "confirm" | "success"
 
+// Helper to generate dynamic upcoming dates starting from today
+const generateUpcomingDates = (count = 10) => {
+  const daysOfWeek = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
+  const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+  const result = []
+  const today = new Date()
+
+  for (let i = 0; i < count; i++) {
+    const dateObj = new Date(today)
+    dateObj.setDate(today.getDate() + i)
+    const dayName = i === 0 ? "Hoy" : daysOfWeek[dateObj.getDay()]
+    const dateNum = String(dateObj.getDate())
+    const monthName = months[dateObj.getMonth()]
+    const formatted = `${dateNum} ${monthName}`
+    result.push({
+      day: dayName,
+      date: dateNum,
+      month: monthName,
+      formatted,
+      isToday: i === 0,
+      iso: dateObj.toISOString().split("T")[0],
+    })
+  }
+  return result
+}
+
 export function CreatePoolModal({ service: initialService, onClose, onSuccess }: CreatePoolModalProps) {
+  const upcomingDates = generateUpcomingDates(10)
   const [step, setStep] = useState<CreatePoolStep>(initialService ? "config" : "select-service")
   const [selectedService, setSelectedService] = useState<Service | null>(initialService || null)
   const [targetMembers, setTargetMembers] = useState(4)
-  const [selectedDate, setSelectedDate] = useState("")
+  const [selectedDate, setSelectedDate] = useState(upcomingDates[0]?.formatted || "")
   const [createdPool, setCreatedPool] = useState<Pool | null>(null)
 
   const { services, createPool, currentUser } = useAppStore()
 
   const poolableServices = services.filter((s) => s.allowsPool)
-
-  const dates = [
-    { day: "Hoy", date: "15", month: "Ene" },
-    { day: "Mar", date: "16", month: "Ene" },
-    { day: "Mie", date: "17", month: "Ene" },
-    { day: "Jue", date: "18", month: "Ene" },
-    { day: "Vie", date: "19", month: "Ene" },
-  ]
 
   // Busca handleCreatePool en create-pool-modal.tsx:
   // Busca handleCreatePool en create-pool-modal.tsx
@@ -148,29 +167,101 @@ export function CreatePoolModal({ service: initialService, onClose, onSuccess }:
               </div>
             </div>
 
-            {/* Date */}
+            {/* Date Selection */}
             <div>
-              <label className="text-sm font-medium text-foreground mb-2 block">
-                <Calendar className="w-4 h-4 inline mr-2" />
-                Fecha del servicio
-              </label>
-              <div className="flex gap-2 overflow-x-auto pb-2">
-                {dates.map((d, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setSelectedDate(`${d.date} ${d.month}`)}
-                    className={cn(
-                      "flex flex-col items-center px-4 py-3 rounded-xl min-w-[70px] transition-all",
-                      selectedDate === `${d.date} ${d.month}`
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground",
-                    )}
-                  >
-                    <span className="text-xs">{d.day}</span>
-                    <span className="text-lg font-bold">{d.date}</span>
-                    <span className="text-xs">{d.month}</span>
-                  </button>
-                ))}
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                  <Calendar className="w-4 h-4 text-primary" />
+                  Fecha del servicio
+                </label>
+
+                {/* Date Picker Button para cualquier fecha futura */}
+                <div className="relative inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 border border-primary/30 hover:bg-primary/20 transition-all cursor-pointer shadow-2xs group">
+                  <Calendar className="w-3.5 h-3.5 text-primary group-hover:scale-110 transition-transform" />
+                  <span className="text-xs font-bold text-primary">
+                    {upcomingDates.some((d) => d.formatted === selectedDate) ? "Otra fecha" : `📅 ${selectedDate}`}
+                  </span>
+                  <input
+                    type="date"
+                    min={new Date().toISOString().split("T")[0]}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        const [year, month, day] = e.target.value.split("-")
+                        const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+                        const monthName = months[parseInt(month, 10) - 1]
+                        const formatted = `${parseInt(day, 10)} ${monthName}`
+                        setSelectedDate(formatted)
+                      }
+                    }}
+                    onClick={(e) => {
+                      try {
+                        if ("showPicker" in e.currentTarget) {
+                          e.currentTarget.showPicker()
+                        }
+                      } catch (err) {}
+                    }}
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-30 block"
+                    title="Haz clic para elegir cualquier fecha futura del calendario"
+                  />
+                </div>
+              </div>
+
+              {/* Quick Date Pills Horizontal Slider */}
+              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none items-center">
+                {/* Custom Future Date Pill placed FIRST */}
+                <div className="relative min-w-[66px] h-[66px] flex flex-col items-center justify-center p-2 rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 hover:bg-primary/10 transition-all text-center cursor-pointer group shrink-0">
+                  <Calendar className="w-4 h-4 text-primary mb-0.5 group-hover:scale-110 transition-transform" />
+                  <span className="text-[10px] font-bold text-primary leading-tight">Elegir</span>
+                  <span className="text-[9px] text-muted-foreground">Fecha</span>
+                  <input
+                    type="date"
+                    min={new Date().toISOString().split("T")[0]}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        const [year, month, day] = e.target.value.split("-")
+                        const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+                        const monthName = months[parseInt(month, 10) - 1]
+                        const formatted = `${parseInt(day, 10)} ${monthName}`
+                        setSelectedDate(formatted)
+                      }
+                    }}
+                    onClick={(e) => {
+                      try {
+                        if ("showPicker" in e.currentTarget) {
+                          e.currentTarget.showPicker()
+                        }
+                      } catch (err) {}
+                    }}
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-30"
+                  />
+                </div>
+
+                {upcomingDates.map((d, i) => {
+                  const isSelected = selectedDate === d.formatted
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setSelectedDate(d.formatted)}
+                      className={cn(
+                        "flex flex-col items-center justify-center min-w-[62px] h-[66px] px-2 py-1 rounded-xl border transition-all shrink-0",
+                        isSelected
+                          ? "bg-primary text-primary-foreground border-primary shadow-sm ring-2 ring-primary/20 scale-[1.02]"
+                          : "bg-muted text-muted-foreground hover:bg-muted/80 border-border"
+                      )}
+                    >
+                      <span className={cn("text-[11px] font-medium leading-none mb-0.5", isSelected ? "text-primary-foreground/90 font-bold" : "text-muted-foreground")}>
+                        {d.day}
+                      </span>
+                      <span className="text-base font-extrabold leading-tight">
+                        {d.date}
+                      </span>
+                      <span className={cn("text-[10px] uppercase font-semibold leading-none mt-0.5", isSelected ? "text-primary-foreground/90" : "text-muted-foreground")}>
+                        {d.month}
+                      </span>
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
