@@ -1844,7 +1844,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
           </div>
 
           {/* BOTÓN FLOTANTE INFERIOR: EXPLORAR ESTA ZONA */}
-          <div className="absolute bottom-20 lg:bottom-6 left-0 right-0 z-20 flex items-center justify-center pointer-events-none px-4">
+          <div className="absolute bottom-32 lg:bottom-6 left-0 right-0 z-20 flex items-center justify-center pointer-events-none px-4">
             <button
               type="button"
               onClick={handleExploreCurrentZone}
@@ -1856,7 +1856,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
           </div>
 
           {/* BOTÓN FLOTANTE INFERIOR: BRÚJULA RE-CENTRADORA */}
-          <div className="absolute bottom-20 lg:bottom-6 right-4 z-20 pointer-events-auto">
+          <div className="absolute bottom-32 lg:bottom-6 right-4 z-20 pointer-events-auto">
             <button
               type="button"
               onClick={handleUseCurrentLocation}
@@ -2110,7 +2110,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
           {/* ═════════════════════════════════════════════════════════════ */}
           {view === 'map' && (
             <div 
-              className={`lg:hidden absolute bottom-0 left-0 right-0 z-30 bg-white shadow-2xl border-t border-gray-200 transition-all duration-300 ease-out flex flex-col ${
+              className={`lg:hidden absolute bottom-16 left-0 right-0 z-30 bg-white shadow-2xl border-t border-gray-200 transition-all duration-300 ease-out flex flex-col ${
                 isSheetExpanded 
                   ? 'max-h-[55vh] rounded-t-[28px] overflow-y-auto px-4 pt-2.5 pb-6' 
                   : 'h-14 rounded-t-2xl overflow-hidden px-4 py-2 cursor-pointer'
@@ -2437,7 +2437,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
 
       {/* BOTTOM SHEET — lista de paradas + botones */}
       <div 
-        className="absolute bottom-0 left-0 right-0 z-20 bg-white rounded-t-3xl shadow-[0_-8px_30px_rgba(0,0,0,0.12)] flex flex-col transition-all duration-300" 
+        className="absolute bottom-16 lg:bottom-0 left-0 right-0 z-20 bg-white rounded-t-3xl shadow-[0_-8px_30px_rgba(0,0,0,0.12)] flex flex-col transition-all duration-300" 
         style={{ maxHeight: isSheetExpanded ? '55vh' : 'auto' }}
       >
         <div 

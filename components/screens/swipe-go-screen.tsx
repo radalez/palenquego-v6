@@ -526,7 +526,7 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
 
   return (
     <div className="flex flex-col h-full bg-[#f8f9fa] overflow-hidden relative">
-      <HeaderWithMenu title="Explorar Go" onNavigate={onNavigate} />
+      <HeaderWithMenu title="Go" onNavigate={onNavigate} />
 
       {/* Barra de Filtros Activos, Afinidades y Botón de Reiniciar — CON AIRE Y ESPACIO */}
       <div className="px-4 pt-4 pb-3 flex items-center justify-between z-20 shrink-0 gap-2.5 mb-1.5 bg-white/70 backdrop-blur-xs border-b border-gray-100">

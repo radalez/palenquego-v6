@@ -28,6 +28,8 @@ export function SidebarMenu({ activeTab, onNavigate }: SidebarMenuProps) {
   ]
 
   const menuItems = [
+    { id: "marketplace", label: "Servicios & Comercios", icon: Store },
+    { id: "safeflow", label: "Safe-Flow (Seguridad)", icon: Shield },
     { id: "planes", label: "Planes y Membresías", icon: Crown },
     { id: "pagos-extended", label: "Métodos de Pago", icon: CreditCard },
     { id: "notificaciones-extended", label: "Notificaciones", icon: Bell },

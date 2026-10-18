@@ -205,7 +205,14 @@ export default function Home() {
   const isMapExplorer = activeTab === "map-explorer"
 
   const isMainTab =
-    (activeTab === "marketplace" || activeTab === "businesses" || activeTab === "pool" || activeTab === "safeflow" || activeTab === "profile" || activeTab === "rutas" || activeTab === "rutas-classic") && !isMapExplorer
+    activeTab === "map-explorer" ||
+    activeTab === "marketplace" ||
+    activeTab === "businesses" ||
+    activeTab === "pool" ||
+    activeTab === "safeflow" ||
+    activeTab === "profile" ||
+    activeTab === "rutas" ||
+    activeTab === "rutas-classic"
 
   return (
     <div className="min-h-screen bg-background flex w-full overflow-hidden">
