@@ -20,6 +20,14 @@ export function formatImageUrl(rawUrl: string | null | undefined): string {
   if (cleaned.startsWith("/placeholder.svg")) {
     return cleaned
   }
+  if (cleaned.startsWith("stores/") || cleaned.startsWith("/stores/")) {
+    const p = cleaned.startsWith("/") ? cleaned : `/${cleaned}`
+    return `https://palenquego.com/media${p}`
+  }
+  if (cleaned.startsWith("media/") || cleaned.startsWith("/media/")) {
+    const p = cleaned.startsWith("/") ? cleaned : `/${cleaned}`
+    return `https://palenquego.com${p}`
+  }
   const cleanPath = cleaned.startsWith("/") ? cleaned : `/${cleaned}`
   return `https://palenquego.com${cleanPath}`
 }

@@ -31,6 +31,12 @@ const getProxyImage = (url: string) => {
   // Siempre forzar https para el dominio de producción
   cleanUrl = cleanUrl.replace("http://palenquego.com", "https://palenquego.com");
 
+  // Si viene una ruta relativa como stores/ o /stores/
+  if (cleanUrl.startsWith("stores/") || cleanUrl.startsWith("/stores/")) {
+    const p = cleanUrl.startsWith("/") ? cleanUrl : `/${cleanUrl}`;
+    return `https://palenquego.com/media${p}`;
+  }
+
   // REGLA DE ORO: Si ya tiene el proxy o es una URL externa segura, NO LA TOQUES
   if (cleanUrl.includes(MEDIA_BASE) || (cleanUrl.startsWith('https://') && !cleanUrl.includes('209.97.146.210'))) {
     return cleanUrl;

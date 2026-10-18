@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-import { cn } from "@/lib/utils"
+import { cn, formatImageUrl, handleImageFallback, DEFAULT_FALLBACK_IMAGE } from "@/lib/utils"
 import { useAppStore, type Business } from "@/lib/store"
 import { HeaderWithMenu } from "@/components/header-with-menu"
 import { AdvancedFilterPanel, type FilterOptions } from "@/components/advanced-filter-panel"
@@ -203,8 +203,9 @@ export function BusinessesScreen({ onNavigate }: BusinessesScreenProps) {
               {/* Cover Image */}
               <div className="relative h-40">
                 <img
-                  src={business.coverImage || "/placeholder.svg"}
+                  src={formatImageUrl(business.coverImage)}
                   alt={business.name}
+                  onError={(e) => handleImageFallback(e, DEFAULT_FALLBACK_IMAGE)}
                   className="w-full h-full object-cover"
                 />
                 <Badge className="absolute top-3 left-3 bg-primary text-primary-foreground">
@@ -225,7 +226,7 @@ export function BusinessesScreen({ onNavigate }: BusinessesScreenProps) {
                   </div>
                   <Avatar className="h-10 w-10 flex-shrink-0 bg-muted border border-border shadow-sm">
                   {/* Cargamos la imagen real del logo del negocio */}
-                  <AvatarImage src={business.logo} alt={business.name} className="object-cover" />
+                  <AvatarImage src={formatImageUrl(business.logo)} alt={business.name} className="object-cover" />
                   
                   {/* Fallback con iniciales si la imagen no carga */}
                   <AvatarFallback className="text-xs font-semibold bg-primary text-primary-foreground uppercase">
