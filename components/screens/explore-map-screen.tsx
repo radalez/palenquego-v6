@@ -1849,12 +1849,12 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
             const currentImage = previewImages[previewImageIdx] || previewImages[0];
 
             return (
-              <div className="absolute top-16 left-4 right-4 sm:left-auto sm:right-4 sm:w-92 z-30 animate-in slide-in-from-top-2 fade-in duration-200">
-                <div className="bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-2xl border border-gray-200 flex flex-col gap-3 relative overflow-hidden">
+              <div className="absolute top-3 sm:top-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-88 md:w-92 z-30 animate-in slide-in-from-top-2 fade-in duration-200">
+                <div className="bg-white/95 backdrop-blur-md rounded-2xl p-3 sm:p-3.5 shadow-2xl border border-gray-200 flex flex-col gap-2 relative overflow-hidden max-h-[calc(100vh-2.5rem)] overflow-y-auto">
                   
                   {/* CARRUSEL / SLIDER DE IMÁGENES */}
                   {previewImages.length > 0 && (
-                    <div className="relative -mx-4 -mt-4 h-36 overflow-hidden mb-0.5 group bg-gray-900">
+                    <div className="relative -mx-3 sm:-mx-3.5 -mt-3 sm:-mt-3.5 h-26 sm:h-28 overflow-hidden group bg-gray-900">
                       <img 
                         src={currentImage} 
                         alt={previewRoute.name} 
@@ -1948,17 +1948,17 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
                   </div>
 
                   {/* Origen y Destino */}
-                  <div className="flex flex-col gap-1.5 bg-gray-50/80 rounded-xl p-2.5 border border-gray-100">
+                  <div className="flex flex-col gap-1 bg-gray-50/80 rounded-xl p-2 border border-gray-100">
                     <div className="flex items-center gap-2">
-                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-200 shrink-0" />
-                      <span className="text-xs font-bold text-gray-800">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-emerald-200 shrink-0" />
+                      <span className="text-xs font-bold text-gray-800 truncate">
                         {parseRouteDisplay(previewRoute.name).origin}
                       </span>
                     </div>
-                    <div className="w-0.5 h-3 bg-gray-300 ml-1 rounded-full" />
+                    <div className="w-0.5 h-2.5 bg-gray-300 ml-1 rounded-full" />
                     <div className="flex items-start gap-2">
-                      <div className="w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-rose-200 shrink-0 mt-0.5" />
-                      <span className="text-xs font-bold text-gray-800 leading-tight">
+                      <div className="w-2 h-2 rounded-full bg-rose-500 ring-2 ring-rose-200 shrink-0 mt-0.5" />
+                      <span className="text-xs font-bold text-gray-800 leading-tight line-clamp-1">
                         {parseRouteDisplay(previewRoute.name).destination}
                       </span>
                     </div>
@@ -1966,33 +1966,33 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
 
                   {/* Descripción Completa con Scroll Limpio */}
                   {previewRoute.descripcion && (
-                    <div className="bg-amber-50/70 border border-amber-200/60 rounded-xl p-2.5 max-h-24 sm:max-h-28 overflow-y-auto pr-1">
-                      <p className="text-xs text-gray-700 leading-relaxed font-normal">
+                    <div className="bg-amber-50/70 border border-amber-200/60 rounded-xl p-2 max-h-16 overflow-y-auto pr-1">
+                      <p className="text-[11px] text-gray-700 leading-snug font-normal">
                         {previewRoute.descripcion}
                       </p>
                     </div>
                   )}
 
-                  <div className="grid grid-cols-3 gap-2 py-1 text-center border-y border-gray-100">
+                  <div className="grid grid-cols-3 gap-2 py-0.5 text-center border-y border-gray-100">
                     <div>
-                      <span className="text-[10px] text-gray-500 block uppercase font-medium">
+                      <span className="text-[9px] text-gray-500 block uppercase font-medium">
                         {previewRoute.route_type === 'TOUR' ? 'Tarifa Tour' : 'Tarifa Ida'}
                       </span>
-                      <span className="text-sm font-black text-emerald-600">
+                      <span className="text-xs sm:text-sm font-black text-emerald-600">
                         ${previewRoute.price_one_way || '0.25'}
                       </span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-gray-500 block uppercase font-medium">
+                      <span className="text-[9px] text-gray-500 block uppercase font-medium">
                         {previewRoute.route_type === 'TOUR' ? 'Duración' : 'Tarifa Vuelta'}
                       </span>
-                      <span className="text-sm font-black text-gray-700">
+                      <span className="text-xs sm:text-sm font-black text-gray-700">
                         {previewRoute.route_type === 'TOUR' ? (previewRoute.duracion || '-') : `$${previewRoute.price_round_trip || '0.50'}`}
                       </span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-gray-500 block uppercase font-medium">Paradas</span>
-                      <span className="text-sm font-black text-gray-700">
+                      <span className="text-[9px] text-gray-500 block uppercase font-medium">Paradas</span>
+                      <span className="text-xs sm:text-sm font-black text-gray-700">
                         {previewRoute.stops?.length || 0}
                       </span>
                     </div>
@@ -2006,18 +2006,18 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
                     const isTraveler = userIntentions?.isTraveler ?? true;
 
                     return (
-                      <div className="bg-emerald-50/80 border border-emerald-200/80 rounded-xl p-2.5 flex flex-col gap-2">
+                      <div className="bg-emerald-50/80 border border-emerald-200/80 rounded-xl p-2 flex flex-col gap-1.5">
                         <div className="flex items-center justify-between">
                           <span className="text-[11px] font-bold text-emerald-900 flex items-center gap-1">
-                            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                            <Sparkles className="w-3 h-3 text-emerald-600" />
                             Ahorra hasta {discountPct}% en grupo
                           </span>
-                          <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100/90 px-2 py-0.5 rounded-full">
+                          <span className="text-[9px] font-extrabold text-emerald-700 bg-emerald-100/90 px-1.5 py-0.5 rounded-full">
                             Tarifa Pool
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
                           {isTraveler && (
                             <button
                               type="button"
@@ -2025,7 +2025,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
                                 e.stopPropagation();
                                 registerRouteInterest(previewRoute.id);
                               }}
-                              className={`flex-1 text-[11px] font-bold py-1.5 px-2.5 rounded-lg transition-all flex items-center justify-center gap-1 shadow-2xs active:scale-95 ${
+                              className={`flex-1 text-[11px] font-bold py-1 px-2 rounded-lg transition-all flex items-center justify-center gap-1 shadow-2xs active:scale-95 ${
                                 isInterestMarked
                                   ? "bg-emerald-600 text-white"
                                   : "bg-white border border-emerald-300 text-emerald-900 hover:bg-emerald-100/50"
@@ -2042,7 +2042,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
                                 e.stopPropagation();
                                 setPoolRouteForModal(previewRoute);
                               }}
-                              className="flex-1 bg-emerald-700 hover:bg-emerald-800 text-white text-[11px] font-bold py-1.5 px-2.5 rounded-lg transition-all flex items-center justify-center gap-1 shadow-2xs active:scale-95"
+                              className="flex-1 bg-emerald-700 hover:bg-emerald-800 text-white text-[11px] font-bold py-1 px-2 rounded-lg transition-all flex items-center justify-center gap-1 shadow-2xs active:scale-95"
                             >
                               <Users className="w-3.5 h-3.5" />
                               <span>Armar viaje</span>
@@ -2058,7 +2058,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
                       setSelectedRoute(previewRoute);
                       setView('detail');
                     }}
-                    className="w-full bg-[#064e3b] hover:bg-[#043324] text-white font-bold text-xs h-10 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+                    className="w-full bg-[#064e3b] hover:bg-[#043324] text-white font-bold text-xs h-9 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
                   >
                     <span>Ver Recorrido & Paradas</span>
                     <ChevronRight className="h-4 w-4" />
