@@ -227,6 +227,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
 
   const [isUserRoutesModalOpen, setIsUserRoutesModalOpen] = useState(false)
   const [poolRouteForModal, setPoolRouteForModal] = useState<any | null>(null)
+  const [showPoolDetailModal, setShowPoolDetailModal] = useState(false)
   const [mapPickMode, setMapPickMode] = useState<'origin' | 'destination' | null>(null)
   const [currentPickedOrigin, setCurrentPickedOrigin] = useState<{ name: string; lat: number; lng: number } | null>(null)
   const [currentPickedDestination, setCurrentPickedDestination] = useState<{ name: string; lat: number; lng: number } | null>(null)
@@ -2056,6 +2057,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
                   <Button
                     onClick={() => {
                       setSelectedRoute(previewRoute);
+                      setIsSheetExpanded(false);
                       setView('detail');
                     }}
                     className="w-full bg-[#064e3b] hover:bg-[#043324] text-white font-bold text-xs h-9 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
@@ -2324,9 +2326,19 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
             <p className="text-gray-300 text-xs">{selectedRoute?.category?.name || (selectedRoute?.route_type === 'TOUR' ? 'Tours & Experiencias' : 'Ruta turística')}</p>
           </div>
         </div>
-        <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 shrink-0 relative z-10">
-          <Bookmark className="h-5 w-5" />
-        </Button>
+        {/* BOTÓN ATRACTIVO DE POOL Y AHORRO GRUPAL EN CABECERA */}
+        <button
+          type="button"
+          onClick={() => setShowPoolDetailModal(true)}
+          className="relative z-10 px-3 py-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-400 hover:to-emerald-600 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-lg border border-emerald-400/40 transition-all active:scale-95 shrink-0"
+          title="Viaja en grupo y ahorra (Pool)"
+        >
+          <Users className="w-3.5 h-3.5 text-emerald-100" />
+          <span className="tracking-wide">Pool</span>
+          <span className="text-[10px] bg-white/25 px-1.5 py-0.5 rounded-full font-black">
+            -{(selectedRoute as any)?.descuento_pool || (selectedRoute?.route_type === 'TOUR' ? 20 : 15)}%
+          </span>
+        </button>
       </div>
 
       {/* STATS BAR */}
@@ -2354,60 +2366,6 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
           <span className="text-[10px] text-gray-500">{selectedRoute?.duracion ? 'Duración' : 'Estimado'}</span>
         </div>
       </div>
-
-      {/* TARJETA DE POOL & DEMANDA EN DETALLE DE RUTA */}
-      {selectedRoute && (() => {
-        const isInterestMarked = registeredRouteInterests.includes(selectedRoute.id);
-        const discountPct = (selectedRoute as any).descuento_pool || (selectedRoute.route_type === 'TOUR' ? 20 : 15);
-        const isLeader = userIntentions?.wantsToLeadPools;
-        const isTraveler = userIntentions?.isTraveler ?? true;
-
-        return (
-          <div className="relative z-20 mx-4 mt-2 bg-gradient-to-r from-[#064e3b] to-emerald-800 rounded-2xl shadow-lg p-3 text-white flex flex-col gap-2.5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
-                  <Users className="w-4 h-4 text-emerald-200" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold leading-tight">Viaja en Grupo (Pool Palenque)</p>
-                  <p className="text-[10px] text-emerald-200">Ahorra hasta {discountPct}% y comparte traslado</p>
-                </div>
-              </div>
-              <span className="text-[10px] font-extrabold uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full border border-white/30 shrink-0">
-                Ahorro {discountPct}%
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2 pt-1 border-t border-white/15">
-              {isTraveler && (
-                <button
-                  type="button"
-                  onClick={() => registerRouteInterest(selectedRoute.id)}
-                  className={`flex-1 text-xs font-bold py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95 ${
-                    isInterestMarked
-                      ? "bg-emerald-500 text-white"
-                      : "bg-white text-emerald-950 hover:bg-emerald-50"
-                  }`}
-                >
-                  <span>{isInterestMarked ? "✓ Te avisaremos" : "🔔 Me interesa"}</span>
-                </button>
-              )}
-
-              {isLeader && (
-                <button
-                  type="button"
-                  onClick={() => setPoolRouteForModal(selectedRoute)}
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95 border border-emerald-400/40"
-                >
-                  <Users className="w-3.5 h-3.5" />
-                  <span>Armar viaje (Líder)</span>
-                </button>
-              )}
-            </div>
-          </div>
-        );
-      })()}
 
       {/* TARJETA DE ESTADO DE VIAJE SI ES RUTA A DEMANDA */}
       {selectedRoute?.estado_viaje && (
@@ -2518,6 +2476,86 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
           </>
         )}
       </div>
+
+      {/* MODAL / DIÁLOGO DE DETALLE DE POOL (ACTIVADO DESDE CABECERA) */}
+      {showPoolDetailModal && selectedRoute && (() => {
+        const isInterestMarked = registeredRouteInterests.includes(selectedRoute.id);
+        const discountPct = (selectedRoute as any).descuento_pool || (selectedRoute.route_type === 'TOUR' ? 20 : 15);
+        const isLeader = userIntentions?.wantsToLeadPools;
+        const isTraveler = userIntentions?.isTraveler ?? true;
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+            <div className="bg-white rounded-3xl p-5 max-w-sm w-full shadow-2xl border border-emerald-100 flex flex-col gap-4 relative animate-in zoom-in-95 duration-150">
+              <button
+                type="button"
+                onClick={() => setShowPoolDetailModal(false)}
+                className="absolute top-4 right-4 p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
+                title="Cerrar"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="flex items-center gap-3 pr-6">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-[#064e3b] text-white flex items-center justify-center shadow-md shrink-0">
+                  <Users className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="font-extrabold text-gray-900 text-base leading-tight">Pool Palenque</h3>
+                    <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                      -{discountPct}%
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-0.5">Viaje grupal y división de costos</p>
+                </div>
+              </div>
+
+              <div className="bg-emerald-50/70 border border-emerald-200/60 rounded-2xl p-3 text-xs text-emerald-950 space-y-1.5">
+                <p className="font-bold text-emerald-900 flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                  ¿Cómo funciona para esta ruta?
+                </p>
+                <p className="text-[11px] leading-relaxed text-emerald-800">
+                  Ahorra hasta un <strong>{discountPct}%</strong> en tu traslado viajando en grupo con amigos o turistas verificados.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-2 pt-1">
+                {isTraveler && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      registerRouteInterest(selectedRoute.id);
+                    }}
+                    className={`w-full py-3 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 ${
+                      isInterestMarked
+                        ? "bg-emerald-600 text-white"
+                        : "bg-white border-2 border-emerald-600 text-emerald-900 hover:bg-emerald-50"
+                    }`}
+                  >
+                    <span>{isInterestMarked ? "✓ Te avisaremos cuando salga viaje" : "🔔 Me interesa este viaje"}</span>
+                  </button>
+                )}
+
+                {isLeader && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPoolDetailModal(false);
+                      setPoolRouteForModal(selectedRoute);
+                    }}
+                    className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-700 to-[#064e3b] hover:from-emerald-800 hover:to-[#043324] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md active:scale-95"
+                  >
+                    <Users className="w-4 h-4" />
+                    <span>Armar este viaje (Líder)</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* MODAL DE CREACIÓN DE POOL EN DETALLE DE RUTA */}
       {poolRouteForModal && (
