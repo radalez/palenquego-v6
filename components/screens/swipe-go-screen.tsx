@@ -3,7 +3,11 @@
 import { useState, useEffect, useMemo, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { motion, useMotionValue, useTransform, AnimatePresence } from "framer-motion"
-import { X, Heart, Info, MapPin, Users, HelpCircle, ChevronLeft, ChevronRight, Share2, Sparkles } from "lucide-react"
+import { 
+  X, Heart, Info, MapPin, Users, HelpCircle, 
+  ChevronLeft, ChevronRight, Share2, Sparkles, 
+  RotateCcw, Compass, Check, SlidersHorizontal 
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn, formatImageUrl, getRouteImageUrl, handleImageFallback } from "@/lib/utils"
 import { useAppStore, type Service, type Pool } from "@/lib/store"
@@ -13,6 +17,23 @@ import { CreatePoolModal } from "@/components/create-pool-modal"
 interface SwipeGoScreenProps {
   onNavigate?: (tab: string) => void
 }
+
+const PREFERENCE_CATEGORIES = [
+  { id: "ALL", label: "🌟 Todo lo destacado" },
+  { id: "Tours & Experiencias", label: "🎒 Tours & Experiencias" },
+  { id: "Playas & Surf", label: "🏄 Playas & Surf City" },
+  { id: "Pueblos Vivos & Montaña", label: "🌋 Pueblos & Montañas" },
+  { id: "Rutas Interurbanas", label: "🚌 Rutas Interurbanas" },
+  { id: "Taxi & Rutas Urbanas", label: "🚕 Taxi & Ciudad" },
+  { id: "Gastronomía", label: "☕ Gastronomía & Cafés" },
+]
+
+const PRICE_OPTIONS: { id: "ALL" | "ECO" | "MID" | "PREMIUM"; label: string; desc: string }[] = [
+  { id: "ALL", label: "Cualquiera", desc: "Todos los precios" },
+  { id: "ECO", label: "Económico", desc: "Hasta $5 (Buses y urbanos)" },
+  { id: "MID", label: "Medio", desc: "$5 a $25 (Interurbanos y escapadas)" },
+  { id: "PREMIUM", label: "Tours / Premium", desc: "+$25 (Tours y full day)" },
+]
 
 export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
   const router = useRouter()
@@ -29,6 +50,8 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
     lastMapCategory,
     lastMapSuperCategory,
     lastMapDestination,
+    setLastMapInteraction,
+    resetMapInteraction,
     userIntentions
   } = useAppStore()
 
@@ -41,6 +64,16 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
 
   // Modales/Tooltips
   const [showPoolTooltip, setShowPoolTooltip] = useState(false)
+
+  // Estados de Onboarding / Cuestionario interactivo
+  const [hasConfirmedPreference, setHasConfirmedPreference] = useState(false)
+  const [showPreferenceModal, setShowPreferenceModal] = useState(false)
+  const [showPriorInteractionPrompt, setShowPriorInteractionPrompt] = useState(false)
+
+  // Filtros interactivos de usuario (categoría, ruta y precio)
+  const [selectedPrefCategory, setSelectedPrefCategory] = useState<string>("ALL")
+  const [selectedPrefRoute, setSelectedPrefRoute] = useState<string>("ALL")
+  const [selectedPriceRange, setSelectedPriceRange] = useState<"ALL" | "ECO" | "MID" | "PREMIUM">("ALL")
  
   // Cargar servicios, pools y rutas del API al montar
   useEffect(() => {
@@ -72,17 +105,67 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
     return [...services, ...routeServices]
   }, [services, routes])
 
-  // Generar mazo dinámico priorizando lo que el usuario exploró en el mapa
+  // Detectar al inicio si tiene interacción previa en el mapa o abrir el cuestionario "¿Qué te gustaría?"
+  useEffect(() => {
+    if (hasConfirmedPreference) return
+
+    const hasPrior = Boolean(lastMapCategory || lastMapSuperCategory || lastMapDestination)
+    if (hasPrior) {
+      setShowPriorInteractionPrompt(true)
+    } else {
+      setShowPreferenceModal(true)
+    }
+  }, [])
+
+  // Extraer opciones de rutas / destinos populares para el selector
+  const popularRouteOptions = useMemo(() => {
+    const list: { id: string; name: string }[] = [
+      { id: "ALL", name: "Todas las rutas" },
+    ]
+    ;(routes || []).forEach((r) => {
+      const name = r.name || ""
+      if (name && !list.some((item) => item.name === name)) {
+        list.push({ id: name, name })
+      }
+    })
+    return list.slice(0, 16)
+  }, [routes])
+
+  // Generar mazo dinámico combinando filtros de usuario, mapa y precio
   const dynamicDeck = useMemo(() => {
-    if (!lastMapCategory && !lastMapSuperCategory && !lastMapDestination) {
-      return allPlayableItems
+    let list = [...allPlayableItems]
+
+    // 1. Filtrar por rango de precio si se seleccionó
+    if (selectedPriceRange === "ECO") {
+      list = list.filter((s) => (s.price || 0) <= 5)
+    } else if (selectedPriceRange === "MID") {
+      list = list.filter((s) => (s.price || 0) > 5 && (s.price || 0) <= 25)
+    } else if (selectedPriceRange === "PREMIUM") {
+      list = list.filter((s) => (s.price || 0) > 25)
     }
 
-    const cat = (lastMapCategory || "").toLowerCase()
-    const superCat = (lastMapSuperCategory || "").toLowerCase()
-    const dest = (lastMapDestination || "").toLowerCase()
+    // 2. Ruta o destino específico
+    const effectiveRoute = selectedPrefRoute !== "ALL" ? selectedPrefRoute : lastMapDestination
+    if (effectiveRoute) {
+      const target = effectiveRoute.toLowerCase()
+      list = list.sort((a, b) => {
+        const matchA = ((a.name || "").toLowerCase().includes(target) || (a.location || "").toLowerCase().includes(target)) ? 1 : 0
+        const matchB = ((b.name || "").toLowerCase().includes(target) || (b.location || "").toLowerCase().includes(target)) ? 1 : 0
+        return matchB - matchA
+      })
+    }
 
-    const isMapMatch = (s: Service) => {
+    // 3. Categoría efectiva (cuestionario o mapa)
+    const effectiveCategory = selectedPrefCategory !== "ALL" ? selectedPrefCategory : lastMapCategory
+    const superCat = (lastMapSuperCategory || "").toLowerCase()
+    const cat = (effectiveCategory || "").toLowerCase()
+    const dest = (effectiveRoute || "").toLowerCase()
+
+    if (!effectiveCategory && !lastMapSuperCategory && !effectiveRoute) {
+      return list
+    }
+
+    const isMatch = (s: Service) => {
       const sCat = (s.category || "").toLowerCase()
       const sName = (s.name || "").toLowerCase()
       const sLoc = (s.location || "").toLowerCase()
@@ -97,21 +180,50 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
     }
 
     if (deckFilter === "MAP_MATCH") {
-      const matched = allPlayableItems.filter(isMapMatch)
-      const remaining = allPlayableItems.filter((s) => !isMapMatch(s))
-      return matched.length > 0 ? [...matched, ...remaining] : allPlayableItems
+      const matched = list.filter(isMatch)
+      const remaining = list.filter((s) => !isMatch(s))
+      return matched.length > 0 ? [...matched, ...remaining] : list
     }
 
-    return allPlayableItems
-  }, [allPlayableItems, lastMapCategory, lastMapSuperCategory, lastMapDestination, deckFilter])
+    return list
+  }, [allPlayableItems, lastMapCategory, lastMapSuperCategory, lastMapDestination, deckFilter, selectedPrefCategory, selectedPrefRoute, selectedPriceRange])
 
   // Cargar servicios en el deck cuando se calcule o cambie el mazo dinámico
   useEffect(() => {
     if (dynamicDeck.length > 0) {
       setDeck(dynamicDeck)
       setCurrentIndex(0)
+    } else {
+      setDeck([])
+      setCurrentIndex(0)
     }
   }, [dynamicDeck])
+
+  // Aplicar preferencias del cuestionario y grabar en el mapa / store
+  const handleApplyPreferences = () => {
+    setShowPreferenceModal(false)
+    setHasConfirmedPreference(true)
+    setDeckFilter("MAP_MATCH")
+    setCurrentIndex(0)
+
+    // Grabar interacción en el store y localStorage para que quede guardado
+    const catToSave = selectedPrefCategory !== "ALL" ? selectedPrefCategory : null
+    const routeToSave = selectedPrefRoute !== "ALL" ? selectedPrefRoute : null
+    setLastMapInteraction(catToSave, null, routeToSave)
+  }
+
+  // Reiniciar preferencias a cero y reabrir el selector
+  const handleResetPreferences = () => {
+    resetMapInteraction()
+    setSelectedPrefCategory("ALL")
+    setSelectedPrefRoute("ALL")
+    setSelectedPriceRange("ALL")
+    setDeckFilter("ALL")
+    setCurrentIndex(0)
+    setHasConfirmedPreference(false)
+    setShowPriorInteractionPrompt(false)
+    setShowPreferenceModal(true)
+  }
 
   // Swipe logic
   const handleSwipe = (direction: "left" | "right") => {
@@ -155,25 +267,38 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
     }, 200)
   }
 
-  if (currentIndex >= deck.length && deck.length > 0) {
+  if (currentIndex >= deck.length || deck.length === 0) {
     return (
       <div className="flex flex-col h-full bg-background">
         <HeaderWithMenu title="Palenque Go" onNavigate={onNavigate} />
         <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-4">
-          <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-            <Heart className="w-10 h-10 text-primary" />
+          <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mb-2 text-emerald-700">
+            <Sparkles className="w-10 h-10" />
           </div>
-          <h2 className="text-2xl font-bold text-foreground">¡Has visto todo en esta categoría!</h2>
+          <h2 className="text-2xl font-bold text-foreground">
+            {deck.length === 0 ? "No hay servicios con estos filtros" : "¡Has visto todo en esta selección!"}
+          </h2>
           <p className="text-muted-foreground text-sm max-w-xs">
-            {deckFilter === "MAP_MATCH" && lastMapCategory
-              ? `Has explorado los servicios relacionados a ${lastMapCategory}. Puedes cambiar a "Todos" para seguir descubriendo.`
+            {deck.length === 0 
+              ? "Prueba cambiando de categoría, ruta o rango de precios para ver más opciones disponibles."
+              : deckFilter === "MAP_MATCH" && (lastMapCategory || selectedPrefCategory !== "ALL")
+              ? `Has explorado los servicios relacionados a ${selectedPrefCategory !== "ALL" ? selectedPrefCategory : lastMapCategory}. Puedes cambiar a "Todos" o reiniciar tus preferencias.`
               : "Vuelve más tarde para descubrir nuevos servicios, o revisa tus favoritos."}
           </p>
-          <div className="flex gap-2 mt-4">
+          <div className="flex flex-wrap justify-center gap-2 mt-4">
+            <Button 
+              onClick={handleResetPreferences}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl flex items-center gap-1.5"
+            >
+              <RotateCcw className="w-4 h-4" />
+              <span>Reiniciar y Elegir Nuevos Filtros</span>
+            </Button>
             {deckFilter === "MAP_MATCH" && (
-              <Button onClick={() => setDeckFilter("ALL")}>Ver Todos los Servicios</Button>
+              <Button variant="outline" onClick={() => setDeckFilter("ALL")}>Ver Todos los Servicios</Button>
             )}
-            <Button variant="outline" onClick={() => setCurrentIndex(0)}>Volver a ver</Button>
+            {deck.length > 0 && (
+              <Button variant="ghost" onClick={() => setCurrentIndex(0)}>Volver a ver</Button>
+            )}
           </div>
         </div>
       </div>
@@ -184,41 +309,54 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
     <div className="flex flex-col h-full bg-[#f8f9fa] overflow-hidden relative">
       <HeaderWithMenu title="Explorar Go" onNavigate={onNavigate} />
 
-      {/* Banner / Selector Dinámico de Afinidades con el Mapa */}
-      {(lastMapCategory || lastMapSuperCategory || lastMapDestination) && (
-        <div className="px-4 pt-2.5 pb-1 flex items-center justify-between z-20 shrink-0">
-          <div className="flex items-center gap-1.5 bg-emerald-50/90 border border-emerald-200/80 px-2.5 py-1 rounded-full text-xs text-emerald-950 font-medium shadow-2xs">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-            <span className="truncate max-w-[210px]">
-              Jugando con: <strong>{lastMapCategory || lastMapDestination || "Tus Rutas"}</strong>
-            </span>
-          </div>
-          <div className="flex items-center gap-1 text-[11px]">
-            <button
-              type="button"
-              onClick={() => setDeckFilter("MAP_MATCH")}
-              className={`px-2.5 py-1 rounded-full font-bold transition-all ${
-                deckFilter === "MAP_MATCH"
-                  ? "bg-emerald-600 text-white shadow-xs"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
-            >
-              Para ti
-            </button>
-            <button
-              type="button"
-              onClick={() => setDeckFilter("ALL")}
-              className={`px-2.5 py-1 rounded-full font-bold transition-all ${
-                deckFilter === "ALL"
-                  ? "bg-emerald-600 text-white shadow-xs"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
-            >
-              Todos
-            </button>
-          </div>
+      {/* Barra de Filtros Activos, Afinidades y Botón de Reiniciar */}
+      <div className="px-4 pt-2.5 pb-1 flex items-center justify-between z-20 shrink-0 gap-2">
+        <div className="flex items-center gap-1.5 bg-emerald-50/90 border border-emerald-200/80 px-2.5 py-1 rounded-full text-xs text-emerald-950 font-medium shadow-2xs min-w-0">
+          <Sparkles className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+          <span className="truncate">
+            {selectedPrefCategory !== "ALL" || selectedPrefRoute !== "ALL" || selectedPriceRange !== "ALL"
+              ? `Filtro: ${selectedPrefCategory !== "ALL" ? selectedPrefCategory : "Todo"}${selectedPrefRoute !== "ALL" ? ` · ${selectedPrefRoute}` : ""}${selectedPriceRange !== "ALL" ? ` · ${selectedPriceRange === "ECO" ? "<$5" : selectedPriceRange === "MID" ? "$5-$25" : ">$25"}` : ""}`
+              : lastMapCategory || lastMapDestination
+              ? `Recomendado: ${lastMapCategory || lastMapDestination}`
+              : "Explorando todo"}
+          </span>
         </div>
-      )}
+
+        <div className="flex items-center gap-1 text-[11px] shrink-0">
+          <button
+            type="button"
+            onClick={handleResetPreferences}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-full font-bold bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 transition-all shadow-2xs active:scale-95"
+            title="Reiniciar y elegir qué te gustaría"
+          >
+            <RotateCcw className="w-3 h-3 text-emerald-600" />
+            <span className="hidden sm:inline">Reiniciar</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setDeckFilter("MAP_MATCH")}
+            className={`px-2.5 py-1 rounded-full font-bold transition-all ${
+              deckFilter === "MAP_MATCH"
+                ? "bg-emerald-600 text-white shadow-xs"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            }`}
+          >
+            Para ti
+          </button>
+          <button
+            type="button"
+            onClick={() => setDeckFilter("ALL")}
+            className={`px-2.5 py-1 rounded-full font-bold transition-all ${
+              deckFilter === "ALL"
+                ? "bg-emerald-600 text-white shadow-xs"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            }`}
+          >
+            Todos
+          </button>
+        </div>
+      </div>
       
       <div className="flex-1 relative flex items-center justify-center p-4 sm:p-6 overflow-hidden">
         <AnimatePresence>
@@ -280,6 +418,229 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
           </button>
         </div>
       )}
+
+      {/* Modal / Diálogo: Preguntar si desea continuar con la interacción previa del mapa */}
+      <AnimatePresence>
+        {showPriorInteractionPrompt && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-emerald-100 text-center relative overflow-hidden"
+            >
+              <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-emerald-100/80 flex items-center justify-center text-emerald-700 shadow-inner">
+                <Compass className="w-7 h-7" />
+              </div>
+
+              <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-extrabold uppercase tracking-wider inline-block mb-1.5">
+                ¡Bienvenido a Go!
+              </span>
+
+              <h3 className="text-lg font-extrabold text-gray-900 leading-snug mb-2">
+                ¿Deseas continuar explorando tu búsqueda?
+              </h3>
+
+              <p className="text-xs text-gray-600 leading-relaxed mb-4">
+                Detectamos que antes estuviste interactuando en el mapa con:
+              </p>
+
+              <div className="bg-emerald-50 border border-emerald-200/80 rounded-2xl p-3 mb-5 text-left flex items-center gap-3">
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wide block">
+                    Interacción previa
+                  </span>
+                  <span className="text-sm font-extrabold text-emerald-950 truncate block">
+                    {lastMapCategory || lastMapDestination || "Rutas & Experiencias"}
+                  </span>
+                  {lastMapDestination && lastMapCategory && (
+                    <span className="text-[11px] text-emerald-800 block truncate">
+                      📍 {lastMapDestination}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setShowPriorInteractionPrompt(false)
+                    setHasConfirmedPreference(true)
+                    setDeckFilter("MAP_MATCH")
+                    setCurrentIndex(0)
+                  }}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-2xl py-3 text-sm shadow-md flex items-center justify-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>Sí, ver lo relacionado</span>
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowPriorInteractionPrompt(false)
+                    setShowPreferenceModal(true)
+                  }}
+                  className="w-full border-gray-200 text-gray-700 hover:bg-gray-50 font-bold rounded-2xl py-2.5 text-xs"
+                >
+                  No, elegir qué me gustaría ver
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal: ¿Qué te gustaría descubrir hoy en Palenque Go? */}
+      <AnimatePresence>
+        {showPreferenceModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-white rounded-3xl p-5 sm:p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-emerald-100 relative"
+            >
+              {/* Botón cerrar */}
+              <button
+                type="button"
+                onClick={() => setShowPreferenceModal(false)}
+                className="absolute top-4 right-4 p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-700 shadow-inner shrink-0">
+                  <Sparkles className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-extrabold text-gray-900 leading-tight">
+                    ¿Qué te gustaría descubrir hoy?
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    Personaliza tu mazo de cartas antes de empezar a jugar
+                  </p>
+                </div>
+              </div>
+
+              {/* Paso 1: Categorías */}
+              <div className="mb-4">
+                <label className="text-xs font-extrabold text-gray-800 uppercase tracking-wider block mb-2">
+                  1. Elige una categoría o experiencia
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {PREFERENCE_CATEGORIES.map((cat) => {
+                    const isSelected = selectedPrefCategory === cat.id
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => setSelectedPrefCategory(cat.id)}
+                        className={cn(
+                          "px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1 active:scale-95",
+                          isSelected
+                            ? "bg-emerald-600 text-white shadow-xs"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        )}
+                      >
+                        {isSelected && <Check className="w-3 h-3" />}
+                        <span>{cat.label}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Paso 2: Rutas & Destinos */}
+              <div className="mb-4">
+                <label className="text-xs font-extrabold text-gray-800 uppercase tracking-wider block mb-2">
+                  2. ¿Tienes una ruta o destino en mente?
+                </label>
+                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1 bg-gray-50 rounded-2xl border border-gray-100">
+                  {popularRouteOptions.map((r) => {
+                    const isSelected = selectedPrefRoute === r.id
+                    return (
+                      <button
+                        key={r.id}
+                        type="button"
+                        onClick={() => setSelectedPrefRoute(r.id)}
+                        className={cn(
+                          "px-2.5 py-1.5 rounded-xl text-[11px] font-semibold transition-all text-left truncate max-w-full flex items-center gap-1 active:scale-95",
+                          isSelected
+                            ? "bg-emerald-700 text-white font-bold shadow-xs"
+                            : "bg-white text-gray-700 border border-gray-200 hover:border-emerald-300"
+                        )}
+                      >
+                        {isSelected && <Check className="w-3 h-3 shrink-0" />}
+                        <span className="truncate">{r.name}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Paso 3: Rango de Precios */}
+              <div className="mb-6">
+                <label className="text-xs font-extrabold text-gray-800 uppercase tracking-wider block mb-2">
+                  3. Presupuesto estimado
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {PRICE_OPTIONS.map((p) => {
+                    const isSelected = selectedPriceRange === p.id
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => setSelectedPriceRange(p.id)}
+                        className={cn(
+                          "p-2.5 rounded-2xl text-left border transition-all active:scale-98 flex flex-col justify-between",
+                          isSelected
+                            ? "bg-emerald-50/90 border-emerald-500 shadow-xs"
+                            : "bg-white border-gray-200 hover:border-emerald-200"
+                        )}
+                      >
+                        <div className="flex items-center justify-between w-full mb-0.5">
+                          <span className={cn("text-xs font-extrabold", isSelected ? "text-emerald-950" : "text-gray-800")}>
+                            {p.label}
+                          </span>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+                        </div>
+                        <span className="text-[10px] text-gray-500 line-clamp-1">
+                          {p.desc}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Acciones */}
+              <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleResetPreferences}
+                  className="rounded-2xl border-gray-200 text-gray-600 hover:bg-gray-50 text-xs px-3 font-bold"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 mr-1" />
+                  Reiniciar
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleApplyPreferences}
+                  className="flex-1 bg-gradient-to-r from-emerald-600 to-[#064e3b] hover:from-emerald-700 hover:to-[#043324] text-white font-extrabold rounded-2xl py-3 text-sm shadow-md"
+                >
+                  ¡Empezar a jugar en Go! 🚀
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

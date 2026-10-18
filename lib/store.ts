@@ -332,6 +332,7 @@ interface AppState {
   lastMapSuperCategory: string | null
   lastMapDestination: string | null
   setLastMapInteraction: (category: string | null, superCategory?: string | null, destination?: string | null) => void
+  resetMapInteraction: () => void
 
   kycRequirements: any[]
   fetchKycRequirements: () => Promise<void>
@@ -493,9 +494,24 @@ export const useAppStore = create<AppState>()(
       setRouteSearchQuery: (query: string) => set({ routeSearchQuery: query }),
       returnToMapRoute: null,
       setReturnToMapRoute: (route: string | null) => set({ returnToMapRoute: route }),
-      lastMapCategory: null,
-      lastMapSuperCategory: null,
-      lastMapDestination: null,
+      lastMapCategory: typeof window !== "undefined" ? (() => {
+        try {
+          const item = localStorage.getItem("palenque_last_map_cat")
+          return item ? JSON.parse(item).category : null
+        } catch (e) { return null }
+      })() : null,
+      lastMapSuperCategory: typeof window !== "undefined" ? (() => {
+        try {
+          const item = localStorage.getItem("palenque_last_map_cat")
+          return item ? JSON.parse(item).superCategory : null
+        } catch (e) { return null }
+      })() : null,
+      lastMapDestination: typeof window !== "undefined" ? (() => {
+        try {
+          const item = localStorage.getItem("palenque_last_map_cat")
+          return item ? JSON.parse(item).destination : null
+        } catch (e) { return null }
+      })() : null,
       setLastMapInteraction: (category: string | null, superCategory: string | null = null, destination: string | null = null) => {
         set({
           lastMapCategory: category,
@@ -505,6 +521,18 @@ export const useAppStore = create<AppState>()(
         if (typeof window !== "undefined") {
           try {
             localStorage.setItem("palenque_last_map_cat", JSON.stringify({ category, superCategory, destination }));
+          } catch (e) {}
+        }
+      },
+      resetMapInteraction: () => {
+        set({
+          lastMapCategory: null,
+          lastMapSuperCategory: null,
+          lastMapDestination: null,
+        });
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.removeItem("palenque_last_map_cat");
           } catch (e) {}
         }
       },
