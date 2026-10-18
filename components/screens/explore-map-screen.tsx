@@ -225,6 +225,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
   const userIntentions = useAppStore((state) => state.userIntentions)
   const registeredRouteInterests = useAppStore((state) => state.registeredRouteInterests) || []
   const registerRouteInterest = useAppStore((state) => state.registerRouteInterest)
+  const setLastMapInteraction = useAppStore((state) => state.setLastMapInteraction)
 
   const [isUserRoutesModalOpen, setIsUserRoutesModalOpen] = useState(false)
   const [poolRouteForModal, setPoolRouteForModal] = useState<any | null>(null)
@@ -368,6 +369,17 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
   const [panelMode, setPanelMode] = useState<'none' | 'categories' | 'search'>('none')
   const [origin, setOrigin] = useState("")
   const [destination, setDestination] = useState("")
+
+  // Sincronizar interacción del usuario en el mapa (categoría, ruta o destino) para Pools dinámicos
+  useEffect(() => {
+    if (activeCategory || superCategory || destination || selectedRoute || previewRoute) {
+      const activeObj = selectedRoute || previewRoute;
+      const catName = activeCategory 
+        || activeObj?.category?.name 
+        || (superCategory === 'TOUR' ? 'Tours & Experiencias' : superCategory === 'URBANO' ? 'Taxi & Rutas Urbanas' : superCategory === 'INTERURBANO' ? 'Rutas Interurbanas' : null);
+      setLastMapInteraction(catName, superCategory, destination || activeObj?.name || null);
+    }
+  }, [activeCategory, superCategory, destination, selectedRoute, previewRoute, setLastMapInteraction]);
   const [showOriginSuggestions, setShowOriginSuggestions] = useState(false)
   const [showDestSuggestions, setShowDestSuggestions] = useState(false)
   const [gpsNotice, setGpsNotice] = useState<{

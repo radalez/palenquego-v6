@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
-import { X, Users, Calendar, Clock, ChevronRight, Check, Share2, Copy } from "lucide-react"
+import { useState, useMemo } from "react"
+import { X, Users, Calendar, Clock, ChevronRight, Check, Share2, Copy, Sparkles, MapPin } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { cn, formatImageUrl, handleImageFallback } from "@/lib/utils"
+import { cn, formatImageUrl, getRouteImageUrl, handleImageFallback } from "@/lib/utils"
 import { useAppStore, type Service, type Pool } from "@/lib/store"
 
 interface CreatePoolModalProps {
@@ -48,11 +48,68 @@ export function CreatePoolModal({ service: initialService, onClose, onSuccess }:
   const [selectedDate, setSelectedDate] = useState(upcomingDates[0]?.formatted || "")
   const [createdPool, setCreatedPool] = useState<Pool | null>(null)
 
-  const { services, createPool, currentUser } = useAppStore()
+  const { services, createPool, currentUser, lastMapCategory, lastMapSuperCategory, routes } = useAppStore()
+  const [selectedCategoryTab, setSelectedCategoryTab] = useState<string>("SUGGESTED")
 
-  const poolableServices = services.filter((s) => s.allowsPool)
+  // Integrar servicios y tours/rutas que permiten pool
+  const routePoolables: Service[] = useMemo(() => {
+    return (routes || [])
+      .filter((r) => r.route_type === 'TOUR' || (r as any).descuento_pool || r.price_one_way)
+      .map((r) => ({
+        id: 100000 + r.id,
+        name: r.name,
+        category: r.category?.name || (r.route_type === 'TOUR' ? 'Tours & Experiencias' : 'Rutas Interurbanas'),
+        location: 'El Salvador',
+        price: Number(r.price_one_way) || 20,
+        image: getRouteImageUrl(r),
+        rating: 4.9,
+        reviews: 12,
+        allowsPool: true,
+        spotsLeft: 14,
+        poolDiscount: (r as any).descuento_pool || 20,
+        description: (r as any).descripcion || r.name,
+      } as Service))
+  }, [routes])
 
-  // Busca handleCreatePool en create-pool-modal.tsx:
+  const poolableServices = useMemo(() => {
+    return [...services.filter((s) => s.allowsPool), ...routePoolables]
+  }, [services, routePoolables])
+
+  // Categorías únicas disponibles
+  const availableCategories = useMemo(() => {
+    const setCats = new Set<string>()
+    poolableServices.forEach((s) => {
+      if (s.category && s.category.trim()) setCats.add(s.category.trim())
+    })
+    return Array.from(setCats)
+  }, [poolableServices])
+
+  // Filtrado dinámico según la categoría interactuada en el mapa
+  const filteredServices = useMemo(() => {
+    if (selectedCategoryTab === "ALL") return poolableServices
+
+    if (selectedCategoryTab === "SUGGESTED" && (lastMapCategory || lastMapSuperCategory)) {
+      const target = (lastMapCategory || "").toLowerCase()
+      const superTarget = (lastMapSuperCategory || "").toLowerCase()
+      const matched = poolableServices.filter((s) => {
+        const cat = (s.category || "").toLowerCase()
+        const name = (s.name || "").toLowerCase()
+        const loc = (s.location || "").toLowerCase()
+        return cat.includes(target) || name.includes(target) || loc.includes(target) ||
+               (superTarget === "tour" && (cat.includes("tour") || cat.includes("experiencia"))) ||
+               (superTarget === "urbano" && (cat.includes("urbano") || cat.includes("ciudad"))) ||
+               (superTarget === "interurbano" && (cat.includes("interurbano") || cat.includes("ruta") || cat.includes("montaña")))
+      })
+      if (matched.length > 0) return matched
+    }
+
+    if (selectedCategoryTab !== "ALL" && selectedCategoryTab !== "SUGGESTED") {
+      return poolableServices.filter((s) => s.category === selectedCategoryTab)
+    }
+
+    return poolableServices
+  }, [poolableServices, selectedCategoryTab, lastMapCategory, lastMapSuperCategory])
+
   // Busca handleCreatePool en create-pool-modal.tsx
   const handleCreatePool = async () => {
     if (!selectedService || !selectedDate) return
@@ -82,7 +139,7 @@ export function CreatePoolModal({ service: initialService, onClose, onSuccess }:
         {/* Header */}
         <div className="sticky top-0 bg-background z-10 px-4 py-4 border-b border-border flex items-center justify-between">
           <h2 className="text-lg font-semibold text-foreground">
-            {step === "select-service" && "Seleccionar Servicio"}
+            {step === "select-service" && "Seleccionar Servicio para Pool"}
             {step === "config" && "Configurar Pool"}
             {step === "confirm" && "Confirmar Pool"}
             {step === "success" && "Pool Creado"}
@@ -95,32 +152,130 @@ export function CreatePoolModal({ service: initialService, onClose, onSuccess }:
         {/* Step: Select Service */}
         {step === "select-service" && (
           <div className="p-4 space-y-4">
-            <p className="text-muted-foreground text-sm">Selecciona un servicio para crear un grupo de compra</p>
+            <p className="text-muted-foreground text-xs leading-relaxed">
+              Selecciona una experiencia o ruta para iniciar tu grupo de ahorro compartido (gana 7% de comisión como líder).
+            </p>
 
-            <div className="space-y-3">
-              {poolableServices.map((svc) => (
+            {/* Banner Dinámico de Interacción en el Mapa */}
+            {lastMapCategory && (
+              <div className="bg-emerald-50/80 border border-emerald-200/80 rounded-xl p-2.5 flex items-center justify-between text-xs text-emerald-950">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span className="truncate">
+                    Basado en tu mapa: <strong>{lastMapCategory}</strong>
+                  </span>
+                </div>
+                {selectedCategoryTab !== "ALL" && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCategoryTab("ALL")}
+                    className="text-[11px] font-bold text-emerald-700 underline shrink-0 ml-2"
+                  >
+                    Ver todos
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Píldoras / Filtros de Categorías Dinámicas */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
+              {(lastMapCategory || lastMapSuperCategory) && (
                 <button
-                  key={svc.id}
-                  onClick={() => {
-                    setSelectedService(svc)
-                    setStep("config")
-                  }}
-                  className="w-full flex items-center gap-4 p-3 bg-card rounded-xl border border-border hover:border-primary transition-colors text-left"
+                  type="button"
+                  onClick={() => setSelectedCategoryTab("SUGGESTED")}
+                  className={`px-3 py-1.5 rounded-full font-bold whitespace-nowrap transition-all flex items-center gap-1 ${
+                    selectedCategoryTab === "SUGGESTED"
+                      ? "bg-emerald-600 text-white shadow-xs"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
                 >
-                  <img
-                    src={formatImageUrl(svc.image)}
-                    alt={svc.name}
-                    className="w-16 h-16 rounded-lg object-cover"
-                    onError={handleImageFallback}
-                  />
-                  <div className="flex-1">
-                    <h3 className="font-medium text-foreground">{svc.name}</h3>
-                    <p className="text-sm text-muted-foreground">{svc.location}</p>
-                    <p className="text-primary font-semibold">${svc.price}/persona</p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                  <Sparkles className="w-3 h-3" />
+                  <span>Para ti</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setSelectedCategoryTab("ALL")}
+                className={`px-3 py-1.5 rounded-full font-bold whitespace-nowrap transition-all ${
+                  selectedCategoryTab === "ALL"
+                    ? "bg-emerald-600 text-white shadow-xs"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                Todos ({poolableServices.length})
+              </button>
+              {availableCategories.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setSelectedCategoryTab(cat)}
+                  className={`px-3 py-1.5 rounded-full font-medium whitespace-nowrap transition-all ${
+                    selectedCategoryTab === cat
+                      ? "bg-emerald-600 text-white shadow-xs"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  {cat}
                 </button>
               ))}
+            </div>
+
+            {/* Lista de Servicios Filtrados Dinámicamente */}
+            <div className="space-y-2.5">
+              {filteredServices.length === 0 ? (
+                <div className="p-6 text-center text-muted-foreground text-xs space-y-2">
+                  <p>No hay servicios disponibles en esta categoría.</p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setSelectedCategoryTab("ALL")}
+                    className="rounded-xl"
+                  >
+                    Mostrar todos los servicios
+                  </Button>
+                </div>
+              ) : (
+                filteredServices.map((svc) => (
+                  <button
+                    key={svc.id}
+                    onClick={() => {
+                      setSelectedService(svc)
+                      setStep("config")
+                    }}
+                    className="w-full flex items-center gap-3.5 p-3 bg-card rounded-2xl border border-border hover:border-emerald-500 hover:shadow-md transition-all text-left group"
+                  >
+                    <img
+                      src={formatImageUrl(svc.image)}
+                      alt={svc.name}
+                      className="w-16 h-16 rounded-xl object-cover shrink-0 border border-border/50 group-hover:scale-102 transition-transform"
+                      onError={handleImageFallback}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 truncate">
+                          {svc.category || "General"}
+                        </span>
+                        {svc.poolDiscount && (
+                          <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                            -{svc.poolDiscount}%
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="font-bold text-foreground text-sm truncate group-hover:text-emerald-700 transition-colors">
+                        {svc.name}
+                      </h3>
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                        <MapPin className="w-3 h-3 shrink-0" />
+                        <span className="truncate">{svc.location}</span>
+                      </div>
+                      <p className="text-emerald-700 font-extrabold text-xs mt-1">
+                        ${svc.price} <span className="text-[10px] font-normal text-muted-foreground">/persona</span>
+                      </p>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all" />
+                  </button>
+                ))
+              )}
             </div>
           </div>
         )}

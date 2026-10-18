@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Users, Clock, MapPin, ChevronRight, Zap, Share2, Plus, Check } from "lucide-react"
+import { useState, useEffect, useMemo } from "react"
+import { Users, Clock, MapPin, ChevronRight, Zap, Share2, Plus, Check, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { cn, formatImageUrl, handleImageFallback } from "@/lib/utils"
@@ -19,8 +19,9 @@ interface PoolScreenProps {
 export function PoolScreen({ onOpenShare, onOpenPayment, onNavigate }: PoolScreenProps) {
   const [selectedPool, setSelectedPool] = useState<Pool | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState<string>("FOR_YOU")
 
-  const { pools, joinPool, currentUser, fetchPools, fetchServices } = useAppStore()
+  const { pools, joinPool, currentUser, fetchPools, fetchServices, lastMapCategory, lastMapSuperCategory } = useAppStore()
 
   useEffect(() => {
     fetchPools();    // Trae los pools reales de https://palenquego.com/api/v1/pools/
@@ -47,11 +48,45 @@ export function PoolScreen({ onOpenShare, onOpenPayment, onNavigate }: PoolScree
     }
   }
 
-const isUserInPool = (pool: Pool) => {
+  const isUserInPool = (pool: Pool) => {
     return (pool.members ?? []).some((m) => m.name === currentUser.name)
   }
 
-  
+  // Categorías de pools disponibles
+  const poolCategories = useMemo(() => {
+    const cats = new Set<string>()
+    pools.forEach((p) => {
+      if (p.category && p.category.trim()) cats.add(p.category.trim())
+    })
+    return Array.from(cats)
+  }, [pools])
+
+  // Pools filtrados dinámicamente según interacción en el mapa o pestaña seleccionada
+  const filteredPools = useMemo(() => {
+    if (selectedCategory === "ALL") return pools
+
+    if (selectedCategory === "FOR_YOU" && (lastMapCategory || lastMapSuperCategory)) {
+      const target = (lastMapCategory || "").toLowerCase()
+      const superTarget = (lastMapSuperCategory || "").toLowerCase()
+      const matched = pools.filter((p) => {
+        const cat = (p.category || "").toLowerCase()
+        const name = (p.serviceName || "").toLowerCase()
+        const loc = (p.location || "").toLowerCase()
+        return cat.includes(target) || name.includes(target) || loc.includes(target) ||
+               (superTarget === "tour" && (cat.includes("tour") || cat.includes("experiencia"))) ||
+               (superTarget === "urbano" && (cat.includes("urbano") || cat.includes("ciudad"))) ||
+               (superTarget === "interurbano" && (cat.includes("interurbano") || cat.includes("ruta") || cat.includes("montaña")))
+      })
+      if (matched.length > 0) return matched
+    }
+
+    if (selectedCategory !== "ALL" && selectedCategory !== "FOR_YOU") {
+      return pools.filter((p) => p.category === selectedCategory)
+    }
+
+    return pools
+  }, [pools, selectedCategory, lastMapCategory, lastMapSuperCategory])
+
   if (selectedPool) {
     return (
       <PoolDetail
@@ -75,18 +110,19 @@ const isUserInPool = (pool: Pool) => {
       <HeaderWithMenu title="Pool Palenque" onNavigate={onNavigate} />
       
       <div className="px-4 py-3 flex items-center justify-between border-b border-border">
-        <p className="text-muted-foreground text-sm">Ahorra compartiendo gastos</p>
+        <p className="text-muted-foreground text-sm">Ahorra compartiendo gastos en grupo</p>
         <Button
           size="icon"
-          className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full shadow-sm"
           onClick={() => setShowCreateModal(true)}
+          title="Armar un nuevo Pool"
         >
           <Plus className="w-6 h-6" />
         </Button>
       </div>
 
       {/* Stats */}
-      <div className="px-4 py-4">
+      <div className="px-4 py-3">
         <div className="bg-card rounded-2xl p-4 shadow-sm border border-border flex items-center justify-around">
           <div className="text-center">
             <p className="text-2xl font-bold text-primary">{pools.length}</p>
@@ -100,43 +136,141 @@ const isUserInPool = (pool: Pool) => {
           <div className="w-px h-10 bg-border" />
           <div className="text-center">
             <p className="text-2xl font-bold text-foreground">7%</p>
-            <p className="text-xs text-muted-foreground">Comision lider</p>
+            <p className="text-xs text-muted-foreground">Comisión líder</p>
           </div>
         </div>
       </div>
 
+      {/* Banner de recomendación dinámica de mapa */}
+      {lastMapCategory && (
+        <div className="mx-4 mb-2 bg-emerald-50/90 border border-emerald-200/80 rounded-2xl p-3 flex items-center justify-between text-xs text-emerald-950">
+          <div className="flex items-center gap-2 min-w-0">
+            <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span className="truncate">
+              Pools sugeridos según tu mapa: <strong>{lastMapCategory}</strong>
+            </span>
+          </div>
+          {selectedCategory !== "ALL" && (
+            <button
+              type="button"
+              onClick={() => setSelectedCategory("ALL")}
+              className="text-[11px] font-bold text-emerald-700 underline shrink-0 ml-2"
+            >
+              Ver todos
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Píldoras de Filtro Dinámico */}
+      <div className="px-4 flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
+        {(lastMapCategory || lastMapSuperCategory) && (
+          <button
+            type="button"
+            onClick={() => setSelectedCategory("FOR_YOU")}
+            className={`px-3 py-1.5 rounded-full font-bold whitespace-nowrap transition-all flex items-center gap-1 ${
+              selectedCategory === "FOR_YOU"
+                ? "bg-primary text-primary-foreground shadow-xs"
+                : "bg-muted text-muted-foreground hover:bg-muted/80"
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Para ti</span>
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => setSelectedCategory("ALL")}
+          className={`px-3 py-1.5 rounded-full font-bold whitespace-nowrap transition-all ${
+            selectedCategory === "ALL"
+              ? "bg-primary text-primary-foreground shadow-xs"
+              : "bg-muted text-muted-foreground hover:bg-muted/80"
+          }`}
+        >
+          Todos ({pools.length})
+        </button>
+        {poolCategories.map((cat) => (
+          <button
+            key={cat}
+            type="button"
+            onClick={() => setSelectedCategory(cat)}
+            className={`px-3 py-1.5 rounded-full font-medium whitespace-nowrap transition-all ${
+              selectedCategory === cat
+                ? "bg-primary text-primary-foreground shadow-xs"
+                : "bg-muted text-muted-foreground hover:bg-muted/80"
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
       {/* Active Pools */}
-      <div className="px-4 py-6">
-        <h2 className="font-semibold text-lg mb-4 text-foreground">Pools Activos</h2>
+      <div className="px-4 py-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold text-lg text-foreground">
+            {selectedCategory === "FOR_YOU" && lastMapCategory
+              ? `Pools en ${lastMapCategory}`
+              : selectedCategory === "ALL"
+              ? "Todos los Pools Activos"
+              : `Pools de ${selectedCategory}`}
+          </h2>
+          <span className="text-xs text-muted-foreground font-medium">
+            {filteredPools.length} {filteredPools.length === 1 ? 'grupo' : 'grupos'}
+          </span>
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {pools.map((pool) => {
-            const progress = ((pool.currentMembers ?? 0) / (pool.targetMembers ?? 1)) * 100
-            const pricePerPerson = (pool.totalPrice ?? 0) / (pool.targetMembers ?? 1)
+        {filteredPools.length === 0 ? (
+          <div className="bg-muted/30 border border-dashed border-border rounded-2xl p-6 text-center space-y-3 mt-2">
+            <Sparkles className="w-8 h-8 text-primary mx-auto opacity-70" />
+            <h3 className="font-bold text-foreground text-sm">
+              No hay pools abiertos en {selectedCategory === "FOR_YOU" ? (lastMapCategory || "esta categoría") : selectedCategory}
+            </h3>
+            <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+              ¡Sé el primer líder en armar un grupo para esta experiencia y gana el 7% de comisión!
+            </p>
+            <Button
+              onClick={() => setShowCreateModal(true)}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl text-xs gap-1.5"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Armar el primer Pool</span>
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {filteredPools.map((pool) => {
+              const progress = ((pool.currentMembers ?? 0) / (pool.targetMembers ?? 1)) * 100
+              const pricePerPerson = (pool.totalPrice ?? 0) / (pool.targetMembers ?? 1)
 
-            return (
-              <button
-                key={pool.id}
-                onClick={() => setSelectedPool(pool)}
-                className="w-full bg-card rounded-2xl p-4 shadow-sm border border-border text-left transition-all hover:shadow-md"
-              >
-                <div className="flex gap-4">
-                  {/* Image */}
-                  <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
-                    <img
-                      src={formatImageUrl(pool.image)}
-                      alt={pool.serviceName}
-                      className="w-full h-full object-cover"
-                      onError={handleImageFallback}
-                    />
-                  </div>
-
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between mb-1">
-                      <h3 className="font-semibold text-foreground truncate pr-2">{pool.serviceName}</h3>
-                      {getStatusBadge(pool.status)}
+              return (
+                <button
+                  key={pool.id}
+                  onClick={() => setSelectedPool(pool)}
+                  className="w-full bg-card rounded-2xl p-4 shadow-sm border border-border text-left transition-all hover:shadow-md"
+                >
+                  <div className="flex gap-4">
+                    {/* Image */}
+                    <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
+                      <img
+                        src={formatImageUrl(pool.image)}
+                        alt={pool.serviceName}
+                        className="w-full h-full object-cover"
+                        onError={handleImageFallback}
+                      />
                     </div>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between mb-1">
+                        <div className="min-w-0 pr-2">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 inline-block mb-1">
+                            {pool.category || "Experiencia"}
+                          </span>
+                          <h3 className="font-semibold text-foreground truncate">{pool.serviceName}</h3>
+                        </div>
+                        {getStatusBadge(pool.status)}
+                      </div>
 
                     <div className="flex items-center gap-1 text-muted-foreground text-sm mb-2">
                       <MapPin className="w-3 h-3" />
@@ -184,6 +318,7 @@ const isUserInPool = (pool: Pool) => {
             )
           })}
         </div>
+      )}
       </div>
 
       {/* How it works */}

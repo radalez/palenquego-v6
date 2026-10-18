@@ -110,6 +110,7 @@ export interface Pool {
   id: number
   serviceName?: string      // Mapeado desde servicio_detalle.nombre
   serviceId?: number        // Mapeado desde servicio (ID)
+  category?: string
   location?: string
   image?: string
   leader?: { 
@@ -327,6 +328,11 @@ interface AppState {
   returnToMapRoute: string | null
   setReturnToMapRoute: (route: string | null) => void
 
+  lastMapCategory: string | null
+  lastMapSuperCategory: string | null
+  lastMapDestination: string | null
+  setLastMapInteraction: (category: string | null, superCategory?: string | null, destination?: string | null) => void
+
   kycRequirements: any[]
   fetchKycRequirements: () => Promise<void>
   fetchCurrentUser: () => Promise<void>
@@ -487,6 +493,21 @@ export const useAppStore = create<AppState>()(
       setRouteSearchQuery: (query: string) => set({ routeSearchQuery: query }),
       returnToMapRoute: null,
       setReturnToMapRoute: (route: string | null) => set({ returnToMapRoute: route }),
+      lastMapCategory: null,
+      lastMapSuperCategory: null,
+      lastMapDestination: null,
+      setLastMapInteraction: (category: string | null, superCategory: string | null = null, destination: string | null = null) => {
+        set({
+          lastMapCategory: category,
+          lastMapSuperCategory: superCategory,
+          lastMapDestination: destination,
+        });
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem("palenque_last_map_cat", JSON.stringify({ category, superCategory, destination }));
+          } catch (e) {}
+        }
+      },
       kycRequirements: [],
       currentUser: { id: 0, name: "", avatar: "", is_ambassador: false },
       isAuthenticated: false,      
@@ -1701,6 +1722,7 @@ export const useAppStore = create<AppState>()(
             id: p.id,
             serviceId: p.servicio,
             serviceName: p.servicio_detalle?.nombre || "Servicio Palenque",
+            category: p.servicio_detalle?.categoria?.nombre || p.servicio_detalle?.categoria_nombre || p.servicio_detalle?.category || "Tours & Experiencias",
             status: p.estado,
             targetMembers: p.meta_personas,
             currentMembers: p.miembros_actuales,

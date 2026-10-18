@@ -1,13 +1,14 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { motion, useMotionValue, useTransform, AnimatePresence } from "framer-motion"
-import { X, Heart, Info, MapPin, Users, HelpCircle, ChevronLeft, ChevronRight, Share2 } from "lucide-react"
+import { X, Heart, Info, MapPin, Users, HelpCircle, ChevronLeft, ChevronRight, Share2, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+import { cn, formatImageUrl, getRouteImageUrl, handleImageFallback } from "@/lib/utils"
 import { useAppStore, type Service, type Pool } from "@/lib/store"
 import { HeaderWithMenu } from "@/components/header-with-menu"
+import { CreatePoolModal } from "@/components/create-pool-modal"
 
 interface SwipeGoScreenProps {
   onNavigate?: (tab: string) => void
@@ -15,27 +16,102 @@ interface SwipeGoScreenProps {
 
 export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
   const router = useRouter()
-  const { services, pools, addSwipeLike, registerPoolInterest, accessToken, fetchServices, fetchPools } = useAppStore()
-  // Maintain deck state — ahora con SERVICIOS, no tiendas
+  const { 
+    services, 
+    pools, 
+    addSwipeLike, 
+    registerPoolInterest, 
+    accessToken, 
+    fetchServices, 
+    fetchPools,
+    routes,
+    fetchRoutes,
+    lastMapCategory,
+    lastMapSuperCategory,
+    lastMapDestination,
+    userIntentions
+  } = useAppStore()
+
+  // Maintain deck state — con servicios y experiencias del mapa
   const [deck, setDeck] = useState<Service[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [registeredPools, setRegisteredPools] = useState<Set<number>>(new Set())
+  const [deckFilter, setDeckFilter] = useState<"MAP_MATCH" | "ALL">("MAP_MATCH")
+  const [poolModalService, setPoolModalService] = useState<Service | null>(null)
 
   // Modales/Tooltips
   const [showPoolTooltip, setShowPoolTooltip] = useState(false)
  
-  // Cargar servicios y pools del API al montar
+  // Cargar servicios, pools y rutas del API al montar
   useEffect(() => {
     fetchServices()
     fetchPools()
-  }, [fetchServices, fetchPools])
+    if (fetchRoutes) fetchRoutes()
+  }, [fetchServices, fetchPools, fetchRoutes])
 
-  useEffect(() => {
-    // Cargar servicios en el deck cuando lleguen del API
-    if (services.length > 0) {
-      setDeck(services)
+  // Integrar servicios reales + tours y rutas del mapa para jugar en Go
+  const allPlayableItems: Service[] = useMemo(() => {
+    const routeServices: Service[] = (routes || [])
+      .filter((r) => r.route_type === 'TOUR' || r.price_one_way)
+      .map((r) => ({
+        id: 100000 + r.id,
+        name: r.name,
+        category: r.category?.name || (r.route_type === 'TOUR' ? 'Tours & Experiencias' : 'Rutas Interurbanas'),
+        location: 'El Salvador',
+        price: Number(r.price_one_way) || 20,
+        image: getRouteImageUrl(r),
+        rating: 4.9,
+        reviews: 12,
+        allowsPool: true,
+        spotsLeft: 14,
+        poolDiscount: (r as any).descuento_pool || 20,
+        description: (r as any).descripcion || r.name,
+        features: ['Transporte Seguro', 'Grupo Pool', 'Ruta Verificada'],
+      } as Service))
+
+    return [...services, ...routeServices]
+  }, [services, routes])
+
+  // Generar mazo dinámico priorizando lo que el usuario exploró en el mapa
+  const dynamicDeck = useMemo(() => {
+    if (!lastMapCategory && !lastMapSuperCategory && !lastMapDestination) {
+      return allPlayableItems
     }
-  }, [services])
+
+    const cat = (lastMapCategory || "").toLowerCase()
+    const superCat = (lastMapSuperCategory || "").toLowerCase()
+    const dest = (lastMapDestination || "").toLowerCase()
+
+    const isMapMatch = (s: Service) => {
+      const sCat = (s.category || "").toLowerCase()
+      const sName = (s.name || "").toLowerCase()
+      const sLoc = (s.location || "").toLowerCase()
+      const sDesc = (s.description || s.descripcion || "").toLowerCase()
+
+      if (cat && (sCat.includes(cat) || sName.includes(cat) || sLoc.includes(cat) || sDesc.includes(cat))) return true
+      if (dest && (sLoc.includes(dest) || sName.includes(dest))) return true
+      if (superCat === "tour" && (sCat.includes("tour") || sCat.includes("experiencia") || sDesc.includes("tour"))) return true
+      if (superCat === "urbano" && (sCat.includes("urbano") || sCat.includes("ciudad") || sCat.includes("centro"))) return true
+      if (superCat === "interurbano" && (sCat.includes("interurbano") || sCat.includes("playa") || sCat.includes("montaña") || sCat.includes("ruta"))) return true
+      return false
+    }
+
+    if (deckFilter === "MAP_MATCH") {
+      const matched = allPlayableItems.filter(isMapMatch)
+      const remaining = allPlayableItems.filter((s) => !isMapMatch(s))
+      return matched.length > 0 ? [...matched, ...remaining] : allPlayableItems
+    }
+
+    return allPlayableItems
+  }, [allPlayableItems, lastMapCategory, lastMapSuperCategory, lastMapDestination, deckFilter])
+
+  // Cargar servicios en el deck cuando se calcule o cambie el mazo dinámico
+  useEffect(() => {
+    if (dynamicDeck.length > 0) {
+      setDeck(dynamicDeck)
+      setCurrentIndex(0)
+    }
+  }, [dynamicDeck])
 
   // Swipe logic
   const handleSwipe = (direction: "left" | "right") => {
@@ -45,10 +121,8 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
     
     if (direction === "right") {
       console.log(`Liked ${currentService.name} (service ID: ${currentService.id}) - registrando en favoritos`)
-      // Agrega directamente como favorito con el ID del servicio real
       addSwipeLike(currentService.id)
       
-      // Registrar en backend con el token de autenticación
       const token = accessToken || localStorage.getItem('access_token')
       fetch(`/api-proxy/catalog/${currentService.id}/swipe/`, {
         method: "POST",
@@ -89,10 +163,18 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
           <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-4">
             <Heart className="w-10 h-10 text-primary" />
           </div>
-          <h2 className="text-2xl font-bold text-foreground">¡Has visto todo!</h2>
-          <p className="text-muted-foreground">Vuelve más tarde para descubrir nuevos servicios, o revisa tus favoritos.</p>
-          <Button className="mt-8" onClick={() => onNavigate?.("favoritos")}>Ver mis Favoritos</Button>
-          <Button variant="outline" className="mt-2" onClick={() => setCurrentIndex(0)}>Volver a ver</Button>
+          <h2 className="text-2xl font-bold text-foreground">¡Has visto todo en esta categoría!</h2>
+          <p className="text-muted-foreground text-sm max-w-xs">
+            {deckFilter === "MAP_MATCH" && lastMapCategory
+              ? `Has explorado los servicios relacionados a ${lastMapCategory}. Puedes cambiar a "Todos" para seguir descubriendo.`
+              : "Vuelve más tarde para descubrir nuevos servicios, o revisa tus favoritos."}
+          </p>
+          <div className="flex gap-2 mt-4">
+            {deckFilter === "MAP_MATCH" && (
+              <Button onClick={() => setDeckFilter("ALL")}>Ver Todos los Servicios</Button>
+            )}
+            <Button variant="outline" onClick={() => setCurrentIndex(0)}>Volver a ver</Button>
+          </div>
         </div>
       </div>
     )
@@ -101,6 +183,42 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
   return (
     <div className="flex flex-col h-full bg-[#f8f9fa] overflow-hidden relative">
       <HeaderWithMenu title="Explorar Go" onNavigate={onNavigate} />
+
+      {/* Banner / Selector Dinámico de Afinidades con el Mapa */}
+      {(lastMapCategory || lastMapSuperCategory || lastMapDestination) && (
+        <div className="px-4 pt-2.5 pb-1 flex items-center justify-between z-20 shrink-0">
+          <div className="flex items-center gap-1.5 bg-emerald-50/90 border border-emerald-200/80 px-2.5 py-1 rounded-full text-xs text-emerald-950 font-medium shadow-2xs">
+            <Sparkles className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+            <span className="truncate max-w-[210px]">
+              Jugando con: <strong>{lastMapCategory || lastMapDestination || "Tus Rutas"}</strong>
+            </span>
+          </div>
+          <div className="flex items-center gap-1 text-[11px]">
+            <button
+              type="button"
+              onClick={() => setDeckFilter("MAP_MATCH")}
+              className={`px-2.5 py-1 rounded-full font-bold transition-all ${
+                deckFilter === "MAP_MATCH"
+                  ? "bg-emerald-600 text-white shadow-xs"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              Para ti
+            </button>
+            <button
+              type="button"
+              onClick={() => setDeckFilter("ALL")}
+              className={`px-2.5 py-1 rounded-full font-bold transition-all ${
+                deckFilter === "ALL"
+                  ? "bg-emerald-600 text-white shadow-xs"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              Todos
+            </button>
+          </div>
+        </div>
+      )}
       
       <div className="flex-1 relative flex items-center justify-center p-4 sm:p-6 overflow-hidden">
         <AnimatePresence>
@@ -120,11 +238,22 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
                 registerPoolInterest={registerPoolInterest}
                 registeredPools={registeredPools}
                 setRegisteredPools={setRegisteredPools}
+                onOpenCreatePool={(svc) => setPoolModalService(svc)}
+                userIntentions={userIntentions}
               />
             )
           })}
         </AnimatePresence>
       </div>
+
+      {/* Modal de Creación de Pool para el Servicio jugado */}
+      {poolModalService && (
+        <CreatePoolModal
+          service={poolModalService}
+          onClose={() => setPoolModalService(null)}
+          onSuccess={() => setPoolModalService(null)}
+        />
+      )}
 
       {/* Manual Actions (only visible if there are cards) */}
       {currentIndex < deck.length && (
@@ -167,14 +296,31 @@ interface SwipeableServiceCardProps {
   registerPoolInterest: (serviceId: number) => Promise<boolean>
   registeredPools: Set<number>
   setRegisteredPools: React.Dispatch<React.SetStateAction<Set<number>>>
+  onOpenCreatePool?: (service: Service) => void
+  userIntentions?: any
 }
 
-function SwipeableServiceCard({ service, isFront, onSwipe, onInfoClick, showPoolTooltip, setShowPoolTooltip, pools, onNavigate, registerPoolInterest, registeredPools, setRegisteredPools }: SwipeableServiceCardProps) {
+function SwipeableServiceCard({
+  service,
+  isFront,
+  onSwipe,
+  onInfoClick,
+  showPoolTooltip,
+  setShowPoolTooltip,
+  pools,
+  onNavigate,
+  registerPoolInterest,
+  registeredPools,
+  setRegisteredPools,
+  onOpenCreatePool,
+  userIntentions,
+}: SwipeableServiceCardProps) {
   const x = useMotionValue(0)
   const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 375
 
   const displayCapacity = service.capacityMax || 10
   const displayPrice = service.price || 0
+  const discountPct = service.poolDiscount || service.discount || 20
 
   // Buscar pool activo asociado al servicio
   const activePool = service.allowsPool
@@ -198,12 +344,10 @@ function SwipeableServiceCard({ service, isFront, onSwipe, onInfoClick, showPool
       onSwipe("right")
     } else if (info.offset.x < -threshold) {
       onSwipe("left")
-    } else {
-      // Return to center (handled automatically by dragConstraints)
     }
   }
 
-  // Galería de imágenes del servicio
+  // Galería de imágenes del servicio con saneamiento
   const gallery = service.galleryImages && service.galleryImages.length > 0
     ? service.galleryImages
     : [service.image || "/placeholder.svg"]
@@ -231,9 +375,10 @@ function SwipeableServiceCard({ service, isFront, onSwipe, onInfoClick, showPool
       {/* Photo Gallery Area */}
       <div className="relative w-full h-[48%] bg-zinc-900 group" onClick={onInfoClick}>
         <img 
-          src={gallery[photoIndex]} 
+          src={formatImageUrl(gallery[photoIndex])} 
           alt={service.name} 
           className="w-full h-full object-cover select-none pointer-events-none" 
+          onError={handleImageFallback}
         />
         
         {/* Photo Navigation Overlays */}
@@ -247,17 +392,22 @@ function SwipeableServiceCard({ service, isFront, onSwipe, onInfoClick, showPool
           ))}
         </div>
  
-        {/* Badges */}
-        <div className="absolute top-6 left-3 right-3 flex justify-between z-20 pointer-events-none">
-          <div className="bg-black/40 backdrop-blur-md px-3 py-1 rounded-full text-white text-xs font-semibold flex items-center gap-1 border border-white/20">
-            <MapPin className="w-3 h-3" />
-            {service.location}
+        {/* Badges superiores: Ubicación y Categoría */}
+        <div className="absolute top-6 left-3 right-3 flex justify-between items-center z-20 pointer-events-none gap-2">
+          <div className="bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full text-white text-xs font-semibold flex items-center gap-1 border border-white/20 truncate">
+            <MapPin className="w-3 h-3 shrink-0" />
+            <span className="truncate max-w-[130px]">{service.location}</span>
           </div>
-          {service.isRemate && service.discount && (
-            <div className="bg-red-500/90 backdrop-blur-md px-3 py-1 rounded-full text-white text-xs font-semibold border border-white/20">
-              -{service.discount}% OFF
+          <div className="flex items-center gap-1 shrink-0">
+            <div className="bg-emerald-600/90 backdrop-blur-md px-2.5 py-1 rounded-full text-white text-[10px] font-bold border border-white/20 truncate max-w-[120px]">
+              {service.category || "Experiencia"}
             </div>
-          )}
+            {service.isRemate && service.discount && (
+              <div className="bg-red-500/90 backdrop-blur-md px-2 py-1 rounded-full text-white text-[10px] font-black border border-white/20">
+                -{service.discount}%
+              </div>
+            )}
+          </div>
         </div>
  
         {/* Swipe Overlays */}
@@ -293,7 +443,7 @@ function SwipeableServiceCard({ service, isFront, onSwipe, onInfoClick, showPool
             </div>
             {/* Precio */}
             <div className="flex-shrink-0">
-               <span className="bg-primary text-primary-foreground px-3 py-1 rounded-xl text-sm font-bold shadow-lg border border-primary-foreground/10">
+               <span className="bg-emerald-600 text-white px-3 py-1 rounded-xl text-sm font-black shadow-lg border border-white/20">
                  ${displayPrice}
                </span>
             </div>
@@ -310,7 +460,7 @@ function SwipeableServiceCard({ service, isFront, onSwipe, onInfoClick, showPool
           {service.features && service.features.length > 0 && (
             <div className="flex flex-wrap gap-1">
               {service.features.slice(0, 3).map((f, i) => (
-                <span key={i} className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">{f}</span>
+                <span key={i} className="text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-200/60 px-2 py-0.5 rounded-full font-medium">{f}</span>
               ))}
             </div>
           )}
@@ -318,55 +468,84 @@ function SwipeableServiceCard({ service, isFront, onSwipe, onInfoClick, showPool
  
         {/* Pool Gamification Status */}
         <div className="mt-auto relative z-30" onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-center gap-2 bg-primary/5 border border-primary/25 p-2 rounded-xl relative overflow-visible">
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
-            <span className="text-[11px] font-bold text-primary flex-1">
-              {activePool && spotsRemaining > 0
-                ? (spotsRemaining === 1 || spotsRemaining === 2
-                    ? `Falta${spotsRemaining === 1 ? "" : "n"} ${spotsRemaining} ¡Únete ya!`
-                    : "Pool Activo Disponible")
-                : (service?.poolDiscount || service?.discount ? `Ahorra hasta ${service.poolDiscount || service.discount}% en tu viaje` : "Ahorra hasta 15% en tu viaje")}
-            </span>
+          <div className="flex items-center gap-2 bg-emerald-50/80 border border-emerald-300/60 p-2.5 rounded-2xl relative overflow-visible">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+            <div className="flex-1 min-w-0">
+              <span className="text-[11px] font-extrabold text-emerald-950 block leading-tight truncate">
+                {activePool && spotsRemaining > 0
+                  ? (spotsRemaining === 1 || spotsRemaining === 2
+                      ? `¡Falta${spotsRemaining === 1 ? "" : "n"} ${spotsRemaining}! Únete ya`
+                      : `Pool Activo (${activePool.currentMembers}/${activePool.targetMembers})`)
+                  : `Ahorra hasta -${discountPct}% en grupo`}
+              </span>
+              <span className="text-[10px] text-emerald-700 block truncate">
+                {activePool ? "Viaje grupal confirmado" : "Comparte gastos o arma tu grupo"}
+              </span>
+            </div>
 
-            {activePool && spotsRemaining > 0 ? (
+            <div className="flex items-center gap-1.5 shrink-0">
+              {/* Botón de unirse a pool existente */}
+              {activePool && spotsRemaining > 0 ? (
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onNavigate?.("pool");
+                  }}
+                  className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold rounded-xl transition-all shadow-sm active:scale-95"
+                >
+                  Únete aquí
+                </button>
+              ) : null}
+
+              {/* Botón de Líder (si tiene intención de crear/liderar pools) */}
+              {userIntentions?.wantsToLeadPools ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenCreatePool?.(service);
+                  }}
+                  className="px-2.5 py-1.5 bg-gradient-to-r from-emerald-700 to-[#064e3b] hover:from-emerald-800 hover:to-[#043324] text-white text-[10px] font-extrabold rounded-xl transition-all shadow-sm active:scale-95 flex items-center gap-1"
+                >
+                  <Users className="w-3 h-3" />
+                  <span>Armar Pool</span>
+                </button>
+              ) : null}
+
+              {/* Botón de Pasajero / Interés (si no hay pool activo y es viajero) */}
+              {(!activePool || spotsRemaining <= 0) && (
+                <button 
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (service) {
+                      registerPoolInterest(service.id);
+                      setRegisteredPools((prev: Set<number>) => new Set(prev).add(service.id));
+                    }
+                  }}
+                  className={cn(
+                    "px-2.5 py-1.5 text-[10px] font-bold rounded-xl transition-all shadow-sm active:scale-95",
+                    service && registeredPools.has(service.id)
+                      ? "bg-emerald-600 text-white"
+                      : "bg-white border border-emerald-600 text-emerald-900 hover:bg-emerald-50"
+                  )}
+                >
+                  {service && registeredPools.has(service.id) ? "✓ Te avisaremos" : "Me interesa"}
+                </button>
+              )}
+
               <button 
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onNavigate?.("pool");
+                  setShowPoolTooltip(!showPoolTooltip);
                 }}
-                className="px-2 py-1 bg-primary text-primary-foreground text-[10px] font-bold rounded-lg hover:bg-primary/90 transition-all shadow-sm shrink-0"
+                className="p-1 rounded-full bg-emerald-100 hover:bg-emerald-200 text-emerald-800 transition-colors shrink-0"
+                title="¿Qué es un Pool?"
               >
-                {spotsRemaining === 1 || spotsRemaining === 2 ? "Únete ya" : "Únete aquí"}
+                <HelpCircle className="w-3.5 h-3.5" />
               </button>
-            ) : (
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (service) {
-                    registerPoolInterest(service.id);
-                    setRegisteredPools((prev: Set<number>) => new Set(prev).add(service.id));
-                  }
-                }}
-                className={cn(
-                  "px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all shadow-sm shrink-0",
-                  service && registeredPools.has(service.id)
-                    ? "bg-emerald-600 text-white"
-                    : "bg-primary text-primary-foreground hover:bg-primary/90"
-                )}
-              >
-                {service && registeredPools.has(service.id) ? "✓ Te avisaremos" : "Me interesa"}
-              </button>
-            )}
-
-            <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowPoolTooltip(!showPoolTooltip);
-              }}
-              className="p-1 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors shrink-0"
-            >
-              <HelpCircle className="w-3.5 h-3.5 text-primary" />
-            </button>
+            </div>
 
             {/* Tooltip Gamificado */}
             <AnimatePresence>
@@ -375,14 +554,14 @@ function SwipeableServiceCard({ service, isFront, onSwipe, onInfoClick, showPool
                   initial={{ opacity: 0, y: 5, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 3, scale: 0.95 }}
-                  className="absolute bottom-full mb-2 right-0 w-[240px] bg-primary text-primary-foreground p-3 rounded-2xl shadow-xl z-50 text-xs"
+                  className="absolute bottom-full mb-2 right-0 w-[240px] bg-[#064e3b] text-white p-3 rounded-2xl shadow-xl z-50 text-xs"
                 >
-                  <div className="absolute -bottom-1 right-4 w-3 h-3 bg-primary rotate-45" />
-                  <p className="font-bold mb-1 flex items-center gap-1.5">
+                  <div className="absolute -bottom-1 right-4 w-3 h-3 bg-[#064e3b] rotate-45" />
+                  <p className="font-bold mb-1 flex items-center gap-1.5 text-emerald-200">
                     <Users className="w-3.5 h-3.5"/> ¿Qué es un Pool?
                   </p>
                   <p className="opacity-90 leading-snug">
-                    Un pool es un pago grupal. Si aceptas, serás invitado al pool de este servicio cuando esté disponible.
+                    Un pool es una compra grupal para ahorrar hasta un {discountPct}%. ¡Puedes unirte o armar el grupo tú mismo!
                   </p>
                 </motion.div>
               )}
