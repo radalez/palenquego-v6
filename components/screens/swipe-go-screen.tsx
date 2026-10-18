@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation"
 import { motion, useMotionValue, useTransform, AnimatePresence } from "framer-motion"
 import { 
   X, Heart, Info, MapPin, Users, HelpCircle, 
-  ChevronLeft, ChevronRight, Share2, Sparkles, 
-  RotateCcw, Compass, Check, SlidersHorizontal 
+  ChevronLeft, ChevronRight, Share2, 
+  RotateCcw, Compass, Check, SlidersHorizontal,
+  Flame, Bed, Waves, Utensils, Coffee, TreePine, Ticket, Bus, Play,
+  Search, Navigation, Car, History
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn, formatImageUrl, getRouteImageUrl, handleImageFallback } from "@/lib/utils"
@@ -18,25 +20,81 @@ interface SwipeGoScreenProps {
   onNavigate?: (tab: string) => void
 }
 
-const PREFERENCE_CATEGORIES = [
-  { id: "ALL", label: "🌟 Todo lo destacado" },
-  { id: "Tours & Experiencias", label: "🎒 Tours & Experiencias" },
-  { id: "Playas & Surf", label: "🏄 Playas & Surf City" },
-  { id: "Pueblos Vivos & Montaña", label: "🌋 Pueblos & Montañas" },
-  { id: "Rutas Interurbanas", label: "🚌 Rutas Interurbanas" },
-  { id: "Taxi & Rutas Urbanas", label: "🚕 Taxi & Ciudad" },
-  { id: "Gastronomía", label: "☕ Gastronomía & Cafés" },
+export const OFFICIAL_CATEGORIES = [
+  { id: "all", label: "Todo", icon: Flame, iconColor: "text-amber-500" },
+  { id: "hotel", label: "Hoteles", icon: Bed, iconColor: "text-indigo-600" },
+  { id: "playa", label: "Playa", icon: Waves, iconColor: "text-cyan-600" },
+  { id: "surf", label: "Surf", icon: Waves, iconColor: "text-blue-600" },
+  { id: "food", label: "Gastronomía", icon: Utensils, iconColor: "text-orange-600" },
+  { id: "cafe", label: "Café", icon: Coffee, iconColor: "text-amber-700" },
+  { id: "eco", label: "Ecoturismo", icon: TreePine, iconColor: "text-emerald-600" },
+  { id: "aventura", label: "Aventura", icon: Ticket, iconColor: "text-teal-600" },
+  { id: "transporte", label: "Rutas & Transporte", icon: Bus, iconColor: "text-emerald-700" },
 ]
+
+export function matchesCategory(service: Service, selectedCategory: string): boolean {
+  if (!selectedCategory || selectedCategory === "all") return true
+
+  const catName = (service.category || (service as any).categoria?.nombre || (service as any).categoria_nombre || "").toLowerCase()
+  const sName = (service.name || "").toLowerCase()
+  const sDesc = (service.description || (service as any).descripcion || "").toLowerCase()
+  const sLoc = (service.location || "").toLowerCase()
+  const catId = (service as any).categoria?.id
+
+  switch (selectedCategory) {
+    case "hotel":
+      return catName.includes("hotel") || catName.includes("hospedaj") || sName.includes("hotel") || sDesc.includes("hotel") || catId === 5
+    case "surf":
+      return catName.includes("surf") || sName.includes("surf") || sDesc.includes("surf") || catId === 7
+    case "cafe":
+      return catName.includes("café") || catName.includes("cafe") || sName.includes("café") || sDesc.includes("cafe") || catId === 10
+    case "eco":
+      return catName.includes("eco") || catName.includes("tour") || catName.includes("naturaleza") || catId === 4 || catId === 3
+    case "food":
+      return catName.includes("gastro") || catName.includes("restauran") || catName.includes("comida") || sName.includes("restauran") || sDesc.includes("comida") || sName.includes("asado") || sName.includes("pizza") || sName.includes("hamburguesa") || catId === 6 || catId === 1
+    case "playa":
+      return catName.includes("playa") || sName.includes("playa") || sLoc.includes("playa") || sLoc.includes("tunco") || sLoc.includes("sunzal") || sDesc.includes("playa") || sName.includes("tunco") || sName.includes("costa del sol") || catId === 8
+    case "aventura":
+      return catName.includes("aventura") || sName.includes("aventura") || sDesc.includes("aventura") || sName.includes("caminata") || sName.includes("volcán") || sName.includes("volcan") || catId === 9
+    case "transporte":
+      return catName.includes("transporte") || catName.includes("ruta") || catName.includes("interurbano") || catName.includes("urbano") || (service as any).id >= 100000 || (service as any).price_one_way !== undefined
+    default:
+      return catName.includes(selectedCategory.toLowerCase()) || sName.includes(selectedCategory.toLowerCase())
+  }
+}
+
+export function getRouteContext(routeName: string = ""): {
+  isPlaya: boolean;
+  isMontana: boolean;
+  isPueblo: boolean;
+  isCiudad: boolean;
+  keywords: string[];
+} {
+  const text = routeName.toLowerCase();
+  const isPlaya = /playa|costa|tunco|sunzal|libertad|zonte|majahual|cuco|taquillo|balsamo|san diego|costa del sol|surf|102/.test(text);
+  const isMontana = /monta[ñn]a|volc[aá]n|cr[aá]ter|crater|flores|cerro|ilamatepec|izalco|apaneca|ataco|juayua|senderismo|pinar/.test(text);
+  const isPueblo = /suchitoto|colonial|centro hist[oó]rico|joya de ceren|ruinas|pueblo/.test(text);
+  const isCiudad = /san salvador|santa tecla|metrocentro|escal[oó]n|zona rosa|antiguo cuscatl[aá]n|aeropuerto|urbano/.test(text);
+
+  const keywords: string[] = [];
+  if (isPlaya) keywords.push("playa", "costa", "tunco", "sunzal", "libertad", "surf", "zonte");
+  if (isMontana) keywords.push("montaña", "volcan", "volcán", "flores", "apaneca", "ataco", "cráter", "crater", "caminata");
+  if (isPueblo) keywords.push("suchitoto", "pueblo", "historia", "colonial");
+  if (isCiudad) keywords.push("san salvador", "ciudad", "centro", "tecla");
+
+  return { isPlaya, isMontana, isPueblo, isCiudad, keywords };
+}
 
 const PRICE_OPTIONS: { id: "ALL" | "ECO" | "MID" | "PREMIUM"; label: string; desc: string }[] = [
   { id: "ALL", label: "Cualquiera", desc: "Todos los precios" },
-  { id: "ECO", label: "Económico", desc: "Hasta $5 (Buses y urbanos)" },
-  { id: "MID", label: "Medio", desc: "$5 a $25 (Interurbanos y escapadas)" },
-  { id: "PREMIUM", label: "Tours / Premium", desc: "+$25 (Tours y full day)" },
+  { id: "ECO", label: "Económico", desc: "Hasta $5" },
+  { id: "MID", label: "Medio", desc: "$5 a $25" },
+  { id: "PREMIUM", label: "Premium / Tours", desc: "Más de $25" },
 ]
 
 export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
   const router = useRouter()
+  const sessionSeedRef = useRef(Math.random())
   const { 
     services, 
     pools, 
@@ -52,7 +110,8 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
     lastMapDestination,
     setLastMapInteraction,
     resetMapInteraction,
-    userIntentions
+    userIntentions,
+    favorites = [],
   } = useAppStore()
 
   // Maintain deck state — con servicios y experiencias del mapa
@@ -70,8 +129,8 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
   const [showPreferenceModal, setShowPreferenceModal] = useState(false)
   const [showPriorInteractionPrompt, setShowPriorInteractionPrompt] = useState(false)
 
-  // Filtros interactivos de usuario (categoría, ruta y precio)
-  const [selectedPrefCategory, setSelectedPrefCategory] = useState<string>("ALL")
+  // Filtros interactivos de usuario (categoría oficial, ruta y precio)
+  const [selectedPrefCategory, setSelectedPrefCategory] = useState<string>("all")
   const [selectedPrefRoute, setSelectedPrefRoute] = useState<string>("ALL")
   const [selectedPriceRange, setSelectedPriceRange] = useState<"ALL" | "ECO" | "MID" | "PREMIUM">("ALL")
  
@@ -117,25 +176,62 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
     }
   }, [])
 
-  // Extraer opciones de rutas / destinos populares para el selector
-  const popularRouteOptions = useMemo(() => {
-    const list: { id: string; name: string }[] = [
-      { id: "ALL", name: "Todas las rutas" },
-    ]
-    ;(routes || []).forEach((r) => {
-      const name = r.name || ""
-      if (name && !list.some((item) => item.name === name)) {
-        list.push({ id: name, name })
-      }
-    })
-    return list.slice(0, 16)
-  }, [routes])
+  // Estados para el buscador interactivo y filtro por modalidad de rutas en el cuestionario
+  const [routeSearchTerm, setRouteSearchTerm] = useState("")
+  const [routeTypeFilter, setRouteTypeFilter] = useState<"ALL" | "INTERURBANO" | "URBANO" | "TOUR">("ALL")
+  const [recentMapRoutes, setRecentMapRoutes] = useState<string[]>([])
 
-  // Generar mazo dinámico combinando filtros de usuario, mapa y precio
+  // Cargar rutas exploradas recientemente desde localStorage / mapa
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const raw = localStorage.getItem("palenque_recent_map_routes")
+        const arr: string[] = raw ? JSON.parse(raw) : []
+        if (lastMapDestination && !arr.includes(lastMapDestination)) {
+          arr.unshift(lastMapDestination)
+        }
+        setRecentMapRoutes(arr.slice(0, 6))
+      } catch (e) {}
+    }
+  }, [lastMapDestination])
+
+  // Filtrado reactivo de rutas según término de búsqueda y modalidad (Urbana, Interurbana, Turística)
+  const filteredRoutes = useMemo(() => {
+    const list = routes || []
+    return list.filter((r) => {
+      // 1. Filtro por tipo/modalidad
+      if (routeTypeFilter !== "ALL") {
+        if (routeTypeFilter === "TOUR") {
+          const isTour = r.route_type === "TOUR" || (r.category?.name || "").toLowerCase().includes("tour") || (r.name || "").toLowerCase().includes("tour")
+          if (!isTour) return false
+        } else if (r.route_type !== routeTypeFilter) {
+          return false
+        }
+      }
+
+      // 2. Filtro por texto de búsqueda
+      if (routeSearchTerm.trim()) {
+        const term = routeSearchTerm.toLowerCase().trim()
+        const nameMatch = (r.name || "").toLowerCase().includes(term)
+        const catMatch = (r.category?.name || "").toLowerCase().includes(term)
+        const stopMatch = (r.stops || []).some((s) => (s.name || "").toLowerCase().includes(term))
+        return nameMatch || catMatch || stopMatch
+      }
+
+      return true
+    })
+  }, [routes, routeTypeFilter, routeSearchTerm])
+
+  // Generar mazo dinámico con afinidad contextual estricta (Categoría, Ruta y Precio) y ordenamiento no estático
   const dynamicDeck = useMemo(() => {
     let list = [...allPlayableItems]
 
-    // 1. Filtrar por rango de precio si se seleccionó
+    // 1. Filtrar por categoría oficial seleccionada de manera ESTRICTA
+    if (selectedPrefCategory && selectedPrefCategory !== "all") {
+      list = list.filter((s) => matchesCategory(s, selectedPrefCategory))
+    }
+
+    // 2. Filtrar por rango de precio de manera ESTRICTA
     if (selectedPriceRange === "ECO") {
       list = list.filter((s) => (s.price || 0) <= 5)
     } else if (selectedPriceRange === "MID") {
@@ -144,49 +240,122 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
       list = list.filter((s) => (s.price || 0) > 25)
     }
 
-    // 2. Ruta o destino específico
-    const effectiveRoute = selectedPrefRoute !== "ALL" ? selectedPrefRoute : lastMapDestination
-    if (effectiveRoute) {
-      const target = effectiveRoute.toLowerCase()
-      list = list.sort((a, b) => {
-        const matchA = ((a.name || "").toLowerCase().includes(target) || (a.location || "").toLowerCase().includes(target)) ? 1 : 0
-        const matchB = ((b.name || "").toLowerCase().includes(target) || (b.location || "").toLowerCase().includes(target)) ? 1 : 0
-        return matchB - matchA
+    // 3. Ruta contextual seleccionada
+    const hasRouteSelected = selectedPrefRoute && selectedPrefRoute !== "ALL"
+    const rCtx = hasRouteSelected ? getRouteContext(selectedPrefRoute) : null
+
+    // Si la ruta seleccionada es playera (ej. Ruta 102 al Tunco, Costa del Bálsamo):
+    // "si eligio una ruta interurbana y es playera entonces solo muestra los playeros"
+    if (rCtx?.isPlaya) {
+      const beachMatches = list.filter((s) => {
+        const sLoc = (s.location || "").toLowerCase()
+        const sCat = (s.category || "").toLowerCase()
+        const sName = (s.name || "").toLowerCase()
+        const sDesc = (s.description || (s as any).descripcion || "").toLowerCase()
+        return (
+          sLoc.includes("playa") || sLoc.includes("tunco") || sLoc.includes("sunzal") || 
+          sLoc.includes("libertad") || sLoc.includes("costa") || sLoc.includes("zonte") ||
+          sCat.includes("surf") || sCat.includes("playa") || sName.includes("surf") || 
+          sName.includes("playa") || sName.includes("tunco") || sDesc.includes("playa") || sDesc.includes("surf")
+        )
       })
+      if (beachMatches.length > 0) {
+        list = beachMatches
+      }
+    } else if (rCtx?.isMontana) {
+      const mountainMatches = list.filter((s) => {
+        const sLoc = (s.location || "").toLowerCase()
+        const sCat = (s.category || "").toLowerCase()
+        const sName = (s.name || "").toLowerCase()
+        const sDesc = (s.description || (s as any).descripcion || "").toLowerCase()
+        return (
+          sLoc.includes("montaña") || sLoc.includes("volcan") || sLoc.includes("volcán") || 
+          sLoc.includes("flores") || sLoc.includes("ataco") || sLoc.includes("apaneca") ||
+          sCat.includes("eco") || sCat.includes("aventura") || sDesc.includes("montaña") || sDesc.includes("volcan")
+        )
+      })
+      if (mountainMatches.length > 0) {
+        list = mountainMatches
+      }
+    } else if (hasRouteSelected) {
+      // Coincidencia por nombre de ruta / destino específico
+      const target = selectedPrefRoute.toLowerCase()
+      const directMatches = list.filter((s) => {
+        return (s.name || "").toLowerCase().includes(target) || (s.location || "").toLowerCase().includes(target)
+      })
+      if (directMatches.length > 0) {
+        list = directMatches
+      }
     }
 
-    // 3. Categoría efectiva (cuestionario o mapa)
-    const effectiveCategory = selectedPrefCategory !== "ALL" ? selectedPrefCategory : lastMapCategory
-    const superCat = (lastMapSuperCategory || "").toLowerCase()
-    const cat = (effectiveCategory || "").toLowerCase()
-    const dest = (effectiveRoute || "").toLowerCase()
+    // 4. Si el usuario está en "all" y tiene interacción previa en el mapa
+    if (selectedPrefCategory === "all" && deckFilter === "MAP_MATCH" && (lastMapCategory || lastMapSuperCategory || lastMapDestination)) {
+      const cat = (lastMapCategory || "").toLowerCase()
+      const superCat = (lastMapSuperCategory || "").toLowerCase()
+      const dest = (lastMapDestination || "").toLowerCase()
 
-    if (!effectiveCategory && !lastMapSuperCategory && !effectiveRoute) {
-      return list
-    }
+      const isMatch = (s: Service) => {
+        const sCat = (s.category || "").toLowerCase()
+        const sName = (s.name || "").toLowerCase()
+        const sLoc = (s.location || "").toLowerCase()
+        const sDesc = (s.description || (s as any).descripcion || "").toLowerCase()
 
-    const isMatch = (s: Service) => {
-      const sCat = (s.category || "").toLowerCase()
-      const sName = (s.name || "").toLowerCase()
-      const sLoc = (s.location || "").toLowerCase()
-      const sDesc = (s.description || s.descripcion || "").toLowerCase()
+        if (cat && (sCat.includes(cat) || sName.includes(cat) || sLoc.includes(cat) || sDesc.includes(cat))) return true
+        if (dest && (sLoc.includes(dest) || sName.includes(dest))) return true
+        if (superCat === "tour" && (sCat.includes("tour") || sCat.includes("experiencia") || sDesc.includes("tour"))) return true
+        if (superCat === "urbano" && (sCat.includes("urbano") || sCat.includes("ciudad") || sCat.includes("centro"))) return true
+        if (superCat === "interurbano" && (sCat.includes("interurbano") || sCat.includes("playa") || sCat.includes("montaña") || sCat.includes("ruta"))) return true
+        return false
+      }
 
-      if (cat && (sCat.includes(cat) || sName.includes(cat) || sLoc.includes(cat) || sDesc.includes(cat))) return true
-      if (dest && (sLoc.includes(dest) || sName.includes(dest))) return true
-      if (superCat === "tour" && (sCat.includes("tour") || sCat.includes("experiencia") || sDesc.includes("tour"))) return true
-      if (superCat === "urbano" && (sCat.includes("urbano") || sCat.includes("ciudad") || sCat.includes("centro"))) return true
-      if (superCat === "interurbano" && (sCat.includes("interurbano") || sCat.includes("playa") || sCat.includes("montaña") || sCat.includes("ruta"))) return true
-      return false
-    }
-
-    if (deckFilter === "MAP_MATCH") {
       const matched = list.filter(isMatch)
       const remaining = list.filter((s) => !isMatch(s))
-      return matched.length > 0 ? [...matched, ...remaining] : list
+      list = matched.length > 0 ? [...matched, ...remaining] : list
     }
 
-    return list
-  }, [allPlayableItems, lastMapCategory, lastMapSuperCategory, lastMapDestination, deckFilter, selectedPrefCategory, selectedPrefRoute, selectedPriceRange])
+    // 5. Algoritmo de afinidad dinámica y variación no estática (resuelve "siempre inicio desde el mismo lugar")
+    const seed = sessionSeedRef.current
+    const scoredList = list.map((s, idx) => {
+      let score = 0
+      const sName = (s.name || "").toLowerCase()
+      const sLoc = (s.location || "").toLowerCase()
+      const sCat = (s.category || "").toLowerCase()
+
+      // Afinidad con ruta
+      if (hasRouteSelected) {
+        if (sName.includes(selectedPrefRoute.toLowerCase()) || sLoc.includes(selectedPrefRoute.toLowerCase())) {
+          score += 200
+        }
+        if (rCtx?.isPlaya && (sLoc.includes("playa") || sLoc.includes("tunco") || sCat.includes("surf"))) score += 150
+        if (rCtx?.isMontana && (sLoc.includes("montaña") || sLoc.includes("volcan"))) score += 150
+      }
+
+      // Afinidad con mapa
+      if (lastMapCategory && (sCat.includes(lastMapCategory.toLowerCase()) || sName.includes(lastMapCategory.toLowerCase()))) score += 60
+      if (lastMapDestination && (sLoc.includes(lastMapDestination.toLowerCase()) || sName.includes(lastMapDestination.toLowerCase()))) score += 80
+
+      // Favoritos
+      if (favorites.includes(s.id)) score += 30
+
+      // Rating
+      score += (s.rating || 4) * 4
+
+      // Entropía de sesión pseudo-aleatoria para que el mazo sea dinámico y no estático
+      const hashKey = `${s.id}-${s.name}-${seed}`
+      let hash = 0
+      for (let i = 0; i < hashKey.length; i++) {
+        hash = (hash << 5) - hash + hashKey.charCodeAt(i)
+        hash |= 0
+      }
+      const jitter = Math.abs(hash % 90)
+      score += jitter
+
+      return { service: s, score }
+    })
+
+    scoredList.sort((a, b) => b.score - a.score)
+    return scoredList.map((item) => item.service)
+  }, [allPlayableItems, lastMapCategory, lastMapSuperCategory, lastMapDestination, deckFilter, selectedPrefCategory, selectedPrefRoute, selectedPriceRange, favorites])
 
   // Cargar servicios en el deck cuando se calcule o cambie el mazo dinámico
   useEffect(() => {
@@ -206,18 +375,22 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
     setDeckFilter("MAP_MATCH")
     setCurrentIndex(0)
 
-    // Grabar interacción en el store y localStorage para que quede guardado
-    const catToSave = selectedPrefCategory !== "ALL" ? selectedPrefCategory : null
+    // Grabar interacción en el store y localStorage
+    const activeCat = OFFICIAL_CATEGORIES.find(c => c.id === selectedPrefCategory)
+    const catToSave = selectedPrefCategory !== "all" && activeCat ? activeCat.label : null
     const routeToSave = selectedPrefRoute !== "ALL" ? selectedPrefRoute : null
     setLastMapInteraction(catToSave, null, routeToSave)
   }
 
-  // Reiniciar preferencias a cero y reabrir el selector
+  // Reiniciar preferencias a cero y reabrir el selector con nuevo orden dinámico
   const handleResetPreferences = () => {
+    sessionSeedRef.current = Math.random()
     resetMapInteraction()
-    setSelectedPrefCategory("ALL")
+    setSelectedPrefCategory("all")
     setSelectedPrefRoute("ALL")
     setSelectedPriceRange("ALL")
+    setRouteSearchTerm("")
+    setRouteTypeFilter("ALL")
     setDeckFilter("ALL")
     setCurrentIndex(0)
     setHasConfirmedPreference(false)
@@ -273,7 +446,7 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
         <HeaderWithMenu title="Palenque Go" onNavigate={onNavigate} />
         <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-4">
           <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mb-2 text-emerald-700">
-            <Sparkles className="w-10 h-10" />
+            <Compass className="w-10 h-10" />
           </div>
           <h2 className="text-2xl font-bold text-foreground">
             {deck.length === 0 ? "No hay servicios con estos filtros" : "¡Has visto todo en esta selección!"}
@@ -312,13 +485,25 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
       {/* Barra de Filtros Activos, Afinidades y Botón de Reiniciar */}
       <div className="px-4 pt-2.5 pb-1 flex items-center justify-between z-20 shrink-0 gap-2">
         <div className="flex items-center gap-1.5 bg-emerald-50/90 border border-emerald-200/80 px-2.5 py-1 rounded-full text-xs text-emerald-950 font-medium shadow-2xs min-w-0">
-          <Sparkles className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+          <Compass className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
           <span className="truncate">
-            {selectedPrefCategory !== "ALL" || selectedPrefRoute !== "ALL" || selectedPriceRange !== "ALL"
-              ? `Filtro: ${selectedPrefCategory !== "ALL" ? selectedPrefCategory : "Todo"}${selectedPrefRoute !== "ALL" ? ` · ${selectedPrefRoute}` : ""}${selectedPriceRange !== "ALL" ? ` · ${selectedPriceRange === "ECO" ? "<$5" : selectedPriceRange === "MID" ? "$5-$25" : ">$25"}` : ""}`
-              : lastMapCategory || lastMapDestination
-              ? `Recomendado: ${lastMapCategory || lastMapDestination}`
-              : "Explorando todo"}
+            {(() => {
+              const activeCat = OFFICIAL_CATEGORIES.find(c => c.id === selectedPrefCategory);
+              const catLabel = selectedPrefCategory !== "all" && activeCat ? activeCat.label : null;
+              if (catLabel || selectedPrefRoute !== "ALL" || selectedPriceRange !== "ALL") {
+                const parts = [];
+                if (catLabel) parts.push(catLabel);
+                if (selectedPrefRoute !== "ALL") parts.push(selectedPrefRoute);
+                if (selectedPriceRange !== "ALL") {
+                  parts.push(selectedPriceRange === "ECO" ? "<$5" : selectedPriceRange === "MID" ? "$5-$25" : ">$25");
+                }
+                return `Filtro: ${parts.join(" · ")}`;
+              }
+              if (lastMapCategory || lastMapDestination) {
+                return `Recomendado: ${lastMapCategory || lastMapDestination}`;
+              }
+              return "Explorando todo";
+            })()}
           </span>
         </div>
 
@@ -455,8 +640,9 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
                     {lastMapCategory || lastMapDestination || "Rutas & Experiencias"}
                   </span>
                   {lastMapDestination && lastMapCategory && (
-                    <span className="text-[11px] text-emerald-800 block truncate">
-                      📍 {lastMapDestination}
+                    <span className="text-[11px] text-emerald-800 flex items-center gap-1 truncate">
+                      <MapPin className="w-3 h-3 text-emerald-700 shrink-0" />
+                      <span className="truncate">{lastMapDestination}</span>
                     </span>
                   )}
                 </div>
@@ -473,7 +659,7 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
                   }}
                   className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-2xl py-3 text-sm shadow-md flex items-center justify-center gap-2"
                 >
-                  <Sparkles className="w-4 h-4" />
+                  <Play className="w-4 h-4 fill-current" />
                   <span>Sí, ver lo relacionado</span>
                 </Button>
 
@@ -515,7 +701,7 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
 
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-700 shadow-inner shrink-0">
-                  <Sparkles className="w-6 h-6" />
+                  <Compass className="w-6 h-6" />
                 </div>
                 <div>
                   <h3 className="text-lg font-extrabold text-gray-900 leading-tight">
@@ -533,21 +719,26 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
                   1. Elige una categoría o experiencia
                 </label>
                 <div className="flex flex-wrap gap-1.5">
-                  {PREFERENCE_CATEGORIES.map((cat) => {
+                  {OFFICIAL_CATEGORIES.map((cat) => {
                     const isSelected = selectedPrefCategory === cat.id
+                    const IconComp = cat.icon
                     return (
                       <button
                         key={cat.id}
                         type="button"
                         onClick={() => setSelectedPrefCategory(cat.id)}
                         className={cn(
-                          "px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1 active:scale-95",
+                          "px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 active:scale-95",
                           isSelected
                             ? "bg-emerald-600 text-white shadow-xs"
                             : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                         )}
                       >
-                        {isSelected && <Check className="w-3 h-3" />}
+                        {isSelected ? (
+                          <Check className="w-3.5 h-3.5 text-white" />
+                        ) : (
+                          <IconComp className={cn("w-3.5 h-3.5", cat.iconColor)} />
+                        )}
                         <span>{cat.label}</span>
                       </button>
                     )
@@ -555,31 +746,165 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
                 </div>
               </div>
 
-              {/* Paso 2: Rutas & Destinos */}
+              {/* Paso 2: Rutas & Destinos Dinámicos */}
               <div className="mb-4">
-                <label className="text-xs font-extrabold text-gray-800 uppercase tracking-wider block mb-2">
-                  2. ¿Tienes una ruta o destino en mente?
-                </label>
-                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1 bg-gray-50 rounded-2xl border border-gray-100">
-                  {popularRouteOptions.map((r) => {
-                    const isSelected = selectedPrefRoute === r.id
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-extrabold text-gray-800 uppercase tracking-wider block">
+                    2. ¿Tienes una ruta o destino en mente?
+                  </label>
+                  {selectedPrefRoute !== "ALL" && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPrefRoute("ALL")}
+                      className="text-[11px] font-bold text-emerald-700 hover:underline"
+                    >
+                      Quitar ruta
+                    </button>
+                  )}
+                </div>
+
+                {/* Sub-bloque 2.1: Rutas con las que interactuó recientemente en el mapa */}
+                {recentMapRoutes.length > 0 && (
+                  <div className="mb-2.5 p-2 bg-emerald-50/70 border border-emerald-200/60 rounded-2xl">
+                    <span className="text-[11px] font-bold text-emerald-900 flex items-center gap-1.5 mb-1.5">
+                      <History className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>Tus rutas exploradas en el mapa:</span>
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {recentMapRoutes.map((routeName) => {
+                        const isSelected = selectedPrefRoute === routeName
+                        return (
+                          <button
+                            key={`recent-${routeName}`}
+                            type="button"
+                            onClick={() => setSelectedPrefRoute(routeName)}
+                            className={cn(
+                              "px-2.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 active:scale-95 border",
+                              isSelected
+                                ? "bg-emerald-700 text-white border-emerald-800 shadow-xs"
+                                : "bg-white text-emerald-950 border-emerald-200 hover:bg-emerald-100/70"
+                            )}
+                          >
+                            {isSelected ? (
+                              <Check className="w-3 h-3 text-white shrink-0" />
+                            ) : (
+                              <MapPin className="w-3 h-3 text-emerald-600 shrink-0" />
+                            )}
+                            <span className="truncate max-w-[200px]">{routeName}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Sub-bloque 2.2: Pestañas de modalidad / tipo de ruta */}
+                <div className="flex items-center gap-1.5 mb-2 overflow-x-auto pb-1 scrollbar-none">
+                  {[
+                    { id: "ALL", label: "Todas", icon: Navigation },
+                    { id: "INTERURBANO", label: "Interurbanas", icon: Bus },
+                    { id: "URBANO", label: "Urbanas", icon: Car },
+                    { id: "TOUR", label: "Tours & Playas", icon: Compass },
+                  ].map((mode) => {
+                    const isSelected = routeTypeFilter === mode.id
+                    const IconComp = mode.icon
                     return (
                       <button
-                        key={r.id}
+                        key={mode.id}
                         type="button"
-                        onClick={() => setSelectedPrefRoute(r.id)}
+                        onClick={() => setRouteTypeFilter(mode.id as any)}
                         className={cn(
-                          "px-2.5 py-1.5 rounded-xl text-[11px] font-semibold transition-all text-left truncate max-w-full flex items-center gap-1 active:scale-95",
+                          "px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all shrink-0 flex items-center gap-1.5 active:scale-95 border",
                           isSelected
-                            ? "bg-emerald-700 text-white font-bold shadow-xs"
-                            : "bg-white text-gray-700 border border-gray-200 hover:border-emerald-300"
+                            ? "bg-gray-900 text-white border-gray-900 shadow-2xs"
+                            : "bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200"
                         )}
                       >
-                        {isSelected && <Check className="w-3 h-3 shrink-0" />}
-                        <span className="truncate">{r.name}</span>
+                        <IconComp className="w-3.5 h-3.5" />
+                        <span>{mode.label}</span>
                       </button>
                     )
                   })}
+                </div>
+
+                {/* Sub-bloque 2.3: Buscador predictivo en vivo */}
+                <div className="relative mb-2">
+                  <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={routeSearchTerm}
+                    onChange={(e) => setRouteSearchTerm(e.target.value)}
+                    placeholder="Buscar ruta o destino... ej. 102, Tunco, Santa Ana, Suchitoto"
+                    className="w-full pl-8 pr-7 py-1.5 text-xs rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 font-medium text-gray-800 placeholder:text-gray-400 transition-all"
+                  />
+                  {routeSearchTerm && (
+                    <button
+                      type="button"
+                      onClick={() => setRouteSearchTerm("")}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-full text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Sub-bloque 2.4: Lista dinámica de resultados */}
+                <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto p-1.5 bg-gray-50/70 rounded-2xl border border-gray-100">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPrefRoute("ALL")}
+                    className={cn(
+                      "px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition-all flex items-center gap-1.5 active:scale-95 border",
+                      selectedPrefRoute === "ALL"
+                        ? "bg-emerald-700 text-white border-emerald-800 shadow-xs"
+                        : "bg-white text-gray-700 border-gray-200 hover:border-emerald-300"
+                    )}
+                  >
+                    {selectedPrefRoute === "ALL" ? (
+                      <Check className="w-3 h-3 text-white shrink-0" />
+                    ) : (
+                      <Navigation className="w-3 h-3 text-gray-400 shrink-0" />
+                    )}
+                    <span>Cualquier ruta (Todas)</span>
+                  </button>
+
+                  {filteredRoutes.length === 0 ? (
+                    <div className="w-full py-4 text-center text-xs text-gray-500">
+                      No se encontraron rutas con "{routeSearchTerm}". Prueba con otro nombre o cambia la modalidad.
+                    </div>
+                  ) : (
+                    filteredRoutes.slice(0, 30).map((r) => {
+                      const isSelected = selectedPrefRoute === r.name
+                      return (
+                        <button
+                          key={r.id}
+                          type="button"
+                          onClick={() => setSelectedPrefRoute(r.name)}
+                          className={cn(
+                            "px-2.5 py-1.5 rounded-xl text-[11px] font-semibold transition-all text-left truncate max-w-full flex items-center gap-1.5 active:scale-95 border",
+                            isSelected
+                              ? "bg-emerald-700 text-white font-bold border-emerald-800 shadow-xs"
+                              : "bg-white text-gray-700 border-gray-200 hover:border-emerald-300"
+                          )}
+                        >
+                          {isSelected ? (
+                            <Check className="w-3 h-3 shrink-0 text-white" />
+                          ) : (
+                            <MapPin className="w-3 h-3 shrink-0 text-emerald-600" />
+                          )}
+                          <span className="truncate">{r.name}</span>
+                          {r.route_type && (
+                            <span className={cn(
+                              "text-[9px] px-1.5 py-0.5 rounded font-bold uppercase shrink-0",
+                              isSelected ? "bg-emerald-800 text-white" : "bg-gray-100 text-gray-500"
+                            )}>
+                              {r.route_type === "TOUR" ? "Tour" : r.route_type === "URBANO" ? "Urbana" : "Interurbana"}
+                            </span>
+                          )}
+                        </button>
+                      )
+                    })
+                  )}
                 </div>
               </div>
 
@@ -632,9 +957,10 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
                 <Button
                   type="button"
                   onClick={handleApplyPreferences}
-                  className="flex-1 bg-gradient-to-r from-emerald-600 to-[#064e3b] hover:from-emerald-700 hover:to-[#043324] text-white font-extrabold rounded-2xl py-3 text-sm shadow-md"
+                  className="flex-1 bg-gradient-to-r from-emerald-600 to-[#064e3b] hover:from-emerald-700 hover:to-[#043324] text-white font-extrabold rounded-2xl py-3 text-sm shadow-md flex items-center justify-center gap-2"
                 >
-                  ¡Empezar a jugar en Go! 🚀
+                  <Play className="w-4 h-4 fill-current" />
+                  <span>¡Empezar a explorar en Go!</span>
                 </Button>
               </div>
             </motion.div>

@@ -377,7 +377,19 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
       const catName = activeCategory 
         || activeObj?.category?.name 
         || (superCategory === 'TOUR' ? 'Tours & Experiencias' : superCategory === 'URBANO' ? 'Taxi & Rutas Urbanas' : superCategory === 'INTERURBANO' ? 'Rutas Interurbanas' : null);
-      setLastMapInteraction(catName, superCategory, destination || activeObj?.name || null);
+      const destName = destination || activeObj?.name || null;
+      setLastMapInteraction(catName, superCategory, destName);
+
+      if (typeof window !== "undefined" && destName) {
+        try {
+          const raw = localStorage.getItem("palenque_recent_map_routes");
+          const arr: string[] = raw ? JSON.parse(raw) : [];
+          if (!arr.includes(destName)) {
+            arr.unshift(destName);
+            localStorage.setItem("palenque_recent_map_routes", JSON.stringify(arr.slice(0, 10)));
+          }
+        } catch (e) {}
+      }
     }
   }, [activeCategory, superCategory, destination, selectedRoute, previewRoute, setLastMapInteraction]);
   const [showOriginSuggestions, setShowOriginSuggestions] = useState(false)
