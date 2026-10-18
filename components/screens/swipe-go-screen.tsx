@@ -528,9 +528,9 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
     <div className="flex flex-col h-full bg-[#f8f9fa] overflow-hidden relative">
       <HeaderWithMenu title="Explorar Go" onNavigate={onNavigate} />
 
-      {/* Barra de Filtros Activos, Afinidades y Botón de Reiniciar */}
-      <div className="px-4 pt-2.5 pb-1 flex items-center justify-between z-20 shrink-0 gap-2">
-        <div className="flex items-center gap-1.5 bg-emerald-50/90 border border-emerald-200/80 px-2.5 py-1 rounded-full text-xs text-emerald-950 font-medium shadow-2xs min-w-0">
+      {/* Barra de Filtros Activos, Afinidades y Botón de Reiniciar — CON AIRE Y ESPACIO */}
+      <div className="px-4 pt-4 pb-3 flex items-center justify-between z-20 shrink-0 gap-2.5 mb-1.5 bg-white/70 backdrop-blur-xs border-b border-gray-100">
+        <div className="flex items-center gap-1.5 bg-emerald-50/95 border border-emerald-200 px-3 py-1.5 rounded-full text-xs text-emerald-950 font-semibold shadow-2xs min-w-0">
           <Compass className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
           <span className="truncate">
             {(() => {
@@ -556,11 +556,11 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
           </span>
         </div>
 
-        <div className="flex items-center gap-1 text-[11px] shrink-0">
+        <div className="flex items-center gap-1.5 text-[11px] shrink-0">
           <button
             type="button"
             onClick={handleResetPreferences}
-            className="flex items-center gap-1.5 px-3 py-1 rounded-full font-bold bg-white border border-gray-200 text-gray-700 hover:bg-emerald-50 hover:border-emerald-300 transition-all shadow-2xs active:scale-95"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold bg-white border border-gray-200 text-gray-700 hover:bg-emerald-50 hover:border-emerald-300 transition-all shadow-2xs active:scale-95"
             title="Configurar qué te gustaría ver"
           >
             <Settings className="w-3.5 h-3.5 text-emerald-600" />
@@ -570,7 +570,7 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
           <button
             type="button"
             onClick={() => handleToggleDeckFilter("MAP_MATCH")}
-            className={`px-3 py-1 rounded-full font-bold transition-all text-xs flex items-center gap-1 active:scale-95 ${
+            className={`px-3.5 py-1.5 rounded-full font-bold transition-all text-xs flex items-center gap-1 active:scale-95 ${
               deckFilter === "MAP_MATCH"
                 ? "bg-emerald-600 text-white shadow-xs"
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -581,7 +581,7 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
           <button
             type="button"
             onClick={() => handleToggleDeckFilter("ALL")}
-            className={`px-3 py-1 rounded-full font-bold transition-all text-xs flex items-center gap-1 active:scale-95 ${
+            className={`px-3.5 py-1.5 rounded-full font-bold transition-all text-xs flex items-center gap-1 active:scale-95 ${
               deckFilter === "ALL"
                 ? "bg-emerald-600 text-white shadow-xs"
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -1288,22 +1288,22 @@ function SwipeableServiceCard({
           </div>
         </div>
 
-        {/* Descripción & Features en el medio - sin que choque */}
-        <div className="space-y-1.5 my-auto overflow-hidden">
-          <p className="text-muted-foreground text-xs leading-relaxed line-clamp-2">
+        {/* Descripción & Features en el medio — CON SCROLL INDEPENDIENTE PARA QUE NUNCA SE PIERDAN LOS BOTONES NI EL BANNER */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-1 py-1 my-1 custom-scrollbar space-y-1.5 overscroll-contain">
+          <p className="text-muted-foreground text-xs leading-relaxed">
             {service.description || service.descripcion || "Sin descripción disponible"}
           </p>
           {service.features && service.features.length > 0 && (
             <div className="flex flex-wrap gap-1 pt-0.5">
-              {service.features.slice(0, 3).map((f, i) => (
+              {service.features.map((f, i) => (
                 <span key={i} className="text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-200/60 px-2 py-0.5 rounded-full font-medium">{f}</span>
               ))}
             </div>
           )}
         </div>
 
-        {/* Botones de Acción dentro de la tarjeta (SOLO EN MÓVIL) — GRANDES Y PROMINENTES */}
-        <div className="flex sm:hidden items-center justify-center gap-7 pt-2 pb-1 border-t border-gray-100/90 shrink-0 mt-auto">
+        {/* Botones de Acción dentro de la tarjeta (SOLO EN MÓVIL) — GRANDES Y PROMINENTES (w-[72px] h-[72px]) */}
+        <div className="flex sm:hidden items-center justify-center gap-7 pt-2.5 pb-2 border-t border-gray-100 shrink-0 mt-auto">
           <button
             type="button"
             onClick={(e) => {
@@ -1311,9 +1311,9 @@ function SwipeableServiceCard({
               onSwipe("left");
             }}
             title="Descartar"
-            className="w-16 h-16 rounded-full bg-white shadow-xl border-2 border-red-100 flex items-center justify-center text-red-500 hover:bg-red-50 active:scale-90 transition-all group"
+            className="w-[72px] h-[72px] rounded-full bg-white shadow-2xl border-2 border-red-200 flex items-center justify-center text-red-500 hover:bg-red-50 active:scale-95 transition-all group shrink-0"
           >
-            <X className="w-8 h-8 stroke-[2.5] text-red-500 group-hover:text-red-600" />
+            <X className="w-9 h-9 stroke-[2.5] text-red-500 group-hover:text-red-600" />
           </button>
 
           <button
@@ -1323,9 +1323,9 @@ function SwipeableServiceCard({
               onInfoClick();
             }}
             title="Más información"
-            className="w-12 h-12 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-blue-500 hover:bg-blue-50 active:scale-90 transition-all"
+            className="w-14 h-14 rounded-full bg-white shadow-lg border border-blue-200 flex items-center justify-center text-blue-500 hover:bg-blue-50 active:scale-95 transition-all shrink-0"
           >
-            <Info className="w-6 h-6 stroke-[2.5]" />
+            <Info className="w-7 h-7 stroke-[2.5]" />
           </button>
 
           <button
@@ -1335,9 +1335,9 @@ function SwipeableServiceCard({
               onSwipe("right");
             }}
             title="Me gusta"
-            className="w-16 h-16 rounded-full bg-white shadow-xl border-2 border-emerald-100 flex items-center justify-center text-emerald-500 hover:bg-emerald-50 active:scale-90 transition-all group"
+            className="w-[72px] h-[72px] rounded-full bg-white shadow-2xl border-2 border-emerald-200 flex items-center justify-center text-emerald-500 hover:bg-emerald-50 active:scale-95 transition-all group shrink-0"
           >
-            <Heart className="w-8 h-8 fill-emerald-100 stroke-[2.5] text-emerald-500 group-hover:fill-emerald-200" />
+            <Heart className="w-9 h-9 fill-emerald-100 stroke-[2.5] text-emerald-500 group-hover:fill-emerald-200" />
           </button>
         </div>
       </div>
