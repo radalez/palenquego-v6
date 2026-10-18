@@ -248,12 +248,10 @@ export default function Home() {
 
         {/* Widget GPS flotante para choferes (solo cuando NO están en su panel) */}
         {currentUser?.tipo === 'CHOFER' && activeTab !== 'conductor' && <DriverGPSWidget onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />}
-        {/* Mobile Sidebar Menu (hamburger) — hidden on map explorer */}
-        {!isMapExplorer && (
-          <div className="lg:hidden">
-            <SidebarMenu activeTab={activeTab} onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />
-          </div>
-        )}
+        {/* Mobile Sidebar Menu Drawer (controlled globally via isMobileMenuOpen) */}
+        <div className="lg:hidden">
+          <SidebarMenu activeTab={activeTab} onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />
+        </div>
 
         {/* Screen Content */}
         <div className={`flex-1 ${isMapExplorer ? 'h-full overflow-hidden' : 'overflow-y-auto pb-16 lg:pb-0'}`}>

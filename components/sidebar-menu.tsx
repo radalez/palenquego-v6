@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Menu, X, Crown, Zap, Star, Gem, LogOut, ChevronRight, CreditCard, Bell, Shield, HelpCircle, Truck, Store } from "lucide-react"
+import { X, Crown, Zap, Star, Gem, LogOut, ChevronRight, CreditCard, Bell, Shield, HelpCircle, Truck, Store, Map } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAppStore } from "@/lib/store"
 import { cn } from "@/lib/utils"
@@ -12,9 +12,8 @@ interface SidebarMenuProps {
 }
 
 export function SidebarMenu({ activeTab, onNavigate }: SidebarMenuProps) {
-  const [isOpen, setIsOpen] = useState(false)
+  const { userPlan, logout, currentUser, isMobileMenuOpen, setMobileMenuOpen } = useAppStore()
   const [isMounted, setIsMounted] = useState(false)
-  const { userPlan, logout, currentUser } = useAppStore()
 
   useEffect(() => {
     setIsMounted(true)
@@ -39,29 +38,45 @@ export function SidebarMenu({ activeTab, onNavigate }: SidebarMenuProps) {
 
   const handleNavigate = (id: string) => {
     onNavigate(id)
-    setIsOpen(false)
+    setMobileMenuOpen(false)
   }
 
   return (
     <>
-      {/* Hamburger Button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="fixed top-4 left-4 z-40 p-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-      >
-        {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-      </button>
-
       {/* Overlay */}
-      {isOpen && <div className="fixed inset-0 bg-black/50 z-30" onClick={() => setIsOpen(false)} />}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 transition-opacity" 
+          onClick={() => setMobileMenuOpen(false)} 
+        />
+      )}
 
-      {/* Sidebar */}
+      {/* Sidebar Drawer */}
       <div
-        className={`fixed left-0 top-0 h-full w-72 bg-card border-r border-border z-40 transform transition-transform duration-300 overflow-y-auto ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
+        className={`fixed left-0 top-0 h-full w-80 max-w-[85vw] bg-card border-r border-border z-50 transform transition-transform duration-300 ease-out overflow-y-auto shadow-2xl flex flex-col ${
+          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="pt-20 px-4 pb-6">
+        {/* Cabecera del Drawer con Branding y Botón Cerrar [X] */}
+        <div className="p-5 border-b border-border flex items-center justify-between shrink-0 bg-muted/30">
+          <div className="flex items-center gap-2.5">
+            <img src="/icon-192.png" alt="Palenque Go" className="w-8 h-8 object-contain" />
+            <div>
+              <h2 className="font-bold text-foreground text-base leading-none">Palenque Go</h2>
+              <span className="text-[10px] text-muted-foreground font-medium">Movilidad & Experiencias</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(false)}
+            className="w-9 h-9 rounded-xl bg-muted/80 hover:bg-muted text-foreground flex items-center justify-center transition-colors active:scale-95"
+            title="Cerrar menú"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="px-4 py-5 flex-1">
           {/* Current Plan */}
           {isMounted && (
             <div className="mb-6 p-4 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-xl border border-primary/20">

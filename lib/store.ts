@@ -342,6 +342,9 @@ interface AppState {
   setLastMapInteraction: (category: string | null, superCategory?: string | null, destination?: string | null) => void
   resetMapInteraction: () => void
 
+  isMobileMenuOpen: boolean
+  setMobileMenuOpen: (open: boolean) => void
+
   kycRequirements: any[]
   fetchKycRequirements: () => Promise<void>
   fetchCurrentUser: () => Promise<void>
@@ -574,6 +577,9 @@ export const useAppStore = create<AppState>()(
       poolPaymentPending: [],
       guardians: [],
       isLoading: false,
+
+      isMobileMenuOpen: false,
+      setMobileMenuOpen: (open: boolean) => set({ isMobileMenuOpen: open }),
 
       // --- USER ROUTES & ON-DEMAND TRIPS STATE ---
       myUserRoutes: [],

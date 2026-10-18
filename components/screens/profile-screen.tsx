@@ -29,6 +29,7 @@ import {
   Building2,
   Sparkles,
   Check,
+  Menu,
 } from "lucide-react"
 import QRCode from "react-qr-code"
 import { Button } from "@/components/ui/button"
@@ -42,7 +43,7 @@ interface ProfileScreenProps {
 }
 
 export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: ProfileScreenProps) {
-  const { currentUser, logout, bookings, pools, userFavorites, recommendations, payServiceWompi, accessToken, userIntentions, setUserIntentions } = useAppStore()
+  const { currentUser, logout, bookings, pools, userFavorites, recommendations, payServiceWompi, accessToken, userIntentions, setUserIntentions, setMobileMenuOpen } = useAppStore()
   const [selectedQrBooking, setSelectedQrBooking] = useState<Booking | null>(null)
   const [payingWompiId, setPayingWompiId] = useState<number | null>(null)
 
@@ -141,7 +142,17 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
       {/* Header */}
       <div className="bg-gradient-to-br from-primary to-primary/80 px-4 pt-12 pb-8 w-full">
         <div className="max-w-3xl mx-auto w-full">
-          <h1 className="text-2xl font-bold text-primary-foreground mb-6">Mi Perfil</h1>
+          <div className="flex items-center gap-3 mb-6">
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(true)}
+              className="w-10 h-10 rounded-2xl bg-white/10 hover:bg-white/20 active:scale-95 text-white flex items-center justify-center transition-all shrink-0 border border-white/10"
+              title="Abrir menú"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <h1 className="text-2xl font-bold text-primary-foreground">Mi Perfil</h1>
+          </div>
 
           {/* User Card */}
           <div className="bg-card rounded-2xl p-4 shadow-lg">

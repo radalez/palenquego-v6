@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Settings, LogOut, Layers, Heart } from 'lucide-react'
+import { X, Settings, LogOut, Layers, Heart, Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/lib/store'
 
@@ -14,7 +14,7 @@ interface HeaderWithMenuProps {
 
 export function HeaderWithMenu({ title, subtitle, onProfileClick, onNavigate }: HeaderWithMenuProps) {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
-  const { currentUser, logout, userFavorites } = useAppStore()
+  const { currentUser, logout, userFavorites, setMobileMenuOpen } = useAppStore()
 
   const getAvatarUrl = (url: string | null | undefined) => {
     if (!url || url.length < 2) return null;
@@ -45,11 +45,21 @@ export function HeaderWithMenu({ title, subtitle, onProfileClick, onNavigate }: 
       {/* Header */}
       <header className="bg-primary px-4 pt-4 pb-4 rounded-b-3xl relative z-40">
         <div className="flex items-center justify-between">
-          <div className="flex-1 min-w-0 pr-2">
-            <h1 className="text-2xl font-bold text-primary-foreground leading-tight">{title}</h1>
-            {subtitle && (
-              <p className="text-emerald-100/90 text-xs font-medium mt-0.5 tracking-tight">{subtitle}</p>
-            )}
+          <div className="flex items-center gap-2.5 flex-1 min-w-0 pr-2">
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(true)}
+              className="w-10 h-10 rounded-2xl bg-white/10 hover:bg-white/20 active:scale-95 text-white flex items-center justify-center transition-all shrink-0 border border-white/10"
+              title="Abrir menú"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl font-bold text-primary-foreground leading-tight truncate">{title}</h1>
+              {subtitle && (
+                <p className="text-emerald-100/90 text-xs font-medium mt-0.5 tracking-tight truncate">{subtitle}</p>
+              )}
+            </div>
           </div>
 
           {/* Favorites Heart + Profile Avatar */}

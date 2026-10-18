@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import { Users, Clock, MapPin, ChevronRight, Zap, Share2, Plus, Check, Sparkles, Bell, Trash2, MessageCircle } from "lucide-react"
+import { Users, Clock, MapPin, ChevronRight, Zap, Share2, Plus, Check, Sparkles, Bell, Trash2, MessageCircle, Car, Repeat, ShieldCheck, Navigation2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { cn, formatImageUrl, handleImageFallback } from "@/lib/utils"
@@ -21,6 +21,7 @@ export function PoolScreen({ onOpenShare, onOpenPayment, onNavigate }: PoolScree
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [modalService, setModalService] = useState<Service | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<string>("FOR_YOU")
+  const [activeSection, setActiveSection] = useState<"POOLS" | "MY_ROUTES">("POOLS")
 
   const { 
     pools, 
@@ -33,14 +34,20 @@ export function PoolScreen({ onOpenShare, onOpenPayment, onNavigate }: PoolScree
     fetchMyPoolInterests,
     removePoolInterest,
     lastMapCategory, 
-    lastMapSuperCategory 
+    lastMapSuperCategory,
+    myUserRoutes = [],
+    fetchMyUserRoutes,
+    deleteUserRoute,
   } = useAppStore()
 
   useEffect(() => {
     fetchPools();    // Trae los pools reales de https://palenquego.com/api/v1/pools/
     fetchServices(); // Trae las rutas reales para el modal de "+"
     fetchMyPoolInterests();
-  }, [fetchPools, fetchServices, fetchMyPoolInterests]);
+    if (fetchMyUserRoutes) {
+      fetchMyUserRoutes();
+    }
+  }, [fetchPools, fetchServices, fetchMyPoolInterests, fetchMyUserRoutes]);
 
   const myInterestedServices = useMemo(() => {
     return services.filter((s) => (registeredPoolInterests || []).includes(s.id))
@@ -124,20 +131,53 @@ export function PoolScreen({ onOpenShare, onOpenPayment, onNavigate }: PoolScree
   }
 
   return (
-    <div className="flex flex-col">
-      <HeaderWithMenu title="Pool Palenque" onNavigate={onNavigate} />
+    <div className="flex flex-col pb-28">
+      <HeaderWithMenu title="Mis Viajes" subtitle="Pools grupales y tus rutas privadas" onNavigate={onNavigate} />
       
-      <div className="px-4 py-3 flex items-center justify-between border-b border-border">
-        <p className="text-muted-foreground text-sm">Ahorra compartiendo gastos en grupo</p>
-        <Button
-          size="icon"
-          className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full shadow-sm"
-          onClick={() => setShowCreateModal(true)}
-          title="Armar un nuevo Pool"
+      {/* Selector de Pestañas: Pools Grupales vs Mis Rutas */}
+      <div className="px-4 py-2.5 flex items-center gap-2 border-b border-border bg-white sticky top-0 z-20 shadow-2xs">
+        <button
+          type="button"
+          onClick={() => setActiveSection("POOLS")}
+          className={cn(
+            "flex-1 py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-95",
+            activeSection === "POOLS"
+              ? "bg-[#064e3b] text-white shadow-xs"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          )}
         >
-          <Plus className="w-6 h-6" />
-        </Button>
+          <Users className="w-4 h-4" />
+          <span>Pools en Grupo ({pools.length})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveSection("MY_ROUTES")}
+          className={cn(
+            "flex-1 py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-95",
+            activeSection === "MY_ROUTES"
+              ? "bg-[#064e3b] text-white shadow-xs"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          )}
+        >
+          <Car className="w-4 h-4" />
+          <span>Mis Rutas ({myUserRoutes?.length || 0})</span>
+        </button>
       </div>
+
+      {activeSection === "POOLS" && (
+        <>
+          <div className="px-4 py-3 flex items-center justify-between border-b border-border">
+            <p className="text-muted-foreground text-sm">Ahorra compartiendo gastos en grupo</p>
+            <Button
+              size="icon"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full shadow-sm"
+              onClick={() => setShowCreateModal(true)}
+              title="Armar un nuevo Pool"
+            >
+              <Plus className="w-6 h-6" />
+            </Button>
+          </div>
 
       {/* Stats */}
       <div className="px-4 py-3">
@@ -510,6 +550,155 @@ export function PoolScreen({ onOpenShare, onOpenPayment, onNavigate }: PoolScree
           </div>
         </div>
       </div>
+    </>
+  )}
+
+      {/* SECCIÓN MIS RUTAS & TRASLADOS PRIVADOS */}
+      {activeSection === "MY_ROUTES" && (
+        <div className="px-4 py-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-bold text-gray-900 text-base">Tus Rutas y Traslados</h3>
+              <p className="text-xs text-gray-500">Tus viajes privados creados con tarifa propuesta</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => onNavigate?.("map-explorer")}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#064e3b] text-white font-bold text-xs shadow-xs hover:bg-[#043324] transition-all active:scale-95"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Nueva Ruta</span>
+            </button>
+          </div>
+
+          {(!myUserRoutes || myUserRoutes.length === 0) ? (
+            <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center space-y-3 shadow-xs">
+              <div className="w-14 h-14 mx-auto rounded-full bg-emerald-50 text-[#064e3b] flex items-center justify-center">
+                <Navigation2 className="w-7 h-7 rotate-45" />
+              </div>
+              <h4 className="font-bold text-gray-800 text-sm">No tienes rutas creadas aún</h4>
+              <p className="text-xs text-gray-500 max-w-xs mx-auto leading-relaxed">
+                Diseña traslados personalizados punto a punto en el mapa y negocia tu propia tarifa con choferes cercanos.
+              </p>
+              <Button
+                onClick={() => onNavigate?.("map-explorer")}
+                className="bg-[#064e3b] hover:bg-[#043324] text-white font-bold text-xs rounded-xl"
+              >
+                Diseñar Ruta en el Mapa
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {myUserRoutes.map((route: any) => {
+                const estado = route.estado_viaje || 'BORRADOR'
+                const stops = route.stops || []
+                const origin = stops[0]?.name || "Origen"
+                const destination = stops[stops.length - 1]?.name || "Destino"
+                const isIdaVuelta = route.tipo_viaje === 'IDA_Y_VUELTA'
+                const displayPrice = route.precio_ofertado || route.price_one_way
+
+                return (
+                  <div
+                    key={route.id}
+                    className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm hover:shadow-md transition-all space-y-3"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#059669]" />
+                          <h4 className="text-sm font-bold text-gray-900">{route.name}</h4>
+                          <span className={cn(
+                            "text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1",
+                            isIdaVuelta ? "bg-purple-50 text-purple-700 border border-purple-100" : "bg-blue-50 text-blue-700 border border-blue-100"
+                          )}>
+                            {isIdaVuelta ? <Repeat className="w-2.5 h-2.5" /> : <Car className="w-2.5 h-2.5" />}
+                            {isIdaVuelta ? "Ida y Retorno" : "Solo Ida"}
+                          </span>
+                        </div>
+
+                        {displayPrice && (
+                          <div className="flex items-center gap-1.5 text-xs pt-1">
+                            <span className="text-gray-500 font-medium">Tarifa ofertada:</span>
+                            <span className="font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+                              ${displayPrice}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Badge de estado */}
+                      <div className="shrink-0">
+                        {estado === 'SOLICITADO' && (
+                          <span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full flex items-center gap-1 animate-pulse">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                            Buscando Chofer
+                          </span>
+                        )}
+                        {estado === 'ACEPTADO' && (
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full flex items-center gap-1">
+                            <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                            Chofer Asignado
+                          </span>
+                        )}
+                        {estado === 'EN_CURSO' && (
+                          <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-full flex items-center gap-1">
+                            <Navigation2 className="w-3 h-3 text-blue-600" />
+                            En Curso
+                          </span>
+                        )}
+                        {estado === 'FINALIZADO' && (
+                          <span className="text-[10px] font-bold text-gray-600 bg-gray-50 border border-gray-200 px-2.5 py-1 rounded-full">
+                            Finalizado
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Origen y Destino */}
+                    <div className="bg-gray-50/80 rounded-xl p-2.5 text-xs space-y-1.5 border border-gray-100">
+                      <div className="flex items-center gap-2 text-gray-700">
+                        <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span className="truncate"><strong>Desde:</strong> {origin}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-gray-700">
+                        <MapPin className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                        <span className="truncate"><strong>Hasta:</strong> {destination}</span>
+                      </div>
+                    </div>
+
+                    {/* Acciones */}
+                    <div className="flex items-center justify-between pt-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onNavigate?.("map-explorer")}
+                        className="text-xs font-semibold gap-1.5 rounded-xl border-emerald-200 text-emerald-800 hover:bg-emerald-50"
+                      >
+                        <Navigation2 className="w-3.5 h-3.5 rotate-45" />
+                        Ver en Mapa
+                      </Button>
+
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (confirm("¿Deseas eliminar esta ruta?")) {
+                            await deleteUserRoute?.(route.id)
+                          }
+                        }}
+                        className="text-xs text-red-500 hover:text-red-700 p-1.5 rounded-lg hover:bg-red-50 transition-colors flex items-center gap-1"
+                        title="Eliminar ruta"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span className="text-[11px]">Eliminar</span>
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Create Pool Modal */}
       {showCreateModal && (

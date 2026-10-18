@@ -218,6 +218,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
   const currentUser = useAppStore((state) => state.currentUser)
   const myUserRoutes = useAppStore((state) => state.myUserRoutes)
   const requestedTrips = useAppStore((state) => state.requestedTrips)
+  const setMobileMenuOpen = useAppStore((state) => state.setMobileMenuOpen)
   const fetchMyUserRoutes = useAppStore((state) => state.fetchMyUserRoutes)
   const fetchRequestedTrips = useAppStore((state) => state.fetchRequestedTrips)
   const homeSlides = useAppStore((state) => state.homeSlides)
@@ -1608,17 +1609,11 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => {
-                      if (onBack) {
-                        onBack()
-                      } else {
-                        onNavigate('rutas')
-                      }
-                    }}
-                    title="Ir a Explorar Go"
-                    className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 active:scale-95 border border-white/30 flex items-center justify-center transition-all shadow-xs shrink-0"
+                    onClick={() => setMobileMenuOpen(true)}
+                    title="Abrir menú"
+                    className="w-8 h-8 rounded-xl bg-white/20 hover:bg-white/30 active:scale-95 border border-white/30 flex items-center justify-center transition-all shadow-xs shrink-0"
                   >
-                    <ChevronLeft className="w-5 h-5 text-white stroke-[2.5]" />
+                    <Menu className="w-4 h-4 text-white stroke-[2.5]" />
                   </button>
                   <div className="flex items-center gap-1.5">
                     <div className="w-7 h-7 rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center shadow-xs">
