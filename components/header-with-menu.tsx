@@ -7,11 +7,12 @@ import { useAppStore } from '@/lib/store'
 
 interface HeaderWithMenuProps {
   title: string
+  subtitle?: string
   onProfileClick?: () => void
   onNavigate?: (tab: string) => void
 }
 
-export function HeaderWithMenu({ title, onProfileClick, onNavigate }: HeaderWithMenuProps) {
+export function HeaderWithMenu({ title, subtitle, onProfileClick, onNavigate }: HeaderWithMenuProps) {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
   const { currentUser, logout, userFavorites } = useAppStore()
 
@@ -44,8 +45,11 @@ export function HeaderWithMenu({ title, onProfileClick, onNavigate }: HeaderWith
       {/* Header */}
       <header className="bg-primary px-4 pt-4 pb-4 rounded-b-3xl relative z-40">
         <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-primary-foreground">{title}</h1>
+          <div className="flex-1 min-w-0 pr-2">
+            <h1 className="text-2xl font-bold text-primary-foreground leading-tight">{title}</h1>
+            {subtitle && (
+              <p className="text-emerald-100/90 text-xs font-medium mt-0.5 tracking-tight">{subtitle}</p>
+            )}
           </div>
 
           {/* Favorites Heart + Profile Avatar */}

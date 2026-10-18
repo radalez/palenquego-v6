@@ -125,14 +125,11 @@ export function SafeFlowScreen({ onNavigate }: SafeFlowScreenProps) {
   }
 
   return (
-    <div className="flex flex-col">
-      <HeaderWithMenu title="Safe-Flow" onNavigate={onNavigate} />
-      <div className="px-4 py-2">
-        <p className="text-muted-foreground text-sm">Seguridad en tus viajes</p>
-      </div>
+    <div className="flex flex-col pb-28">
+      <HeaderWithMenu title="Safe-Flow" subtitle="Seguridad en tus viajes" onNavigate={onNavigate} />
 
       {/* QR Scanner Section */}
-      <div className="px-4 -mt-4 max-w-2xl mx-auto w-full">
+      <div className="px-4 pt-5 max-w-2xl mx-auto w-full">
         <div className="bg-card rounded-2xl p-5 shadow-lg border border-border">
           
           {/* VISTA CHOFER */}
