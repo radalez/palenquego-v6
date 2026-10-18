@@ -1103,10 +1103,10 @@ function SwipeableServiceCard({
       onDragEnd={handleDragEnd}
       animate={{ scale: isFront ? 1 : 0.95 }}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
-      className={`absolute w-full max-w-[390px] h-[calc(100%-6px)] sm:h-full max-h-[660px] sm:max-h-[600px] bg-white rounded-3xl shadow-xl overflow-hidden cursor-grab active:cursor-grabbing border border-border/50 ${isFront ? 'z-20' : 'z-10'}`}
+      className={`absolute w-full max-w-[420px] h-full sm:max-h-[620px] bg-white rounded-3xl shadow-xl overflow-hidden cursor-grab active:cursor-grabbing border border-border/50 ${isFront ? 'z-20' : 'z-10'}`}
     >
       {/* Photo Gallery Area */}
-      <div className="relative w-full h-[46%] sm:h-[48%] bg-zinc-900 group" onClick={onInfoClick}>
+      <div className="relative w-full h-[50%] sm:h-[48%] bg-zinc-900 group" onClick={onInfoClick}>
         <img 
           src={formatImageUrl(gallery[photoIndex])} 
           alt={service.name} 
@@ -1185,7 +1185,7 @@ function SwipeableServiceCard({
       </div>
  
       {/* Info Card Content Bottom */}
-      <div className="p-3 sm:p-3.5 h-[54%] sm:h-[52%] flex flex-col justify-between overflow-hidden">
+      <div className="p-3 sm:p-3.5 h-[50%] sm:h-[52%] flex flex-col justify-between overflow-hidden">
         {/* Pool Gamification Status — SIEMPRE ARRIBA */}
         <div className="relative z-30 shrink-0 mb-1.5" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center gap-2 bg-emerald-50/90 border border-emerald-300/80 p-2 sm:p-2.5 rounded-2xl relative overflow-visible shadow-2xs">
@@ -1302,8 +1302,8 @@ function SwipeableServiceCard({
           )}
         </div>
 
-        {/* Botones de Acción dentro de la tarjeta (SOLO EN MÓVIL) */}
-        <div className="flex sm:hidden items-center justify-around pt-2 pb-0.5 border-t border-gray-100/90 shrink-0 mt-auto">
+        {/* Botones de Acción dentro de la tarjeta (SOLO EN MÓVIL) — GRANDES Y PROMINENTES */}
+        <div className="flex sm:hidden items-center justify-center gap-7 pt-2 pb-1 border-t border-gray-100/90 shrink-0 mt-auto">
           <button
             type="button"
             onClick={(e) => {
@@ -1311,9 +1311,9 @@ function SwipeableServiceCard({
               onSwipe("left");
             }}
             title="Descartar"
-            className="w-12 h-12 rounded-full bg-white shadow-md border-2 border-red-100 flex items-center justify-center text-red-500 hover:bg-red-50 active:scale-90 transition-all"
+            className="w-16 h-16 rounded-full bg-white shadow-xl border-2 border-red-100 flex items-center justify-center text-red-500 hover:bg-red-50 active:scale-90 transition-all group"
           >
-            <X className="w-6 h-6 stroke-[2.5]" />
+            <X className="w-8 h-8 stroke-[2.5] text-red-500 group-hover:text-red-600" />
           </button>
 
           <button
@@ -1323,9 +1323,9 @@ function SwipeableServiceCard({
               onInfoClick();
             }}
             title="Más información"
-            className="w-10 h-10 rounded-full bg-white shadow-sm border border-blue-200 flex items-center justify-center text-blue-500 hover:bg-blue-50 active:scale-90 transition-all"
+            className="w-12 h-12 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-blue-500 hover:bg-blue-50 active:scale-90 transition-all"
           >
-            <Info className="w-5 h-5 stroke-[2.5]" />
+            <Info className="w-6 h-6 stroke-[2.5]" />
           </button>
 
           <button
@@ -1335,9 +1335,9 @@ function SwipeableServiceCard({
               onSwipe("right");
             }}
             title="Me gusta"
-            className="w-12 h-12 rounded-full bg-white shadow-md border-2 border-emerald-100 flex items-center justify-center text-emerald-500 hover:bg-emerald-50 active:scale-90 transition-all"
+            className="w-16 h-16 rounded-full bg-white shadow-xl border-2 border-emerald-100 flex items-center justify-center text-emerald-500 hover:bg-emerald-50 active:scale-90 transition-all group"
           >
-            <Heart className="w-6 h-6 fill-emerald-100 stroke-[2.5]" />
+            <Heart className="w-8 h-8 fill-emerald-100 stroke-[2.5] text-emerald-500 group-hover:fill-emerald-200" />
           </button>
         </div>
       </div>

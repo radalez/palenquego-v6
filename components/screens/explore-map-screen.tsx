@@ -1605,13 +1605,29 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
             />
             <div className="relative z-10 flex flex-col gap-2">
               <div className="flex items-center justify-between text-white">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-7 h-7 rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center shadow-xs">
-                    <Navigation2 className="h-3.5 w-3.5 text-[#a3e635] rotate-45" />
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onBack) {
+                        onBack()
+                      } else {
+                        onNavigate('rutas')
+                      }
+                    }}
+                    title="Ir a Explorar Go"
+                    className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 active:scale-95 border border-white/30 flex items-center justify-center transition-all shadow-xs shrink-0"
+                  >
+                    <ChevronLeft className="w-5 h-5 text-white stroke-[2.5]" />
+                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-7 h-7 rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center shadow-xs">
+                      <Navigation2 className="h-3.5 w-3.5 text-[#a3e635] rotate-45" />
+                    </div>
+                    <span className="text-base font-black tracking-tight text-white flex items-center">
+                      Palenque<span className="text-[#a3e635]">Go</span>
+                    </span>
                   </div>
-                  <span className="text-base font-black tracking-tight text-white flex items-center">
-                    Palenque<span className="text-[#a3e635]">Go</span>
-                  </span>
                 </div>
                 <button 
                   onClick={() => onNavigate('profile')} 

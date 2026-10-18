@@ -248,7 +248,7 @@ export default function Home() {
         {/* Vista Exploración Mapa Rutas */}
         {activeTab === "map-explorer" && (
           <ExploreMapScreen
-             onBack={() => {}}
+             onBack={() => setActiveTab("rutas")}
              onNavigate={(tab) => setActiveTab(tab as ActiveTab)}
              onToggleDesktopSidebar={() => setIsDesktopSidebarCollapsed(prev => !prev)}
              isDesktopSidebarCollapsed={isDesktopSidebarCollapsed}
