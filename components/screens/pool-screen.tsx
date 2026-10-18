@@ -8,7 +8,7 @@ import { cn, formatImageUrl, handleImageFallback } from "@/lib/utils"
 import { useAppStore, type Pool, type Service } from "@/lib/store"
 import { CreatePoolModal } from "@/components/create-pool-modal"
 import { HeaderWithMenu } from "@/components/header-with-menu"
-
+import { UserRoutesModal } from "@/components/user-routes-modal"
 
 interface PoolScreenProps {
   onOpenShare?: (pool: Pool) => void
@@ -22,6 +22,7 @@ export function PoolScreen({ onOpenShare, onOpenPayment, onNavigate }: PoolScree
   const [modalService, setModalService] = useState<Service | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<string>("FOR_YOU")
   const [activeSection, setActiveSection] = useState<"POOLS" | "MY_ROUTES">("POOLS")
+  const [isUserRoutesModalOpen, setIsUserRoutesModalOpen] = useState(false)
 
   const { 
     pools, 
@@ -563,7 +564,7 @@ export function PoolScreen({ onOpenShare, onOpenPayment, onNavigate }: PoolScree
             </div>
             <button
               type="button"
-              onClick={() => onNavigate?.("map-explorer")}
+              onClick={() => setIsUserRoutesModalOpen(true)}
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#064e3b] text-white font-bold text-xs shadow-xs hover:bg-[#043324] transition-all active:scale-95"
             >
               <Plus className="w-4 h-4" />
@@ -578,13 +579,14 @@ export function PoolScreen({ onOpenShare, onOpenPayment, onNavigate }: PoolScree
               </div>
               <h4 className="font-bold text-gray-800 text-sm">No tienes rutas creadas aún</h4>
               <p className="text-xs text-gray-500 max-w-xs mx-auto leading-relaxed">
-                Diseña traslados personalizados punto a punto en el mapa y negocia tu propia tarifa con choferes cercanos.
+                Diseña traslados personalizados punto a punto y negocia tu propia tarifa con choferes cercanos.
               </p>
               <Button
-                onClick={() => onNavigate?.("map-explorer")}
-                className="bg-[#064e3b] hover:bg-[#043324] text-white font-bold text-xs rounded-xl"
+                onClick={() => setIsUserRoutesModalOpen(true)}
+                className="bg-[#064e3b] hover:bg-[#043324] text-white font-bold text-xs rounded-xl flex items-center gap-1.5 mx-auto"
               >
-                Diseñar Ruta en el Mapa
+                <Plus className="w-4 h-4" />
+                <span>Pedir Viaje / Crear Ruta</span>
               </Button>
             </div>
           ) : (
@@ -715,6 +717,19 @@ export function PoolScreen({ onOpenShare, onOpenPayment, onNavigate }: PoolScree
           }}
         />
       )}
+
+      {/* Modal para Crear Nueva Ruta / Pedir Viaje directamente desde Mis Viajes */}
+      <UserRoutesModal
+        isOpen={isUserRoutesModalOpen}
+        onClose={() => {
+          setIsUserRoutesModalOpen(false)
+          if (fetchMyUserRoutes) fetchMyUserRoutes()
+        }}
+        onSelectRouteOnMap={(route) => {
+          setIsUserRoutesModalOpen(false)
+          onNavigate?.("map-explorer")
+        }}
+      />
     </div>
   )
 }

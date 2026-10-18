@@ -1637,6 +1637,28 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
                 </button>
               </div>
               {renderSearchCardUnified()}
+
+              {/* Banner Dinámico Modo Urbano / Taxi en Cabecera Móvil */}
+              {superCategory === 'URBANO' && (
+                <div className="shrink-0 bg-gradient-to-r from-[#04281a] to-[#064e3b] text-white p-2 px-3 rounded-2xl border border-emerald-400/40 flex items-center justify-between shadow-md mt-0.5 animate-in fade-in slide-in-from-top-1">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-7 h-7 rounded-xl bg-white/10 flex items-center justify-center text-[#a3e635] shrink-0">
+                      <Car className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-black text-white leading-tight truncate">Taxi & Rutas Urbanas</p>
+                      <p className="text-[9px] text-white/70 truncate">Pide a demanda o propón tu tarifa</p>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => setIsUserRoutesModalOpen(true)}
+                    className="bg-[#a3e635] hover:bg-[#86efac] text-[#064e3b] font-black text-[11px] h-7 px-3 rounded-xl shadow-xs shrink-0"
+                  >
+                    + Pedir Viaje
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1804,6 +1826,24 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
           ) : (
             <div className="w-full h-full bg-[#E8F5E9] animate-pulse flex items-center justify-center text-gray-500 text-sm">
               Cargando mapa...
+            </div>
+          )}
+
+          {/* BOTÓN FLOTANTE PEDIR VIAJE EN MÓVIL CUANDO ESTÁ EN MODO URBANO */}
+          {superCategory === 'URBANO' && (
+            <div className="lg:hidden absolute top-3.5 left-3.5 z-20 pointer-events-auto animate-in fade-in zoom-in-95 duration-150">
+              <button
+                type="button"
+                onClick={() => setIsUserRoutesModalOpen(true)}
+                className="bg-[#064e3b] hover:bg-[#043324] text-white active:scale-95 px-3 py-1.5 rounded-2xl shadow-xl border border-emerald-400/50 flex items-center gap-2 transition-all"
+              >
+                <div className="w-6 h-6 rounded-lg bg-white/15 flex items-center justify-center text-[#a3e635] shrink-0">
+                  <Car className="h-3.5 w-3.5" />
+                </div>
+                <span className="text-xs font-black text-[#a3e635] pr-0.5">
+                  + Pedir Viaje
+                </span>
+              </button>
             </div>
           )}
 
