@@ -552,7 +552,8 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
 
   // Filtrado local por super-categoría, categoría, destino y búsqueda
   const filteredRoutes = useMemo(() => {
-    let result = routes
+    // Solo mostrar rutas públicas oficiales del catálogo (excluir viajes a demanda privados del usuario)
+    let result = (routes || []).filter(r => !r.creador && !(r as any).creador_id && !(r as any).estado_viaje)
 
     if (superCategory) {
       result = result.filter(r => {
