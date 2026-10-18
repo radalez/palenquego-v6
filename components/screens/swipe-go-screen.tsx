@@ -592,7 +592,7 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
         </div>
       </div>
       
-      <div className="flex-1 relative flex items-center justify-center p-4 sm:p-6 overflow-hidden">
+      <div className="flex-1 relative flex items-center justify-center p-2 sm:p-6 pb-2 sm:pb-6 overflow-hidden">
         <AnimatePresence>
           {deck.slice(currentIndex, currentIndex + 2).map((service, index) => {
             const isFront = index === 0
@@ -626,9 +626,9 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
         />
       )}
 
-      {/* Manual Actions (only visible if there are cards) */}
+      {/* Manual Actions (solo visible en escritorio sm: para no generar espacio muerto en móvil) */}
       {currentIndex < deck.length && (
-        <div className="h-[100px] flex items-center justify-center gap-6 pb-6 px-4 shrink-0 z-10 bg-gradient-to-t from-background via-background/80 to-transparent">
+        <div className="hidden sm:flex h-[90px] items-center justify-center gap-6 pb-6 px-4 shrink-0 z-10 bg-gradient-to-t from-background via-background/80 to-transparent">
           <button
             onClick={() => handleSwipe("left")}
             className="w-16 h-16 rounded-full bg-white shadow-lg flex items-center justify-center border-2 border-red-100 hover:scale-105 active:scale-95 transition-all group"
@@ -1103,10 +1103,10 @@ function SwipeableServiceCard({
       onDragEnd={handleDragEnd}
       animate={{ scale: isFront ? 1 : 0.95 }}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
-      className={`absolute w-full max-w-[360px] h-full max-h-[600px] bg-white rounded-3xl shadow-xl overflow-hidden cursor-grab active:cursor-grabbing border border-border/50 ${isFront ? 'z-20' : 'z-10'}`}
+      className={`absolute w-full max-w-[390px] h-[calc(100%-6px)] sm:h-full max-h-[660px] sm:max-h-[600px] bg-white rounded-3xl shadow-xl overflow-hidden cursor-grab active:cursor-grabbing border border-border/50 ${isFront ? 'z-20' : 'z-10'}`}
     >
       {/* Photo Gallery Area */}
-      <div className="relative w-full h-[48%] bg-zinc-900 group" onClick={onInfoClick}>
+      <div className="relative w-full h-[46%] sm:h-[48%] bg-zinc-900 group" onClick={onInfoClick}>
         <img 
           src={formatImageUrl(gallery[photoIndex])} 
           alt={service.name} 
@@ -1185,23 +1185,10 @@ function SwipeableServiceCard({
       </div>
  
       {/* Info Card Content Bottom */}
-      <div className="p-3.5 h-[52%] flex flex-col justify-between">
-        <div className="space-y-2">
-          <p className="text-muted-foreground text-xs md:text-sm line-clamp-2 leading-relaxed">
-            {service.description || service.descripcion || "Sin descripción disponible"}
-          </p>
-          {service.features && service.features.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {service.features.slice(0, 3).map((f, i) => (
-                <span key={i} className="text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-200/60 px-2 py-0.5 rounded-full font-medium">{f}</span>
-              ))}
-            </div>
-          )}
-        </div>
- 
-        {/* Pool Gamification Status */}
-        <div className="mt-auto relative z-30" onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-center gap-2 bg-emerald-50/80 border border-emerald-300/60 p-2.5 rounded-2xl relative overflow-visible">
+      <div className="p-3 sm:p-3.5 h-[54%] sm:h-[52%] flex flex-col justify-between overflow-hidden">
+        {/* Pool Gamification Status — SIEMPRE ARRIBA */}
+        <div className="relative z-30 shrink-0 mb-1.5" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-2 bg-emerald-50/90 border border-emerald-300/80 p-2 sm:p-2.5 rounded-2xl relative overflow-visible shadow-2xs">
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
             <div className="flex-1 min-w-0">
               <span className="text-[11px] font-extrabold text-emerald-950 block leading-tight truncate">
@@ -1299,6 +1286,59 @@ function SwipeableServiceCard({
               )}
             </AnimatePresence>
           </div>
+        </div>
+
+        {/* Descripción & Features en el medio - sin que choque */}
+        <div className="space-y-1.5 my-auto overflow-hidden">
+          <p className="text-muted-foreground text-xs leading-relaxed line-clamp-2">
+            {service.description || service.descripcion || "Sin descripción disponible"}
+          </p>
+          {service.features && service.features.length > 0 && (
+            <div className="flex flex-wrap gap-1 pt-0.5">
+              {service.features.slice(0, 3).map((f, i) => (
+                <span key={i} className="text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-200/60 px-2 py-0.5 rounded-full font-medium">{f}</span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Botones de Acción dentro de la tarjeta (SOLO EN MÓVIL) */}
+        <div className="flex sm:hidden items-center justify-around pt-2 pb-0.5 border-t border-gray-100/90 shrink-0 mt-auto">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSwipe("left");
+            }}
+            title="Descartar"
+            className="w-12 h-12 rounded-full bg-white shadow-md border-2 border-red-100 flex items-center justify-center text-red-500 hover:bg-red-50 active:scale-90 transition-all"
+          >
+            <X className="w-6 h-6 stroke-[2.5]" />
+          </button>
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onInfoClick();
+            }}
+            title="Más información"
+            className="w-10 h-10 rounded-full bg-white shadow-sm border border-blue-200 flex items-center justify-center text-blue-500 hover:bg-blue-50 active:scale-90 transition-all"
+          >
+            <Info className="w-5 h-5 stroke-[2.5]" />
+          </button>
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSwipe("right");
+            }}
+            title="Me gusta"
+            className="w-12 h-12 rounded-full bg-white shadow-md border-2 border-emerald-100 flex items-center justify-center text-emerald-500 hover:bg-emerald-50 active:scale-90 transition-all"
+          >
+            <Heart className="w-6 h-6 fill-emerald-100 stroke-[2.5]" />
+          </button>
         </div>
       </div>
     </motion.div>
