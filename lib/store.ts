@@ -305,6 +305,7 @@ interface AppState {
     tipo?: string;
     is_ambassador?: boolean;
     kyc_status?: string;
+    plan?: string;
   }
   accessToken: string | null
   refreshToken: string | null
@@ -748,7 +749,9 @@ export const useAppStore = create<AppState>()(
                 kyc_status: data.kyc_status || state.currentUser?.kyc_status,
                 avatar: data.avatar || state.currentUser?.avatar,
                 is_ambassador: Boolean(data.is_ambassador),
+                plan: data.plan || state.currentUser?.plan,
               },
+              userPlan: data.plan || state.userPlan,
               bookings: isDifferentUser ? [] : state.bookings.filter(b => b.userId === data.id || (!b.userId && b.userEmail === data.email)),
               favorites: isDifferentUser ? [] : state.favorites,
               userFavorites: isDifferentUser ? [] : state.userFavorites,
@@ -1290,8 +1293,18 @@ export const useAppStore = create<AppState>()(
           const data = await response.json();
 
           if (data.url) {
-            set({ isLoading: false });
-            window.location.href = data.url;
+            const planObj = get().plans.find(p => p.id === planId);
+            const planName = planObj ? planObj.nombre : "Bronce";
+            set(state => ({
+              isLoading: false,
+              userPlan: planName as any,
+              currentUser: {
+                ...state.currentUser,
+                tipo: 'ALIADO',
+                plan: planName
+              }
+            }));
+            window.open(data.url, "_blank");
           } else {
             const msg = data.error || data.detail || "Error al procesar el plan seleccionado";
             console.error("Error en plan:", msg);

@@ -153,12 +153,10 @@ export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: Desk
           <div className="mb-6 p-4 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-xl border border-primary/20 cursor-pointer hover:shadow-md transition-shadow" onClick={() => onNavigate("planes")}>
             <p className="text-xs text-muted-foreground mb-2">Plan Actual</p>
             <div className="flex items-center gap-2">
-              {plans.find((p) => p.id === userPlan)?.icon &&
-                (() => {
-                  const PlanIcon = plans.find((p) => p.id === userPlan)!.icon
-                  return <PlanIcon className="w-5 h-5 text-primary" />
-                })()}
-              <p className="font-semibold text-foreground">{plans.find((p) => p.id === userPlan)?.label}</p>
+              <Zap className="w-5 h-5 text-primary" />
+              <p className="font-semibold text-foreground">
+                {currentUser?.plan || (userPlan && userPlan !== "FREE" ? userPlan : (currentUser?.tipo === "ALIADO" ? "Bronce" : "Plan Gratis"))}
+              </p>
             </div>
           </div>
         )}

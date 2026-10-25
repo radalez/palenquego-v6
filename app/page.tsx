@@ -28,6 +28,7 @@ import { FavoritesScreen } from "@/components/screens/favorites-screen"
 import { RecommendationsScreen } from "@/components/screens/recommendations-screen"
 import { DriverGPSWidget } from "@/components/driver-gps-widget"
 import { DriverScreen } from "@/components/screens/driver-screen"
+import { DriverKycScreen } from "@/components/screens/driver-kyc-screen"
 import { ShareInviteModal } from "@/components/share-invite-modal"
 import { PoolPaymentModal } from "@/components/pool-payment-modal"
 import { InstallPWABanner } from "@/components/install-pwa-banner"
@@ -45,6 +46,7 @@ type ActiveTab =
   | "rutas"
   | "rutas-classic"
   | "conductor"
+  | "kyc"
   | "billing"
   | "planes"
   | "pagos"
@@ -289,6 +291,7 @@ export default function Home() {
           </div>
         )}
         {activeTab === "profile" && <ProfileScreen onNavigateToBilling={handleNavigateToBilling} onNavigateToSettings={(tab) => setActiveTab(tab as ActiveTab)} />}
+        {activeTab === "kyc" && <DriverKycScreen user={currentUser} onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />}
         {activeTab === "favoritos" && <FavoritesScreen onBack={() => setActiveTab("profile")} />}
         {activeTab === "recomendaciones" && <RecommendationsScreen onBack={() => setActiveTab("profile")} />}
         {activeTab === "billing" && <BillingScreen onBack={handleBack} />}

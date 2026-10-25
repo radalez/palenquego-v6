@@ -10,13 +10,14 @@ interface PlansScreenProps {
 }
 
 export function PlansScreen({ onBack }: PlansScreenProps) {
-  const { userPlan, upgradePlan, plans, fetchPlans } = useAppStore()
+  const { userPlan, upgradePlan, plans, fetchPlans, currentUser, fetchCurrentUser } = useAppStore()
   const [loadingPlanId, setLoadingPlanId] = useState<number | null>(null)
 
   const handleUpgrade = async (planId: number) => {
     setLoadingPlanId(planId)
     try {
       await upgradePlan(planId)
+      await fetchCurrentUser()
     } finally {
       setLoadingPlanId(null)
     }
@@ -81,7 +82,10 @@ export function PlansScreen({ onBack }: PlansScreenProps) {
         {plans.map((plan) => {
           const config = getVisualConfig(plan.nombre)
           const Icon = config.icon
-          const isCurrentPlan = userPlan === plan.nombre
+          const isCurrentPlan = 
+            (userPlan && userPlan.toLowerCase() === plan.nombre.toLowerCase()) || 
+            (currentUser?.plan && currentUser.plan.toLowerCase() === plan.nombre.toLowerCase()) ||
+            (plan.precio_mensual <= 0 && currentUser?.tipo === "ALIADO");
           const isProcessingThis = loadingPlanId === plan.id
 
           return (

@@ -291,6 +291,15 @@ export function DriverKycScreen({ user, onNavigate }: { user: any; onNavigate?: 
       {/* Encabezado Corporativo sin botón de retroceso que rompía vistas */}
       <div className="bg-gradient-to-br from-[#105238] to-[#0c3e2b] px-4 pt-12 pb-8 rounded-b-[2rem] text-white shadow-lg relative">
         <div className="max-w-md mx-auto">
+          {onNavigate && (
+            <button
+              type="button"
+              onClick={() => onNavigate("profile")}
+              className="mb-3 text-white/80 hover:text-white text-xs flex items-center gap-1.5 font-bold transition-opacity"
+            >
+              <ChevronLeft className="w-4 h-4" /> Volver a Mi Perfil
+            </button>
+          )}
           <span className="inline-block px-3 py-1 bg-white/15 text-emerald-200 text-[11px] font-black rounded-full uppercase tracking-wider mb-2">
             Verificación Oficial de Conductor
           </span>

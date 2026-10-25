@@ -405,22 +405,68 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
             </div>
           )}
 
-          {/* Prompt contextual para Negocio */}
-          {userIntentions?.isBusinessOwner && currentUser?.tipo !== "ALIADO" && (
-            <div className="mt-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 flex items-center justify-between gap-3">
+          {/* Prompt contextual para Líder Pool */}
+          {userIntentions?.wantsToLeadPools && (
+            <div className="mt-3 bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2.5 min-w-0">
-                <Store className="w-5 h-5 text-emerald-600 shrink-0" />
-                <p className="text-xs text-emerald-950 dark:text-emerald-200 leading-snug">
-                  <strong className="font-bold">Interés de Negocio / Flota:</strong> Reclama tu comercio o publica tus salidas oficiales de transporte.
+                <Users className="w-5 h-5 text-blue-600 shrink-0" />
+                <p className="text-xs text-blue-950 dark:text-blue-200 leading-snug">
+                  <strong className="font-bold">Líder de Pool:</strong> Organiza grupos para tours, traslados o estancias y viaja con tarifas de descuento. ¡No requiere plan de pago!
                 </p>
               </div>
               <Button
                 size="sm"
-                onClick={() => window.open("/reclamar-negocio/", "_blank")}
-                className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold h-8 px-3 rounded-lg shrink-0"
+                onClick={() => onNavigateToSettings?.("pool")}
+                className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold h-8 px-3 rounded-lg shrink-0 w-full sm:w-auto"
               >
-                Reclamar
+                Ver / Crear Pool
               </Button>
+            </div>
+          )}
+
+          {/* Prompt contextual para Negocio */}
+          {userIntentions?.isBusinessOwner && (
+            <div className="mt-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Store className="w-5 h-5 text-emerald-600 shrink-0" />
+                <p className="text-xs text-emerald-950 dark:text-emerald-200 leading-snug">
+                  <strong className="font-bold">Interés de Negocio / Flota:</strong> Publica tus servicios, gestiona tus reservas y conecta a tus choferes.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+                {currentUser?.tipo === "ALIADO" ? (
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      const ssoUrl = accessToken 
+                        ? `https://palenquego.com/admin/sso/?token=${accessToken}`
+                        : "https://palenquego.com/admin/";
+                      window.open(ssoUrl, "_blank");
+                    }}
+                    className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold h-8 px-3 rounded-lg w-full sm:w-auto"
+                  >
+                    Abrir Mi Panel →
+                  </Button>
+                ) : (
+                  <>
+                    <Button
+                      size="sm"
+                      onClick={() => onNavigateToSettings?.("planes")}
+                      className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold h-8 px-3 rounded-lg w-full sm:w-auto"
+                    >
+                      Activar Tienda (Plan Gratis)
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => window.open("https://palenquego.com/reclamar-negocio/", "_blank")}
+                      className="border-emerald-600/40 text-emerald-800 text-xs font-bold h-8 px-2.5 rounded-lg w-full sm:w-auto"
+                    >
+                      Reclamar
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
           )}
         </div>
