@@ -73,7 +73,9 @@ export default function Home() {
 
   // Refrescar perfil y estado KYC en tiempo real desde el backend
   useEffect(() => {
-    fetchCurrentUser()
+    fetchCurrentUser().then(() => {
+      useAppStore.getState().fetchNotifications();
+    })
   }, [fetchCurrentUser])
 
   // Intercepción y cambio infalible de sesión cuando se llega con tokens en la URL (?auth_token=...&refresh_token=...)
@@ -299,7 +301,7 @@ export default function Home() {
         {activeTab === "pagos" && <PaymentsScreen onBack={handleBack} />}
         {activeTab === "pagos-extended" && <PaymentsExtendedScreen onBack={() => setActiveTab("pagos")} />}
         {activeTab === "notificaciones" && <NotificationsScreen onBack={handleBack} onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />}
-        {activeTab === "notificaciones-extended" && <NotificationsExtendedScreen onBack={() => setActiveTab("notificaciones")} />}
+        {activeTab === "notificaciones-extended" && <NotificationsScreen onBack={handleBack} onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />}
         {activeTab === "privacidad" && <PrivacyScreen onBack={handleBack} />}
         {activeTab === "privacidad-extended" && <PrivacyExtendedScreen onBack={() => setActiveTab("privacidad")} />}
         {activeTab === "soporte" && <SupportScreen onBack={handleBack} />}

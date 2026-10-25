@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Settings, LogOut, Layers, Heart, Menu } from 'lucide-react'
+import { X, Settings, LogOut, Layers, Heart, Menu, Bell } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/lib/store'
 
@@ -14,7 +14,7 @@ interface HeaderWithMenuProps {
 
 export function HeaderWithMenu({ title, subtitle, onProfileClick, onNavigate }: HeaderWithMenuProps) {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
-  const { currentUser, logout, userFavorites, setMobileMenuOpen } = useAppStore()
+  const { currentUser, logout, userFavorites, setMobileMenuOpen, unreadNotificationsCount } = useAppStore()
 
   const getAvatarUrl = (url: string | null | undefined) => {
     if (!url || url.length < 2) return null;
@@ -68,9 +68,25 @@ export function HeaderWithMenu({ title, subtitle, onProfileClick, onNavigate }: 
             <button
               onClick={() => onNavigate?.("favoritos")}
               className="relative flex items-center gap-1 px-3 py-2 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 transition-colors border border-primary-foreground/20"
+              title="Favoritos"
             >
               <Heart className="w-5 h-5 fill-white stroke-white" />
               <span className="text-sm font-semibold text-primary-foreground">{userFavorites.length}</span>
+            </button>
+
+            {/* Notifications Bell Button - a la derecha del corazon y a la izquierda inmediata del thumbnail */}
+            <button
+              type="button"
+              onClick={() => onNavigate?.("notificaciones")}
+              className="relative p-2.5 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 active:scale-95 transition-all border border-primary-foreground/20 text-white flex items-center justify-center shrink-0"
+              title="Centro de Notificaciones"
+            >
+              <Bell className="w-5 h-5 text-white" />
+              {unreadNotificationsCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-4.5 h-4.5 px-1 bg-rose-500 text-white text-[10px] font-black rounded-full flex items-center justify-center ring-2 ring-primary animate-pulse shadow-sm">
+                  {unreadNotificationsCount > 9 ? "9+" : unreadNotificationsCount}
+                </span>
+              )}
             </button>
 
             {/* Profile Avatar Button */}

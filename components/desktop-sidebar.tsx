@@ -39,7 +39,7 @@ export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: Desk
     { id: "profile", label: "Mi Perfil", icon: User },
     { id: "planes", label: "Planes y Membresías", icon: Crown },
     { id: "pagos-extended", label: "Métodos de Pago", icon: CreditCard },
-    { id: "notificaciones-extended", label: "Notificaciones", icon: Bell },
+    { id: "notificaciones", label: "Notificaciones", icon: Bell },
     { id: "privacidad-extended", label: "Privacidad y Seguridad", icon: Shield },
     { id: "soporte-extended", label: "Ayuda y Soporte", icon: HelpCircle },
   ]

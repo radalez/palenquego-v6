@@ -216,6 +216,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
 
   // Estados de Super Categorías y Modo de Cabecera
   const currentUser = useAppStore((state) => state.currentUser)
+  const unreadNotificationsCount = useAppStore((state) => state.unreadNotificationsCount)
   const myUserRoutes = useAppStore((state) => state.myUserRoutes)
   const requestedTrips = useAppStore((state) => state.requestedTrips)
   const setMobileMenuOpen = useAppStore((state) => state.setMobileMenuOpen)

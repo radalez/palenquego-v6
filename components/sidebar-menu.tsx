@@ -12,7 +12,7 @@ interface SidebarMenuProps {
 }
 
 export function SidebarMenu({ activeTab, onNavigate }: SidebarMenuProps) {
-  const { userPlan, logout, currentUser, isMobileMenuOpen, setMobileMenuOpen } = useAppStore()
+  const { userPlan, logout, currentUser, isMobileMenuOpen, setMobileMenuOpen, unreadNotificationsCount } = useAppStore()
   const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
@@ -31,7 +31,7 @@ export function SidebarMenu({ activeTab, onNavigate }: SidebarMenuProps) {
     { id: "safeflow", label: "Safe-Flow (Seguridad)", icon: Shield },
     { id: "planes", label: "Planes y Membresías", icon: Crown },
     { id: "pagos-extended", label: "Métodos de Pago", icon: CreditCard },
-    { id: "notificaciones-extended", label: "Notificaciones", icon: Bell },
+    { id: "notificaciones", label: "Notificaciones", icon: Bell },
     { id: "privacidad-extended", label: "Privacidad y Seguridad", icon: Shield },
     { id: "soporte-extended", label: "Ayuda y Soporte", icon: HelpCircle },
   ]
@@ -156,7 +156,13 @@ export function SidebarMenu({ activeTab, onNavigate }: SidebarMenuProps) {
                     <IconComponent className="w-4 h-4 text-primary" />
                     <span className="text-sm font-medium text-foreground">{item.label}</span>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground" />
+                  {item.id === "notificaciones" && unreadNotificationsCount > 0 ? (
+                    <span className="bg-rose-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-xs">
+                      {unreadNotificationsCount}
+                    </span>
+                  ) : (
+                    <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground" />
+                  )}
                 </button>
               )
             })}

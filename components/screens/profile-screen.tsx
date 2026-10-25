@@ -115,13 +115,6 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
       tabId: "pagos-extended",
     },
     {
-      icon: Bell,
-      label: "Notificaciones",
-      description: "Configurar alertas",
-      action: () => onNavigateToSettings?.("notificaciones-extended"),
-      tabId: "notificaciones-extended",
-    },
-    {
       icon: Shield,
       label: "Privacidad y Seguridad",
       description: "Contraseñas y datos",
