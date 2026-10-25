@@ -84,7 +84,7 @@ export function SidebarMenu({ activeTab, onNavigate }: SidebarMenuProps) {
               <div className="flex items-center gap-2">
                 <Zap className="w-5 h-5 text-primary" />
                 <p className="font-semibold text-foreground">
-                  {currentUser?.plan || (userPlan && userPlan !== "FREE" ? userPlan : (currentUser?.tipo === "ALIADO" ? "Bronce" : "Plan Gratis"))}
+                  {currentUser?.plan || "Plan Gratis"}
                 </p>
               </div>
             </div>

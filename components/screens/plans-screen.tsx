@@ -82,10 +82,9 @@ export function PlansScreen({ onBack }: PlansScreenProps) {
         {plans.map((plan) => {
           const config = getVisualConfig(plan.nombre)
           const Icon = config.icon
-          const isCurrentPlan = 
-            (userPlan && userPlan.toLowerCase() === plan.nombre.toLowerCase()) || 
-            (currentUser?.plan && currentUser.plan.toLowerCase() === plan.nombre.toLowerCase()) ||
-            (plan.precio_mensual <= 0 && currentUser?.tipo === "ALIADO");
+          const isCurrentPlan = Boolean(
+            currentUser?.plan && currentUser.plan.toLowerCase() === plan.nombre.toLowerCase()
+          );
           const isProcessingThis = loadingPlanId === plan.id
 
           return (
