@@ -298,7 +298,7 @@ export default function Home() {
         {activeTab === "planes" && <PlansScreen onBack={handleBack} />}
         {activeTab === "pagos" && <PaymentsScreen onBack={handleBack} />}
         {activeTab === "pagos-extended" && <PaymentsExtendedScreen onBack={() => setActiveTab("pagos")} />}
-        {activeTab === "notificaciones" && <NotificationsScreen onBack={handleBack} />}
+        {activeTab === "notificaciones" && <NotificationsScreen onBack={handleBack} onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />}
         {activeTab === "notificaciones-extended" && <NotificationsExtendedScreen onBack={() => setActiveTab("notificaciones")} />}
         {activeTab === "privacidad" && <PrivacyScreen onBack={handleBack} />}
         {activeTab === "privacidad-extended" && <PrivacyExtendedScreen onBack={() => setActiveTab("privacidad")} />}

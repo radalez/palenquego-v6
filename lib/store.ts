@@ -1,3 +1,15 @@
+export interface InAppNotification {
+  id: number;
+  tipo: "PLAN" | "SAFEFLOW" | "RESERVA" | "CHOFER" | "POOL" | "SISTEMA";
+  titulo: string;
+  mensaje: string;
+  enlace_accion?: string;
+  icono: string;
+  prioridad: "INFO" | "SUCCESS" | "WARNING" | "DANGER";
+  leido: boolean;
+  creado_el: string;
+}
+
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { playNotificationSound } from "@/lib/utils"
@@ -335,6 +347,11 @@ interface AppState {
   fetchMyPoolInterests: () => Promise<void>
   paymentMethods: Array<{ id: string; type: string; last4: string; isDefault: boolean }>
   notifications: { email: boolean; sms: boolean; push: boolean }
+  inboxNotifications: InAppNotification[];
+  unreadNotificationsCount: number;
+  fetchNotifications: () => Promise<void>;
+  markNotificationAsRead: (id: number) => Promise<void>;
+  markAllNotificationsAsRead: () => Promise<void>;
   poolPaymentPending: { poolId: number; options: "FULL" | "PERSONAL" }[]
   isLoading: boolean
 
@@ -581,6 +598,8 @@ export const useAppStore = create<AppState>()(
         { id: "2", type: "Mastercard", last4: "5555", isDefault: false },
       ],
       notifications: { email: true, sms: true, push: true },
+      inboxNotifications: [],
+      unreadNotificationsCount: 0,
       poolPaymentPending: [],
       guardians: [],
       isLoading: false,
@@ -1454,6 +1473,59 @@ export const useAppStore = create<AppState>()(
             { id: Date.now().toString(), ...method, isDefault: true },
           ],
         })),
+
+      fetchNotifications: async () => {
+        const { accessToken } = get();
+        if (!accessToken) return;
+        try {
+          const res = await fetch(`${API_BASE}/accounts/notifications/`, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const list = Array.isArray(data) ? data : (data.results || []);
+            const unread = list.filter((n: InAppNotification) => !n.leido).length;
+            set({ inboxNotifications: list, unreadNotificationsCount: unread });
+          }
+        } catch (e) {
+          console.error("Error fetching notifications:", e);
+        }
+      },
+
+      markNotificationAsRead: async (id: number) => {
+        const { accessToken } = get();
+        if (!accessToken) return;
+        try {
+          await fetch(`${API_BASE}/accounts/notifications/${id}/mark-read/`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+          });
+          set(state => {
+            const updated = state.inboxNotifications.map(n => n.id === id ? { ...n, leido: true } : n);
+            const unread = updated.filter(n => !n.leido).length;
+            return { inboxNotifications: updated, unreadNotificationsCount: unread };
+          });
+        } catch (e) {
+          console.error("Error marking notification as read:", e);
+        }
+      },
+
+      markAllNotificationsAsRead: async () => {
+        const { accessToken } = get();
+        if (!accessToken) return;
+        try {
+          await fetch(`${API_BASE}/accounts/notifications/mark-all-read/`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+          });
+          set(state => ({
+            inboxNotifications: state.inboxNotifications.map(n => ({ ...n, leido: true })),
+            unreadNotificationsCount: 0
+          }));
+        } catch (e) {
+          console.error("Error marking all notifications as read:", e);
+        }
+      },
 
       updateNotifications: (settings) =>
         set((state) => ({
