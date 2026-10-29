@@ -1,8 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { createPortal } from "react-dom"
-import { Store, Users, QrCode, Map, Briefcase, Crown, Zap, Star, Gem, LogOut, ChevronRight, ChevronLeft, CreditCard, Bell, Shield, HelpCircle, User, Home, ShieldCheck, Truck, Download, Check, X, Laptop, CheckCircle2, ExternalLink } from "lucide-react"
+import { Store, Users, QrCode, Map, Briefcase, Crown, Zap, Star, Gem, LogOut, ChevronRight, ChevronLeft, CreditCard, Bell, Shield, HelpCircle, User, Home, ShieldCheck, Truck, Download, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAppStore } from "@/lib/store"
 import { cn } from "@/lib/utils"
@@ -16,10 +15,9 @@ interface DesktopSidebarProps {
 export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: DesktopSidebarProps) {
   const { userPlan, logout, currentUser } = useAppStore()
   const [isMounted, setIsMounted] = useState(false)
-  const [installPrompt, setInstallPrompt] = useState<any>(null)
-  const [isInstalled, setIsInstalled] = useState(false)
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
   const [isStandalone, setIsStandalone] = useState(false)
-  const [showInstallGuide, setShowInstallGuide] = useState(false)
+  const [installed, setInstalled] = useState(false)
 
   useEffect(() => {
     setIsMounted(true)
@@ -27,26 +25,26 @@ export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: Desk
       const standalone = window.matchMedia("(display-mode: standalone)").matches || !!(navigator as any).standalone
       setIsStandalone(standalone)
       if (standalone) {
-        setIsInstalled(true)
+        setInstalled(true)
       }
 
       if ((window as any).deferredPrompt) {
-        setInstallPrompt((window as any).deferredPrompt)
+        setDeferredPrompt((window as any).deferredPrompt)
       }
 
       const onBeforeInstall = (e: any) => {
         e.preventDefault()
-        setInstallPrompt(e)
+        setDeferredPrompt(e)
         ;(window as any).deferredPrompt = e
       }
 
       const onPromptAvailable = (e: any) => {
-        setInstallPrompt(e.detail)
+        setDeferredPrompt(e.detail)
       }
 
       const onAppInstalled = () => {
-        setIsInstalled(true)
-        setInstallPrompt(null)
+        setInstalled(true)
+        setDeferredPrompt(null)
       }
 
       window.addEventListener("beforeinstallprompt", onBeforeInstall)
@@ -61,49 +59,30 @@ export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: Desk
     }
   }, [])
 
-  const downloadDesktopShortcut = () => {
-    const content = `[InternetShortcut]\r\nURL=https://palenquegov6.netlify.app/\r\nIconIndex=0\r\nIconFile=https://palenquegov6.netlify.app/favicon.ico\r\n`
-    const blob = new Blob([content], { type: "application/internet-shortcut" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = "PalenqueGo.url"
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-  }
-
-  const handleInstallApp = async () => {
-    const standalone = typeof window !== "undefined" && (window.matchMedia("(display-mode: standalone)").matches || !!(navigator as any).standalone)
-    if (standalone) {
-      setIsStandalone(true)
-      setIsInstalled(true)
-      setShowInstallGuide(true)
+  const handleInstall = async () => {
+    if (isStandalone) {
+      alert("Ya estás utilizando PalenqueGo en modo de aplicación de escritorio.")
       return
     }
 
-    const prompt = installPrompt || (typeof window !== "undefined" && (window as any).deferredPrompt)
+    const prompt = deferredPrompt || (typeof window !== "undefined" && (window as any).deferredPrompt)
     if (prompt) {
       try {
-        await prompt.prompt()
+        prompt.prompt()
         const choice = await prompt.userChoice
         if (choice && choice.outcome === "accepted") {
-          setIsInstalled(true)
-          setInstallPrompt(null)
+          setInstalled(true)
+          setDeferredPrompt(null)
           if (typeof window !== "undefined") {
             (window as any).deferredPrompt = null
           }
-          return
         }
       } catch (err) {
-        // Fallback
+        console.error(err)
       }
+    } else {
+      alert("Para instalar PalenqueGo en tu computadora:\n\nHaz clic en el icono de instalación ubicado en la barra de direcciones de tu navegador (arriba a la derecha) o abre el menú (...) ➔ Aplicaciones ➔ Instalar PalenqueGo.")
     }
-
-    // Si el navegador no dispara el prompt nativo directamente, descargamos el acceso directo de escritorio
-    downloadDesktopShortcut()
-    setShowInstallGuide(true)
   }
 
   const plans = [
@@ -276,47 +255,45 @@ export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: Desk
             })}
           </div>
 
-          {/* Botón Descargar / Instalar App de Escritorio */}
-          <div className="pt-3">
-            <button
-              type="button"
-              onClick={handleInstallApp}
-              className={cn(
-                "w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all shadow-xs group border text-left cursor-pointer",
-                isStandalone
-                  ? "bg-emerald-50/90 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300"
-                  : "bg-emerald-600 hover:bg-emerald-700 text-white border-transparent hover:shadow-md active:scale-98"
-              )}
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className={cn(
-                  "w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-transform group-hover:scale-105",
-                  isStandalone ? "bg-emerald-600 text-white" : "bg-white/20 text-white"
-                )}>
-                  {isStandalone ? (
-                    <Laptop className="w-4 h-4 stroke-[2.2]" />
-                  ) : (
-                    <Download className="w-4 h-4 stroke-[2.2]" />
-                  )}
-                </div>
-                <div className="flex flex-col min-w-0">
-                  <span className="font-bold text-xs leading-tight truncate">
-                    {isStandalone ? "Modo Escritorio" : "Descargar App"}
-                  </span>
-                  <span className={cn(
-                    "text-[10px] leading-tight truncate mt-0.5",
-                    isStandalone ? "text-emerald-700 dark:text-emerald-400 font-semibold" : "text-emerald-100"
+          {/* Botón Instalar App de Escritorio (PWA Nativa) */}
+          {!isStandalone && (
+            <div className="pt-3">
+              <button
+                type="button"
+                onClick={handleInstall}
+                className={cn(
+                  "w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all shadow-xs group border text-left cursor-pointer",
+                  installed
+                    ? "bg-emerald-50/90 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300"
+                    : "bg-emerald-600 hover:bg-emerald-700 text-white border-transparent hover:shadow-md active:scale-98"
+                )}
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className={cn(
+                    "w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-transform group-hover:scale-105",
+                    installed ? "bg-emerald-600 text-white" : "bg-white/20 text-white"
                   )}>
-                    {isStandalone ? "Ventana Activa" : "Instalar en tu PC"}
-                  </span>
+                    {installed ? <Check className="w-4 h-4 stroke-[2.5]" /> : <Download className="w-4 h-4 stroke-[2.2]" />}
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-bold text-xs leading-tight truncate">
+                      {installed ? "App Instalada" : "Instalar App"}
+                    </span>
+                    <span className={cn(
+                      "text-[10px] leading-tight truncate mt-0.5",
+                      installed ? "text-emerald-700 dark:text-emerald-400 font-semibold" : "text-emerald-100"
+                    )}>
+                      {installed ? "En tu Computadora" : "Para tu PC / Escritorio"}
+                    </span>
+                  </div>
                 </div>
-              </div>
-              <ChevronRight className={cn(
-                "w-4 h-4 shrink-0 transition-transform group-hover:translate-x-0.5",
-                isStandalone ? "text-emerald-600" : "text-white/80"
-              )} />
-            </button>
-          </div>
+                <ChevronRight className={cn(
+                  "w-4 h-4 shrink-0 transition-transform group-hover:translate-x-0.5",
+                  installed ? "text-emerald-600" : "text-white/80"
+                )} />
+              </button>
+            </div>
+          )}
         </div>
 
       </div>
@@ -332,96 +309,6 @@ export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: Desk
           Cerrar Sesión
         </Button>
       </div>
-
-      {/* Guía Modal de Instalación con createPortal (aislado completamente del stacking context del sidebar) */}
-      {showInstallGuide && isMounted && typeof document !== "undefined" && createPortal(
-        <div 
-          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
-          onClick={() => setShowInstallGuide(false)}
-        >
-          <div 
-            className="relative w-full max-w-md bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-3xl shadow-2xl p-6 sm:p-7 animate-in zoom-in-95 duration-200 overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Subtle glow decoration */}
-            <div className="absolute top-0 right-0 -mr-12 -mt-12 w-36 h-36 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
-
-            {/* Botón cerrar */}
-            <button
-              onClick={() => setShowInstallGuide(false)}
-              className="absolute top-4 right-4 p-2 rounded-full text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-              aria-label="Cerrar modal"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            {/* Cabecera */}
-            <div className="flex items-center gap-3.5 mb-5">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-center shrink-0 shadow-xs">
-                <img src="/icon-192.png" alt="PalenqueGo" className="w-8 h-8 rounded-xl object-contain" />
-              </div>
-              <div className="min-w-0 pr-6">
-                <h3 className="font-extrabold text-base text-gray-900 dark:text-white leading-tight">
-                  PalenqueGo para Escritorio
-                </h3>
-                <p className="text-xs text-emerald-700 dark:text-emerald-400 font-semibold mt-0.5">
-                  Acceso directo oficial en tu computadora
-                </p>
-              </div>
-            </div>
-
-            {/* Botón directo para descargar archivo de acceso directo */}
-            <div className="space-y-4 mb-6">
-              <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 rounded-2xl border border-emerald-200 dark:border-emerald-800">
-                <div className="flex items-center gap-2 mb-1.5">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-                  <strong className="text-sm font-bold text-emerald-950 dark:text-emerald-100">
-                    Acceso Directo Descargado
-                  </strong>
-                </div>
-                <p className="text-xs text-emerald-900/90 dark:text-emerald-200/90 leading-relaxed">
-                  Se ha generado y descargado el archivo <strong>PalenqueGo.url</strong> a tu carpeta de Descargas.
-                </p>
-              </div>
-
-              <div className="p-3.5 bg-gray-50 dark:bg-zinc-800/60 rounded-2xl border border-gray-200 dark:border-zinc-700/60 flex items-start gap-3">
-                <div className="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-black text-xs flex items-center justify-center shrink-0 mt-0.5">
-                  1
-                </div>
-                <div className="text-xs text-gray-700 dark:text-gray-300 leading-snug">
-                  <strong>Colocar en tu Escritorio:</strong> Abre tu carpeta de <em>Descargas</em> y arrastra o copia el archivo <strong>PalenqueGo</strong> directamente a tu Escritorio de Windows.
-                </div>
-              </div>
-
-              <div className="p-3.5 bg-gray-50 dark:bg-zinc-800/60 rounded-2xl border border-gray-200 dark:border-zinc-700/60 flex items-start gap-3">
-                <div className="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-black text-xs flex items-center justify-center shrink-0 mt-0.5">
-                  2
-                </div>
-                <div className="text-xs text-gray-700 dark:text-gray-300 leading-snug">
-                  <strong>Doble clic para abrir:</strong> Al hacer doble clic en el acceso directo, PalenqueGo se abrirá inmediatamente en pantalla completa.
-                </div>
-              </div>
-
-              <Button
-                onClick={downloadDesktopShortcut}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-11 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 text-xs cursor-pointer"
-              >
-                <Download className="w-4 h-4 stroke-[2.5]" />
-                <span>Volver a Descargar Acceso Directo (.url)</span>
-              </Button>
-            </div>
-
-            {/* Botón de cierre */}
-            <Button
-              onClick={() => setShowInstallGuide(false)}
-              className="w-full bg-gray-900 hover:bg-gray-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-bold rounded-xl h-10 text-xs shadow-sm cursor-pointer"
-            >
-              Cerrar
-            </Button>
-          </div>
-        </div>,
-        document.body
-      )}
     </div>
   )
 }
