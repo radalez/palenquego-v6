@@ -49,11 +49,14 @@ export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: Desk
       <div className="p-6">
         {/* Logo/Brand + Botón para ocultar menú */}
         <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-              <img src="/logo-white.png" alt="Palenque Go Logo" className="w-6 h-6 object-contain" style={{ filter: 'invert(1)' }} />
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden shrink-0 shadow-xs">
+              <img src="/icon-192.png" alt="Palenque Go" className="w-10 h-10 object-contain rounded-xl" />
             </div>
-            <h1 className="text-xl font-bold text-primary tracking-tight">Palenque Go</h1>
+            <div>
+              <h1 className="text-lg font-bold text-primary tracking-tight leading-none">Palenque Go</h1>
+              <span className="text-[10px] text-muted-foreground font-medium">Movilidad & Experiencias</span>
+            </div>
           </div>
           {onToggleCollapse && (
             <button

@@ -9,12 +9,16 @@ export const metadata: Metadata = {
   title: "Palenque Go",
   description: "Turismo circular y sostenible en El Salvador",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icon-192.png",
+    shortcut: "/icon-192.png",
+    apple: "/icon-192.png",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "Palenque Go",
   },
-    generator: 'v0.app'
 }
 
 export const viewport: Viewport = {
