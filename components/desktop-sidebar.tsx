@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Store, Users, QrCode, Map, Briefcase, Crown, Zap, Star, Gem, LogOut, ChevronRight, ChevronLeft, CreditCard, Bell, Shield, HelpCircle, User, Home, ShieldCheck, Truck } from "lucide-react"
+import { Store, Users, QrCode, Map, Briefcase, Crown, Zap, Star, Gem, LogOut, ChevronRight, ChevronLeft, CreditCard, Bell, Shield, HelpCircle, User, Home, ShieldCheck, Truck, Download, Check, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAppStore } from "@/lib/store"
 import { cn } from "@/lib/utils"
@@ -15,10 +15,65 @@ interface DesktopSidebarProps {
 export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: DesktopSidebarProps) {
   const { userPlan, logout, currentUser } = useAppStore()
   const [isMounted, setIsMounted] = useState(false)
+  const [installPrompt, setInstallPrompt] = useState<any>(null)
+  const [isInstalled, setIsInstalled] = useState(false)
+  const [showInstallGuide, setShowInstallGuide] = useState(false)
 
   useEffect(() => {
     setIsMounted(true)
+    if (typeof window !== "undefined") {
+      const isStandalone = window.matchMedia("(display-mode: standalone)").matches || (navigator as any).standalone
+      if (isStandalone) {
+        setIsInstalled(true)
+      }
+
+      if ((window as any).deferredPrompt) {
+        setInstallPrompt((window as any).deferredPrompt)
+      }
+
+      const onBeforeInstall = (e: any) => {
+        e.preventDefault()
+        setInstallPrompt(e)
+        ;(window as any).deferredPrompt = e
+      }
+
+      const onPromptAvailable = (e: any) => {
+        setInstallPrompt(e.detail)
+      }
+
+      const onAppInstalled = () => {
+        setIsInstalled(true)
+        setInstallPrompt(null)
+      }
+
+      window.addEventListener("beforeinstallprompt", onBeforeInstall)
+      window.addEventListener("pwa-prompt-available", onPromptAvailable)
+      window.addEventListener("appinstalled", onAppInstalled)
+
+      return () => {
+        window.removeEventListener("beforeinstallprompt", onBeforeInstall)
+        window.removeEventListener("pwa-prompt-available", onPromptAvailable)
+        window.removeEventListener("appinstalled", onAppInstalled)
+      }
+    }
   }, [])
+
+  const handleInstallApp = async () => {
+    const prompt = installPrompt || (typeof window !== "undefined" && (window as any).deferredPrompt)
+    if (prompt) {
+      try {
+        prompt.prompt()
+        const choice = await prompt.userChoice
+        if (choice && choice.outcome === "accepted") {
+          setIsInstalled(true)
+        }
+      } catch (err) {
+        setShowInstallGuide(true)
+      }
+    } else {
+      setShowInstallGuide(true)
+    }
+  }
 
   const plans = [
     { id: "FREE", label: "Plan Gratis", icon: Zap, description: "Acceso básico", color: "bg-blue-100 text-blue-700" },
@@ -189,6 +244,44 @@ export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: Desk
               )
             })}
           </div>
+
+          {/* Botón Descargar / Instalar App de Escritorio */}
+          <div className="pt-3">
+            <button
+              type="button"
+              onClick={handleInstallApp}
+              className={cn(
+                "w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all shadow-xs group border text-left cursor-pointer",
+                isInstalled
+                  ? "bg-emerald-50/90 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300"
+                  : "bg-emerald-600 hover:bg-emerald-700 text-white border-transparent hover:shadow-md active:scale-98"
+              )}
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className={cn(
+                  "w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-transform group-hover:scale-105",
+                  isInstalled ? "bg-emerald-600 text-white" : "bg-white/20 text-white"
+                )}>
+                  {isInstalled ? <Check className="w-4 h-4 stroke-[2.5]" /> : <Download className="w-4 h-4 stroke-[2.2]" />}
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <span className="font-bold text-xs leading-tight truncate">
+                    {isInstalled ? "App Instalada" : "Descargar App"}
+                  </span>
+                  <span className={cn(
+                    "text-[10px] leading-tight truncate mt-0.5",
+                    isInstalled ? "text-emerald-700 dark:text-emerald-400 font-semibold" : "text-emerald-100"
+                  )}>
+                    {isInstalled ? "En tu Escritorio" : "Instalar en tu PC"}
+                  </span>
+                </div>
+              </div>
+              <ChevronRight className={cn(
+                "w-4 h-4 shrink-0 transition-transform group-hover:translate-x-0.5",
+                isInstalled ? "text-emerald-600" : "text-white/80"
+              )} />
+            </button>
+          </div>
         </div>
 
       </div>
@@ -204,6 +297,49 @@ export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: Desk
           Cerrar Sesión
         </Button>
       </div>
+
+      {/* Guía Modal de Instalación */}
+      {showInstallGuide && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="relative w-full max-w-sm p-6 bg-card border border-border rounded-2xl shadow-2xl animate-in zoom-in-95 duration-200">
+            <button
+              onClick={() => setShowInstallGuide(false)}
+              className="absolute top-4 right-4 p-1 rounded-full text-muted-foreground hover:bg-muted transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <Download className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-foreground">Instalar PalenqueGo en tu PC</h3>
+                <p className="text-[11px] text-muted-foreground">Acceso directo como app de Windows</p>
+              </div>
+            </div>
+            <div className="space-y-2.5 text-xs text-muted-foreground mb-5">
+              <div className="p-3 bg-muted/40 rounded-xl border border-border flex items-start gap-2.5">
+                <span className="w-5 h-5 rounded-full bg-primary text-white font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">1</span>
+                <p className="leading-snug">
+                  Haz clic en el icono de instalación <Download className="w-3.5 h-3.5 inline mx-0.5 text-primary" /> ubicado en la <strong>barra de direcciones</strong> del navegador (arriba a la derecha).
+                </p>
+              </div>
+              <div className="p-3 bg-muted/40 rounded-xl border border-border flex items-start gap-2.5">
+                <span className="w-5 h-5 rounded-full bg-primary text-white font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">2</span>
+                <p className="leading-snug">
+                  O toca el menú de tres puntos (<strong>⋮</strong>) del navegador ➔ <strong>"Instalar PalenqueGo"</strong>.
+                </p>
+              </div>
+            </div>
+            <Button
+              onClick={() => setShowInstallGuide(false)}
+              className="w-full bg-primary hover:bg-primary/90 text-white font-semibold rounded-xl h-10 text-xs"
+            >
+              Entendido
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

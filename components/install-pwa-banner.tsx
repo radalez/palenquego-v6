@@ -28,6 +28,10 @@ export function InstallPWABanner() {
     const handler = (e: any) => {
       e.preventDefault()
       setDeferredPrompt(e)
+      if (typeof window !== 'undefined') {
+        ;(window as any).deferredPrompt = e
+        window.dispatchEvent(new CustomEvent('pwa-prompt-available', { detail: e }))
+      }
       if (!isDismissed) {
         setIsVisible(true) // Mostrar el botón SOLO si Android confirma que se puede instalar y no se cerró antes
       }
