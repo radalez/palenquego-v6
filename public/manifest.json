@@ -1,20 +1,26 @@
 {
-  "short_name": "PalenqueGo",
+  "id": "/",
   "name": "PalenqueGo - Viajes y Servicios",
+  "short_name": "PalenqueGo",
+  "description": "Movilidad, turismo y experiencias en El Salvador",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#10b981",
+  "background_color": "#ffffff",
   "icons": [
     {
       "src": "/icon-192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any maskable"
     },
     {
       "src": "/icon-512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
-  ],
-  "start_url": "/",
-  "display": "standalone",
-  "theme_color": "#10b981",
-  "background_color": "#ffffff"
+  ]
 }

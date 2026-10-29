@@ -30,6 +30,7 @@ export const viewport: Viewport = {
 }
 
 import { GoogleProvider } from "@/components/GoogleProvider"
+import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister"
 
 export default function RootLayout({
   children,
@@ -40,6 +41,7 @@ export default function RootLayout({
     <html lang="es">
       <body className={`font-sans antialiased`}>
         <GoogleProvider>
+          <ServiceWorkerRegister />
           {children}
         </GoogleProvider>
       </body>

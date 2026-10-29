@@ -1,8 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { createPortal } from "react-dom"
-import { Store, Users, QrCode, Map, Briefcase, Crown, Zap, Star, Gem, LogOut, ChevronRight, ChevronLeft, CreditCard, Bell, Shield, HelpCircle, User, Home, ShieldCheck, Truck, Download, Check, X, Laptop, CheckCircle2, Monitor } from "lucide-react"
+import { Store, Users, QrCode, Map, Briefcase, Crown, Zap, Star, Gem, LogOut, ChevronRight, ChevronLeft, CreditCard, Bell, Shield, HelpCircle, User, Home, ShieldCheck, Truck, Download, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAppStore } from "@/lib/store"
 import { cn } from "@/lib/utils"
@@ -19,7 +18,6 @@ export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: Desk
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
   const [isStandalone, setIsStandalone] = useState(false)
   const [installed, setInstalled] = useState(false)
-  const [showInstallGuide, setShowInstallGuide] = useState(false)
 
   useEffect(() => {
     setIsMounted(true)
@@ -61,28 +59,30 @@ export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: Desk
     }
   }, [])
 
-  const downloadDesktopShortcut = () => {
-    const content = `[InternetShortcut]\r\nURL=https://palenquegov6.netlify.app/\r\nIconIndex=0\r\nIconFile=https://palenquegov6.netlify.app/favicon.ico\r\n`
-    const blob = new Blob([content], { type: "application/internet-shortcut" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = "PalenqueGo.url"
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-  }
-
-  const handleInstallApp = async () => {
+  const handleInstall = async () => {
     if (isStandalone) {
-      alert("Ya estás utilizando PalenqueGo en modo de aplicación de escritorio.")
+      alert("Ya estás utilizando PalenqueGo en la ventana de aplicación de escritorio.")
       return
     }
 
-    // Descarga directa del archivo de acceso directo (.url) a Descargas
-    downloadDesktopShortcut()
-    setShowInstallGuide(true)
+    const prompt = deferredPrompt || (typeof window !== "undefined" && (window as any).deferredPrompt)
+    if (prompt) {
+      try {
+        prompt.prompt()
+        const choice = await prompt.userChoice
+        if (choice && choice.outcome === "accepted") {
+          setInstalled(true)
+          setDeferredPrompt(null)
+          if (typeof window !== "undefined") {
+            (window as any).deferredPrompt = null
+          }
+        }
+      } catch (err) {
+        console.error(err)
+      }
+    } else {
+      alert("PalenqueGo ya se encuentra instalada en tu navegador o sistema.\n\nPuedes abrirla directamente desde el icono en la barra de direcciones o buscarla en las aplicaciones de tu navegador (edge://apps o chrome://apps).")
+    }
   }
 
   const plans = [
@@ -255,16 +255,16 @@ export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: Desk
             })}
           </div>
 
-          {/* Botón Instalar App de Escritorio */}
+          {/* Botón Instalar App de Escritorio (PWA Nativa) */}
           {!isStandalone && (
             <div className="pt-3">
               <button
                 type="button"
-                onClick={handleInstallApp}
+                onClick={handleInstall}
                 className={cn(
                   "w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all shadow-xs group border text-left cursor-pointer",
                   installed
-                    ? "bg-emerald-50/90 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100/80"
+                    ? "bg-emerald-50/90 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300"
                     : "bg-emerald-600 hover:bg-emerald-700 text-white border-transparent hover:shadow-md active:scale-98"
                 )}
               >
@@ -277,13 +277,13 @@ export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: Desk
                   </div>
                   <div className="flex flex-col min-w-0">
                     <span className="font-bold text-xs leading-tight truncate">
-                      {installed ? "App de Escritorio" : "Descargar App"}
+                      {installed ? "App Instalada" : "Instalar App"}
                     </span>
                     <span className={cn(
                       "text-[10px] leading-tight truncate mt-0.5",
                       installed ? "text-emerald-700 dark:text-emerald-400 font-semibold" : "text-emerald-100"
                     )}>
-                      {installed ? "Acceso Directo Listo" : "Para tu PC / Escritorio"}
+                      {installed ? "Modo Ventana Listo" : "Para tu PC / Escritorio"}
                     </span>
                   </div>
                 </div>
@@ -309,125 +309,6 @@ export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: Desk
           Cerrar Sesión
         </Button>
       </div>
-
-      {/* Modal Guía de Instalación y Acceso Directo de Escritorio */}
-      {isMounted && showInstallGuide && typeof document !== "undefined" && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-3xl shadow-2xl max-w-md w-full p-6 relative animate-in zoom-in-95 duration-200">
-            {/* Botón cerrar */}
-            <button
-              type="button"
-              onClick={() => setShowInstallGuide(false)}
-              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-gray-500 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100 flex items-center justify-center transition-colors cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
-
-            {/* Cabecera */}
-            <div className="flex items-center gap-3.5 mb-5">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 flex items-center justify-center text-emerald-700 dark:text-emerald-400 shrink-0">
-                <Laptop className="w-6 h-6 stroke-[2.2]" />
-              </div>
-              <div>
-                <h3 className="font-extrabold text-base text-gray-900 dark:text-white leading-tight">
-                  PalenqueGo para Escritorio
-                </h3>
-                <p className="text-xs text-emerald-700 dark:text-emerald-400 font-semibold mt-0.5">
-                  Acceso directo oficial en tu computadora
-                </p>
-              </div>
-            </div>
-
-            {/* Notificación de descarga exitosa */}
-            <div className="space-y-3 mb-6">
-              <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/40 rounded-2xl border border-emerald-200 dark:border-emerald-800">
-                <div className="flex items-center gap-2 mb-1">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-                  <strong className="text-xs font-bold text-emerald-950 dark:text-emerald-100">
-                    Acceso Directo Descargado
-                  </strong>
-                </div>
-                <p className="text-[11px] text-emerald-900/90 dark:text-emerald-200/90 leading-relaxed">
-                  Se ha generado y guardado el archivo <strong>PalenqueGo.url</strong> en tu carpeta de Descargas de Windows.
-                </p>
-              </div>
-
-              {/* Paso 1 */}
-              <div className="p-3 bg-gray-50 dark:bg-zinc-800/60 rounded-2xl border border-gray-200 dark:border-zinc-700/60 flex items-start gap-3">
-                <div className="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-black text-xs flex items-center justify-center shrink-0 mt-0.5">
-                  1
-                </div>
-                <div className="text-xs text-gray-700 dark:text-gray-300 leading-snug">
-                  <strong>Mover a tu Escritorio:</strong> Abre tu carpeta de <em>Descargas</em> y arrastra o copia el archivo <strong>PalenqueGo</strong> directamente a tu Escritorio de Windows.
-                </div>
-              </div>
-
-              {/* Paso 2 */}
-              <div className="p-3 bg-gray-50 dark:bg-zinc-800/60 rounded-2xl border border-gray-200 dark:border-zinc-700/60 flex items-start gap-3">
-                <div className="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-black text-xs flex items-center justify-center shrink-0 mt-0.5">
-                  2
-                </div>
-                <div className="text-xs text-gray-700 dark:text-gray-300 leading-snug">
-                  <strong>Doble clic para iniciar:</strong> Al hacer doble clic sobre el acceso directo, PalenqueGo se abrirá al instante en pantalla completa.
-                </div>
-              </div>
-
-              {/* Opción PWA Nativa si existe prompt disponible */}
-              {deferredPrompt && (
-                <div className="p-3 bg-blue-50 dark:bg-blue-950/40 rounded-2xl border border-blue-200 dark:border-blue-800 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-blue-900 dark:text-blue-100">
-                      Ventana de Concentración (PWA)
-                    </p>
-                    <p className="text-[11px] text-blue-700 dark:text-blue-300 truncate">
-                      Ventana independiente sin barra de navegador
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={async () => {
-                      try {
-                        deferredPrompt.prompt()
-                        const choice = await deferredPrompt.userChoice
-                        if (choice && choice.outcome === "accepted") {
-                          setInstalled(true)
-                          setDeferredPrompt(null)
-                        }
-                      } catch (e) {
-                        console.error(e)
-                      }
-                    }}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-8 px-3 rounded-lg text-[11px] shrink-0"
-                  >
-                    Instalar PWA
-                  </Button>
-                </div>
-              )}
-
-              {/* Botón para volver a descargar */}
-              <Button
-                type="button"
-                onClick={downloadDesktopShortcut}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-10 rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 text-xs cursor-pointer"
-              >
-                <Download className="w-4 h-4 stroke-[2.2]" />
-                <span>Volver a Descargar Acceso Directo (.url)</span>
-              </Button>
-            </div>
-
-            {/* Botón de cierre */}
-            <Button
-              type="button"
-              onClick={() => setShowInstallGuide(false)}
-              className="w-full bg-gray-900 hover:bg-gray-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-bold rounded-xl h-10 text-xs shadow-xs cursor-pointer"
-            >
-              Cerrar
-            </Button>
-          </div>
-        </div>,
-        document.body
-      )}
     </div>
   )
 }
