@@ -28,6 +28,14 @@ export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: Desk
         setInstalled(true)
       }
 
+      if ("getInstalledRelatedApps" in navigator) {
+        ;(navigator as any).getInstalledRelatedApps().then((apps: any[]) => {
+          if (apps && apps.length > 0) {
+            setInstalled(true)
+          }
+        }).catch(() => {})
+      }
+
       if ((window as any).deferredPrompt) {
         setDeferredPrompt((window as any).deferredPrompt)
       }
@@ -61,7 +69,6 @@ export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: Desk
 
   const handleInstall = async () => {
     if (isStandalone) {
-      alert("Ya estás utilizando PalenqueGo en la ventana de aplicación de escritorio.")
       return
     }
 
@@ -81,7 +88,7 @@ export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: Desk
         console.error(err)
       }
     } else {
-      alert("PalenqueGo ya se encuentra instalada en tu navegador o sistema.\n\nPuedes abrirla directamente desde el icono en la barra de direcciones o buscarla en las aplicaciones de tu navegador (edge://apps o chrome://apps).")
+      setInstalled(true)
     }
   }
 

@@ -51,8 +51,6 @@ export function InstallPWABanner() {
         setIsVisible(false)
       }
       setDeferredPrompt(null)
-    } else {
-      alert("Para instalar: toca los 3 puntos del menú del navegador (arriba a la derecha) y selecciona 'Instalar aplicación' o 'Añadir a inicio'.")
     }
   }
 
