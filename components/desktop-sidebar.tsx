@@ -22,7 +22,9 @@ export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: Desk
   useEffect(() => {
     setIsMounted(true)
     if (typeof window !== "undefined") {
-      const standalone = window.matchMedia("(display-mode: standalone)").matches || !!(navigator as any).standalone
+      const standalone = window.matchMedia("(display-mode: standalone)").matches 
+        || window.matchMedia("(display-mode: window-controls-overlay)").matches
+        || !!(navigator as any).standalone
       setIsStandalone(standalone)
       if (standalone) {
         setInstalled(true)
@@ -32,22 +34,33 @@ export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: Desk
         ;(navigator as any).getInstalledRelatedApps().then((apps: any[]) => {
           if (apps && apps.length > 0) {
             setInstalled(true)
+          } else if (!standalone) {
+            setInstalled(false)
           }
         }).catch(() => {})
       }
 
       if ((window as any).deferredPrompt) {
         setDeferredPrompt((window as any).deferredPrompt)
+        if (!standalone) {
+          setInstalled(false)
+        }
       }
 
       const onBeforeInstall = (e: any) => {
         e.preventDefault()
         setDeferredPrompt(e)
         ;(window as any).deferredPrompt = e
+        if (!standalone) {
+          setInstalled(false)
+        }
       }
 
       const onPromptAvailable = (e: any) => {
         setDeferredPrompt(e.detail)
+        if (!standalone) {
+          setInstalled(false)
+        }
       }
 
       const onAppInstalled = () => {
@@ -87,10 +100,10 @@ export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: Desk
       } catch (err) {
         console.error(err)
       }
-    } else {
-      setInstalled(true)
     }
   }
+
+  const isAppInstalled = installed || isStandalone
 
   const plans = [
     { id: "FREE", label: "Plan Gratis", icon: Zap, description: "Acceso básico", color: "bg-blue-100 text-blue-700" },
@@ -262,45 +275,50 @@ export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: Desk
             })}
           </div>
 
-          {/* Botón Instalar App de Escritorio (PWA Nativa) */}
-          {!isStandalone && (
-            <div className="pt-3">
-              <button
-                type="button"
-                onClick={handleInstall}
-                className={cn(
-                  "w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all shadow-xs group border text-left cursor-pointer",
-                  installed
-                    ? "bg-emerald-50/90 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300"
-                    : "bg-emerald-600 hover:bg-emerald-700 text-white border-transparent hover:shadow-md active:scale-98"
-                )}
-              >
+          {/* Sección App de Escritorio / Estado de Instalación */}
+          <div className="pt-3">
+            {isAppInstalled ? (
+              /* Mensaje / Indicador Informativo (Informativo, sin flecha de botón de acción) */
+              <div className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-emerald-50/90 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 shadow-xs select-none">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className={cn(
-                    "w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-transform group-hover:scale-105",
-                    installed ? "bg-emerald-600 text-white" : "bg-white/20 text-white"
-                  )}>
-                    {installed ? <Check className="w-4 h-4 stroke-[2.5]" /> : <Download className="w-4 h-4 stroke-[2.2]" />}
+                  <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                    <Check className="w-4 h-4 stroke-[2.5]" />
                   </div>
                   <div className="flex flex-col min-w-0">
-                    <span className="font-bold text-xs leading-tight truncate">
-                      {installed ? "App Instalada" : "Instalar App"}
+                    <span className="font-bold text-xs leading-tight truncate text-emerald-900 dark:text-emerald-200">
+                      App Instalada
                     </span>
-                    <span className={cn(
-                      "text-[10px] leading-tight truncate mt-0.5",
-                      installed ? "text-emerald-700 dark:text-emerald-400 font-semibold" : "text-emerald-100"
-                    )}>
-                      {installed ? "Modo Ventana Listo" : "Para tu PC / Escritorio"}
+                    <span className="text-[10px] leading-tight truncate mt-0.5 text-emerald-700 dark:text-emerald-400 font-semibold">
+                      Modo Ventana Listo
                     </span>
                   </div>
                 </div>
-                <ChevronRight className={cn(
-                  "w-4 h-4 shrink-0 transition-transform group-hover:translate-x-0.5",
-                  installed ? "text-emerald-600" : "text-white/80"
-                )} />
+                <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" title="Activo" />
+              </div>
+            ) : (
+              /* Botón Interactivo de Instalación (Solo cuando NO está instalada) */
+              <button
+                type="button"
+                onClick={handleInstall}
+                className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs group cursor-pointer transition-all hover:shadow-md active:scale-98 border border-transparent text-left"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-7 h-7 rounded-lg bg-white/20 text-white flex items-center justify-center shrink-0 transition-transform group-hover:scale-105">
+                    <Download className="w-4 h-4 stroke-[2.2]" />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-bold text-xs leading-tight truncate">
+                      Instalar App
+                    </span>
+                    <span className="text-[10px] leading-tight truncate mt-0.5 text-emerald-100">
+                      Para tu PC / Escritorio
+                    </span>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 shrink-0 transition-transform group-hover:translate-x-0.5 text-white/80" />
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
       </div>
