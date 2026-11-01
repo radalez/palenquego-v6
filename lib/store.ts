@@ -1,13 +1,30 @@
 export interface InAppNotification {
   id: number;
-  tipo: "PLAN" | "SAFEFLOW" | "RESERVA" | "CHOFER" | "POOL" | "SISTEMA";
+  tipo: "PLAN" | "SAFEFLOW" | "RESERVA" | "CHOFER" | "POOL" | "REMATE" | "COMISION" | "PROMOCION" | "SISTEMA";
   titulo: string;
   mensaje: string;
   enlace_accion?: string;
   icono: string;
   prioridad: "INFO" | "SUCCESS" | "WARNING" | "DANGER";
   leido: boolean;
+  silenciosa?: boolean;
   creado_el: string;
+}
+
+export interface UserNotificationPreferences {
+  canal_email: boolean;
+  canal_sms: boolean;
+  canal_push: boolean;
+  alert_reservas: boolean;
+  alert_pool: boolean;
+  alert_remates: boolean;
+  alert_safeflow: boolean;
+  alert_recomendaciones: boolean;
+  alert_promociones: boolean;
+  quiet_hours_enabled: boolean;
+  quiet_start: string;
+  quiet_end: string;
+  actualizado_el?: string;
 }
 
 import { create } from "zustand"
@@ -352,6 +369,9 @@ interface AppState {
   fetchNotifications: () => Promise<void>;
   markNotificationAsRead: (id: number) => Promise<void>;
   markAllNotificationsAsRead: () => Promise<void>;
+  notificationPreferences: UserNotificationPreferences;
+  fetchNotificationPreferences: () => Promise<void>;
+  updateNotificationPreferences: (prefs: Partial<UserNotificationPreferences>) => Promise<void>;
   poolPaymentPending: { poolId: number; options: "FULL" | "PERSONAL" }[]
   isLoading: boolean
 
@@ -600,6 +620,20 @@ export const useAppStore = create<AppState>()(
       notifications: { email: true, sms: true, push: true },
       inboxNotifications: [],
       unreadNotificationsCount: 0,
+      notificationPreferences: {
+        canal_email: true,
+        canal_sms: true,
+        canal_push: true,
+        alert_reservas: true,
+        alert_pool: true,
+        alert_remates: true,
+        alert_safeflow: true,
+        alert_recomendaciones: true,
+        alert_promociones: false,
+        quiet_hours_enabled: true,
+        quiet_start: "22:00",
+        quiet_end: "07:00",
+      },
       poolPaymentPending: [],
       guardians: [],
       isLoading: false,
@@ -1531,6 +1565,50 @@ export const useAppStore = create<AppState>()(
         set((state) => ({
           notifications: { ...state.notifications, ...settings },
         })),
+
+      fetchNotificationPreferences: async () => {
+        const { accessToken } = get();
+        if (!accessToken) return;
+        try {
+          const res = await fetch(`${API_BASE}/accounts/notifications/preferences/`, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            set({ notificationPreferences: data });
+          }
+        } catch (e) {
+          console.error("Error fetching notification preferences:", e);
+        }
+      },
+
+      updateNotificationPreferences: async (partial) => {
+        const prev = get().notificationPreferences;
+        const updated = { ...prev, ...partial };
+        set({ notificationPreferences: updated });
+
+        const { accessToken } = get();
+        if (!accessToken) return;
+        try {
+          const res = await fetch(`${API_BASE}/accounts/notifications/preferences/`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`
+            },
+            body: JSON.stringify(partial)
+          });
+          if (res.ok) {
+            const data = await res.json();
+            set({ notificationPreferences: data });
+          } else {
+            set({ notificationPreferences: prev });
+          }
+        } catch (e) {
+          console.error("Error updating notification preferences:", e);
+          set({ notificationPreferences: prev });
+        }
+      },
 
       rateService: (serviceId, stars) =>
         set((state) => ({

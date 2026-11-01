@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import { Bell, ChevronLeft, Mail, MessageSquare, Smartphone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
@@ -11,27 +10,7 @@ interface NotificationsExtendedScreenProps {
 }
 
 export function NotificationsExtendedScreen({ onBack }: NotificationsExtendedScreenProps) {
-  const notifications = useAppStore((state) => state.notifications)
-  const updateNotifications = useAppStore((state) => state.updateNotifications)
-
-  const [settings, setSettings] = useState({
-    email: notifications.email,
-    sms: notifications.sms,
-    push: notifications.push,
-    reservasConfirmadas: true,
-    poolActualizaciones: true,
-    remates: true,
-    safeFlow: true,
-    recomendaciones: true,
-    promoOfertas: false,
-  })
-
-  const handleToggle = (key: keyof typeof settings) => {
-    setSettings({ ...settings, [key]: !settings[key] })
-    if (['email', 'sms', 'push'].includes(key)) {
-      updateNotifications({ [key]: !settings[key] })
-    }
-  }
+  const { notificationPreferences, updateNotificationPreferences } = useAppStore()
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -54,16 +33,19 @@ export function NotificationsExtendedScreen({ onBack }: NotificationsExtendedScr
           <h2 className="text-lg font-bold text-foreground mb-4">Canales de notificación</h2>
           <div className="space-y-3">
             {[
-              { icon: Mail, label: 'Correo electrónico', key: 'email' as const },
-              { icon: Smartphone, label: 'Notificaciones push', key: 'push' as const },
-              { icon: MessageSquare, label: 'SMS', key: 'sms' as const },
+              { icon: Mail, label: 'Correo electrónico', key: 'canal_email' as const },
+              { icon: Smartphone, label: 'Notificaciones push', key: 'canal_push' as const },
+              { icon: MessageSquare, label: 'SMS', key: 'canal_sms' as const },
             ].map(({ icon: Icon, label, key }) => (
               <div key={key} className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
                 <div className="flex items-center gap-3">
                   <Icon size={20} className="text-primary" />
                   <span className="font-medium text-foreground">{label}</span>
                 </div>
-                <Switch checked={settings[key]} onCheckedChange={() => handleToggle(key)} />
+                <Switch 
+                  checked={notificationPreferences[key]} 
+                  onCheckedChange={(checked) => updateNotificationPreferences({ [key]: checked })} 
+                />
               </div>
             ))}
           </div>
@@ -74,18 +56,18 @@ export function NotificationsExtendedScreen({ onBack }: NotificationsExtendedScr
           <h2 className="text-lg font-bold text-foreground mb-4">Tipos de alertas</h2>
           <div className="space-y-3">
             {[
-              { label: 'Reservas confirmadas', key: 'reservasConfirmadas' as const },
-              { label: 'Actualizaciones de Pool', key: 'poolActualizaciones' as const },
-              { label: 'Remates Flow disponibles', key: 'remates' as const },
-              { label: 'Alertas Safe-Flow', key: 'safeFlow' as const },
-              { label: 'Comisiones por recomendaciones', key: 'recomendaciones' as const },
-              { label: 'Promociones y ofertas', key: 'promoOfertas' as const },
+              { label: 'Reservas confirmadas', key: 'alert_reservas' as const },
+              { label: 'Actualizaciones de Pool', key: 'alert_pool' as const },
+              { label: 'Remates Flow disponibles', key: 'alert_remates' as const },
+              { label: 'Alertas Safe-Flow', key: 'alert_safeflow' as const },
+              { label: 'Comisiones por recomendaciones', key: 'alert_recomendaciones' as const },
+              { label: 'Promociones y ofertas', key: 'alert_promociones' as const },
             ].map(({ label, key }) => (
               <div key={key} className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
                 <span className="font-medium text-foreground">{label}</span>
                 <Switch
-                  checked={settings[key]}
-                  onCheckedChange={() => handleToggle(key)}
+                  checked={notificationPreferences[key]}
+                  onCheckedChange={(checked) => updateNotificationPreferences({ [key]: checked })}
                 />
               </div>
             ))}
@@ -94,25 +76,35 @@ export function NotificationsExtendedScreen({ onBack }: NotificationsExtendedScr
 
         {/* Quiet Hours */}
         <div className="bg-muted/30 rounded-2xl p-4">
-          <h3 className="font-bold text-foreground mb-3">Horas silenciosas</h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-bold text-foreground">Horas silenciosas</h3>
+            <Switch
+              checked={notificationPreferences.quiet_hours_enabled}
+              onCheckedChange={(checked) => updateNotificationPreferences({ quiet_hours_enabled: checked })}
+            />
+          </div>
           <p className="text-sm text-muted-foreground mb-4">
-            No recibirás notificaciones durante estas horas
+            No recibirás notificaciones sonoras durante estas horas
           </p>
           <div className="flex gap-4">
             <div className="flex-1">
               <label className="text-xs font-medium text-foreground block mb-2">De</label>
               <input
                 type="time"
-                defaultValue="22:00"
-                className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground"
+                value={notificationPreferences.quiet_start || "22:00"}
+                onChange={(e) => updateNotificationPreferences({ quiet_start: e.target.value })}
+                disabled={!notificationPreferences.quiet_hours_enabled}
+                className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground disabled:opacity-50"
               />
             </div>
             <div className="flex-1">
               <label className="text-xs font-medium text-foreground block mb-2">Hasta</label>
               <input
                 type="time"
-                defaultValue="08:00"
-                className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground"
+                value={notificationPreferences.quiet_end || "07:00"}
+                onChange={(e) => updateNotificationPreferences({ quiet_end: e.target.value })}
+                disabled={!notificationPreferences.quiet_hours_enabled}
+                className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground disabled:opacity-50"
               />
             </div>
           </div>

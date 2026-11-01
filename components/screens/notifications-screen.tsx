@@ -13,51 +13,36 @@ interface NotificationsScreenProps {
 export function NotificationsScreen({ onBack, onNavigate }: NotificationsScreenProps) {
   const [activeSubTab, setActiveSubTab] = useState<"inbox" | "settings">("inbox")
   const { 
-    notifications, 
-    updateNotifications, 
     inboxNotifications, 
     unreadNotificationsCount, 
     fetchNotifications, 
     markNotificationAsRead, 
-    markAllNotificationsAsRead 
+    markAllNotificationsAsRead,
+    notificationPreferences,
+    fetchNotificationPreferences,
+    updateNotificationPreferences
   } = useAppStore()
 
   useEffect(() => {
     fetchNotifications()
-  }, [fetchNotifications])
-
-  // Tipos de alertas granulares
-  const [alertSettings, setAlertSettings] = useState({
-    reservasConfirmadas: true,
-    poolActualizaciones: true,
-    remates: true,
-    safeFlow: true,
-    recomendaciones: true,
-    promoOfertas: false,
-    quietHoursEnabled: true,
-    quietStart: "22:00",
-    quietEnd: "07:00",
-  })
-
-  const toggleAlert = (key: keyof typeof alertSettings) => {
-    setAlertSettings(prev => ({ ...prev, [key]: !prev[key] }))
-  }
+    fetchNotificationPreferences()
+  }, [fetchNotifications, fetchNotificationPreferences])
 
   const notificationChannels = [
     {
-      id: "email",
+      id: "canal_email" as const,
       label: "Notificaciones por Email",
       description: "Recibe actualizaciones sobre reservas, pools y promociones",
       icon: Mail,
     },
     {
-      id: "sms",
+      id: "canal_sms" as const,
       label: "Notificaciones por SMS",
       description: "Alertas instantáneas en tu teléfono",
       icon: MessageSquare,
     },
     {
-      id: "push",
+      id: "canal_push" as const,
       label: "Notificaciones Push",
       description: "Recordatorios y avisos en la app",
       icon: Bell,
@@ -65,12 +50,12 @@ export function NotificationsScreen({ onBack, onNavigate }: NotificationsScreenP
   ]
 
   const alertCategories = [
-    { key: "reservasConfirmadas" as const, label: "Reservas confirmadas", desc: "Avisos de boletos y reservas aceptadas" },
-    { key: "poolActualizaciones" as const, label: "Actualizaciones de Pool", desc: "Nuevos integrantes y salida de grupos" },
-    { key: "remates" as const, label: "Remates Flow disponibles", desc: "Subastas y oportunidades de viaje activas" },
-    { key: "safeFlow" as const, label: "Alertas Safe-Flow", desc: "Pánico SOS, monitoreo y desvíos de ruta" },
-    { key: "recomendaciones" as const, label: "Comisiones por recomendaciones", desc: "Avisos de recompensas y saldo ganado" },
-    { key: "promoOfertas" as const, label: "Promociones y ofertas", desc: "Descuentos en transporte y tours oficiales" },
+    { key: "alert_reservas" as const, label: "Reservas confirmadas", desc: "Avisos de boletos y reservas aceptadas" },
+    { key: "alert_pool" as const, label: "Actualizaciones de Pool", desc: "Nuevos integrantes y salida de grupos" },
+    { key: "alert_remates" as const, label: "Remates Flow disponibles", desc: "Subastas y oportunidades de viaje activas" },
+    { key: "alert_safeflow" as const, label: "Alertas Safe-Flow", desc: "Pánico SOS, monitoreo y desvíos de ruta" },
+    { key: "alert_recomendaciones" as const, label: "Comisiones por recomendaciones", desc: "Avisos de recompensas y saldo ganado" },
+    { key: "alert_promociones" as const, label: "Promociones y ofertas", desc: "Descuentos en transporte y tours oficiales" },
   ]
 
   const getNotificationIcon = (tipo: string, icono: string) => {
@@ -80,11 +65,16 @@ export function NotificationsScreen({ onBack, onNavigate }: NotificationsScreenP
       case "PLAN":
         return Sparkles
       case "CHOFER":
+      case "REMATE":
         return Car
       case "POOL":
         return Users
       case "RESERVA":
         return Store
+      case "COMISION":
+        return Sparkles
+      case "PROMOCION":
+        return Tag
       default:
         return Bell
     }
@@ -259,7 +249,7 @@ export function NotificationsScreen({ onBack, onNavigate }: NotificationsScreenP
             <div className="space-y-2.5">
               {notificationChannels.map((type) => {
                 const Icon = type.icon
-                const isEnabled = notifications[type.id as keyof typeof notifications]
+                const isEnabled = !!notificationPreferences[type.id]
                 return (
                   <div key={type.id} className="bg-card border border-border rounded-xl p-3.5 flex items-start gap-3.5 shadow-xs">
                     <div className="p-2.5 bg-primary/10 rounded-lg shrink-0 mt-0.5">
@@ -272,7 +262,7 @@ export function NotificationsScreen({ onBack, onNavigate }: NotificationsScreenP
                     <button
                       type="button"
                       onClick={() =>
-                        updateNotifications({
+                        updateNotificationPreferences({
                           [type.id]: !isEnabled,
                         })
                       }
@@ -297,7 +287,7 @@ export function NotificationsScreen({ onBack, onNavigate }: NotificationsScreenP
             <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">TIPOS DE ALERTAS</h3>
             <div className="space-y-2 bg-card border border-border rounded-xl divide-y divide-border p-1 shadow-xs">
               {alertCategories.map((item) => {
-                const checked = alertSettings[item.key]
+                const checked = !!notificationPreferences[item.key]
                 return (
                   <div key={item.key} className="flex items-center justify-between p-3">
                     <div className="pr-3">
@@ -306,7 +296,11 @@ export function NotificationsScreen({ onBack, onNavigate }: NotificationsScreenP
                     </div>
                     <button
                       type="button"
-                      onClick={() => toggleAlert(item.key)}
+                      onClick={() =>
+                        updateNotificationPreferences({
+                          [item.key]: !checked,
+                        })
+                      }
                       className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${
                         checked ? "bg-primary" : "bg-muted border border-border"
                       }`}
@@ -341,20 +335,24 @@ export function NotificationsScreen({ onBack, onNavigate }: NotificationsScreenP
                 </div>
                 <button
                   type="button"
-                  onClick={() => toggleAlert("quietHoursEnabled")}
+                  onClick={() =>
+                    updateNotificationPreferences({
+                      quiet_hours_enabled: !notificationPreferences.quiet_hours_enabled,
+                    })
+                  }
                   className={`relative w-12 h-7 rounded-full transition-colors shrink-0 ${
-                    alertSettings.quietHoursEnabled ? "bg-primary" : "bg-muted border border-border"
+                    notificationPreferences.quiet_hours_enabled ? "bg-primary" : "bg-muted border border-border"
                   }`}
                 >
                   <div
                     className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform ${
-                      alertSettings.quietHoursEnabled ? "translate-x-6" : "translate-x-1"
+                      notificationPreferences.quiet_hours_enabled ? "translate-x-6" : "translate-x-1"
                     }`}
                   />
                 </button>
               </div>
 
-              {alertSettings.quietHoursEnabled && (
+              {notificationPreferences.quiet_hours_enabled && (
                 <div className="grid grid-cols-2 gap-3 pt-3 border-t border-border">
                   <div className="space-y-1">
                     <label className="text-[11px] font-bold text-muted-foreground flex items-center gap-1">
@@ -362,8 +360,12 @@ export function NotificationsScreen({ onBack, onNavigate }: NotificationsScreenP
                     </label>
                     <input
                       type="time"
-                      value={alertSettings.quietStart}
-                      onChange={(e) => setAlertSettings(prev => ({ ...prev, quietStart: e.target.value }))}
+                      value={notificationPreferences.quiet_start || "22:00"}
+                      onChange={(e) =>
+                        updateNotificationPreferences({
+                          quiet_start: e.target.value,
+                        })
+                      }
                       className="w-full bg-muted/40 border border-border rounded-lg px-2.5 py-1.5 text-xs font-semibold text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
                     />
                   </div>
@@ -373,8 +375,12 @@ export function NotificationsScreen({ onBack, onNavigate }: NotificationsScreenP
                     </label>
                     <input
                       type="time"
-                      value={alertSettings.quietEnd}
-                      onChange={(e) => setAlertSettings(prev => ({ ...prev, quietEnd: e.target.value }))}
+                      value={notificationPreferences.quiet_end || "07:00"}
+                      onChange={(e) =>
+                        updateNotificationPreferences({
+                          quiet_end: e.target.value,
+                        })
+                      }
                       className="w-full bg-muted/40 border border-border rounded-lg px-2.5 py-1.5 text-xs font-semibold text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
                     />
                   </div>
