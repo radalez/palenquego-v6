@@ -23,18 +23,20 @@ export function PaymentsScreen({ onBack }: PaymentsScreenProps) {
   }
 
   return (
-    <div className="flex flex-col min-h-full">
+    <div className="flex flex-col min-h-full items-center">
       {/* Header */}
-      <div className="bg-gradient-to-br from-primary to-primary/80 px-4 pt-12 pb-6">
-        <button onClick={onBack} className="mb-4 text-primary-foreground hover:opacity-80">
-          ← Atrás
-        </button>
-        <h1 className="text-2xl font-bold text-primary-foreground">Métodos de Pago</h1>
-        <p className="text-primary-foreground/80 text-sm mt-2">Gestiona tus tarjetas y billeteras</p>
+      <div className="bg-gradient-to-br from-primary to-primary/80 px-4 pt-12 pb-6 w-full">
+        <div className="max-w-3xl mx-auto w-full">
+          <button onClick={onBack} className="mb-4 text-primary-foreground hover:opacity-80">
+            ← Atrás
+          </button>
+          <h1 className="text-2xl font-bold text-primary-foreground">Métodos de Pago</h1>
+          <p className="text-primary-foreground/80 text-sm mt-2">Gestiona tus tarjetas y billeteras</p>
+        </div>
       </div>
 
       {/* Payment Methods */}
-      <div className="px-4 py-6 space-y-4 flex-1">
+      <div className="px-4 py-6 space-y-4 flex-1 w-full max-w-3xl mx-auto">
         {paymentMethods.length > 0 ? (
           paymentMethods.map((method) => (
             <div

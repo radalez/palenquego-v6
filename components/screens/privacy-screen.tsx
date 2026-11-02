@@ -40,18 +40,20 @@ export function PrivacyScreen({ onBack }: PrivacyScreenProps) {
   ]
 
   return (
-    <div className="flex flex-col min-h-full">
+    <div className="flex flex-col min-h-full items-center">
       {/* Header */}
-      <div className="bg-gradient-to-br from-primary to-primary/80 px-4 pt-12 pb-6">
-        <button onClick={onBack} className="mb-4 text-primary-foreground hover:opacity-80">
-          ← Atrás
-        </button>
-        <h1 className="text-2xl font-bold text-primary-foreground">Privacidad y Seguridad</h1>
-        <p className="text-primary-foreground/80 text-sm mt-2">Protege tu cuenta y datos personales</p>
+      <div className="bg-gradient-to-br from-primary to-primary/80 px-4 pt-12 pb-6 w-full">
+        <div className="max-w-3xl mx-auto w-full">
+          <button onClick={onBack} className="mb-4 text-primary-foreground hover:opacity-80">
+            ← Atrás
+          </button>
+          <h1 className="text-2xl font-bold text-primary-foreground">Privacidad y Seguridad</h1>
+          <p className="text-primary-foreground/80 text-sm mt-2">Protege tu cuenta y datos personales</p>
+        </div>
       </div>
 
       {/* Security Actions */}
-      <div className="px-4 py-6">
+      <div className="px-4 py-6 w-full max-w-3xl mx-auto">
         <h3 className="text-sm font-semibold text-muted-foreground mb-4">SEGURIDAD</h3>
         <div className="space-y-3">
           {securityItems.map((item, idx) => {

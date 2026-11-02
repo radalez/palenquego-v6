@@ -51,12 +51,14 @@ export function RecommendationsScreen({ onBack }: RecommendationsScreenProps) {
   // Si el usuario no tiene rango de Embajador, mostramos la pantalla de bloqueo
   if (!currentUser?.is_ambassador) {
     return (
-      <div className="flex flex-col min-h-screen bg-slate-50">
-        <header className="px-4 py-4 bg-white border-b flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={onBack} className="rounded-full">
-            <ChevronLeft className="w-6 h-6" />
-          </Button>
-          <h1 className="text-xl font-bold">Mis Recomendaciones</h1>
+      <div className="flex flex-col min-h-screen bg-slate-50 items-center">
+        <header className="px-4 py-4 bg-white border-b w-full">
+          <div className="max-w-3xl mx-auto w-full flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={onBack} className="rounded-full">
+              <ChevronLeft className="w-6 h-6" />
+            </Button>
+            <h1 className="text-xl font-bold">Mis Recomendaciones</h1>
+          </div>
         </header>
 
         <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
@@ -90,26 +92,29 @@ export function RecommendationsScreen({ onBack }: RecommendationsScreenProps) {
     .reduce((sum, rec) => sum + (rec.stats.totalEarned || 0), 0)
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-50">
+    <div className="flex flex-col min-h-screen bg-slate-50 items-center">
       {/* Header */}
-      <header className="px-4 py-4 bg-white border-b flex items-center justify-between sticky top-0 z-10">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={onBack} className="rounded-full">
-            <ChevronLeft className="w-6 h-6" />
+      <header className="px-4 py-4 bg-white border-b sticky top-0 z-10 w-full">
+        <div className="max-w-3xl mx-auto w-full flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={onBack} className="rounded-full">
+              <ChevronLeft className="w-6 h-6" />
+            </Button>
+            <h1 className="text-xl font-bold text-slate-900">Mis Enlaces</h1>
+          </div>
+          <Button
+            onClick={() => setShowCreateModal(true)}
+            className="bg-orange-600 hover:bg-orange-700 text-white rounded-full px-4 gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Crear Enlace
           </Button>
-          <h1 className="text-xl font-bold text-slate-900">Mis Enlaces</h1>
         </div>
-        <Button
-          onClick={() => setShowCreateModal(true)}
-          className="bg-orange-600 hover:bg-orange-700 text-white rounded-full px-4 gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Crear Enlace
-        </Button>
       </header>
 
       {/* Stats Summary */}
-      <div className="p-4 bg-white border-b grid grid-cols-2 gap-4 shadow-sm">
+      <div className="p-4 bg-white border-b w-full">
+        <div className="max-w-3xl mx-auto w-full grid grid-cols-2 gap-4 shadow-sm">
         <div className="p-4 bg-blue-50 rounded-2xl">
           <div className="flex items-center gap-2 text-blue-600 mb-1">
             <DollarSign className="w-4 h-4" />
@@ -124,10 +129,11 @@ export function RecommendationsScreen({ onBack }: RecommendationsScreenProps) {
           </div>
           <div className="text-2xl font-black text-green-900">${totalEarned}</div>
         </div>
+        </div>
       </div>
 
       {/* Enlaces Activos */}
-      <div className="flex-1 p-4 space-y-4 pb-24">
+      <div className="flex-1 p-4 space-y-4 pb-24 w-full max-w-3xl mx-auto">
         <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-2">
           <LinkIcon className="w-4 h-4 text-orange-500" />
           Tus Campañas Activas

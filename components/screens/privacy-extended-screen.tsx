@@ -59,21 +59,23 @@ export function PrivacyExtendedScreen({ onBack }: PrivacyExtendedScreenProps) {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="flex flex-col min-h-screen bg-background items-center">
       {/* Header */}
-      <header className="bg-primary px-4 pt-4 pb-6 rounded-b-3xl flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onBack}
-          className="text-primary-foreground hover:bg-primary-foreground/20"
-        >
-          <ChevronLeft size={24} />
-        </Button>
-        <h1 className="text-2xl font-bold text-primary-foreground">Privacidad y Seguridad</h1>
+      <header className="bg-primary px-4 pt-4 pb-6 rounded-b-3xl w-full">
+        <div className="max-w-3xl mx-auto w-full flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onBack}
+            className="text-primary-foreground hover:bg-primary-foreground/20"
+          >
+            <ChevronLeft size={24} />
+          </Button>
+          <h1 className="text-2xl font-bold text-primary-foreground">Privacidad y Seguridad</h1>
+        </div>
       </header>
 
-      <div className="flex-1 px-4 py-6 overflow-y-auto pb-20 space-y-6">
+      <div className="flex-1 px-4 py-6 overflow-y-auto pb-20 space-y-6 w-full max-w-3xl mx-auto">
         {/* Password Section */}
         <div>
           <h2 className="text-lg font-bold text-foreground mb-4">Contraseña</h2>

@@ -111,12 +111,13 @@ export function NotificationsScreen({ onBack, onNavigate }: NotificationsScreenP
   }
 
   return (
-    <div className="flex flex-col min-h-full pb-20">
+    <div className="flex flex-col min-h-full pb-20 items-center">
       {/* Header */}
-      <div className="bg-gradient-to-br from-primary to-primary/80 px-4 pt-12 pb-5 text-primary-foreground shadow-md">
-        <button onClick={onBack} className="mb-3 text-primary-foreground/90 hover:text-white text-xs font-bold flex items-center gap-1">
-          ← Volver
-        </button>
+      <div className="bg-gradient-to-br from-primary to-primary/80 px-4 pt-12 pb-5 text-primary-foreground shadow-md w-full">
+        <div className="max-w-3xl mx-auto w-full">
+          <button onClick={onBack} className="mb-3 text-primary-foreground/90 hover:text-white text-xs font-bold flex items-center gap-1">
+            ← Volver
+          </button>
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-black tracking-tight">Centro de Notificaciones</h1>
@@ -160,11 +161,12 @@ export function NotificationsScreen({ onBack, onNavigate }: NotificationsScreenP
             Canales y Ajustes
           </button>
         </div>
+        </div>
       </div>
 
       {/* CONTENIDO 1: BUZÓN DE AVISOS */}
       {activeSubTab === "inbox" && (
-        <div className="px-4 py-5 space-y-3">
+        <div className="px-4 py-5 space-y-3 w-full max-w-3xl mx-auto">
           <div className="flex items-center justify-between pb-2 border-b border-border">
             <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
               {inboxNotifications.length} Notificaci{inboxNotifications.length === 1 ? "ón" : "ones"}
@@ -276,7 +278,7 @@ export function NotificationsScreen({ onBack, onNavigate }: NotificationsScreenP
 
       {/* CONTENIDO 2: AJUSTES DE CANALES, TIPOS DE ALERTAS Y HORAS SILENCIOSAS */}
       {activeSubTab === "settings" && (
-        <div className="px-4 py-5 space-y-6">
+        <div className="px-4 py-5 space-y-6 w-full max-w-3xl mx-auto">
           {/* SECCIÓN 1: CANALES */}
           <div>
             <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">CANALES DE TRANSMISIÓN</h3>
