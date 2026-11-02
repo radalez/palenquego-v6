@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Mail,
   Phone,
@@ -30,6 +30,7 @@ import {
   Sparkles,
   Check,
   Menu,
+  ArrowRight,
 } from "lucide-react"
 import QRCode from "react-qr-code"
 import { Button } from "@/components/ui/button"
@@ -43,9 +44,64 @@ interface ProfileScreenProps {
 }
 
 export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: ProfileScreenProps) {
-  const { currentUser, logout, bookings, pools, userFavorites, recommendations, payServiceWompi, accessToken, userIntentions, setUserIntentions, setMobileMenuOpen } = useAppStore()
+  const { currentUser, logout, bookings, pools, userFavorites, recommendations, payServiceWompi, accessToken, userIntentions, setUserIntentions, setMobileMenuOpen, businesses, fetchBusinesses } = useAppStore()
   const [selectedQrBooking, setSelectedQrBooking] = useState<Booking | null>(null)
   const [payingWompiId, setPayingWompiId] = useState<number | null>(null)
+  const [showPromoterModal, setShowPromoterModal] = useState(false)
+  const [selectedStoreId, setSelectedStoreId] = useState<string>("")
+  const [promoterPhone, setPromoterPhone] = useState(currentUser?.telefono || "")
+  const [promoterMessage, setPromoterMessage] = useState("")
+  const [submittingPromoter, setSubmittingPromoter] = useState(false)
+  const [promoterSuccess, setPromoterSuccess] = useState<string | null>(null)
+  const [promoterError, setPromoterError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!businesses || businesses.length === 0) {
+      fetchBusinesses()
+    }
+  }, [businesses, fetchBusinesses])
+
+  const handleApplyPromoter = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!promoterPhone.trim()) {
+      setPromoterError("Por favor ingresa un número de teléfono o WhatsApp.")
+      return
+    }
+
+    setSubmittingPromoter(true)
+    setPromoterError(null)
+
+    try {
+      const token = accessToken || localStorage.getItem("access_token")
+      const response = await fetch("/api-proxy/marketing/solicitar-promotor/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          tienda_id: selectedStoreId ? Number(selectedStoreId) : null,
+          telefono_whatsapp: promoterPhone.trim(),
+          mensaje: promoterMessage.trim(),
+          es_lider_pool: true,
+        }),
+      })
+
+      const data = await response.json()
+      if (response.ok) {
+        setPromoterSuccess(
+          data.message ||
+            "¡Tu postulación ha sido enviada con éxito! El aliado comercial de la tienda se contactará contigo directamente por WhatsApp para coordinar tus enlaces y beneficios."
+        )
+      } else {
+        setPromoterError(data.error || data.detail || "Ocurrió un error al enviar tu solicitud. Intenta nuevamente.")
+      }
+    } catch (err: any) {
+      setPromoterError("No se pudo conectar con el servidor. Verifica tu conexión a internet.")
+    } finally {
+      setSubmittingPromoter(false)
+    }
+  }
 
   // Filtrar reservas que pertenecen estrictamente al usuario actual autenticado
   const userBookings = bookings.filter((b) => {
@@ -159,7 +215,21 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
               </div>
               <div className="flex-1">
                 <h2 className="text-lg font-semibold text-foreground">{currentUser.name}</h2>
-                <p className="text-sm text-muted-foreground">{currentUser.tipo}</p>
+                <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                  <p className="text-sm text-muted-foreground">{currentUser.tipo}</p>
+                  {currentUser.is_ambassador && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                      <Sparkles className="w-3 h-3" />
+                      <span>Embajador Oficial</span>
+                    </span>
+                  )}
+                  {userIntentions?.wantsToLeadPools && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-300 dark:border-blue-800">
+                      <Users className="w-3 h-3" />
+                      <span>Líder de Pool</span>
+                    </span>
+                  )}
+                </div>
                 {currentUser.tipo === "CHOFER" && (
                   <div className="flex items-center gap-1.5 mt-1">
                     <div className={cn(
@@ -414,6 +484,48 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
               >
                 Ver / Crear Pool
               </Button>
+            </div>
+          )}
+
+          {/* Oportunidad de ser Embajador para Líderes de Pool */}
+          {userIntentions?.wantsToLeadPools && (
+            <div className="mt-2.5 bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-emerald-500/5 border border-emerald-500/30 rounded-xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-start sm:items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-lg bg-emerald-600/10 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-600/20">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div className="flex flex-col">
+                  <h4 className="text-xs font-bold text-foreground">
+                    ¿Te gustaría también ser embajador promocionando servicios y negocios?
+                  </h4>
+                  <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
+                    Gana comisiones en efectivo por cada viajero que reserve tours o traslados con tus enlaces exclusivos.
+                  </p>
+                </div>
+              </div>
+              {currentUser?.is_ambassador ? (
+                <Button
+                  size="sm"
+                  onClick={() => onNavigateToSettings?.("recomendaciones")}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold h-8 px-3.5 rounded-lg shrink-0 w-full sm:w-auto flex items-center gap-1.5"
+                >
+                  <span>Mis Enlaces y Comisiones</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setPromoterSuccess(null)
+                    setPromoterError(null)
+                    setShowPromoterModal(true)
+                  }}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold h-8 px-3.5 rounded-lg shrink-0 w-full sm:w-auto flex items-center gap-1.5"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Quiero ser Promotor</span>
+                </Button>
+              )}
             </div>
           )}
 
@@ -696,6 +808,147 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
                 Cerrar
               </Button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* Modal Postulación a Promotor / Embajador */}
+      {showPromoterModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-card w-full max-w-md rounded-3xl p-6 border border-border shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setShowPromoterModal(false)}
+              className="absolute top-5 right-5 p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-2.5 mb-2">
+              <div className="w-10 h-10 rounded-xl bg-emerald-600/10 text-emerald-600 flex items-center justify-center border border-emerald-600/20">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-foreground">Postular como Embajador</h3>
+                <p className="text-xs text-muted-foreground">Promociona negocios locales y gana comisiones</p>
+              </div>
+            </div>
+
+            {promoterSuccess ? (
+              <div className="py-6 text-center space-y-4">
+                <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="font-bold text-foreground text-sm">¡Solicitud Enviada con Éxito!</h4>
+                  <p className="text-xs text-muted-foreground leading-relaxed px-4">
+                    {promoterSuccess}
+                  </p>
+                </div>
+                <Button
+                  onClick={() => {
+                    setShowPromoterModal(false)
+                    setPromoterSuccess(null)
+                  }}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-10 rounded-xl"
+                >
+                  Entendido
+                </Button>
+              </div>
+            ) : (
+              <form onSubmit={handleApplyPromoter} className="space-y-3.5 mt-4">
+                {promoterError && (
+                  <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 text-xs font-semibold">
+                    {promoterError}
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-1">
+                    Selecciona el Comercio / Tienda
+                  </label>
+                  <select
+                    value={selectedStoreId}
+                    onChange={(e) => setSelectedStoreId(e.target.value)}
+                    required
+                    className="w-full px-3.5 py-2.5 bg-muted/50 border border-border rounded-xl text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value="">Seleccionar una tienda...</option>
+                    {businesses && businesses.length > 0 ? (
+                      businesses.map((b: any) => (
+                        <option key={b.id} value={b.id}>
+                          {b.name || b.nombre_comercial}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="1">Comercios Afiliados Oficiales</option>
+                    )}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-1">
+                    Tu Correo Electrónico
+                  </label>
+                  <input
+                    type="email"
+                    readOnly
+                    value={currentUser?.email || ""}
+                    className="w-full px-3.5 py-2.5 bg-muted/30 border border-border/60 rounded-xl text-xs text-muted-foreground cursor-not-allowed"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-1">
+                    Teléfono / WhatsApp de Contacto *
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    value={promoterPhone}
+                    onChange={(e) => setPromoterPhone(e.target.value)}
+                    placeholder="ej: +503 7000 0000"
+                    className="w-full px-3.5 py-2.5 bg-muted/50 border border-border rounded-xl text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-1">
+                    Propuesta o Mensaje (Opcional)
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={promoterMessage}
+                    onChange={(e) => setPromoterMessage(e.target.value)}
+                    placeholder="Hola, organizo grupos y viajo frecuentemente con amigos. Me gustaría ser embajador y compartir sus servicios..."
+                    className="w-full px-3.5 py-2.5 bg-muted/50 border border-border rounded-xl text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+                  />
+                </div>
+
+                <div className="pt-2 flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowPromoterModal(false)}
+                    className="w-1/3 h-10 rounded-xl text-xs font-bold"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={submittingPromoter}
+                    className="w-2/3 h-10 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center gap-1.5"
+                  >
+                    {submittingPromoter ? (
+                      <span>Enviando...</span>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Enviar Solicitud</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}
