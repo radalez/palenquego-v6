@@ -16,6 +16,7 @@ import {
   FileText,
   Sparkles,
   Gift,
+  Tag,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -213,6 +214,43 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
             <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter">Precio Base</p>
           </div>
         </div>
+
+        {/* Oferta Flash Banner */}
+        {service.oferta_flash && service.oferta_flash.cupos_disponibles > 0 && (
+          <div className="bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/15 border-2 border-amber-500/40 rounded-2xl p-4 shadow-sm space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-amber-500 text-white font-black">
+                  <Tag className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm text-foreground">
+                    {service.oferta_flash.titulo_promocional || "¡Oportunidad Flash Activa!"}
+                  </h3>
+                  <p className="text-xs text-amber-700 dark:text-amber-300 font-bold">
+                    {service.oferta_flash.descuento_porcentaje}% de descuento inmediato
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-2xl font-black text-amber-600 block leading-tight">
+                  ${service.oferta_flash.precio_promocional.toFixed(2)}
+                </span>
+                <span className="text-[10px] text-muted-foreground line-through">
+                  Antes ${service.price}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between pt-2 border-t border-amber-500/20 text-xs">
+              <span className="font-bold text-foreground">
+                Cupos restantes: <span className="text-amber-600 font-black">{service.oferta_flash.cupos_disponibles}</span> de {service.oferta_flash.cupos_totales}
+              </span>
+              <span className="text-muted-foreground text-[11px] font-medium">
+                Vence: {new Date(service.oferta_flash.fecha_fin).toLocaleDateString([], { day: '2-digit', month: 'short' })}
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Associated Routes */}
         {service.routes && service.routes.length > 0 && (

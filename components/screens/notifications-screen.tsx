@@ -12,6 +12,7 @@ interface NotificationsScreenProps {
 
 export function NotificationsScreen({ onBack, onNavigate }: NotificationsScreenProps) {
   const [activeSubTab, setActiveSubTab] = useState<"inbox" | "settings">("inbox")
+  const [inboxFilter, setInboxFilter] = useState<"ALL" | "PROMOCION" | "RESERVA" | "SAFEFLOW" | "POOL">("ALL")
   const { 
     inboxNotifications, 
     unreadNotificationsCount, 
@@ -178,7 +179,30 @@ export function NotificationsScreen({ onBack, onNavigate }: NotificationsScreenP
             )}
           </div>
 
-          {inboxNotifications.length === 0 ? (
+          {/* Selector de Categorías / Filtro Rápido */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+            {[
+              { id: "ALL", label: "Todas" },
+              { id: "PROMOCION", label: "⚡ Ofertas Flash & Promos" },
+              { id: "RESERVA", label: "Reservas" },
+              { id: "SAFEFLOW", label: "Safe-Flow" },
+              { id: "POOL", label: "Grupos Pool" },
+            ].map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setInboxFilter(f.id as any)}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
+                  inboxFilter === f.id
+                    ? "bg-primary text-primary-foreground shadow-xs"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          {inboxNotifications.filter((n) => inboxFilter === "ALL" || n.tipo === inboxFilter).length === 0 ? (
             <div className="py-16 text-center space-y-3">
               <div className="w-16 h-16 bg-muted/60 rounded-full flex items-center justify-center mx-auto text-muted-foreground">
                 <Bell className="w-8 h-8 opacity-40" />
@@ -189,7 +213,7 @@ export function NotificationsScreen({ onBack, onNavigate }: NotificationsScreenP
               </p>
             </div>
           ) : (
-            inboxNotifications.map((notif) => {
+            inboxNotifications.filter((n) => inboxFilter === "ALL" || n.tipo === inboxFilter).map((notif) => {
               const IconComp = getNotificationIcon(notif.tipo, notif.icono)
               return (
                 <div
@@ -203,7 +227,14 @@ export function NotificationsScreen({ onBack, onNavigate }: NotificationsScreenP
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2 mb-1">
-                        <h4 className="font-black text-sm text-foreground truncate">{notif.titulo}</h4>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <h4 className="font-black text-sm text-foreground truncate">{notif.titulo}</h4>
+                          {notif.tipo === "PROMOCION" && (
+                            <span className="px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-600 font-extrabold text-[10px] tracking-wide shrink-0">
+                              OFERTA FLASH
+                            </span>
+                          )}
+                        </div>
                         {!notif.leido && (
                           <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 animate-ping" />
                         )}
@@ -220,14 +251,17 @@ export function NotificationsScreen({ onBack, onNavigate }: NotificationsScreenP
                           <a
                             href={notif.enlace_accion}
                             onClick={(e) => {
-                              if (notif.enlace_accion && !notif.enlace_accion.startsWith("http") && onNavigate) {
+                              if (notif.enlace_accion && notif.enlace_accion.startsWith("/s/")) {
+                                e.preventDefault()
+                                window.location.href = notif.enlace_accion
+                              } else if (notif.enlace_accion && !notif.enlace_accion.startsWith("http") && onNavigate) {
                                 e.preventDefault()
                                 onNavigate(notif.enlace_accion)
                               }
                             }}
-                            className="font-bold text-primary hover:underline flex items-center gap-1"
+                            className={`font-bold hover:underline flex items-center gap-1 ${notif.tipo === "PROMOCION" ? "text-amber-600" : "text-primary"}`}
                           >
-                            Ver detalle <ExternalLink className="w-3 h-3" />
+                            {notif.tipo === "PROMOCION" ? "Aprovechar Oferta" : "Ver detalle"} <ExternalLink className="w-3 h-3" />
                           </a>
                         )}
                       </div>

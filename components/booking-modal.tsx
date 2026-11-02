@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { X, MapPin, Star, Users, Calendar, Clock, Plus, Minus, Check, ChevronRight, Phone, MessageCircle, CreditCard, Building2 } from "lucide-react"
+import { X, MapPin, Star, Users, Calendar, Clock, Plus, Minus, Check, ChevronRight, Phone, MessageCircle, CreditCard, Building2, Tag } from "lucide-react"
 import QRCode from "react-qr-code"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -132,6 +132,9 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
 
   const calculateTotal = () => {
     let basePrice = Number(service.price)
+    if (service.oferta_flash && service.oferta_flash.cupos_disponibles > 0 && service.oferta_flash.precio_promocional) {
+      basePrice = Number(service.oferta_flash.precio_promocional)
+    }
     let total = isHotelService ? (basePrice * nightsCount * Number(guests)) : (basePrice * Number(guests))
     
     if (service.extras) {
@@ -323,6 +326,23 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
                   <Building2 className="w-3.5 h-3.5 text-emerald-600" />
                   <span>Stock disponible: <strong>{stockQty}</strong> {stockLabel}</span>
                 </div>
+
+                {service.oferta_flash && service.oferta_flash.cupos_disponibles > 0 && (
+                  <div className="mt-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-100 flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-1.5 font-bold text-xs">
+                        <Tag className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Oferta Flash ({service.oferta_flash.descuento_porcentaje}% OFF)</span>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        ${service.oferta_flash.precio_promocional.toFixed(2)} por cupo · Quedan {service.oferta_flash.cupos_disponibles} cupos
+                      </p>
+                    </div>
+                    <Badge className="bg-amber-600 text-white font-extrabold text-[10px]">
+                      FLASH
+                    </Badge>
+                  </div>
+                )}
               </div>
             </div>
 

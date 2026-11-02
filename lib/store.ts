@@ -113,6 +113,15 @@ export interface Service {
   extras?: { name: string; price: number }[]
   blocked_dates?: string[]
   stock_unidades?: number
+  oferta_flash?: {
+    id: number
+    titulo_promocional?: string
+    descuento_porcentaje: number
+    cupos_totales: number
+    cupos_disponibles: number
+    precio_promocional: number
+    fecha_fin: string
+  } | null
   ratings?: Rating[]
   routes?: { id: number; name: string }[]
   linkTypes?: ("oferta" | "descuento" | "feriado")[]
@@ -857,9 +866,10 @@ export const useAppStore = create<AppState>()(
             businessName: s.tienda?.nombre_comercial || s.businessName,
             businessAvatar: s.tienda?.logo ? getProxyImage(s.tienda.logo) : s.businessAvatar,
             category: s.categoria?.nombre || s.category || "General",
-            spotsLeft: s.cupos_disponibles || s.spotsLeft || 0,
-            isRemate: s.en_oferta || s.isRemate || false,
-            discount: s.descuento || s.discount || 0,
+            spotsLeft: s.oferta_flash ? s.oferta_flash.cupos_disponibles : (s.cupos_disponibles || s.spotsLeft || 0),
+            isRemate: Boolean(s.oferta_flash || s.en_oferta || s.isRemate),
+            discount: s.oferta_flash ? s.oferta_flash.descuento_porcentaje : (s.descuento || s.discount || 0),
+            oferta_flash: s.oferta_flash || null,
             capacityMin: s.capacidad_min || s.capacityMin,
             capacityMax: s.capacidad_max || s.capacityMax,
             // GalerÃ­a: mapear images[] del API a galleryImages[]
@@ -1416,6 +1426,7 @@ export const useAppStore = create<AppState>()(
         set({ isLoading: true });
         try {
           const phone = bookingData.telefono || currentUser.telefono || "";
+          const refCode = bookingData.codigo_ref || (typeof window !== "undefined" ? localStorage.getItem("palenque_ref") : "") || "";
           const response = await fetch(`${API_BASE}/catalog/${serviceId}/reservar/`, {
             method: 'POST',
             headers: {
@@ -1425,6 +1436,7 @@ export const useAppStore = create<AppState>()(
             body: JSON.stringify({
               ...bookingData,
               telefono: phone,
+              codigo_ref: refCode,
             }),
           });
           const data = await response.json();
@@ -1460,6 +1472,7 @@ export const useAppStore = create<AppState>()(
         set({ isLoading: true });
         try {
           const targetUrl = redirectUrl || (typeof window !== "undefined" ? `${window.location.origin}/dashboard?payment=success&reserva_id=${reservaId || ''}` : '');
+          const refCode = (typeof window !== "undefined" ? localStorage.getItem("palenque_ref") : "") || "";
           const response = await fetch(`${API_BASE}/catalog/${serviceId}/pagar_wompi/`, {
             method: 'POST',
             headers: {
@@ -1469,7 +1482,8 @@ export const useAppStore = create<AppState>()(
             body: JSON.stringify({
               amount,
               reserva_id: reservaId,
-              redirect_url: targetUrl
+              redirect_url: targetUrl,
+              codigo_ref: refCode,
             }),
           });
           set({ isLoading: false });
