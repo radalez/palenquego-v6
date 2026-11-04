@@ -394,7 +394,7 @@ export function BusinessesScreen({ onNavigate }: BusinessesScreenProps) {
                     className="absolute bottom-2.5 right-2.5 bg-[#105238] hover:bg-[#0c3e2a] text-[#8ee01a] font-bold text-xs h-8 px-3 rounded-xl shadow-lg flex items-center gap-1.5 cursor-pointer z-20 border border-[#8ee01a]/40"
                   >
                     <Sparkles className="w-3.5 h-3.5" />
-                    <span>Postular como Embajador</span>
+                    <span>Postular</span>
                   </Button>
                 )}
               </div>

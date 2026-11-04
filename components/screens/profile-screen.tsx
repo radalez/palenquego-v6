@@ -606,10 +606,12 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
                 onClick={() => {
                   if (currentUser?.tipo !== "ALIADO" && !(currentUser as any)?.is_aliado) {
                     toast({
-                      title: "Tienda Requerida",
-                      description: "Para proponer alianzas B2B primero activa tu tienda en PalenqueGo.",
-                      variant: "destructive",
+                      title: "Plan de Negocio Requerido",
+                      description: "Para proponer alianzas comerciales B2B activa el plan para tu comercio.",
                     })
+                    if (typeof window !== "undefined") {
+                      sessionStorage.setItem("palenque_highlight_bronce", "true")
+                    }
                     onNavigateToSettings?.("planes")
                     return
                   }

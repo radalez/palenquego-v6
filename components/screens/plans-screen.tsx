@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Crown, Star, Zap, Gem, Check } from "lucide-react"
+import { Crown, Star, Zap, Gem, Check, Building2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAppStore } from "@/lib/store"
 
@@ -12,6 +12,16 @@ interface PlansScreenProps {
 export function PlansScreen({ onBack }: PlansScreenProps) {
   const { userPlan, upgradePlan, plans, fetchPlans, currentUser, fetchCurrentUser } = useAppStore()
   const [loadingPlanId, setLoadingPlanId] = useState<number | null>(null)
+  const [highlightBronce, setHighlightBronce] = useState(false)
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const shouldHighlight = sessionStorage.getItem("palenque_highlight_bronce") === "true"
+      if (shouldHighlight) {
+        setHighlightBronce(true)
+      }
+    }
+  }, [])
 
   const handleUpgrade = async (planId: number) => {
     setLoadingPlanId(planId)
@@ -57,12 +67,19 @@ export function PlansScreen({ onBack }: PlansScreenProps) {
         features: ["Todo del Plan Gratis", "Directorio profesional destacado", "Visibilidad en Marketplace Capa 3", "Herramientas de contratos", "Estadísticas detalladas", "Soporte 24/7"]
       }
     }
-    // Default: Plan Gratis
+    // Default: Plan Bronce / Gratis
     return {
       icon: Zap,
-      description: "Perfecto para explorar",
-      color: "from-blue-50 to-blue-100 border-blue-200",
-      features: ["Acceso a Marketplace", "Crear y unirse a Pools", "Safe-Flow básico", "Soporte por email"]
+      description: "Ideal para iniciar, registrar tu negocio y alianzas B2B",
+      color: "from-emerald-50 via-teal-50 to-emerald-100 border-[#91c44a]/50",
+      features: [
+        "Activa tu Tienda Oficial y publica tus servicios",
+        "Habilita tu comercio para Alianzas B2B y Socio Comercial",
+        "Acceso a Marketplace de Comercios",
+        "Crear y unirse a Pools",
+        "Safe-Flow básico",
+        "Soporte por email"
+      ]
     }
   }
 
@@ -93,9 +110,26 @@ export function PlansScreen({ onBack }: PlansScreenProps) {
             <div
               key={plan.id}
               className={`bg-gradient-to-br ${config.color} rounded-2xl p-6 border-2 transition-all ${
-                isCurrentPlan ? "ring-2 ring-primary" : "hover:shadow-lg"
+                plan.nombre.toLowerCase().includes("bronce") && highlightBronce
+                  ? "ring-4 ring-[#91c44a] shadow-xl border-[#105238]/40"
+                  : isCurrentPlan ? "ring-2 ring-primary" : "hover:shadow-lg"
               }`}
             >
+              {/* Banner explicativo B2B en plan Bronce */}
+              {plan.nombre.toLowerCase().includes("bronce") && (
+                <div className="mb-4 bg-[#eaf0e2] dark:bg-[#105238]/40 border border-[#91c44a] rounded-xl p-3 flex items-start gap-2.5 shadow-xs">
+                  <Building2 className="w-5 h-5 text-[#105238] dark:text-[#8ee01a] shrink-0 mt-0.5" />
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-[#105238] dark:text-[#eaf0e2]">
+                      Plan para Activar tu Negocio y Proponer Alianzas B2B
+                    </p>
+                    <p className="text-[11px] text-[#105238]/80 dark:text-[#eaf0e2]/80 leading-snug mt-0.5">
+                      Este plan te permite activar tu tienda oficial, publicar tus servicios y poder postular como socio comercial con otros negocios de la red PalenqueGo.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Plan Header */}
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
@@ -148,10 +182,18 @@ export function PlansScreen({ onBack }: PlansScreenProps) {
               ) : (
                 <Button
                   disabled={loadingPlanId !== null}
-                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50"
+                  className={`w-full font-bold transition-all cursor-pointer ${
+                    plan.nombre.toLowerCase().includes("bronce") && highlightBronce
+                      ? "bg-[#105238] hover:bg-[#0c3e2a] text-[#8ee01a] animate-pulse ring-4 ring-[#91c44a]/70 shadow-lg text-base py-3"
+                      : "bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50"
+                  }`}
                   onClick={() => handleUpgrade(plan.id)}
                 >
-                 {isProcessingThis ? "Procesando..." : `Actualizar a ${plan.nombre}`}
+                 {isProcessingThis
+                   ? "Procesando..."
+                   : plan.nombre.toLowerCase().includes("bronce") && highlightBronce
+                   ? `¡Actualizar a ${plan.nombre} (Activar Mi Negocio)!`
+                   : `Actualizar a ${plan.nombre}`}
                 </Button>
               )}
             </div>
