@@ -459,10 +459,10 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
                       </div>
                     )}
                   </div>
-                  <div className="flex gap-2">
+                  <div className="grid grid-cols-2 gap-2.5 w-full pt-1">
                     <Button
                       variant="outline"
-                      className="flex-1 rounded-xl"
+                      className="w-full h-9 rounded-xl text-xs font-bold border-border/80 hover:bg-muted text-foreground cursor-pointer flex items-center justify-center"
                       onClick={() => {
                         if (typeof window !== "undefined") {
                           sessionStorage.setItem("palenque_return_tab", "marketplace");
@@ -473,7 +473,7 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
                       Ver Detalles
                     </Button>
                     <Button
-                      className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl"
+                      className="w-full h-9 bg-[#105238] hover:bg-[#0c3e2a] text-white font-bold text-xs rounded-xl cursor-pointer shadow-xs flex items-center justify-center"
                       onClick={() => setSelectedService(service)}
                     >
                       Reservar

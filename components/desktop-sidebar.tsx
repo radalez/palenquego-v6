@@ -133,14 +133,20 @@ export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: Desk
     <div className="w-72 bg-card border-r border-border h-full flex flex-col overflow-y-auto">
       <div className="p-6">
         {/* Logo/Brand + Botón para ocultar menú */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden shrink-0 shadow-xs">
-              <img src="/icon-192.png" alt="Palenque Go" className="w-10 h-10 object-contain rounded-xl" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold text-primary tracking-tight leading-none">Palenque Go</h1>
-              <span className="text-[10px] text-muted-foreground font-medium">Movilidad & Experiencias</span>
+        <div className="flex items-center justify-between mb-6 pb-4 border-b border-border/60">
+          <div className="flex items-center gap-3">
+            <img 
+              src="/icon-192.png" 
+              alt="Palenque Go" 
+              className="w-10 h-10 object-contain rounded-xl shadow-xs shrink-0" 
+            />
+            <div className="flex flex-col justify-center">
+              <h1 className="text-lg font-extrabold text-[#105238] dark:text-[#8ee01a] tracking-tight leading-tight">
+                Palenque Go
+              </h1>
+              <span className="text-xs text-muted-foreground font-semibold tracking-tight -mt-0.5">
+                Movilidad & Experiencias
+              </span>
             </div>
           </div>
           {onToggleCollapse && (
@@ -148,9 +154,9 @@ export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: Desk
               type="button"
               onClick={onToggleCollapse}
               title="Ocultar menú lateral"
-              className="w-8 h-8 rounded-xl bg-muted/60 hover:bg-emerald-50 hover:text-[#064e3b] text-muted-foreground flex items-center justify-center transition-all active:scale-95 border border-transparent hover:border-emerald-200"
+              className="w-8 h-8 rounded-full bg-muted/60 hover:bg-emerald-50 hover:text-[#064e3b] text-muted-foreground flex items-center justify-center transition-all active:scale-95 border border-border/40 hover:border-emerald-200 cursor-pointer shrink-0"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="w-4 h-4" />
             </button>
           )}
         </div>

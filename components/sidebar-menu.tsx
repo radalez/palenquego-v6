@@ -59,11 +59,11 @@ export function SidebarMenu({ activeTab, onNavigate }: SidebarMenuProps) {
       >
         {/* Cabecera del Drawer con Branding y Botón Cerrar [X] */}
         <div className="p-5 border-b border-border flex items-center justify-between shrink-0 bg-muted/30">
-          <div className="flex items-center gap-2.5">
-            <img src="/icon-192.png" alt="Palenque Go" className="w-8 h-8 object-contain" />
-            <div>
-              <h2 className="font-bold text-foreground text-base leading-none">Palenque Go</h2>
-              <span className="text-[10px] text-muted-foreground font-medium">Movilidad & Experiencias</span>
+          <div className="flex items-center gap-3">
+            <img src="/icon-192.png" alt="Palenque Go" className="w-9 h-9 object-contain rounded-xl shrink-0" />
+            <div className="flex flex-col justify-center">
+              <h2 className="font-extrabold text-[#105238] dark:text-[#8ee01a] text-base tracking-tight leading-tight">Palenque Go</h2>
+              <span className="text-xs text-muted-foreground font-semibold tracking-tight -mt-0.5">Movilidad & Experiencias</span>
             </div>
           </div>
           <button
