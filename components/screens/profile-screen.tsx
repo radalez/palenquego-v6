@@ -48,6 +48,7 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
   const [selectedQrBooking, setSelectedQrBooking] = useState<Booking | null>(null)
   const [payingWompiId, setPayingWompiId] = useState<number | null>(null)
   const [showPromoterModal, setShowPromoterModal] = useState(false)
+  const [promoterCategory, setPromoterCategory] = useState<"PROMOTOR" | "ALIADO_B2B">("PROMOTOR")
   const [selectedStoreId, setSelectedStoreId] = useState<string>("")
   const [promoterPhone, setPromoterPhone] = useState(currentUser?.telefono || "")
   const [promoterMessage, setPromoterMessage] = useState("")
@@ -83,7 +84,8 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
           tienda_id: selectedStoreId ? Number(selectedStoreId) : null,
           telefono_whatsapp: promoterPhone.trim(),
           mensaje: promoterMessage.trim(),
-          es_lider_pool: true,
+          categoria: promoterCategory,
+          es_lider_pool: Boolean(userIntentions?.wantsToLeadPools),
         }),
       })
 
@@ -516,6 +518,7 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
                 <Button
                   size="sm"
                   onClick={() => {
+                    setPromoterCategory("PROMOTOR")
                     setPromoterSuccess(null)
                     setPromoterError(null)
                     setShowPromoterModal(true)
@@ -823,12 +826,27 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
             </button>
 
             <div className="flex items-center gap-2.5 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-emerald-600/10 text-emerald-600 flex items-center justify-center border border-emerald-600/20">
-                <Sparkles className="w-5 h-5" />
+              <div className={cn(
+                "w-10 h-10 rounded-xl flex items-center justify-center border",
+                promoterCategory === "ALIADO_B2B"
+                  ? "bg-amber-600/10 text-amber-700 dark:text-amber-400 border-amber-600/20"
+                  : "bg-emerald-600/10 text-emerald-600 border-emerald-600/20"
+              )}>
+                {promoterCategory === "ALIADO_B2B" ? (
+                  <Building2 className="w-5 h-5" />
+                ) : (
+                  <Sparkles className="w-5 h-5" />
+                )}
               </div>
               <div>
-                <h3 className="text-base font-bold text-foreground">Postular como Embajador</h3>
-                <p className="text-xs text-muted-foreground">Promociona negocios locales y gana comisiones</p>
+                <h3 className="text-base font-bold text-foreground">
+                  {promoterCategory === "ALIADO_B2B" ? "Proponer Alianza Comercial B2B" : "Postular como Embajador"}
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  {promoterCategory === "ALIADO_B2B"
+                    ? "Alianzas estratégicas entre negocios de la red PalenqueGo"
+                    : "Promociona negocios locales a tus grupos y gana comisiones"}
+                </p>
               </div>
             </div>
 
@@ -863,7 +881,9 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
 
                 <div>
                   <label className="block text-xs font-bold text-foreground mb-1">
-                    Selecciona el Comercio / Tienda
+                    {promoterCategory === "ALIADO_B2B"
+                      ? "Selecciona el Negocio Aliado al que deseas vincularte"
+                      : "Selecciona el Comercio / Tienda que deseas promocionar"}
                   </label>
                   <select
                     value={selectedStoreId}
@@ -912,13 +932,19 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
 
                 <div>
                   <label className="block text-xs font-bold text-foreground mb-1">
-                    Propuesta o Mensaje (Opcional)
+                    {promoterCategory === "ALIADO_B2B"
+                      ? "Propuesta de Alianza / Paquetes Combinados"
+                      : "Propuesta o Mensaje (Opcional)"}
                   </label>
                   <textarea
                     rows={3}
                     value={promoterMessage}
                     onChange={(e) => setPromoterMessage(e.target.value)}
-                    placeholder="Hola, organizo grupos y viajo frecuentemente con amigos. Me gustaría ser embajador y compartir sus servicios..."
+                    placeholder={
+                      promoterCategory === "ALIADO_B2B"
+                        ? "Ej: Somos Hotel El Tunco y nos gustaría ofrecer sus tours a nuestros huéspedes y publicar sus paquetes en nuestra recepción para comisionar mutuamente..."
+                        : "Hola, organizo grupos y viajo frecuentemente con amigos. Me gustaría ser embajador y compartir sus servicios..."
+                    }
                     className="w-full px-3.5 py-2.5 bg-muted/50 border border-border rounded-xl text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
                   />
                 </div>
@@ -935,14 +961,23 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
                   <Button
                     type="submit"
                     disabled={submittingPromoter}
-                    className="w-2/3 h-10 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center gap-1.5"
+                    className={cn(
+                      "w-2/3 h-10 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-1.5",
+                      promoterCategory === "ALIADO_B2B"
+                        ? "bg-amber-600 hover:bg-amber-700"
+                        : "bg-emerald-600 hover:bg-emerald-700"
+                    )}
                   >
                     {submittingPromoter ? (
                       <span>Enviando...</span>
                     ) : (
                       <>
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span>Enviar Solicitud</span>
+                        {promoterCategory === "ALIADO_B2B" ? (
+                          <Building2 className="w-3.5 h-3.5" />
+                        ) : (
+                          <Sparkles className="w-3.5 h-3.5" />
+                        )}
+                        <span>{promoterCategory === "ALIADO_B2B" ? "Enviar Propuesta B2B" : "Enviar Solicitud"}</span>
                       </>
                     )}
                   </Button>
