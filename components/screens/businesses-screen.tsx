@@ -19,6 +19,7 @@ import {
   Share2,
   ExternalLink,
   Building2,
+  Sparkles,
   CheckCircle2,
   X,
 } from "lucide-react"
@@ -75,31 +76,32 @@ export function BusinessesScreen({ onNavigate }: BusinessesScreenProps) {
   const { businesses, currentUser, accessToken } = useAppStore()
 
   const [isB2BMode, setIsB2BMode] = useState(false)
-  const [selectedB2BStore, setSelectedB2BStore] = useState<Business | null>(null)
-  const [showB2BModal, setShowB2BModal] = useState(false)
-  const [b2bPhone, setB2BPhone] = useState(currentUser?.telefono || "")
-  const [b2bMessage, setB2BMessage] = useState("")
-  const [b2bSubmitting, setB2BSubmitting] = useState(false)
-  const [b2bSuccess, setB2BSuccess] = useState<string | null>(null)
-  const [b2bError, setB2BError] = useState<string | null>(null)
+  const [isPromoterMode, setIsPromoterMode] = useState(false)
+  const [targetStore, setTargetStore] = useState<Business | null>(null)
+  const [invitationCategory, setInvitationCategory] = useState<"PROMOTOR" | "ALIADO_B2B">("ALIADO_B2B")
+  const [showApplyModal, setShowApplyModal] = useState(false)
+  const [contactPhone, setContactPhone] = useState(currentUser?.telefono || "")
+  const [proposalMessage, setProposalMessage] = useState("")
+  const [submittingProposal, setSubmittingProposal] = useState(false)
+  const [proposalSuccess, setProposalSuccess] = useState<string | null>(null)
+  const [proposalError, setProposalError] = useState<string | null>(null)
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       const b2bActive = sessionStorage.getItem("palenque_b2b_mode") === "true"
+      const promoterActive = sessionStorage.getItem("palenque_promoter_mode") === "true"
       const isAliado = currentUser?.tipo === "ALIADO" || Boolean((currentUser as any)?.is_aliado)
-      if (b2bActive && isAliado) {
-        setIsB2BMode(true)
-      } else {
-        setIsB2BMode(false)
-      }
+
+      setIsB2BMode(Boolean(b2bActive && isAliado))
+      setIsPromoterMode(Boolean(promoterActive))
     }
   }, [currentUser])
 
   useEffect(() => {
     return () => {
-      // Si el usuario sale a otra pantalla, se desactiva el modo socio comercial
       if (typeof window !== "undefined") {
         sessionStorage.removeItem("palenque_b2b_mode")
+        sessionStorage.removeItem("palenque_promoter_mode")
       }
     }
   }, [])
@@ -107,20 +109,21 @@ export function BusinessesScreen({ onNavigate }: BusinessesScreenProps) {
   const handleNav = (tab: string) => {
     if (typeof window !== "undefined") {
       sessionStorage.removeItem("palenque_b2b_mode")
+      sessionStorage.removeItem("palenque_promoter_mode")
     }
     onNavigate?.(tab)
   }
 
-  const handleSendB2BProposal = async (e: React.FormEvent) => {
+  const handleSendProposal = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!selectedB2BStore) return
-    if (!b2bPhone.trim()) {
-      setB2BError("Por favor ingresa un teléfono o WhatsApp de contacto.")
+    if (!targetStore) return
+    if (!contactPhone.trim()) {
+      setProposalError("Por favor ingresa un teléfono o WhatsApp de contacto.")
       return
     }
 
-    setB2BSubmitting(true)
-    setB2BError(null)
+    setSubmittingProposal(true)
+    setProposalError(null)
 
     try {
       const token = accessToken || useAppStore.getState().accessToken
@@ -131,27 +134,28 @@ export function BusinessesScreen({ onNavigate }: BusinessesScreenProps) {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
-          tienda_id: selectedB2BStore.id,
-          telefono_whatsapp: b2bPhone.trim(),
-          mensaje: b2bMessage.trim(),
-          categoria: "ALIADO_B2B",
-          es_lider_pool: false,
+          tienda_id: targetStore.id,
+          telefono_whatsapp: contactPhone.trim(),
+          mensaje: proposalMessage.trim(),
+          categoria: invitationCategory,
+          es_lider_pool: invitationCategory === "PROMOTOR",
         }),
       })
 
       const data = await res.json()
       if (res.ok) {
-        setB2BSuccess(data.message || `¡Propuesta enviada con éxito a ${selectedB2BStore.name}!`)
+        setProposalSuccess(data.message || `¡Solicitud enviada con éxito a ${targetStore.name}!`)
         if (typeof window !== "undefined") {
           sessionStorage.removeItem("palenque_b2b_mode")
+          sessionStorage.removeItem("palenque_promoter_mode")
         }
       } else {
-        setB2BError(data.error || data.detail || "No fue posible enviar la propuesta.")
+        setProposalError(data.error || data.detail || "No fue posible enviar la solicitud.")
       }
     } catch (err) {
-      setB2BError("Error de conexión al enviar la propuesta.")
+      setProposalError("Error de conexión al enviar la solicitud.")
     } finally {
-      setB2BSubmitting(false)
+      setSubmittingProposal(false)
     }
   }
 
@@ -228,14 +232,14 @@ export function BusinessesScreen({ onNavigate }: BusinessesScreenProps) {
 
       {/* Banner de Modo Socio B2B */}
       {isB2BMode && (
-        <div className="mx-4 mb-2 bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-xs">
+        <div className="mx-4 mb-2 bg-[#eaf0e2] dark:bg-[#105238]/30 border border-[#91c44a]/50 rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-xs">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-amber-600/20 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-[#91c44a]/30 text-[#105238] dark:text-[#8ee01a] flex items-center justify-center shrink-0">
               <Building2 className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-bold text-amber-950 dark:text-amber-200">Modo Selección de Alianza B2B Activo</p>
-              <p className="text-[11px] text-amber-900/80 dark:text-amber-300/80 truncate">
+              <p className="text-xs font-bold text-[#105238] dark:text-[#eaf0e2]">Modo Selección de Alianza B2B Activo</p>
+              <p className="text-[11px] text-[#105238]/80 dark:text-[#eaf0e2]/80 truncate">
                 Busca y pulsa "Elegir como socio comercial" sobre la tienda deseada.
               </p>
             </div>
@@ -247,7 +251,35 @@ export function BusinessesScreen({ onNavigate }: BusinessesScreenProps) {
               sessionStorage.removeItem("palenque_b2b_mode")
               setIsB2BMode(false)
             }}
-            className="text-amber-900 dark:text-amber-200 hover:bg-amber-500/20 text-xs h-7 px-2.5 rounded-lg shrink-0 cursor-pointer"
+            className="text-[#105238] dark:text-[#eaf0e2] hover:bg-[#91c44a]/20 border border-[#91c44a]/40 text-xs h-7 px-2.5 rounded-lg shrink-0 cursor-pointer"
+          >
+            Salir
+          </Button>
+        </div>
+      )}
+
+      {/* Banner de Modo Embajador / Promotor */}
+      {isPromoterMode && (
+        <div className="mx-4 mb-2 bg-[#eaf0e2] dark:bg-[#105238]/30 border border-[#105238]/30 rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-[#105238]/15 text-[#105238] dark:text-[#8ee01a] flex items-center justify-center shrink-0">
+              <Sparkles className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-[#105238] dark:text-[#eaf0e2]">Modo Postulación de Embajador Activo</p>
+              <p className="text-[11px] text-[#105238]/80 dark:text-[#eaf0e2]/80 truncate">
+                Busca y pulsa "Postular como Embajador" sobre el comercio que deseas promocionar.
+              </p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              sessionStorage.removeItem("palenque_promoter_mode")
+              setIsPromoterMode(false)
+            }}
+            className="text-[#105238] dark:text-[#eaf0e2] hover:bg-[#105238]/10 border border-[#105238]/30 text-xs h-7 px-2.5 rounded-lg shrink-0 cursor-pointer"
           >
             Salir
           </Button>
@@ -324,23 +356,45 @@ export function BusinessesScreen({ onNavigate }: BusinessesScreenProps) {
                   {business.category}
                 </Badge>
 
-                {/* Botón sobre la imagen: Solo visible en Modo B2B para Aliados */}
+                {/* Botón sobre la imagen para Modo B2B */}
                 {isB2BMode && (currentUser?.tipo === "ALIADO" || Boolean((currentUser as any)?.is_aliado)) && (
                   <Button
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation()
-                      setSelectedB2BStore(business)
-                      setB2BPhone(currentUser?.telefono || "")
-                      setB2BMessage("")
-                      setB2BSuccess(null)
-                      setB2BError(null)
-                      setShowB2BModal(true)
+                      setTargetStore(business)
+                      setInvitationCategory("ALIADO_B2B")
+                      setContactPhone(currentUser?.telefono || "")
+                      setProposalMessage("")
+                      setProposalSuccess(null)
+                      setProposalError(null)
+                      setShowApplyModal(true)
                     }}
-                    className="absolute bottom-2.5 right-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs h-8 px-3 rounded-lg shadow-lg flex items-center gap-1.5 cursor-pointer z-20 border border-amber-400/40"
+                    className="absolute bottom-2.5 right-2.5 bg-[#91c44a] hover:bg-[#82b43e] text-[#105238] font-bold text-xs h-8 px-3 rounded-xl shadow-lg flex items-center gap-1.5 cursor-pointer z-20 border border-[#7ea83c]"
                   >
                     <Building2 className="w-3.5 h-3.5" />
                     <span>Elegir como socio comercial</span>
+                  </Button>
+                )}
+
+                {/* Botón sobre la imagen para Modo Embajador */}
+                {isPromoterMode && (
+                  <Button
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setTargetStore(business)
+                      setInvitationCategory("PROMOTOR")
+                      setContactPhone(currentUser?.telefono || "")
+                      setProposalMessage("")
+                      setProposalSuccess(null)
+                      setProposalError(null)
+                      setShowApplyModal(true)
+                    }}
+                    className="absolute bottom-2.5 right-2.5 bg-[#105238] hover:bg-[#0c3e2a] text-[#8ee01a] font-bold text-xs h-8 px-3 rounded-xl shadow-lg flex items-center gap-1.5 cursor-pointer z-20 border border-[#8ee01a]/40"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Postular como Embajador</span>
                   </Button>
                 )}
               </div>
@@ -465,49 +519,62 @@ export function BusinessesScreen({ onNavigate }: BusinessesScreenProps) {
         />
       )}
 
-      {/* Modal Proponer Alianza Comercial B2B */}
-      {showB2BModal && selectedB2BStore && (
+      {/* Modal Directo de Postulación: B2B o Embajador con tienda preseleccionada */}
+      {showApplyModal && targetStore && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-card w-full max-w-md rounded-3xl p-6 border border-border shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <button
-              onClick={() => setShowB2BModal(false)}
+              onClick={() => setShowApplyModal(false)}
               className="absolute top-5 right-5 p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
 
             <div className="flex items-center gap-2.5 mb-2">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center border bg-amber-600/10 text-amber-700 dark:text-amber-400 border-amber-600/20">
-                <Building2 className="w-5 h-5" />
+              <div className={cn(
+                "w-10 h-10 rounded-xl flex items-center justify-center border",
+                invitationCategory === "ALIADO_B2B"
+                  ? "bg-[#91c44a]/20 text-[#105238] dark:text-[#8ee01a] border-[#91c44a]/30"
+                  : "bg-emerald-600/10 text-emerald-700 dark:text-emerald-400 border-emerald-600/20"
+              )}>
+                {invitationCategory === "ALIADO_B2B" ? (
+                  <Building2 className="w-5 h-5" />
+                ) : (
+                  <Sparkles className="w-5 h-5" />
+                )}
               </div>
               <div>
                 <h3 className="text-base font-bold text-foreground">
-                  Proponer Alianza Comercial B2B
+                  {invitationCategory === "ALIADO_B2B" ? "Proponer Alianza Comercial B2B" : "Postular como Embajador"}
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  Alianzas estratégicas entre negocios de la red PalenqueGo
+                  {invitationCategory === "ALIADO_B2B"
+                    ? "Alianzas estratégicas entre negocios de la red PalenqueGo"
+                    : "Promociona este comercio a tus grupos y gana comisiones"}
                 </p>
               </div>
             </div>
 
-            {b2bSuccess ? (
+            {proposalSuccess ? (
               <div className="py-6 text-center space-y-4">
                 <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto">
                   <CheckCircle2 className="w-8 h-8" />
                 </div>
                 <div className="space-y-1">
-                  <h4 className="font-bold text-foreground text-sm">¡Propuesta Enviada con Éxito!</h4>
+                  <h4 className="font-bold text-foreground text-sm">¡Solicitud Enviada con Éxito!</h4>
                   <p className="text-xs text-muted-foreground leading-relaxed px-4">
-                    {b2bSuccess}
+                    {proposalSuccess}
                   </p>
                 </div>
                 <Button
                   onClick={() => {
-                    setShowB2BModal(false)
-                    setB2BSuccess(null)
+                    setShowApplyModal(false)
+                    setProposalSuccess(null)
                     setIsB2BMode(false)
+                    setIsPromoterMode(false)
                     if (typeof window !== "undefined") {
                       sessionStorage.removeItem("palenque_b2b_mode")
+                      sessionStorage.removeItem("palenque_promoter_mode")
                     }
                   }}
                   className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-10 rounded-xl cursor-pointer"
@@ -516,27 +583,34 @@ export function BusinessesScreen({ onNavigate }: BusinessesScreenProps) {
                 </Button>
               </div>
             ) : (
-              <form onSubmit={handleSendB2BProposal} className="space-y-3.5 mt-4">
-                {b2bError && (
+              <form onSubmit={handleSendProposal} className="space-y-3.5 mt-4">
+                {proposalError && (
                   <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 text-xs font-semibold">
-                    {b2bError}
+                    {proposalError}
                   </div>
                 )}
 
                 <div>
                   <label className="block text-xs font-bold text-foreground mb-1">
-                    Negocio Aliado al que deseas vincularte
+                    {invitationCategory === "ALIADO_B2B"
+                      ? "Negocio Aliado al que deseas vincularte"
+                      : "Comercio que deseas promocionar"}
                   </label>
-                  <div className="p-3 bg-amber-500/10 border border-amber-500/25 rounded-2xl flex items-center gap-3">
+                  <div className={cn(
+                    "p-3 rounded-2xl flex items-center gap-3 border",
+                    invitationCategory === "ALIADO_B2B"
+                      ? "bg-[#eaf0e2] dark:bg-[#105238]/30 border-[#91c44a]/40"
+                      : "bg-muted/40 border-border"
+                  )}>
                     <Avatar className="h-11 w-11 rounded-xl border border-border shadow-xs shrink-0">
-                      <AvatarImage src={formatImageUrl(selectedB2BStore.logo)} alt={selectedB2BStore.name} className="object-cover" />
-                      <AvatarFallback className="font-bold text-xs bg-amber-600 text-white uppercase">
-                        {selectedB2BStore.name.substring(0, 2)}
+                      <AvatarImage src={formatImageUrl(targetStore.logo)} alt={targetStore.name} className="object-cover" />
+                      <AvatarFallback className="font-bold text-xs bg-emerald-700 text-white uppercase">
+                        {targetStore.name.substring(0, 2)}
                       </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 flex-1">
-                      <h4 className="text-sm font-bold text-foreground truncate">{selectedB2BStore.name}</h4>
-                      <p className="text-xs text-muted-foreground truncate">{selectedB2BStore.category} • {selectedB2BStore.location}</p>
+                      <h4 className="text-sm font-bold text-foreground truncate">{targetStore.name}</h4>
+                      <p className="text-xs text-muted-foreground truncate">{targetStore.category} • {targetStore.location}</p>
                     </div>
                   </div>
                 </div>
@@ -560,23 +634,29 @@ export function BusinessesScreen({ onNavigate }: BusinessesScreenProps) {
                   <input
                     type="tel"
                     required
-                    value={b2bPhone}
-                    onChange={(e) => setB2BPhone(e.target.value)}
+                    value={contactPhone}
+                    onChange={(e) => setContactPhone(e.target.value)}
                     placeholder="ej: +503 7000 0000"
-                    className="w-full px-3.5 py-2.5 bg-muted/50 border border-border rounded-xl text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    className="w-full px-3.5 py-2.5 bg-muted/50 border border-border rounded-xl text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-foreground mb-1">
-                    Propuesta de Alianza / Paquetes Combinados
+                    {invitationCategory === "ALIADO_B2B"
+                      ? "Propuesta de Alianza / Paquetes Combinados"
+                      : "Propuesta o Mensaje (Opcional)"}
                   </label>
                   <textarea
                     rows={3}
-                    value={b2bMessage}
-                    onChange={(e) => setB2BMessage(e.target.value)}
-                    placeholder="Ej: Somos Hotel El Tunco y nos gustaría ofrecer sus tours a nuestros huéspedes y publicar sus paquetes en nuestra recepción para comisionar mutuamente..."
-                    className="w-full px-3.5 py-2.5 bg-muted/50 border border-border rounded-xl text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
+                    value={proposalMessage}
+                    onChange={(e) => setProposalMessage(e.target.value)}
+                    placeholder={
+                      invitationCategory === "ALIADO_B2B"
+                        ? "Ej: Somos Hotel El Tunco y nos gustaría ofrecer sus tours a nuestros huéspedes y publicar sus paquetes en nuestra recepción para comisionar mutuamente..."
+                        : "Hola, organizo grupos y viajo frecuentemente con amigos. Me gustaría ser embajador y compartir sus servicios..."
+                    }
+                    className="w-full px-3.5 py-2.5 bg-muted/50 border border-border rounded-xl text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
                   />
                 </div>
 
@@ -584,22 +664,31 @@ export function BusinessesScreen({ onNavigate }: BusinessesScreenProps) {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setShowB2BModal(false)}
+                    onClick={() => setShowApplyModal(false)}
                     className="w-1/3 h-10 rounded-xl text-xs font-bold cursor-pointer"
                   >
                     Cancelar
                   </Button>
                   <Button
                     type="submit"
-                    disabled={b2bSubmitting}
-                    className="w-2/3 h-10 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-1.5 bg-amber-600 hover:bg-amber-700 cursor-pointer"
+                    disabled={submittingProposal}
+                    className={cn(
+                      "w-2/3 h-10 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-md",
+                      invitationCategory === "ALIADO_B2B"
+                        ? "bg-[#91c44a] hover:bg-[#82b43e] text-[#105238]"
+                        : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                    )}
                   >
-                    {b2bSubmitting ? (
+                    {submittingProposal ? (
                       <span>Enviando...</span>
                     ) : (
                       <>
-                        <Building2 className="w-3.5 h-3.5" />
-                        <span>Enviar Propuesta B2B</span>
+                        {invitationCategory === "ALIADO_B2B" ? (
+                          <Building2 className="w-3.5 h-3.5" />
+                        ) : (
+                          <Sparkles className="w-3.5 h-3.5" />
+                        )}
+                        <span>{invitationCategory === "ALIADO_B2B" ? "Enviar Propuesta B2B" : "Enviar Solicitud"}</span>
                       </>
                     )}
                   </Button>
@@ -609,6 +698,6 @@ export function BusinessesScreen({ onNavigate }: BusinessesScreenProps) {
           </div>
         </div>
       )}
-    </div>
+</div>
   )
 }

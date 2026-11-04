@@ -34,6 +34,7 @@ import {
 } from "lucide-react"
 import QRCode from "react-qr-code"
 import { Button } from "@/components/ui/button"
+import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 import { useAppStore, type Booking } from "@/lib/store"
 import { cn } from "@/lib/utils"
@@ -44,6 +45,7 @@ interface ProfileScreenProps {
 }
 
 export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: ProfileScreenProps) {
+  const { toast } = useToast()
   const { currentUser, logout, bookings, pools, userFavorites, recommendations, payServiceWompi, accessToken, userIntentions, setUserIntentions, setMobileMenuOpen, businesses, fetchBusinesses } = useAppStore()
   const [selectedQrBooking, setSelectedQrBooking] = useState<Booking | null>(null)
   const [payingWompiId, setPayingWompiId] = useState<number | null>(null)
@@ -130,7 +132,11 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
     if (url) {
       window.location.href = url
     } else {
-      alert("No se pudo iniciar la pasarela Wompi en este momento. Puedes coordinar directamente por WhatsApp con el aliado.")
+      toast({
+        title: "Aviso de Pago",
+        description: "No se pudo iniciar la pasarela Wompi en este momento. Puedes coordinar directamente por WhatsApp con el aliado.",
+        variant: "destructive",
+      })
     }
   }
 
@@ -518,15 +524,16 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
                 <Button
                   size="sm"
                   onClick={() => {
-                    setPromoterCategory("PROMOTOR")
-                    setPromoterSuccess(null)
-                    setPromoterError(null)
-                    setShowPromoterModal(true)
+                    if (typeof window !== "undefined") {
+                      sessionStorage.setItem("palenque_promoter_mode", "true")
+                      sessionStorage.removeItem("palenque_b2b_mode")
+                    }
+                    onNavigateToSettings?.("businesses")
                   }}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold h-8 px-3.5 rounded-lg shrink-0 w-full sm:w-auto flex items-center gap-1.5"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold h-8 px-3.5 rounded-lg shrink-0 w-full sm:w-auto flex items-center gap-1.5 cursor-pointer shadow-xs"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>Quiero ser Promotor</span>
+                  <span>Elegir Comercio a Promocionar →</span>
                 </Button>
               )}
             </div>
@@ -580,9 +587,9 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
 
           {/* Oportunidad de Alianza Comercial B2B para Negocios */}
           {userIntentions?.isBusinessOwner && (
-            <div className="mt-2.5 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/5 border border-amber-500/30 rounded-xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="mt-2.5 bg-[#eaf0e2]/80 dark:bg-[#105238]/20 border border-[#91c44a]/40 rounded-2xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex items-start sm:items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-lg bg-amber-600/10 text-amber-700 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-600/20">
+                <div className="w-9 h-9 rounded-lg bg-[#91c44a]/20 text-[#105238] dark:text-[#8ee01a] flex items-center justify-center shrink-0 border border-[#91c44a]/30">
                   <Building2 className="w-5 h-5" />
                 </div>
                 <div className="flex flex-col">
@@ -598,7 +605,11 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
                 size="sm"
                 onClick={() => {
                   if (currentUser?.tipo !== "ALIADO" && !(currentUser as any)?.is_aliado) {
-                    alert("Esta función requiere tener una tienda o comercio registrado en PalenqueGo.")
+                    toast({
+                      title: "Tienda Requerida",
+                      description: "Para proponer alianzas B2B primero activa tu tienda en PalenqueGo.",
+                      variant: "destructive",
+                    })
                     onNavigateToSettings?.("planes")
                     return
                   }
@@ -607,7 +618,7 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
                   }
                   onNavigateToSettings?.("businesses")
                 }}
-                className="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold h-8 px-3.5 rounded-lg shrink-0 w-full sm:w-auto flex items-center gap-1.5 cursor-pointer"
+                className="bg-[#91c44a] hover:bg-[#82b43e] text-[#105238] text-xs font-bold h-8 px-3.5 rounded-xl shrink-0 w-full sm:w-auto flex items-center gap-1.5 cursor-pointer shadow-xs"
               >
                 <Building2 className="w-3.5 h-3.5" />
                 <span>Elegir Socio en Comercios →</span>
@@ -866,7 +877,7 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
               <div className={cn(
                 "w-10 h-10 rounded-xl flex items-center justify-center border",
                 promoterCategory === "ALIADO_B2B"
-                  ? "bg-amber-600/10 text-amber-700 dark:text-amber-400 border-amber-600/20"
+                  ? "bg-[#91c44a]/20 text-[#105238] dark:text-[#8ee01a] border-[#91c44a]/30"
                   : "bg-emerald-600/10 text-emerald-600 border-emerald-600/20"
               )}>
                 {promoterCategory === "ALIADO_B2B" ? (
@@ -1001,7 +1012,7 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
                     className={cn(
                       "w-2/3 h-10 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-1.5",
                       promoterCategory === "ALIADO_B2B"
-                        ? "bg-amber-600 hover:bg-amber-700"
+                        ? "bg-[#91c44a] hover:bg-[#82b43e] text-[#105238]"
                         : "bg-emerald-600 hover:bg-emerald-700"
                     )}
                   >

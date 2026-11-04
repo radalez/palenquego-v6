@@ -31,6 +31,7 @@ export const viewport: Viewport = {
 
 import { GoogleProvider } from "@/components/GoogleProvider"
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister"
+import { Toaster } from "@/components/ui/toaster"
 
 export default function RootLayout({
   children,
@@ -43,6 +44,7 @@ export default function RootLayout({
         <GoogleProvider>
           <ServiceWorkerRegister />
           {children}
+          <Toaster />
         </GoogleProvider>
       </body>
     </html>
