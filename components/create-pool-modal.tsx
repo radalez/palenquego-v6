@@ -1,8 +1,9 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { X, Users, Calendar, Clock, ChevronRight, Check, Share2, Copy, Sparkles, MapPin } from "lucide-react"
+import { X, Users, Calendar, Clock, ChevronRight, Check, Share2, Copy, Sparkles, MapPin, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { cn, formatImageUrl, getRouteImageUrl, handleImageFallback } from "@/lib/utils"
 import { useAppStore, type Service, type Pool } from "@/lib/store"
 
@@ -50,6 +51,7 @@ export function CreatePoolModal({ service: initialService, onClose, onSuccess }:
 
   const { services, createPool, currentUser, lastMapCategory, lastMapSuperCategory, routes } = useAppStore()
   const [selectedCategoryTab, setSelectedCategoryTab] = useState<string>("SUGGESTED")
+  const [searchQuery, setSearchQuery] = useState("")
 
   // Integrar servicios y tours/rutas que permiten pool
   const routePoolables: Service[] = useMemo(() => {
@@ -84,14 +86,28 @@ export function CreatePoolModal({ service: initialService, onClose, onSuccess }:
     return Array.from(setCats)
   }, [poolableServices])
 
-  // Filtrado dinámico según la categoría interactuada en el mapa
+  // Filtrado dinámico según la categoría interactuada en el mapa y buscador
   const filteredServices = useMemo(() => {
-    if (selectedCategoryTab === "ALL") return poolableServices
+    let list = poolableServices
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim()
+      return list.filter((s) => {
+        const name = (s.name || "").toLowerCase()
+        const cat = (s.category || "").toLowerCase()
+        const loc = (s.location || "").toLowerCase()
+        const desc = (s.description || "").toLowerCase()
+        const tienda = ((s as any).tienda?.nombre_comercial || (s as any).storeName || "").toLowerCase()
+        return name.includes(q) || cat.includes(q) || loc.includes(q) || desc.includes(q) || tienda.includes(q)
+      })
+    }
+
+    if (selectedCategoryTab === "ALL") return list
 
     if (selectedCategoryTab === "SUGGESTED" && (lastMapCategory || lastMapSuperCategory)) {
       const target = (lastMapCategory || "").toLowerCase()
       const superTarget = (lastMapSuperCategory || "").toLowerCase()
-      const matched = poolableServices.filter((s) => {
+      const matched = list.filter((s) => {
         const cat = (s.category || "").toLowerCase()
         const name = (s.name || "").toLowerCase()
         const loc = (s.location || "").toLowerCase()
@@ -104,11 +120,11 @@ export function CreatePoolModal({ service: initialService, onClose, onSuccess }:
     }
 
     if (selectedCategoryTab !== "ALL" && selectedCategoryTab !== "SUGGESTED") {
-      return poolableServices.filter((s) => s.category === selectedCategoryTab)
+      return list.filter((s) => s.category === selectedCategoryTab)
     }
 
-    return poolableServices
-  }, [poolableServices, selectedCategoryTab, lastMapCategory, lastMapSuperCategory])
+    return list
+  }, [poolableServices, selectedCategoryTab, lastMapCategory, lastMapSuperCategory, searchQuery])
 
   // Busca handleCreatePool en create-pool-modal.tsx
   const handleCreatePool = async () => {
@@ -155,6 +171,27 @@ export function CreatePoolModal({ service: initialService, onClose, onSuccess }:
             <p className="text-muted-foreground text-xs leading-relaxed">
               Selecciona una experiencia o ruta para iniciar tu grupo de ahorro compartido (gana 7% de comisión como líder).
             </p>
+
+            {/* Buscador Rápido de Servicios */}
+            <div className="relative">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+              <Input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Buscar por nombre, traslado o tour..."
+                className="pl-9 pr-9 h-11 rounded-xl bg-muted/40 border-border text-xs sm:text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
 
             {/* Banner Dinámico de Interacción en el Mapa */}
             {lastMapCategory && (
@@ -224,14 +261,17 @@ export function CreatePoolModal({ service: initialService, onClose, onSuccess }:
             <div className="space-y-2.5">
               {filteredServices.length === 0 ? (
                 <div className="p-6 text-center text-muted-foreground text-xs space-y-2">
-                  <p>No hay servicios disponibles en esta categoría.</p>
+                  <p>{searchQuery ? `No se encontraron servicios que coincidan con "${searchQuery}".` : "No hay servicios disponibles en esta categoría."}</p>
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => setSelectedCategoryTab("ALL")}
+                    onClick={() => {
+                      setSearchQuery("")
+                      setSelectedCategoryTab("ALL")
+                    }}
                     className="rounded-xl"
                   >
-                    Mostrar todos los servicios
+                    {searchQuery ? "Limpiar búsqueda" : "Mostrar todos los servicios"}
                   </Button>
                 </div>
               ) : (
