@@ -597,15 +597,20 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
               <Button
                 size="sm"
                 onClick={() => {
-                  setPromoterCategory("ALIADO_B2B")
-                  setPromoterSuccess(null)
-                  setPromoterError(null)
-                  setShowPromoterModal(true)
+                  if (currentUser?.tipo !== "ALIADO" && !(currentUser as any)?.is_aliado) {
+                    alert("Esta función requiere tener una tienda o comercio registrado en PalenqueGo.")
+                    onNavigateToSettings?.("planes")
+                    return
+                  }
+                  if (typeof window !== "undefined") {
+                    sessionStorage.setItem("palenque_b2b_mode", "true")
+                  }
+                  onNavigateToSettings?.("businesses")
                 }}
-                className="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold h-8 px-3.5 rounded-lg shrink-0 w-full sm:w-auto flex items-center gap-1.5"
+                className="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold h-8 px-3.5 rounded-lg shrink-0 w-full sm:w-auto flex items-center gap-1.5 cursor-pointer"
               >
                 <Building2 className="w-3.5 h-3.5" />
-                <span>Proponer Alianza B2B</span>
+                <span>Elegir Socio en Comercios →</span>
               </Button>
             </div>
           )}

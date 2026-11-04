@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import {
   Search,
@@ -18,6 +18,9 @@ import {
   Phone,
   Share2,
   ExternalLink,
+  Building2,
+  CheckCircle2,
+  X,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -69,7 +72,88 @@ export function BusinessesScreen({ onNavigate }: BusinessesScreenProps) {
     searchQuery: "",
   })
 
-  const { businesses } = useAppStore()
+  const { businesses, currentUser, accessToken } = useAppStore()
+
+  const [isB2BMode, setIsB2BMode] = useState(false)
+  const [selectedB2BStore, setSelectedB2BStore] = useState<Business | null>(null)
+  const [showB2BModal, setShowB2BModal] = useState(false)
+  const [b2bPhone, setB2BPhone] = useState(currentUser?.telefono || "")
+  const [b2bMessage, setB2BMessage] = useState("")
+  const [b2bSubmitting, setB2BSubmitting] = useState(false)
+  const [b2bSuccess, setB2BSuccess] = useState<string | null>(null)
+  const [b2bError, setB2BError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const b2bActive = sessionStorage.getItem("palenque_b2b_mode") === "true"
+      const isAliado = currentUser?.tipo === "ALIADO" || Boolean((currentUser as any)?.is_aliado)
+      if (b2bActive && isAliado) {
+        setIsB2BMode(true)
+      } else {
+        setIsB2BMode(false)
+      }
+    }
+  }, [currentUser])
+
+  useEffect(() => {
+    return () => {
+      // Si el usuario sale a otra pantalla, se desactiva el modo socio comercial
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem("palenque_b2b_mode")
+      }
+    }
+  }, [])
+
+  const handleNav = (tab: string) => {
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem("palenque_b2b_mode")
+    }
+    onNavigate?.(tab)
+  }
+
+  const handleSendB2BProposal = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedB2BStore) return
+    if (!b2bPhone.trim()) {
+      setB2BError("Por favor ingresa un teléfono o WhatsApp de contacto.")
+      return
+    }
+
+    setB2BSubmitting(true)
+    setB2BError(null)
+
+    try {
+      const token = accessToken || useAppStore.getState().accessToken
+      const res = await fetch("/api-proxy/marketing/solicitar-promotor/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          tienda_id: selectedB2BStore.id,
+          telefono_whatsapp: b2bPhone.trim(),
+          mensaje: b2bMessage.trim(),
+          categoria: "ALIADO_B2B",
+          es_lider_pool: false,
+        }),
+      })
+
+      const data = await res.json()
+      if (res.ok) {
+        setB2BSuccess(data.message || `¡Propuesta enviada con éxito a ${selectedB2BStore.name}!`)
+        if (typeof window !== "undefined") {
+          sessionStorage.removeItem("palenque_b2b_mode")
+        }
+      } else {
+        setB2BError(data.error || data.detail || "No fue posible enviar la propuesta.")
+      }
+    } catch (err) {
+      setB2BError("Error de conexión al enviar la propuesta.")
+    } finally {
+      setB2BSubmitting(false)
+    }
+  }
 
   const filteredBusinesses = businesses.filter((business) => {
     // Category filter
@@ -118,7 +202,7 @@ export function BusinessesScreen({ onNavigate }: BusinessesScreenProps) {
 
   return (
     <div className="flex flex-col">
-      <HeaderWithMenu title="Servicios" onNavigate={onNavigate} />
+      <HeaderWithMenu title="Servicios" onNavigate={handleNav} />
       <div className="flex justify-between items-center px-4 py-4">
         <div className="w-10 h-10 rounded-full bg-primary-foreground/20 flex items-center justify-center">
           <span className="text-primary-foreground font-semibold">JD</span>
@@ -141,6 +225,34 @@ export function BusinessesScreen({ onNavigate }: BusinessesScreenProps) {
           </Button>
         </div>
       </div>
+
+      {/* Banner de Modo Socio B2B */}
+      {isB2BMode && (
+        <div className="mx-4 mb-2 bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-amber-600/20 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0">
+              <Building2 className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-amber-950 dark:text-amber-200">Modo Selección de Alianza B2B Activo</p>
+              <p className="text-[11px] text-amber-900/80 dark:text-amber-300/80 truncate">
+                Busca y pulsa "Elegir como socio comercial" sobre la tienda deseada.
+              </p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              sessionStorage.removeItem("palenque_b2b_mode")
+              setIsB2BMode(false)
+            }}
+            className="text-amber-900 dark:text-amber-200 hover:bg-amber-500/20 text-xs h-7 px-2.5 rounded-lg shrink-0 cursor-pointer"
+          >
+            Salir
+          </Button>
+        </div>
+      )}
 
       {/* Categories */}
       <div className="px-4 py-4">
@@ -211,6 +323,26 @@ export function BusinessesScreen({ onNavigate }: BusinessesScreenProps) {
                 <Badge className="absolute top-3 left-3 bg-primary text-primary-foreground">
                   {business.category}
                 </Badge>
+
+                {/* Botón sobre la imagen: Solo visible en Modo B2B para Aliados */}
+                {isB2BMode && (currentUser?.tipo === "ALIADO" || Boolean((currentUser as any)?.is_aliado)) && (
+                  <Button
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setSelectedB2BStore(business)
+                      setB2BPhone(currentUser?.telefono || "")
+                      setB2BMessage("")
+                      setB2BSuccess(null)
+                      setB2BError(null)
+                      setShowB2BModal(true)
+                    }}
+                    className="absolute bottom-2.5 right-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs h-8 px-3 rounded-lg shadow-lg flex items-center gap-1.5 cursor-pointer z-20 border border-amber-400/40"
+                  >
+                    <Building2 className="w-3.5 h-3.5" />
+                    <span>Elegir como socio comercial</span>
+                  </Button>
+                )}
               </div>
 
               {/* Content */}
