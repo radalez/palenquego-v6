@@ -464,6 +464,151 @@ export function BusinessesScreen({ onNavigate }: BusinessesScreenProps) {
           maxPrice={500}
         />
       )}
+
+      {/* Modal Proponer Alianza Comercial B2B */}
+      {showB2BModal && selectedB2BStore && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-card w-full max-w-md rounded-3xl p-6 border border-border shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setShowB2BModal(false)}
+              className="absolute top-5 right-5 p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-2.5 mb-2">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center border bg-amber-600/10 text-amber-700 dark:text-amber-400 border-amber-600/20">
+                <Building2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-foreground">
+                  Proponer Alianza Comercial B2B
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Alianzas estratégicas entre negocios de la red PalenqueGo
+                </p>
+              </div>
+            </div>
+
+            {b2bSuccess ? (
+              <div className="py-6 text-center space-y-4">
+                <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="font-bold text-foreground text-sm">¡Propuesta Enviada con Éxito!</h4>
+                  <p className="text-xs text-muted-foreground leading-relaxed px-4">
+                    {b2bSuccess}
+                  </p>
+                </div>
+                <Button
+                  onClick={() => {
+                    setShowB2BModal(false)
+                    setB2BSuccess(null)
+                    setIsB2BMode(false)
+                    if (typeof window !== "undefined") {
+                      sessionStorage.removeItem("palenque_b2b_mode")
+                    }
+                  }}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-10 rounded-xl cursor-pointer"
+                >
+                  Entendido
+                </Button>
+              </div>
+            ) : (
+              <form onSubmit={handleSendB2BProposal} className="space-y-3.5 mt-4">
+                {b2bError && (
+                  <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 text-xs font-semibold">
+                    {b2bError}
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-1">
+                    Negocio Aliado al que deseas vincularte
+                  </label>
+                  <div className="p-3 bg-amber-500/10 border border-amber-500/25 rounded-2xl flex items-center gap-3">
+                    <Avatar className="h-11 w-11 rounded-xl border border-border shadow-xs shrink-0">
+                      <AvatarImage src={formatImageUrl(selectedB2BStore.logo)} alt={selectedB2BStore.name} className="object-cover" />
+                      <AvatarFallback className="font-bold text-xs bg-amber-600 text-white uppercase">
+                        {selectedB2BStore.name.substring(0, 2)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-sm font-bold text-foreground truncate">{selectedB2BStore.name}</h4>
+                      <p className="text-xs text-muted-foreground truncate">{selectedB2BStore.category} • {selectedB2BStore.location}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-1">
+                    Tu Correo Electrónico
+                  </label>
+                  <input
+                    type="email"
+                    readOnly
+                    value={currentUser?.email || ""}
+                    className="w-full px-3.5 py-2.5 bg-muted/30 border border-border/60 rounded-xl text-xs text-muted-foreground cursor-not-allowed"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-1">
+                    Teléfono / WhatsApp de Contacto *
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    value={b2bPhone}
+                    onChange={(e) => setB2BPhone(e.target.value)}
+                    placeholder="ej: +503 7000 0000"
+                    className="w-full px-3.5 py-2.5 bg-muted/50 border border-border rounded-xl text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-1">
+                    Propuesta de Alianza / Paquetes Combinados
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={b2bMessage}
+                    onChange={(e) => setB2BMessage(e.target.value)}
+                    placeholder="Ej: Somos Hotel El Tunco y nos gustaría ofrecer sus tours a nuestros huéspedes y publicar sus paquetes en nuestra recepción para comisionar mutuamente..."
+                    className="w-full px-3.5 py-2.5 bg-muted/50 border border-border rounded-xl text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
+                  />
+                </div>
+
+                <div className="pt-2 flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowB2BModal(false)}
+                    className="w-1/3 h-10 rounded-xl text-xs font-bold cursor-pointer"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={b2bSubmitting}
+                    className="w-2/3 h-10 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-1.5 bg-amber-600 hover:bg-amber-700 cursor-pointer"
+                  >
+                    {b2bSubmitting ? (
+                      <span>Enviando...</span>
+                    ) : (
+                      <>
+                        <Building2 className="w-3.5 h-3.5" />
+                        <span>Enviar Propuesta B2B</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
