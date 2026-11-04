@@ -577,6 +577,38 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
               </div>
             </div>
           )}
+
+          {/* Oportunidad de Alianza Comercial B2B para Negocios */}
+          {userIntentions?.isBusinessOwner && (
+            <div className="mt-2.5 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/5 border border-amber-500/30 rounded-xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-start sm:items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-lg bg-amber-600/10 text-amber-700 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-600/20">
+                  <Building2 className="w-5 h-5" />
+                </div>
+                <div className="flex flex-col">
+                  <h4 className="text-xs font-bold text-foreground">
+                    ¿Te gustaría colaborar con otros negocios como Aliado Comercial?
+                  </h4>
+                  <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
+                    Forma alianzas estratégicas B2B con hoteles, agencias de tours y transporte de la red para ofrecer servicios combinados.
+                  </p>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => {
+                  setPromoterCategory("ALIADO_B2B")
+                  setPromoterSuccess(null)
+                  setPromoterError(null)
+                  setShowPromoterModal(true)
+                }}
+                className="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold h-8 px-3.5 rounded-lg shrink-0 w-full sm:w-auto flex items-center gap-1.5"
+              >
+                <Building2 className="w-3.5 h-3.5" />
+                <span>Proponer Alianza B2B</span>
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
