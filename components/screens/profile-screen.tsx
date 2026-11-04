@@ -382,7 +382,7 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
             <button
               type="button"
               onClick={() => setUserIntentions({ isTraveler: !userIntentions?.isTraveler })}
-              className={`p-2.5 rounded-xl border text-left transition-all flex flex-col gap-1.5 ${
+              className={`p-2.5 rounded-xl border text-left transition-all flex flex-col gap-1.5 cursor-pointer ${
                 userIntentions?.isTraveler
                   ? "bg-emerald-500/10 border-emerald-500 text-emerald-900 dark:text-emerald-300"
                   : "bg-muted/40 border-border text-muted-foreground hover:bg-muted"
@@ -400,7 +400,7 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
             <button
               type="button"
               onClick={() => setUserIntentions({ wantsToLeadPools: !userIntentions?.wantsToLeadPools })}
-              className={`p-2.5 rounded-xl border text-left transition-all flex flex-col gap-1.5 ${
+              className={`p-2.5 rounded-xl border text-left transition-all flex flex-col gap-1.5 cursor-pointer ${
                 userIntentions?.wantsToLeadPools
                   ? "bg-emerald-500/10 border-emerald-500 text-emerald-900 dark:text-emerald-300"
                   : "bg-muted/40 border-border text-muted-foreground hover:bg-muted"
@@ -418,7 +418,7 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
             <button
               type="button"
               onClick={() => setUserIntentions({ wantsToDrive: !userIntentions?.wantsToDrive })}
-              className={`p-2.5 rounded-xl border text-left transition-all flex flex-col gap-1.5 ${
+              className={`p-2.5 rounded-xl border text-left transition-all flex flex-col gap-1.5 cursor-pointer ${
                 userIntentions?.wantsToDrive
                   ? "bg-emerald-500/10 border-emerald-500 text-emerald-900 dark:text-emerald-300"
                   : "bg-muted/40 border-border text-muted-foreground hover:bg-muted"
@@ -436,7 +436,7 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
             <button
               type="button"
               onClick={() => setUserIntentions({ isBusinessOwner: !userIntentions?.isBusinessOwner })}
-              className={`p-2.5 rounded-xl border text-left transition-all flex flex-col gap-1.5 ${
+              className={`p-2.5 rounded-xl border text-left transition-all flex flex-col gap-1.5 cursor-pointer ${
                 userIntentions?.isBusinessOwner
                   ? "bg-emerald-500/10 border-emerald-500 text-emerald-900 dark:text-emerald-300"
                   : "bg-muted/40 border-border text-muted-foreground hover:bg-muted"
