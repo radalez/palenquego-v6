@@ -128,7 +128,14 @@ export function DriverScreen({ onNavigate }: DriverScreenProps) {
               <p className="text-xs text-muted-foreground">Tu vehículo</p>
               <p className="font-bold">{myUnit?.name ?? "Buscando vehículo…"}</p>
               {myUnit?.license_plate && (
-                <p className="text-xs text-muted-foreground font-mono">{myUnit.license_plate}</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-xs text-muted-foreground font-mono">{myUnit.license_plate}</span>
+                  {(myUnit.capacity || myRoute?.unit_capacity) && (
+                    <span className="text-[11px] font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-md">
+                      Capacidad: {myUnit.capacity || myRoute?.unit_capacity} pasajeros
+                    </span>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -441,7 +448,7 @@ export function DriverScreen({ onNavigate }: DriverScreenProps) {
                 <h3 className="font-bold">Control de Pasajeros</h3>
               </div>
               <div className="bg-primary-foreground/20 text-primary-foreground px-3 py-1 rounded-full text-xs font-bold">
-                Plazas Disponibles: {myUnit?.capacity || 20}
+                Plazas Disponibles: {Math.max(0, (myUnit?.capacity ?? myRoute?.unit_capacity ?? 10) - (myRoute.stops?.reduce((sum: number, s: any) => sum + (s.boarding_count || 0), 0) ?? 0))} / {myUnit?.capacity ?? myRoute?.unit_capacity ?? 10}
               </div>
             </div>
             
