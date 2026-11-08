@@ -344,6 +344,9 @@ interface AppState {
     is_ambassador?: boolean;
     kyc_status?: string;
     plan?: string;
+    es_aliado?: boolean;
+    es_chofer?: boolean;
+    es_viajero?: boolean;
   }
   accessToken: string | null
   refreshToken: string | null
@@ -608,7 +611,18 @@ export const useAppStore = create<AppState>()(
       hasCompletedOnboarding: false,
       hasChosenIntentions: false,
       userPlan: "FREE",
-      userIntentions: {
+      userIntentions: typeof window !== "undefined" ? (() => {
+        try {
+          const saved = localStorage.getItem("palenque_user_intentions")
+          if (saved) return JSON.parse(saved)
+        } catch (e) {}
+        return {
+          isTraveler: true,
+          wantsToLeadPools: false,
+          wantsToDrive: false,
+          isBusinessOwner: false,
+        }
+      })() : {
         isTraveler: true,
         wantsToLeadPools: false,
         wantsToDrive: false,
@@ -799,8 +813,33 @@ export const useAppStore = create<AppState>()(
             const prevUser = get().currentUser;
             const isDifferentUser = Boolean(prevUser?.id && Number(prevUser.id) !== Number(data.id));
 
+            const isAliado = Boolean(data.es_aliado || data.tipo === 'ALIADO' || data.plan);
+            const isChofer = Boolean(data.es_chofer || data.tipo === 'CHOFER');
+
+            let baseIntentions = get().userIntentions;
+            if (typeof window !== "undefined") {
+              try {
+                const saved = localStorage.getItem("palenque_user_intentions");
+                if (saved) baseIntentions = { ...baseIntentions, ...JSON.parse(saved) };
+              } catch (e) {}
+            }
+
+            const updatedIntentions = {
+              ...baseIntentions,
+              isTraveler: baseIntentions.isTraveler !== undefined ? baseIntentions.isTraveler : true,
+              isBusinessOwner: isAliado ? true : Boolean(baseIntentions.isBusinessOwner),
+              wantsToDrive: isChofer ? true : Boolean(baseIntentions.wantsToDrive),
+            };
+
+            if (typeof window !== "undefined") {
+              try {
+                localStorage.setItem("palenque_user_intentions", JSON.stringify(updatedIntentions));
+              } catch (e) {}
+            }
+
             set(state => ({
               isAuthenticated: true,
+              userIntentions: updatedIntentions,
               currentUser: {
                 ...state.currentUser,
                 id: data.id || state.currentUser?.id,
@@ -811,6 +850,9 @@ export const useAppStore = create<AppState>()(
                 avatar: data.avatar || state.currentUser?.avatar,
                 is_ambassador: Boolean(data.is_ambassador),
                 tipo: data.tipo || 'VIAJERO',
+                es_aliado: isAliado,
+                es_chofer: isChofer,
+                es_viajero: true,
                 plan: data.plan || undefined,
               },
               userPlan: (data.plan || "Plan Gratis") as any,
@@ -1141,13 +1183,21 @@ export const useAppStore = create<AppState>()(
       completeOnboarding: () => set({ hasCompletedOnboarding: true }),
       setHasChosenIntentions: (chosen: boolean) => set({ hasChosenIntentions: chosen }),
       setUserIntentions: (newIntentions) =>
-        set((state) => ({
-          hasChosenIntentions: true,
-          userIntentions: {
+        set((state) => {
+          const updated = {
             ...state.userIntentions,
             ...newIntentions,
-          },
-        })),
+          };
+          if (typeof window !== "undefined") {
+            try {
+              localStorage.setItem("palenque_user_intentions", JSON.stringify(updated));
+            } catch (e) {}
+          }
+          return {
+            hasChosenIntentions: true,
+            userIntentions: updated,
+          };
+        }),
       registerRouteInterest: async (routeId: number) => {
         const state = get();
         if (!state.registeredRouteInterests.includes(routeId)) {

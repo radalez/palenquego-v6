@@ -224,7 +224,24 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
               <div className="flex-1">
                 <h2 className="text-lg font-semibold text-foreground">{currentUser.name}</h2>
                 <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                  <p className="text-sm text-muted-foreground">{currentUser.tipo}</p>
+                  {(currentUser.tipo === "ALIADO" || currentUser.es_aliado) && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                      <Building2 className="w-3 h-3" />
+                      <span>Aliado Comercial{currentUser.plan ? ` • ${currentUser.plan}` : ''}</span>
+                    </span>
+                  )}
+                  {(currentUser.tipo === "CHOFER" || currentUser.es_chofer) && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                      <Car className="w-3 h-3" />
+                      <span>Conductor Oficial</span>
+                    </span>
+                  )}
+                  {userIntentions?.isTraveler && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                      <Palmtree className="w-3 h-3" />
+                      <span>Viajero</span>
+                    </span>
+                  )}
                   {currentUser.is_ambassador && (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
                       <Sparkles className="w-3 h-3" />
@@ -435,7 +452,9 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
                 {userIntentions?.wantsToDrive && <Check className="w-3.5 h-3.5 text-emerald-600" />}
               </div>
               <span className="text-xs font-bold leading-tight">Conductor</span>
-              <span className="text-[10px] opacity-80 leading-none">Tengo vehículo</span>
+              <span className="text-[10px] opacity-80 leading-none">
+                {(currentUser.tipo === "CHOFER" || currentUser.es_chofer) ? "Conductor Oficial" : "Tengo vehículo"}
+              </span>
             </button>
 
             {/* Negocio */}
@@ -453,7 +472,9 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
                 {userIntentions?.isBusinessOwner && <Check className="w-3.5 h-3.5 text-emerald-600" />}
               </div>
               <span className="text-xs font-bold leading-tight">Negocio</span>
-              <span className="text-[10px] opacity-80 leading-none">Transporte / Hotel</span>
+              <span className="text-[10px] opacity-80 leading-none">
+                {(currentUser.tipo === "ALIADO" || currentUser.es_aliado) ? "Aliado Activo" : "Transporte / Hotel"}
+              </span>
             </button>
           </div>
 
