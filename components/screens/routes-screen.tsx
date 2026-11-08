@@ -58,7 +58,7 @@ interface RoutesScreenProps {
 }
 
 export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
-  const { routes, services, fetchRoutes, isLoading, routeSearchQuery, setRouteSearchQuery, returnToMapRoute, setReturnToMapRoute, myUserRoutes, fetchMyUserRoutes } = useAppStore() 
+  const { routes, services, fetchRoutes, isLoading, routeSearchQuery, setRouteSearchQuery, returnToMapRoute, setReturnToMapRoute, myUserRoutes, fetchMyUserRoutes, activeTrackingRouteId, setActiveTrackingRouteId } = useAppStore() 
   const [tracking, setTracking] = useState<RouteTrackingState | null>(null)
   const [serviceView, setServiceView] = useState<ServiceViewState | null>(null)
   const [ticketPurchase, setTicketPurchase] = useState<TicketPurchaseState | null>(null)
@@ -111,6 +111,13 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
       clearInterval(gpsInterval);
     };
   }, [fetchRoutes]);
+
+  useEffect(() => {
+    if (activeTrackingRouteId) {
+      setTracking({ routeId: activeTrackingRouteId, showTracking: true, currentStop: 1 });
+      setActiveTrackingRouteId(null);
+    }
+  }, [activeTrackingRouteId, setActiveTrackingRouteId]);
 
 
   const handleStartTracking = (route: Route) => {

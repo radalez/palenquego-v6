@@ -40,6 +40,15 @@ export function DriverScreen({ onNavigate }: DriverScreenProps) {
     setTimeout(() => setToastMsg(null), 3800)
   }
 
+  const handleViewLiveRoute = (route: any) => {
+    if (!route) return
+    useAppStore.getState().setActiveTrackingRouteId(route.id)
+    useAppStore.getState().setRouteSearchQuery(route.name)
+    if (onNavigate) {
+      onNavigate('rutas-classic')
+    }
+  }
+
   // Cargamos las rutas y buscamos la unidad del chofer al montar
   useEffect(() => {
     fetchRoutes()
@@ -140,10 +149,23 @@ export function DriverScreen({ onNavigate }: DriverScreenProps) {
             </div>
           </div>
           {myRoute && (
-            <div className="bg-muted rounded-xl p-3 text-sm space-y-1">
-              <p className="text-xs text-muted-foreground">Ruta asignada</p>
-              <p className="font-semibold">{myRoute.name}</p>
-              <p className="text-xs text-muted-foreground">{myRoute.stops.length} paradas</p>
+            <div className="bg-muted rounded-xl p-3 text-sm space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-xs text-muted-foreground">Ruta asignada</p>
+                  <p className="font-semibold text-foreground">{myRoute.name}</p>
+                  <p className="text-xs text-muted-foreground">{myRoute.stops?.length || 0} paradas</p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleViewLiveRoute(myRoute)}
+                  className="bg-primary/10 hover:bg-primary/20 text-primary border-primary/30 text-xs font-semibold gap-1.5 h-8 shrink-0"
+                >
+                  <MapPin className="w-3.5 h-3.5" />
+                  Ver Ruta y GPS en Vivo
+                </Button>
+              </div>
             </div>
           )}
           {unitError && !myUnit && (
@@ -442,14 +464,47 @@ export function DriverScreen({ onNavigate }: DriverScreenProps) {
         {/* Panel Anti-Fraude (Control de Pasajeros) */}
         {myRoute && (
           <div className="bg-card border border-border rounded-2xl overflow-hidden mt-4 shadow-sm">
-            <div className="bg-primary px-4 py-3 border-b border-primary/20 flex justify-between items-center">
+            <div className="bg-primary px-4 py-3 border-b border-primary/20 flex flex-wrap justify-between items-center gap-2">
               <div className="flex items-center gap-2 text-primary-foreground">
                 <Users className="w-5 h-5" />
                 <h3 className="font-bold">Control de Pasajeros</h3>
               </div>
-              <div className="bg-primary-foreground/20 text-primary-foreground px-3 py-1 rounded-full text-xs font-bold">
-                Plazas Disponibles: {Math.max(0, (myUnit?.capacity ?? myRoute?.unit_capacity ?? 10) - (myRoute.stops?.reduce((sum: number, s: any) => sum + (s.boarding_count || 0), 0) ?? 0))} / {myUnit?.capacity ?? myRoute?.unit_capacity ?? 10}
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="bg-primary-foreground/20 text-primary-foreground px-3 py-1 rounded-full text-xs font-bold">
+                  Plazas Disponibles: {Math.max(0, (myUnit?.capacity ?? myRoute?.unit_capacity ?? 10) - (myRoute.stops?.reduce((sum: number, s: any) => sum + (s.boarding_count || 0), 0) ?? 0))} / {myUnit?.capacity ?? myRoute?.unit_capacity ?? 10}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleViewLiveRoute(myRoute)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-white hover:bg-gray-100 text-primary rounded-full text-xs font-bold shadow-xs transition-colors cursor-pointer"
+                >
+                  <MapPin className="w-3.5 h-3.5" />
+                  Ver Ruta y GPS en Vivo
+                </button>
               </div>
+            </div>
+
+            {/* Sub-barra informativa de Ruta con enlace directo al mapa en vivo */}
+            <div className="bg-primary/5 dark:bg-primary/15 px-4 py-2 border-b border-border flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <Navigation2 className="w-3.5 h-3.5 text-primary shrink-0" />
+                <span className="text-xs text-muted-foreground">Ruta asignada:</span>
+                <button
+                  type="button"
+                  onClick={() => handleViewLiveRoute(myRoute)}
+                  className="text-xs font-bold text-primary hover:underline truncate text-left"
+                >
+                  {myRoute.name}
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleViewLiveRoute(myRoute)}
+                className="text-[11px] font-bold text-primary hover:text-primary/80 flex items-center gap-1 shrink-0"
+              >
+                <span>Abrir en mapa en vivo</span>
+                <span aria-hidden="true">&rarr;</span>
+              </button>
             </div>
             
             <div className="divide-y divide-border max-h-96 overflow-y-auto custom-scrollbar">

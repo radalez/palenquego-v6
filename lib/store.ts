@@ -389,6 +389,8 @@ interface AppState {
 
   routeSearchQuery: string
   setRouteSearchQuery: (query: string) => void
+  activeTrackingRouteId: number | null
+  setActiveTrackingRouteId: (id: number | null) => void
   returnToMapRoute: string | null
   setReturnToMapRoute: (route: string | null) => void
 
@@ -559,6 +561,8 @@ export const useAppStore = create<AppState>()(
       activeTickets: [],
       routeSearchQuery: "",
       setRouteSearchQuery: (query: string) => set({ routeSearchQuery: query }),
+      activeTrackingRouteId: null,
+      setActiveTrackingRouteId: (id: number | null) => set({ activeTrackingRouteId: id }),
       returnToMapRoute: null,
       setReturnToMapRoute: (route: string | null) => set({ returnToMapRoute: route }),
       lastMapCategory: typeof window !== "undefined" ? (() => {
