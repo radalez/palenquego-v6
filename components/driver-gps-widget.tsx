@@ -17,7 +17,7 @@ interface DriverGPSWidgetProps {
 }
 
 export function DriverGPSWidget({ onNavigate }: DriverGPSWidgetProps) {
-  const { routes, fetchRoutes, accessToken } = useAppStore()
+  const { routes, fetchRoutes, accessToken, currentUser } = useAppStore()
   const { isDriverTracking, driverGpsError, driverCurrentPos, startDriverTracking, stopDriverTracking, driverGpsCount } = useAppStore()
   
   const [myUnit, setMyUnit] = useState<MyUnit | null>(null)
@@ -119,8 +119,14 @@ export function DriverGPSWidget({ onNavigate }: DriverGPSWidgetProps) {
               className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl h-12 shadow-sm"
             >
               <LayoutDashboard className="w-5 h-5 mr-2" />
-              Abrir Panel del Chofer (Marcar Paradas)
+              {currentUser?.kyc_status === 'APPROVED' ? 'Abrir Panel del Chofer (Marcar Paradas)' : 'Ver Estado de Validación de Chofer'}
             </Button>
+
+            {currentUser?.kyc_status !== 'APPROVED' && (
+              <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-[11px] text-amber-800 dark:text-amber-300 font-medium leading-relaxed">
+                Aún no puedes iniciar el GPS ni marcar paradas. Tu empresa o aliado debe validar tu cuenta en su panel administrativo.
+              </div>
+            )}
 
             {/* Stats en vivo */}
             {driverCurrentPos && isDriverTracking && (

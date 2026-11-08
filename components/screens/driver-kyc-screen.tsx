@@ -121,8 +121,27 @@ export function DriverKycScreen({ user, onNavigate }: { user: any; onNavigate?: 
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                  Tu documentación ya fue enviada. No necesitas realizar ningún paso adicional a menos que tu empresa te solicite actualizar o corregir alguna foto.
+                  Tu cuenta de conductor está en proceso de validación. Aún no puedes iniciar el GPS ni marcar paradas en tus rutas hasta que tu empresa de transporte o aliado valide tu cuenta (o active la casilla <strong>"Verificado en oficina"</strong> en su panel administrativo).
                 </p>
+                <div className="mt-3">
+                  <Button
+                    onClick={async () => {
+                      setIsCheckingStatus(true)
+                      try {
+                        if (fetchCurrentUser) await fetchCurrentUser()
+                      } finally {
+                        setIsCheckingStatus(false)
+                      }
+                    }}
+                    disabled={isCheckingStatus}
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-xs font-bold rounded-xl border-emerald-300 text-emerald-800 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-300"
+                  >
+                    <RotateCcw className={cn("w-3.5 h-3.5 mr-1.5", isCheckingStatus && "animate-spin")} />
+                    {isCheckingStatus ? "Comprobando..." : "Comprobar si ya fui Aprobado"}
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
