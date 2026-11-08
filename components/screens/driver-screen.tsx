@@ -116,7 +116,7 @@ export function DriverScreen({ onNavigate }: DriverScreenProps) {
         </div>
       )}
 
-      <div className="flex-1 p-4 space-y-4 pb-8">
+      <div className="flex-1 p-4 space-y-4 pb-24 max-w-3xl mx-auto w-full">
 
         {/* Tarjeta: vehículo y ruta */}
         <div className="bg-card border border-border rounded-2xl p-4">
