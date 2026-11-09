@@ -452,7 +452,7 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
               const flashSpots = service.oferta_flash?.cupos_disponibles ?? service.spotsLeft ?? 0
 
               return (
-              <div key={service.id} className="bg-card rounded-2xl overflow-hidden shadow-sm border border-border flex flex-col">
+              <div key={service.id} className="bg-card rounded-2xl overflow-hidden shadow-sm border border-border flex flex-col h-full">
                 <div className="relative h-40">
                   <img
                     src={service.image || "/placeholder.svg"}
@@ -541,45 +541,56 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
                   )}
                 </div>
 
-              <div className="p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <div 
-                    className="flex-1 cursor-pointer" 
-                    onClick={() => {
-                      if (typeof window !== "undefined") {
-                        sessionStorage.setItem("palenque_return_tab", "marketplace");
-                      }
-                      router.push(`/s/${service.id}?from=marketplace`);
-                    }}
-                  >
-                    {/* Usamos el nombre unificado */}
-                    <h3 className="font-bold text-foreground hover:text-primary transition-colors text-lg">
-                      {service.name}
-                    </h3>
-                    <div className="flex items-center gap-1 text-muted-foreground text-sm mt-1">
-                      <MapPin className="w-3.5 h-3.5 text-primary" />
-                      <span>{service.location}</span>
+              <div className="p-4 flex-1 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-start justify-between mb-2">
+                    <div 
+                      className="flex-1 min-w-0 cursor-pointer" 
+                      onClick={() => {
+                        if (typeof window !== "undefined") {
+                          sessionStorage.setItem("palenque_return_tab", "marketplace");
+                        }
+                        router.push(`/s/${service.id}?from=marketplace`);
+                      }}
+                    >
+                      {/* Título en 1 línea fija estricta con hover tooltip completo */}
+                      <div className="relative group/title min-w-0" title={service.name}>
+                        <h3 className="font-bold text-foreground hover:text-[#105238] transition-colors text-base md:text-lg truncate block leading-snug">
+                          {service.name}
+                        </h3>
+                        {/* Tooltip estilizado PalenqueGo en hover de escritorio */}
+                        <div className="hidden lg:group-hover/title:block absolute left-0 bottom-full mb-1.5 z-50 pointer-events-none animate-in fade-in duration-150">
+                          <div className="bg-[#105238] text-white text-xs font-semibold px-2.5 py-1.5 rounded-xl shadow-2xl border border-[#8ee01a]/50 max-w-[280px] whitespace-normal leading-snug">
+                            {service.name}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1 text-muted-foreground text-sm mt-1">
+                        <MapPin className="w-3.5 h-3.5 text-[#105238] shrink-0" />
+                        <span className="truncate">{service.location}</span>
+                      </div>
                     </div>
+                  </div>
+
+                  <div className="flex items-center justify-between mb-3 pb-3 border-b border-border">
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200">
+                        <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                        <span className="font-bold text-amber-700 text-sm">{service.rating}</span>
+                      </div>
+                      <span className="text-muted-foreground text-xs font-medium">({service.reviews} reseñas)</span>
+                    </div>
+                    <button
+                      onClick={() => setServiceToRate(service)}
+                      className="text-xs font-bold text-primary hover:bg-primary/5 px-2 py-1 rounded-lg transition-colors"
+                    >
+                      Calificar
+                    </button>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between mb-3 pb-3 border-b border-border">
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200">
-                      <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                      <span className="font-bold text-amber-700 text-sm">{service.rating}</span>
-                    </div>
-                    <span className="text-muted-foreground text-xs font-medium">({service.reviews} reseñas)</span>
-                  </div>
-                  <button
-                    onClick={() => setServiceToRate(service)}
-                    className="text-xs font-bold text-primary hover:bg-primary/5 px-2 py-1 rounded-lg transition-colors"
-                  >
-                    Calificar
-                  </button>
-                </div>
-
-                <div className="flex flex-col gap-2 mt-3">
+                <div className="flex flex-col gap-2 mt-auto pt-2">
                   <div className="flex items-center justify-between gap-2">
                     {/* Precio Base vs Precio Flash (Paleta PalenqueGo: #105238 + #8ee01a) */}
                     <div className="min-w-0">
