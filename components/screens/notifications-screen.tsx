@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Bell, Mail, MessageSquare, Check, Sparkles, ShieldAlert, ShieldCheck, Users, Car, Store, ExternalLink, CheckCheck, Moon, Clock, Tag } from "lucide-react"
+import { Bell, Mail, MessageSquare, Check, Sparkles, ShieldAlert, ShieldCheck, Users, Car, Store, ExternalLink, CheckCheck, Moon, Clock, Tag, Building2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAppStore, InAppNotification } from "@/lib/store"
 
@@ -76,8 +76,10 @@ export function NotificationsScreen({ onBack, onNavigate }: NotificationsScreenP
         return Sparkles
       case "PROMOCION":
         return Tag
+      case "SISTEMA":
+        return icono === "Building2" ? Building2 : Bell
       default:
-        return Bell
+        return icono === "Building2" ? Building2 : Bell
     }
   }
 
@@ -253,17 +255,28 @@ export function NotificationsScreen({ onBack, onNavigate }: NotificationsScreenP
                           <a
                             href={notif.enlace_accion}
                             onClick={(e) => {
-                              if (notif.enlace_accion && notif.enlace_accion.startsWith("/s/")) {
+                              if (notif.enlace_accion === "admin") {
+                                e.preventDefault()
+                                window.open("https://palenquego.com/admin/marketing/promoterinvitation/", "_blank")
+                              } else if (notif.enlace_accion && notif.enlace_accion.startsWith("http")) {
+                                e.preventDefault()
+                                window.open(notif.enlace_accion, "_blank")
+                              } else if (notif.enlace_accion && notif.enlace_accion.startsWith("/s/")) {
                                 e.preventDefault()
                                 window.location.href = notif.enlace_accion
-                              } else if (notif.enlace_accion && !notif.enlace_accion.startsWith("http") && onNavigate) {
+                              } else if (notif.enlace_accion && onNavigate) {
                                 e.preventDefault()
                                 onNavigate(notif.enlace_accion)
                               }
                             }}
                             className={`font-bold hover:underline flex items-center gap-1 ${notif.tipo === "PROMOCION" ? "text-amber-600" : "text-primary"}`}
                           >
-                            {notif.tipo === "PROMOCION" ? "Aprovechar Oferta" : "Ver detalle"} <ExternalLink className="w-3 h-3" />
+                            {notif.titulo.includes("Alianza") || notif.titulo.includes("Promotor")
+                              ? "Revisar y Aprobar"
+                              : notif.tipo === "PROMOCION"
+                              ? "Aprovechar Oferta"
+                              : "Ver detalle"}{" "}
+                            <ExternalLink className="w-3 h-3" />
                           </a>
                         )}
                       </div>
