@@ -62,9 +62,9 @@ function FlashCountdown({ fechaFin }: { fechaFin: string }) {
   if (isExpired) return null
 
   return (
-    <div className="absolute top-3 left-3 z-20 flex items-center gap-1 bg-black/80 backdrop-blur-md text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full shadow-lg">
-      <Zap className="w-3 h-3 text-amber-400 fill-amber-400 animate-pulse shrink-0" />
-      <span className="text-[11px] font-black font-mono tracking-wider leading-none">
+    <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 bg-[#105238]/95 backdrop-blur-md text-white border border-[#8ee01a]/60 px-2.5 py-0.5 rounded-full shadow-lg">
+      <Zap className="w-3.5 h-3.5 text-[#8ee01a] fill-[#8ee01a] animate-pulse shrink-0" />
+      <span className="text-[11px] font-black font-mono tracking-wider leading-none text-white">
         {timeLeft || "00:00:00"}
       </span>
     </div>
@@ -287,14 +287,14 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
                   "flex items-center gap-1.5 px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all text-xs font-semibold cursor-pointer",
                   isActive
                     ? isSpecial
-                      ? "bg-amber-600 text-white shadow-md font-bold"
-                      : "bg-primary text-primary-foreground shadow-sm"
+                      ? "bg-[#105238] text-white shadow-md font-bold ring-2 ring-[#8ee01a]/50"
+                      : "bg-[#105238] text-white shadow-sm font-semibold"
                     : isSpecial
-                      ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/20"
+                      ? "bg-[#eaf0e2] text-[#105238] border border-[#8ee01a]/60 hover:bg-[#eaf0e2]/80 font-bold"
                       : "bg-muted text-muted-foreground hover:bg-muted/80",
                 )}
               >
-                <Icon className={cn("w-3.5 h-3.5", isSpecial && !isActive ? "text-amber-600 dark:text-amber-400" : "")} />
+                <Icon className={cn("w-3.5 h-3.5", isSpecial ? "text-[#8ee01a] fill-[#8ee01a]" : "")} />
                 <span>{cat.label}</span>
               </button>
             )
@@ -332,22 +332,29 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
         </div>
       </div>
 
-      {/* Sección de Remates Flow */}
+      {/* Sección de Remates Flow Destacada */}
       <div className="px-4 mb-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Flame className="w-5 h-5 text-secondary" />
-            <h2 className="font-semibold text-lg text-foreground">Remates Flow</h2>
-            <Badge variant="secondary" className="text-xs bg-secondary/20 text-secondary">
-              Última hora
-            </Badge>
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-[#105238]/10 via-[#eaf0e2]/60 to-transparent p-3.5 rounded-2xl border border-[#105238]/20 shadow-xs">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-[#105238] flex items-center justify-center text-[#8ee01a] shadow-sm">
+              <Zap className="w-5 h-5 fill-[#8ee01a]" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="font-black text-lg text-[#105238] dark:text-[#8ee01a] tracking-tight">Remates Flow</h2>
+                <span className="bg-[#105238] text-[#8ee01a] text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full">
+                  Última hora
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground font-medium">Ofertas activas con cupos limitados y cuenta regresiva</p>
+            </div>
           </div>
           {filteredServices.length > 1 && (
             <Button
               size="sm"
               variant="outline"
               onClick={() => setShowComparisonModal(true)}
-              className="text-xs"
+              className="text-xs font-bold border-[#105238]/30 text-[#105238] hover:bg-[#eaf0e2] rounded-xl h-8"
             >
               Comparar precios
             </Button>
@@ -503,7 +510,7 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
 
                 <div className="flex flex-col gap-2 mt-3">
                   <div className="flex items-center justify-between gap-2">
-                    {/* Precio Base vs Precio Flash */}
+                    {/* Precio Base vs Precio Flash (Paleta PalenqueGo: #105238 + #8ee01a) */}
                     <div className="min-w-0">
                       {hasFlashOffer ? (
                         <div className="space-y-0.5">
@@ -511,21 +518,21 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
                             <span className="text-xs text-muted-foreground line-through font-semibold">
                               ${basePrice.toFixed(2)}
                             </span>
-                            <span className="text-[10px] font-extrabold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 px-1.5 py-0.5 rounded-md">
+                            <span className="text-[10px] font-extrabold bg-[#eaf0e2] text-[#105238] border border-[#8ee01a]/60 px-1.5 py-0.5 rounded-md">
                               -{flashDiscount}% OFF
                             </span>
                           </div>
                           <div className="flex items-baseline gap-1">
-                            <span className="text-2xl font-black text-rose-600 dark:text-rose-400">
+                            <span className="text-2xl font-black text-[#105238] dark:text-[#8ee01a]">
                               ${flashPrice.toFixed(2)}
                             </span>
-                            <span className="text-xs text-muted-foreground font-medium">/ persona</span>
+                            <span className="text-xs text-muted-foreground font-semibold">/p</span>
                           </div>
                         </div>
                       ) : (
                         <div className="flex items-baseline gap-1">
                           <span className="text-2xl font-black text-foreground">${basePrice.toFixed(2)}</span>
-                          <span className="text-muted-foreground text-xs font-medium">/ persona</span>
+                          <span className="text-muted-foreground text-xs font-semibold">/p</span>
                         </div>
                       )}
                     </div>
@@ -534,19 +541,19 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
                     {service.routes && service.routes.length > 0 && (
                       <button 
                         onClick={() => setServiceForRoutes(service)}
-                        className="inline-flex items-center gap-1.5 text-xs font-bold bg-[#059669]/10 hover:bg-[#059669]/20 text-[#059669] px-2.5 py-1.5 rounded-xl border border-[#059669]/25 transition-colors shrink-0 cursor-pointer"
+                        className="inline-flex items-center gap-1.5 text-xs font-bold bg-[#eaf0e2] hover:bg-[#eaf0e2]/80 text-[#105238] px-2.5 py-1.5 rounded-xl border border-[#105238]/20 transition-colors shrink-0 cursor-pointer"
                         title={`Ver ${service.routes.length} ruta${service.routes.length !== 1 ? 's' : ''} disponible${service.routes.length !== 1 ? 's' : ''}`}
                       >
-                        <MapPin className="w-3.5 h-3.5 shrink-0" /> 
+                        <MapPin className="w-3.5 h-3.5 text-[#105238] shrink-0" /> 
                         <span>{service.routes.length} ruta{service.routes.length !== 1 ? 's' : ''}</span>
                       </button>
                     )}
                   </div>
 
-                  {/* Cupos Flash Restantes */}
+                  {/* Cupos Flash Restantes con Paleta de Marca */}
                   {hasFlashOffer && flashSpots > 0 && (
-                    <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-700 dark:text-amber-300 bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 rounded-lg w-fit">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                    <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#105238] bg-[#eaf0e2] border border-[#aeb6a1]/50 px-2 py-0.5 rounded-lg w-fit">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#8ee01a] animate-pulse" />
                       <span>¡Solo quedan {flashSpots} cupo{flashSpots !== 1 ? 's' : ''} flash!</span>
                     </div>
                   )}
