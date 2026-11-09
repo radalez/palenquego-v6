@@ -554,12 +554,14 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
   // Filtrado local por super-categoría, categoría, destino y búsqueda
   const filteredRoutes = useMemo(() => {
     // Solo mostrar rutas públicas oficiales del catálogo (excluir viajes a demanda privados del usuario)
-    let result = (routes || []).filter(r => !r.creador && !(r as any).creador_id && !(r as any).estado_viaje)
+    let result = (routes || []).filter(r => !r.creador && !(r as any).creador_id)
 
     if (superCategory) {
       result = result.filter(r => {
-        if (!r.route_type) return true
-        return r.route_type.toUpperCase() === superCategory
+        if (superCategory === 'TOUR') {
+          return r.route_type?.toUpperCase() === 'TOUR' || r.name?.toLowerCase().startsWith('tour')
+        }
+        return r.route_type?.toUpperCase() === superCategory
       })
     }
 
@@ -591,7 +593,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
       )
     }
 
-    if (destination.trim()) {
+    if (view !== 'list' && destination.trim()) {
       const dest = destination.toLowerCase()
       result = result.filter(r =>
         r.name?.toLowerCase().includes(dest) ||
@@ -608,7 +610,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
     }
 
     return result
-  }, [routes, superCategory, activeCategory, filterService, filterLine, destination, origin, searchQuery])
+  }, [routes, superCategory, activeCategory, filterService, filterLine, destination, origin, searchQuery, view])
 
   // Parser para extraer número/código corto de ruta y separar origen/destino
   const parseRouteDisplay = (routeName: string) => {
@@ -939,7 +941,12 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
           </div>
           <button 
             type="button"
-            onClick={() => setView('list')} 
+            onClick={() => {
+              setSuperCategory('TOUR')
+              setSearchQuery('')
+              setDestination('')
+              setView('list')
+            }} 
             className="w-6 h-6 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition-colors"
             title="Ver en lista"
           >
@@ -1040,7 +1047,12 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
               </span>
               <button
                 type="button"
-                onClick={() => setView('list')}
+                onClick={() => {
+                  setSuperCategory('TOUR')
+                  setSearchQuery('')
+                  setDestination('')
+                  setView('list')
+                }}
                 className="text-emerald-700 font-bold text-[10px] hover:underline"
               >
                 Ver los {tourRoutes.length} tours ›
@@ -1150,7 +1162,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
         {/* 1. Interurbano */}
         <button
           type="button"
-          onClick={() => setSuperCategory(prev => prev === 'INTERURBANO' ? null : 'INTERURBANO')}
+          onClick={() => { setSuperCategory(prev => prev === 'INTERURBANO' ? null : 'INTERURBANO'); setSearchQuery(''); setDestination(''); }}
           className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-1 rounded-xl text-[11px] sm:text-xs font-bold transition-all ${
             superCategory === 'INTERURBANO'
               ? 'bg-[#dcfce7] text-[#064e3b] shadow-xs'
@@ -1166,7 +1178,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
         {/* 2. Urbano */}
         <button
           type="button"
-          onClick={() => setSuperCategory(prev => prev === 'URBANO' ? null : 'URBANO')}
+          onClick={() => { setSuperCategory(prev => prev === 'URBANO' ? null : 'URBANO'); setSearchQuery(''); setDestination(''); }}
           className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-1 rounded-xl text-[11px] sm:text-xs font-bold transition-all ${
             superCategory === 'URBANO'
               ? 'bg-[#f7fee7] text-lime-800 shadow-xs'
@@ -1182,7 +1194,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
         {/* 3. Tours */}
         <button
           type="button"
-          onClick={() => setSuperCategory(prev => prev === 'TOUR' ? null : 'TOUR')}
+          onClick={() => { setSuperCategory(prev => prev === 'TOUR' ? null : 'TOUR'); setSearchQuery(''); setDestination(''); }}
           className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-1 rounded-xl text-[11px] sm:text-xs font-bold transition-all ${
             superCategory === 'TOUR'
               ? 'bg-[#fffbeb] text-amber-800 shadow-xs'
@@ -1401,7 +1413,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
               <div className="bg-gray-100/90 rounded-2xl p-1.5 flex items-center justify-between gap-1 border border-gray-200 shrink-0">
                 <button
                   type="button"
-                  onClick={() => setSuperCategory(prev => prev === 'INTERURBANO' ? null : 'INTERURBANO')}
+                  onClick={() => { setSuperCategory(prev => prev === 'INTERURBANO' ? null : 'INTERURBANO'); setSearchQuery(''); setDestination(''); }}
                   className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-1 rounded-xl text-xs font-bold transition-all ${
                     superCategory === 'INTERURBANO'
                       ? 'bg-white text-[#064e3b] shadow-xs border border-emerald-200'
@@ -1414,7 +1426,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
 
                 <button
                   type="button"
-                  onClick={() => setSuperCategory(prev => prev === 'URBANO' ? null : 'URBANO')}
+                  onClick={() => { setSuperCategory(prev => prev === 'URBANO' ? null : 'URBANO'); setSearchQuery(''); setDestination(''); }}
                   className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-1 rounded-xl text-xs font-bold transition-all ${
                     superCategory === 'URBANO'
                       ? 'bg-white text-[#064e3b] shadow-xs border border-emerald-200'
@@ -1427,7 +1439,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
 
                 <button
                   type="button"
-                  onClick={() => setSuperCategory(prev => prev === 'TOUR' ? null : 'TOUR')}
+                  onClick={() => { setSuperCategory(prev => prev === 'TOUR' ? null : 'TOUR'); setSearchQuery(''); setDestination(''); }}
                   className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-1 rounded-xl text-xs font-bold transition-all ${
                     superCategory === 'TOUR'
                       ? 'bg-white text-[#064e3b] shadow-xs border border-emerald-200'
@@ -1563,7 +1575,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
                             <p className="text-[11px] text-gray-500 mt-0.5 truncate flex items-center gap-1.5 flex-wrap">
                               {route.duracion && (
                                 <span className="font-bold text-amber-800 bg-amber-50 border border-amber-200/60 px-1.5 py-0.5 rounded text-[10px] shrink-0">
-                                  ⏱️ {route.duracion}
+                                  <Clock className="w-3 h-3 text-amber-600 inline-block mr-1 shrink-0" />{route.duracion}
                                 </span>
                               )}
                               <span>
