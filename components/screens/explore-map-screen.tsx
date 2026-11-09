@@ -228,6 +228,8 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
   const registeredRouteInterests = useAppStore((state) => state.registeredRouteInterests) || []
   const registerRouteInterest = useAppStore((state) => state.registerRouteInterest)
   const setLastMapInteraction = useAppStore((state) => state.setLastMapInteraction)
+  const services = useAppStore((state) => state.services)
+  const fetchServices = useAppStore((state) => state.fetchServices)
 
   const [isUserRoutesModalOpen, setIsUserRoutesModalOpen] = useState(false)
   const [poolRouteForModal, setPoolRouteForModal] = useState<any | null>(null)
@@ -248,6 +250,13 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
   useEffect(() => {
     setPreviewImageIdx(0)
   }, [previewRoute?.id])
+
+  // Cargar catálogo de servicios para sugerencias predictivas y afinidad con Go
+  useEffect(() => {
+    if (!services || services.length === 0) {
+      fetchServices()
+    }
+  }, [services?.length, fetchServices])
 
   // Detector de campañas publicitarias & procedencia de enlaces (?campaign=..., ?tour=..., ?category=...)
   useEffect(() => {
@@ -372,15 +381,33 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
   const [origin, setOrigin] = useState("")
   const [destination, setDestination] = useState("")
 
-  // Sincronizar interacción del usuario en el mapa (categoría, ruta o destino) para Pools dinámicos
+  // Sincronizar interacción del usuario en el mapa (categoría, ruta o destino) para Pools dinámicos y Swipe Go
   useEffect(() => {
     if (activeCategory || superCategory || destination || selectedRoute || previewRoute) {
       const activeObj = selectedRoute || previewRoute;
-      const catName = activeCategory 
-        || activeObj?.category?.name 
-        || (superCategory === 'TOUR' ? 'Tours & Experiencias' : superCategory === 'URBANO' ? 'Taxi & Rutas Urbanas' : superCategory === 'INTERURBANO' ? 'Rutas Interurbanas' : null);
+      const lowerDest = (destination || activeObj?.name || '').toLowerCase().trim();
+      let detectedCat = activeCategory || activeObj?.category?.name || null;
+      if (!detectedCat) {
+        if (lowerDest.includes('hotel') || lowerDest.includes('hostal') || lowerDest.includes('alojamiento') || lowerDest.includes('hospedaje')) {
+          detectedCat = 'hoteles';
+        } else if (lowerDest.includes('restauran') || lowerDest.includes('comida') || lowerDest.includes('pizza') || lowerDest.includes('gastro')) {
+          detectedCat = 'restaurantes';
+        } else if (lowerDest.includes('cafe') || lowerDest.includes('café') || lowerDest.includes('cafeteria')) {
+          detectedCat = 'cafe';
+        } else if (lowerDest.includes('playa') || lowerDest.includes('surf') || lowerDest.includes('tunco') || lowerDest.includes('sunzal')) {
+          detectedCat = 'surf';
+        } else if (lowerDest.includes('spa') || lowerDest.includes('masaje') || lowerDest.includes('relax')) {
+          detectedCat = 'spa';
+        } else if (superCategory === 'TOUR') {
+          detectedCat = 'Tours & Experiencias';
+        } else if (superCategory === 'URBANO') {
+          detectedCat = 'Taxi & Rutas Urbanas';
+        } else if (superCategory === 'INTERURBANO') {
+          detectedCat = 'Rutas Interurbanas';
+        }
+      }
       const destName = destination || activeObj?.name || null;
-      setLastMapInteraction(catName, superCategory, destName);
+      setLastMapInteraction(detectedCat, superCategory, destName);
 
       if (typeof window !== "undefined" && destName) {
         try {
@@ -678,12 +705,22 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
     return matches.slice(0, 20)
   }, [origin, routes])
 
-  // Lista memoizada de tours turísticos oficiales
+  // Lista memoizada de tours turísticos oficiales (69)
   const tourRoutes = useMemo(() => {
     return routes.filter(r => r.route_type === 'TOUR' || r.name?.toLowerCase().startsWith('tour'))
   }, [routes])
 
-  // Sugerencias predictivas en vivo para Destino
+  // Lista memoizada de rutas interurbanas oficiales (25)
+  const interurbanRoutes = useMemo(() => {
+    return routes.filter(r => r.route_type === 'INTERURBANO')
+  }, [routes])
+
+  // Lista memoizada de rutas urbanas oficiales (36)
+  const urbanRoutes = useMemo(() => {
+    return routes.filter(r => r.route_type === 'URBANO')
+  }, [routes])
+
+  // Sugerencias predictivas en vivo para Destino (con Hoteles, Servicios, Rutas y Lugares)
   const destSuggestions = useMemo(() => {
     if (!destination || destination.trim().length === 0) {
       if (superCategory === 'TOUR') {
@@ -698,13 +735,67 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
           }))
         if (tourMatches.length > 0) return tourMatches
       }
+      if (superCategory === 'INTERURBANO') {
+        const interMatches = routes
+          .filter(r => r.route_type === 'INTERURBANO')
+          .slice(0, 10)
+          .map(r => {
+            const disp = parseRouteDisplay(r.name)
+            return {
+              name: disp.destination ? `${disp.destination} (Ruta ${disp.badge})` : r.name,
+              category: `Ruta Interurbana • $${r.price_one_way || '1.50'}`,
+              icon: "Bus",
+              route: r
+            }
+          })
+        if (interMatches.length > 0) return interMatches
+      }
+      if (superCategory === 'URBANO') {
+        const urbMatches = routes
+          .filter(r => r.route_type === 'URBANO')
+          .slice(0, 10)
+          .map(r => {
+            const disp = parseRouteDisplay(r.name)
+            return {
+              name: disp.destination ? `${disp.destination} (Ruta ${disp.badge})` : r.name,
+              category: `Ruta Urbana • $${r.price_one_way || '0.35'}`,
+              icon: "Building2",
+              route: r
+            }
+          })
+        if (urbMatches.length > 0) return urbMatches
+      }
       return POPULAR_SALVADOR_PLACES
     }
-    const q = destination.toLowerCase()
+    const q = destination.toLowerCase().trim()
     const matches: any[] = []
-    for (const p of POPULAR_SALVADOR_PLACES) {
-      if (p.name.toLowerCase().includes(q)) matches.push(p)
+
+    // 1. Coincidencias en Servicios del Catálogo (Hoteles, Restaurantes, Experiencias para Swipe Go)
+    if (services && services.length > 0) {
+      for (const s of services) {
+        const sName = (s.name || '').toLowerCase()
+        const sCat = (s.category || '').toLowerCase()
+        const sLoc = (s.location || '').toLowerCase()
+        if (sName.includes(q) || sCat.includes(q) || sLoc.includes(q)) {
+          matches.push({
+            name: s.name,
+            category: `${s.category || 'Servicio'} • ${s.location || 'El Salvador'}`,
+            icon: sCat.includes('hotel') ? 'Bed' : sCat.includes('restauran') || sCat.includes('gastro') ? 'Utensils' : sCat.includes('tour') ? 'Camera' : 'MapPin',
+            service: s
+          })
+          if (matches.length >= 6) break
+        }
+      }
     }
+
+    // 2. Lugares populares de El Salvador
+    for (const p of POPULAR_SALVADOR_PLACES) {
+      if (p.name.toLowerCase().includes(q) && !matches.some(m => m.name === p.name)) {
+        matches.push(p)
+      }
+    }
+
+    // 3. Rutas de transporte y tours oficiales
     for (const r of routes) {
       const isTour = r.route_type === 'TOUR' || r.name?.toLowerCase().startsWith('tour')
       const disp = parseRouteDisplay(r.name)
@@ -722,7 +813,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
       }
     }
     return matches.slice(0, 20)
-  }, [destination, routes, superCategory])
+  }, [destination, routes, superCategory, services])
 
   const handleUseCurrentLocation = () => {
     if (typeof window !== 'undefined' && navigator.geolocation) {
@@ -793,32 +884,55 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
     }
   }
 
-  // Precalcular micro-dispersión orbital para evitar amontonamiento en terminales o destinos con coordenadas idénticas
+    // Rutas que se muestran en el MAPA:
+  // - Si el usuario buscó algo (searchQuery o destination): solo las rutas que coinciden con su búsqueda.
+  // - Si el zoom es local (>= 13): las rutas filtradas de la zona cercana.
+  // - En vista general del mapa (mapZoom < 13):
+  //   Si tiene categoría activa (TOUR, INTERURBANO, URBANO), mostrar ÚNICAMENTE LAS 4 DESTACADAS
+  //   para evitar el amontonamiento de decenas de pines en el mismo punto de San Salvador.
+  //   Si no tiene categoría, no poner pines de rutas (solo STRATEGIC_HUBS limpios).
+  const routesForMap = useMemo(() => {
+    if (searchQuery.trim() || destination.trim()) {
+      return filteredRoutes.slice(0, 10)
+    }
+    if (mapZoom >= 13) {
+      return filteredRoutes.slice(0, 15)
+    }
+    if (superCategory === 'TOUR') {
+      return tourRoutes.slice(0, 4)
+    }
+    if (superCategory === 'INTERURBANO') {
+      return interurbanRoutes.slice(0, 4)
+    }
+    if (superCategory === 'URBANO') {
+      return urbanRoutes.slice(0, 4)
+    }
+    return []
+  }, [filteredRoutes, searchQuery, destination, mapZoom, superCategory, tourRoutes, interurbanRoutes, urbanRoutes])
+
+  // Precalcular micro-dispersión orbital para evitar amontonamiento en paradas comunes
   const routePositions = useMemo(() => {
     const coordGroups: { [key: string]: number[] } = {}
-    filteredRoutes.forEach((route, i) => {
+    routesForMap.forEach((route, i) => {
       if (!route.stops?.length) return
-      // Para tours turísticos, posicionar el marcador en la parada 2 (destino emblemático)
-      // para evitar que los 69 tours se amontonen en el punto de recogida general de San Salvador (parada 1)
       const primaryStop = (route.route_type === 'TOUR' && route.stops.length > 1) 
         ? route.stops[1] 
         : route.stops[0]
       const lat = primaryStop.latitude
       const lng = primaryStop.longitude
-      // Agrupar rutas en un radio estrecho (~150m)
-      const key = `${lat.toFixed(3)},${lng.toFixed(3)}`
+      const key = lat.toFixed(3) + ',' + lng.toFixed(3)
       if (!coordGroups[key]) coordGroups[key] = []
       coordGroups[key].push(i)
     })
 
-    return filteredRoutes.map((route, i) => {
+    return routesForMap.map((route, i) => {
       if (!route.stops?.length) return { pos: { lat: 13.6893, lng: -89.1872 }, offsetX: 0, offsetY: 0 }
       const primaryStop = (route.route_type === 'TOUR' && route.stops.length > 1) 
         ? route.stops[1] 
         : route.stops[0]
       const lat = primaryStop.latitude
       const lng = primaryStop.longitude
-      const key = `${lat.toFixed(3)},${lng.toFixed(3)}`
+      const key = lat.toFixed(3) + ',' + lng.toFixed(3)
       const group = coordGroups[key] || [i]
       const indexInGroup = group.indexOf(i)
       const countInGroup = group.length
@@ -826,7 +940,6 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
       let offsetX = 0
       let offsetY = 0
       if (countInGroup > 1) {
-        // Dispersión radial limpia y estética solo para las que comparten el mismo punto de origen o destino
         const radius = Math.min(26, 14 + countInGroup * 2)
         const angle = (indexInGroup / countInGroup) * 2 * Math.PI
         offsetX = Math.round(Math.cos(angle) * radius)
@@ -839,7 +952,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
         offsetY,
       }
     })
-  }, [filteredRoutes])
+  }, [routesForMap])
 
   const previewPathCoordinates = useMemo(() =>
     previewRoute?.stops?.map((s: any) => ({ lat: s.latitude, lng: s.longitude })) || []
@@ -924,48 +1037,82 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
   // Componente reutilizable para los destinos destacados / tours reales
   const renderFeaturedDestinations = () => {
     const isTourCategory = superCategory === 'TOUR'
+    const isInterurbanCategory = superCategory === 'INTERURBANO'
+    const isUrbanCategory = superCategory === 'URBANO'
+
     const tourCards = tourRoutes.slice(0, 4)
+    const interurbanCards = interurbanRoutes.slice(0, 4)
+    const urbanCards = urbanRoutes.slice(0, 4)
+
+    const activeList = isTourCategory ? tourCards : isInterurbanCategory ? interurbanCards : isUrbanCategory ? urbanCards : []
+    const activeCount = isTourCategory ? tourRoutes.length : isInterurbanCategory ? interurbanRoutes.length : isUrbanCategory ? urbanRoutes.length : 0
+
+    const sectionTitle = isTourCategory 
+      ? 'Tours para explorar' 
+      : isInterurbanCategory 
+        ? 'Rutas Interurbanas' 
+        : isUrbanCategory 
+          ? 'Rutas Urbanas' 
+          : 'Destinos para explorar'
+
+    const handleViewAll = () => {
+      setSearchQuery('')
+      setDestination('')
+      setView('list')
+    }
 
     return (
       <div className="flex flex-col gap-2 shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <h3 className="text-sm font-black text-gray-900 tracking-tight">
-              {isTourCategory ? 'Tours para explorar' : 'Destinos para explorar'}
+              {sectionTitle}
             </h3>
-            {isTourCategory && tourRoutes.length > 0 && (
-              <span className="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-1.5 py-0.5 rounded-md">
-                {tourRoutes.length}
+            {activeCount > 0 && (
+              <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-md ${
+                isTourCategory 
+                  ? 'bg-amber-100 text-amber-800' 
+                  : isInterurbanCategory 
+                    ? 'bg-emerald-100 text-emerald-800' 
+                    : 'bg-lime-100 text-lime-800'
+              }`}>
+                {activeCount}
               </span>
             )}
           </div>
-          <button 
-            type="button"
-            onClick={() => {
-              setSuperCategory('TOUR')
-              setSearchQuery('')
-              setDestination('')
-              setView('list')
-            }} 
-            className="w-6 h-6 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition-colors"
-            title="Ver en lista"
-          >
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button>
+          {activeCount > 0 && (
+            <button 
+              type="button"
+              onClick={handleViewAll} 
+              className="w-6 h-6 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition-colors"
+              title="Ver todas en lista"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
 
-        {isTourCategory && tourCards.length > 0 ? (
+        {activeList.length > 0 ? (
           <div className="grid grid-cols-2 gap-2.5">
-            {tourCards.map((tour) => {
-              const targetStop = (tour.stops && tour.stops.length > 1) ? tour.stops[1] : tour.stops?.[0]
-              const coverImg = getRouteImageUrl(tour)
+            {activeList.map((routeItem) => {
+              const targetStop = (routeItem.stops && routeItem.stops.length > 1) ? routeItem.stops[1] : routeItem.stops?.[0]
+              const coverImg = getRouteImageUrl(routeItem)
+              const disp = parseRouteDisplay(routeItem.name)
+              const displayTitle = isTourCategory ? routeItem.name.replace(/^Tour\s+/i, '') : (disp.destination || routeItem.name)
+
               return (
                 <div
-                  key={tour.id}
-                  className="relative h-36 lg:h-40 rounded-2xl overflow-hidden shadow-md group cursor-pointer border border-amber-100/70 bg-gray-900 transition-all hover:shadow-lg hover:border-amber-400"
+                  key={routeItem.id}
+                  className={`relative h-36 lg:h-40 rounded-2xl overflow-hidden shadow-md group cursor-pointer border bg-gray-900 transition-all hover:shadow-lg ${
+                    isTourCategory 
+                      ? 'border-amber-100/70 hover:border-amber-400' 
+                      : isInterurbanCategory 
+                        ? 'border-emerald-100/70 hover:border-emerald-400' 
+                        : 'border-lime-100/70 hover:border-lime-400'
+                  }`}
                   onClick={() => {
-                    setSelectedRoute(tour)
-                    setPreviewRoute(tour)
+                    setSelectedRoute(routeItem)
+                    setPreviewRoute(routeItem)
                     if (view !== 'map') setView('map')
                     if (mapRef.current && targetStop) {
                       mapRef.current.panTo({ lat: targetStop.latitude, lng: targetStop.longitude })
@@ -975,34 +1122,38 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
                 >
                   <img
                     src={coverImg}
-                    alt={tour.name}
+                    alt={routeItem.name}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                     onError={handleImageFallback}
                   />
-                  {/* Badges superiores: Precio y Duración */}
+                  {/* Badges superiores: Tarifa y Duración/Código */}
                   <div className="absolute top-2 left-2 right-2 flex items-center justify-between gap-1 pointer-events-none z-10">
-                    {tour.price_one_way ? (
-                      <span className="bg-black/75 backdrop-blur-md text-amber-300 font-black text-[10px] px-2 py-0.5 rounded-full border border-amber-400/30 shadow-xs">
-                        ${tour.price_one_way}
+                    {routeItem.price_one_way ? (
+                      <span className="bg-black/75 backdrop-blur-md text-emerald-300 font-black text-[10px] px-2 py-0.5 rounded-full border border-emerald-400/30 shadow-xs">
+                        ${routeItem.price_one_way}
                       </span>
                     ) : <span />}
-                    {tour.duracion ? (
+                    {isTourCategory && routeItem.duracion ? (
                       <span className="bg-black/60 backdrop-blur-md text-white/90 font-bold text-[9px] px-1.5 py-0.5 rounded-full flex items-center gap-1 border border-white/20">
                         <Clock className="w-2.5 h-2.5 text-amber-300" />
-                        {tour.duracion}
+                        {routeItem.duracion}
+                      </span>
+                    ) : disp.badge ? (
+                      <span className="bg-black/60 backdrop-blur-md text-white/90 font-bold text-[9px] px-1.5 py-0.5 rounded-full border border-white/20">
+                        Ruta {disp.badge}
                       </span>
                     ) : null}
                   </div>
 
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent p-2.5 flex flex-col justify-end text-white z-0">
                     <span className="text-[11px] sm:text-xs font-black text-white leading-tight mb-1.5 drop-shadow-sm line-clamp-2">
-                      {tour.name.replace(/^Tour\s+/i, '')}
+                      {displayTitle}
                     </span>
                     <button
                       type="button"
                       className="bg-[#a3e635] hover:bg-[#86efac] text-[#064e3b] font-black text-[10px] py-1 px-2.5 rounded-full flex items-center justify-center gap-1 shadow-xs transition-transform active:scale-95 w-fit"
                     >
-                      <span>Ver tour</span>
+                      <span>{isTourCategory ? 'Ver tour' : 'Ver ruta'}</span>
                       <ChevronRight className="w-3 h-3" />
                     </button>
                   </div>
@@ -1039,23 +1190,26 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
         )}
 
         <div className="flex items-center justify-between text-gray-400 text-[11px] font-medium mt-0.5">
-          {isTourCategory ? (
+          {activeCount > 0 ? (
             <>
               <span className="flex items-center gap-1 text-emerald-800 font-semibold text-[10px]">
                 <Sparkles className="w-3 h-3 text-amber-500" />
-                Tours oficiales con fotos reales y precios USD
+                {isTourCategory 
+                  ? 'Tours oficiales con fotos reales y precios USD' 
+                  : isInterurbanCategory 
+                    ? 'Rutas interurbanas con tarifas fijas' 
+                    : 'Rutas metropolitanas y urbanas'}
               </span>
               <button
                 type="button"
-                onClick={() => {
-                  setSuperCategory('TOUR')
-                  setSearchQuery('')
-                  setDestination('')
-                  setView('list')
-                }}
+                onClick={handleViewAll}
                 className="text-emerald-700 font-bold text-[10px] hover:underline"
               >
-                Ver los {tourRoutes.length} tours ›
+                {isTourCategory 
+                  ? `Ver los ${tourRoutes.length} tours ›` 
+                  : isInterurbanCategory 
+                    ? `Ver las ${interurbanRoutes.length} rutas interurbanas ›` 
+                    : `Ver las ${urbanRoutes.length} rutas urbanas ›`}
               </button>
             </>
           ) : (
@@ -1228,7 +1382,15 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
                 setDestination(item.name)
                 setSearchQuery(item.name)
                 setIsSearchFocused(false)
-                if (item.route) {
+                if (item.service) {
+                  const sCat = (item.service.category || '').toLowerCase()
+                  setLastMapInteraction(sCat, superCategory, item.name)
+                  if (view !== 'map') setView('map')
+                  if (mapRef.current && item.service.lat && item.service.lng) {
+                    mapRef.current.panTo({ lat: item.service.lat, lng: item.service.lng })
+                    mapRef.current.setZoom(14)
+                  }
+                } else if (item.route) {
                   setSelectedRoute(item.route)
                   setPreviewRoute(item.route)
                   if (view !== 'map') setView('map')
@@ -1729,7 +1891,9 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
               )}
 
               {/* PINES ESTRATÉGICOS DESTACADOS (Santa Ana, San Salvador, La Libertad, Suchitoto, San Vicente, Aeropuerto) */}
-              {mapZoom < 12 && !activeCategory && !searchQuery && STRATEGIC_HUBS.map((hub) => (
+              {mapZoom < 12 && !activeCategory && !searchQuery && !destination && STRATEGIC_HUBS
+                .filter(hub => !superCategory || hub.category === superCategory)
+                .map((hub) => (
                 <OverlayView key={hub.id} position={{ lat: hub.lat, lng: hub.lng }} mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}>
                   <div
                     onClick={(e) => {
@@ -1757,8 +1921,8 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
                 </OverlayView>
               ))}
 
-              {/* Marcadores de Rutas Detalladas (al hacer zoom o filtrar) */}
-              {(mapZoom >= 12 || activeCategory || searchQuery || superCategory) && filteredRoutes.map((route, idx) => {
+              {/* Marcadores de Rutas Seleccionadas/Destacadas en el Mapa (pocos y limpios, sin amontonar) */}
+              {routesForMap.map((route, idx) => {
                 if (!route.stops?.length) return null
                 const { pos, offsetX, offsetY } = routePositions[idx] || { pos: { lat: route.stops[0].latitude, lng: route.stops[0].longitude }, offsetX: 0, offsetY: 0 }
                 const isTour = route.route_type === 'TOUR' || route.name?.toLowerCase().startsWith('tour')
