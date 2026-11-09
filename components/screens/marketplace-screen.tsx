@@ -17,6 +17,8 @@ import {
   Utensils,
   Ticket,
   Users,
+  Zap,
+  Compass,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -30,9 +32,50 @@ import { AdvancedFilterPanel, type FilterOptions } from "@/components/advanced-f
 import { PriceComparisonModal } from "@/components/price-comparison-modal"
 import { BusinessCarousel } from "@/components/business-carousel"
 
+function FlashCountdown({ fechaFin }: { fechaFin: string }) {
+  const [timeLeft, setTimeLeft] = useState<string>("")
+  const [isExpired, setIsExpired] = useState<boolean>(false)
+
+  useEffect(() => {
+    const calculateTime = () => {
+      const diff = new Date(fechaFin).getTime() - Date.now()
+      if (diff <= 0) {
+        setTimeLeft("00:00:00")
+        setIsExpired(true)
+        return
+      }
+
+      const totalSeconds = Math.floor(diff / 1000)
+      const hours = Math.floor(totalSeconds / 3600)
+      const minutes = Math.floor((totalSeconds % 3600) / 60)
+      const seconds = totalSeconds % 60
+
+      const pad = (n: number) => String(n).padStart(2, "0")
+      setTimeLeft(`${pad(hours)}:${pad(minutes)}:${pad(seconds)}`)
+    }
+
+    calculateTime()
+    const timer = setInterval(calculateTime, 1000)
+    return () => clearInterval(timer)
+  }, [fechaFin])
+
+  if (isExpired) return null
+
+  return (
+    <div className="absolute top-3 left-3 z-20 flex items-center gap-1 bg-black/80 backdrop-blur-md text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full shadow-lg">
+      <Zap className="w-3 h-3 text-amber-400 fill-amber-400 animate-pulse shrink-0" />
+      <span className="text-[11px] font-black font-mono tracking-wider leading-none">
+        {timeLeft || "00:00:00"}
+      </span>
+    </div>
+  )
+}
+
 const categories = [
   { id: "all", label: "Todo", icon: Flame },
+  { id: "flash", label: "Ofertas Flash", icon: Zap, isSpecial: true },
   { id: "hotel", label: "Hoteles", icon: Bed },
+  { id: "restaurante", label: "Restaurantes", icon: Utensils },
   { id: "surf", label: "Surf", icon: Waves },
   { id: "cafe", label: "Café", icon: Coffee },
   { id: "eco", label: "Ecoturismo", icon: TreePine },
@@ -40,10 +83,15 @@ const categories = [
   { id: "playa", label: "Playa", icon: Waves },
   { id: "spa", label: "Spa", icon: Heart },
   { id: "aventura", label: "Aventura", icon: Ticket },
+  { id: "tours", label: "Tours", icon: Compass },
 ]
 
 function matchesCategory(service: Service, selectedCategory: string): boolean {
   if (selectedCategory === "all") return true
+
+  if (selectedCategory === "flash") {
+    return Boolean(service.oferta_flash && (service.oferta_flash.cupos_disponibles ?? 0) > 0)
+  }
 
   const catName = (service.category || service.categoria?.nombre || "").toLowerCase()
   const catId = service.categoria?.id
@@ -51,6 +99,8 @@ function matchesCategory(service: Service, selectedCategory: string): boolean {
   switch (selectedCategory) {
     case "hotel":
       return catName.includes("hotel") || catName.includes("hospedaj") || catId === 5
+    case "restaurante":
+      return catName.includes("restauran") || catId === 1
     case "surf":
       return catName.includes("surf") || catId === 7
     case "cafe":
@@ -65,6 +115,8 @@ function matchesCategory(service: Service, selectedCategory: string): boolean {
       return catName.includes("spa") || catId === 2
     case "aventura":
       return catName.includes("aventura") || catId === 9
+    case "tours":
+      return catName.includes("tour") || catId === 3
     default:
       return catName.includes(selectedCategory.toLowerCase())
   }
@@ -226,17 +278,24 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
           {categories.map((cat) => {
             const Icon = cat.icon
             const isActive = selectedCategory === cat.id
+            const isSpecial = (cat as any).isSpecial
             return (
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.id)}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap transition-all",
-                  isActive ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80",
+                  "flex items-center gap-1.5 px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all text-xs font-semibold cursor-pointer",
+                  isActive
+                    ? isSpecial
+                      ? "bg-amber-600 text-white shadow-md font-bold"
+                      : "bg-primary text-primary-foreground shadow-sm"
+                    : isSpecial
+                      ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/20"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80",
                 )}
               >
-                <Icon className="w-4 h-4" />
-                <span className="text-sm font-medium">{cat.label}</span>
+                <Icon className={cn("w-3.5 h-3.5", isSpecial && !isActive ? "text-amber-600 dark:text-amber-400" : "")} />
+                <span>{cat.label}</span>
               </button>
             )
           })}
@@ -305,7 +364,16 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
           </div>
         ) : (
           <>
-            {filteredServices.slice(0, visibleCount).map((service) => (
+            {filteredServices.slice(0, visibleCount).map((service) => {
+              const hasFlashOffer = Boolean(service.oferta_flash && (service.oferta_flash.cupos_disponibles ?? 0) > 0)
+              const basePrice = Number(service.price) || 0
+              const flashDiscount = service.oferta_flash?.descuento_porcentaje || service.discount || 0
+              const flashPrice = service.oferta_flash?.precio_promocional 
+                ? Number(service.oferta_flash.precio_promocional) 
+                : (basePrice * (1 - flashDiscount / 100))
+              const flashSpots = service.oferta_flash?.cupos_disponibles ?? service.spotsLeft ?? 0
+
+              return (
               <div key={service.id} className="bg-card rounded-2xl overflow-hidden shadow-sm border border-border flex flex-col">
                 <div className="relative h-40">
                   <img
@@ -315,7 +383,7 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
                   />
                   <button
                     onClick={() => toggleFavoritePreference(service.id)}
-                    className="absolute top-3 right-3 w-8 h-8 rounded-full bg-card/80 backdrop-blur-sm flex items-center justify-center shadow-sm"
+                    className="absolute top-3 right-3 w-8 h-8 rounded-full bg-card/80 backdrop-blur-sm flex items-center justify-center shadow-sm z-20"
                   >
                     <Heart
                       className={cn(
@@ -326,8 +394,11 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
                       )}
                     />
                   </button>
-                  {service.isRemate && (
-                    <Badge className="absolute top-3 left-3 bg-secondary text-secondary-foreground">
+                  {/* Cuenta Regresiva de Oferta Flash al lado contrario del corazón */}
+                  {hasFlashOffer && service.oferta_flash?.fecha_fin ? (
+                    <FlashCountdown fechaFin={service.oferta_flash.fecha_fin} />
+                  ) : service.isRemate && (
+                    <Badge className="absolute top-3 left-3 bg-secondary text-secondary-foreground text-xs font-bold shadow-md z-20">
                       <Flame className="w-3 h-3 mr-1" />-{service.discount}%
                     </Badge>
                   )}
@@ -431,34 +502,55 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
                 </div>
 
                 <div className="flex flex-col gap-2 mt-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      {service.isRemate ? (
-                        <div className="flex items-center gap-2">
-                          <span className="text-muted-foreground line-through text-sm font-medium">
-                            ${Math.round(service.price / (1 - (service.discount || 0) / 100))}
-                          </span>
-                          <span className="text-2xl font-black text-secondary">${service.price}</span>
+                  <div className="flex items-center justify-between gap-2">
+                    {/* Precio Base vs Precio Flash */}
+                    <div className="min-w-0">
+                      {hasFlashOffer ? (
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs text-muted-foreground line-through font-semibold">
+                              ${basePrice.toFixed(2)}
+                            </span>
+                            <span className="text-[10px] font-extrabold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 px-1.5 py-0.5 rounded-md">
+                              -{flashDiscount}% OFF
+                            </span>
+                          </div>
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-2xl font-black text-rose-600 dark:text-rose-400">
+                              ${flashPrice.toFixed(2)}
+                            </span>
+                            <span className="text-xs text-muted-foreground font-medium">/ persona</span>
+                          </div>
                         </div>
                       ) : (
-                        <span className="text-2xl font-black text-foreground">${service.price}</span>
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-2xl font-black text-foreground">${basePrice.toFixed(2)}</span>
+                          <span className="text-muted-foreground text-xs font-medium">/ persona</span>
+                        </div>
                       )}
-                      <span className="text-muted-foreground text-sm font-medium"> / persona</span>
                     </div>
 
-                    {/* Associated Routes Button */}
+                    {/* Botón Compacto de Rutas Disponibles */}
                     {service.routes && service.routes.length > 0 && (
-                      <div className="mt-3 border-t border-border pt-3">
-                        <button 
-                          onClick={() => setServiceForRoutes(service)}
-                          className="w-full flex items-center justify-center gap-2 text-xs font-semibold bg-[#059669]/10 text-[#059669] hover:bg-[#059669]/20 px-3 py-2 rounded-lg transition-colors border border-[#059669]/20"
-                        >
-                          <MapPin className="w-3.5 h-3.5" /> 
-                          Ver {service.routes.length} ruta{service.routes.length !== 1 ? 's' : ''} disponible{service.routes.length !== 1 ? 's' : ''}
-                        </button>
-                      </div>
+                      <button 
+                        onClick={() => setServiceForRoutes(service)}
+                        className="inline-flex items-center gap-1.5 text-xs font-bold bg-[#059669]/10 hover:bg-[#059669]/20 text-[#059669] px-2.5 py-1.5 rounded-xl border border-[#059669]/25 transition-colors shrink-0 cursor-pointer"
+                        title={`Ver ${service.routes.length} ruta${service.routes.length !== 1 ? 's' : ''} disponible${service.routes.length !== 1 ? 's' : ''}`}
+                      >
+                        <MapPin className="w-3.5 h-3.5 shrink-0" /> 
+                        <span>{service.routes.length} ruta{service.routes.length !== 1 ? 's' : ''}</span>
+                      </button>
                     )}
                   </div>
+
+                  {/* Cupos Flash Restantes */}
+                  {hasFlashOffer && flashSpots > 0 && (
+                    <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-700 dark:text-amber-300 bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 rounded-lg w-fit">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                      <span>¡Solo quedan {flashSpots} cupo{flashSpots !== 1 ? 's' : ''} flash!</span>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-2 gap-2.5 w-full pt-1">
                     <Button
                       variant="outline"
@@ -482,7 +574,7 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
                 </div>
               </div>
             </div>
-          ))}
+          )})}
 
           {visibleCount < filteredServices.length && (
             <div ref={observerRef} className="col-span-full py-8 text-center flex justify-center items-center">
