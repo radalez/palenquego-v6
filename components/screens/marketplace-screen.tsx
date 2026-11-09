@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import {
   Search,
@@ -145,60 +145,110 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
 
   const [visibleCount, setVisibleCount] = useState(60)
   const [activePoolTooltipId, setActivePoolTooltipId] = useState<number | null>(null)
-  const observerRef = useRef<HTMLDivElement | null>(null)
+  const observerInstance = useRef<IntersectionObserver | null>(null)
+  const filteredLengthRef = useRef(0)
 
   // Reset pagination when category or search changes
   useEffect(() => {
     setVisibleCount(60)
   }, [selectedCategory, searchQuery, filters])
 
-  // Automatic Infinite Scroll 100% fluido en Celular y Escritorio (Capture Event + Viewport Intersection)
-  useEffect(() => {
-    const el = observerRef.current
-    if (!el) return
+  // Callback Ref para el centinela del scroll infinito:
+  // Se activa inmediatamente en cuanto el nodo se monta en el DOM (resuelve de raiz el retraso de isLoading)
+  const sentinelRef = useCallback((node: HTMLDivElement | null) => {
+    if (observerInstance.current) {
+      observerInstance.current.disconnect()
+      observerInstance.current = null
+    }
 
-    // 1. IntersectionObserver en viewport visible
-    const observer = new IntersectionObserver(
+    if (!node) return
+
+    observerInstance.current = new IntersectionObserver(
       (entries) => {
         if (entries[0]?.isIntersecting) {
-          setVisibleCount((prev) => prev + 60)
+          setVisibleCount((prev) => {
+            if (prev < filteredLengthRef.current) {
+              return Math.min(prev + 40, filteredLengthRef.current)
+            }
+            return prev
+          })
         }
       },
-      { root: null, rootMargin: "800px" }
+      {
+        root: null, // Viewport general
+        rootMargin: "800px", // Precarga fluida con 800px de margen antes del fondo
+        threshold: 0,
+      }
     )
 
-    observer.observe(el)
+    observerInstance.current.observe(node)
+  }, [])
 
-    // 2. Global Capture Scroll Listener: captura el scroll del contenedor .overflow-y-auto en cualquier dispositivo
+  // Listener de scroll global con captura directa + chequeo de rescate periodico:
+  // Garantiza carga continua automatica tanto en contenedores .overflow-y-auto como en window
+  useEffect(() => {
     let ticking = false
-    const handleScroll = (e: Event) => {
+
+    const checkAndAdvance = () => {
+      // 1. Detectar scroll en contenedores internos de la app (.overflow-y-auto)
+      const scrollables = document.querySelectorAll(".overflow-y-auto")
+      let reachedBottom = false
+
+      scrollables.forEach((el) => {
+        const target = el as HTMLElement
+        if (target.scrollHeight > target.clientHeight) {
+          if (target.scrollTop + target.clientHeight >= target.scrollHeight - 1000) {
+            reachedBottom = true
+          }
+        }
+      })
+
+      // 2. Detectar scroll en window / documentElement
+      const doc = document.documentElement
+      const winScrollTop = window.scrollY || doc.scrollTop || 0
+      const winClientHeight = window.innerHeight || doc.clientHeight || 0
+      const winScrollHeight = doc.scrollHeight || 0
+      if (winScrollHeight > winClientHeight) {
+        if (winScrollTop + winClientHeight >= winScrollHeight - 1000) {
+          reachedBottom = true
+        }
+      }
+
+      if (reachedBottom) {
+        setVisibleCount((prev) => {
+          if (prev < filteredLengthRef.current) {
+            return Math.min(prev + 40, filteredLengthRef.current)
+          }
+          return prev
+        })
+      }
+    }
+
+    const handleScroll = () => {
       if (!ticking) {
         window.requestAnimationFrame(() => {
-          const target = (e.target as HTMLElement) || document.documentElement
-          if (target && target.scrollHeight) {
-            const scrollTop = target.scrollTop ?? window.scrollY
-            const clientHeight = target.clientHeight ?? window.innerHeight
-            const scrollHeight = target.scrollHeight ?? document.documentElement.scrollHeight
-            if (scrollTop + clientHeight >= scrollHeight - 1200) {
-              setVisibleCount((prev) => prev + 60)
-            }
-          }
+          checkAndAdvance()
           ticking = false
         })
         ticking = true
       }
     }
 
-    // useCapture: true permite capturar eventos de scroll en cualquier elemento descendiente
     window.addEventListener("scroll", handleScroll, { capture: true, passive: true })
     document.addEventListener("scroll", handleScroll, { capture: true, passive: true })
 
+    // Chequeo periodico de seguridad (800ms) para avanzar si el usuario quedo detenido al pie de pagina
+    const interval = setInterval(checkAndAdvance, 800)
+
     return () => {
-      observer.disconnect()
       window.removeEventListener("scroll", handleScroll, true)
       document.removeEventListener("scroll", handleScroll, true)
+      clearInterval(interval)
+      if (observerInstance.current) {
+        observerInstance.current.disconnect()
+      }
     }
-  }, [visibleCount])
+  }, [])
 
   // --- CONEXIÓN A TU API REAL ---
   const { 
@@ -244,6 +294,8 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
 
     return true
   })
+
+  filteredLengthRef.current = filteredServices.length
 
   return (
     <div className="flex flex-col">
@@ -610,14 +662,24 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
             </div>
           )})}
 
-          {visibleCount < filteredServices.length && (
+          {visibleCount < filteredServices.length ? (
             <div 
-              ref={observerRef} 
-              onClick={() => setVisibleCount((prev) => prev + 60)}
-              className="col-span-full py-6 flex items-center justify-center cursor-pointer"
+              ref={sentinelRef} 
+              onClick={() => setVisibleCount((prev) => Math.min(prev + 40, filteredLengthRef.current))}
+              className="col-span-full py-8 flex flex-col items-center justify-center gap-2.5 cursor-pointer select-none text-muted-foreground transition-all hover:opacity-80"
             >
-              <div className="w-5 h-5 border-2 border-[#105238] border-t-transparent rounded-full animate-spin" />
+              <div className="w-6 h-6 border-2 border-[#105238] border-t-transparent rounded-full animate-spin" />
+              <span className="text-[11px] font-medium tracking-wide text-gray-500">
+                Cargando más experiencias...
+              </span>
             </div>
+          ) : (
+            filteredServices.length > 0 && (
+              <div className="col-span-full py-8 flex flex-col items-center justify-center gap-1 text-center text-xs text-muted-foreground border-t border-border/40 mt-4">
+                <span className="font-semibold text-gray-700">Has explorado todas las opciones disponibles</span>
+                <span className="text-[11px] text-gray-400">Total: {filteredServices.length} servicios</span>
+              </div>
+            )
           )}
         </>
       )}
