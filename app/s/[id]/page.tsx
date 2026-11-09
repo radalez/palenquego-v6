@@ -75,12 +75,11 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
   const handleBack = () => {
     if (typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search)
-      const fromParam = urlParams.get("from") || sessionStorage.getItem("palenque_return_tab")
-      if (fromParam) {
-        sessionStorage.removeItem("palenque_return_tab")
-        router.push(`/?tab=${fromParam}`)
-        return
-      }
+      const fromParam = urlParams.get("from") || sessionStorage.getItem("palenque_return_tab") || "marketplace"
+      sessionStorage.setItem("palenque-active-tab", fromParam)
+      sessionStorage.setItem("palenque_return_tab", fromParam)
+      router.push(`/?tab=${fromParam}`)
+      return
     }
     router.back()
   }

@@ -102,7 +102,7 @@ export default function Home() {
     }
   }, []);
 
-  // Soporte para regresar a la pestaña de origen (?tab=rutas o retorno desde detalle/sessionStorage)
+  // Soporte para regresar a la pestaña de origen (?tab=marketplace o retorno desde detalle/sessionStorage)
   useEffect(() => {
     if (typeof window === "undefined") return;
     const urlParams = new URLSearchParams(window.location.search);
@@ -111,12 +111,14 @@ export default function Home() {
 
     if (tabParam) {
       setActiveTab(tabParam);
+      sessionStorage.setItem("palenque-active-tab", tabParam);
       sessionStorage.removeItem("palenque_return_tab");
       const url = new URL(window.location.href);
       url.searchParams.delete("tab");
       window.history.replaceState({}, document.title, url.pathname + (url.search ? url.search : ""));
     } else if (returnTab) {
       setActiveTab(returnTab);
+      sessionStorage.setItem("palenque-active-tab", returnTab);
       sessionStorage.removeItem("palenque_return_tab");
     }
   }, []);
@@ -138,11 +140,21 @@ export default function Home() {
     }
   }, [currentUser])
 
-  // Mantener al chofer en su panel si el GPS está apagado, por defecto siempre iniciar en el mapa
+  // Mantener al chofer en su panel únicamente en inicio de sesión limpio si no hay otra pestaña solicitada
   useEffect(() => {
-    if (currentUser?.tipo === 'CHOFER') {
+    if (currentUser?.tipo === 'CHOFER' && typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tabParam = urlParams.get("tab");
+      const returnTab = sessionStorage.getItem("palenque_return_tab");
+      const activeTabSaved = sessionStorage.getItem("palenque-active-tab");
+
+      // Si el usuario viene navegando en otra pestaña (ej. Servicios/marketplace), NUNCA redirigir a chofer
+      if (tabParam || returnTab || (activeTabSaved && activeTabSaved !== 'conductor')) {
+        return;
+      }
+
       const gpsActive = sessionStorage.getItem('chofer-gps-active');
-      if (!gpsActive) {
+      if (!gpsActive && !activeTabSaved) {
         setActiveTab('conductor' as ActiveTab);
         return;
       }

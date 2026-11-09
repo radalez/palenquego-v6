@@ -179,6 +179,21 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
     fetchBusinesses()
   }, [])
 
+  // Restaurar automáticamente la posición exacta del servicio visto al regresar
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const lastId = sessionStorage.getItem("palenque_last_viewed_service_id");
+    if (lastId && services.length > 0) {
+      sessionStorage.removeItem("palenque_last_viewed_service_id");
+      setTimeout(() => {
+        const el = document.getElementById(`service-card-${lastId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }, 200);
+    }
+  }, [services.length])
+
   // Callback Ref para el centinela del scroll infinito:
   // Se activa inmediatamente cuando el nodo entra al viewport para cargar el siguiente lote de 20
   const sentinelRef = useCallback((node: HTMLDivElement | null) => {
@@ -452,7 +467,7 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
               const flashSpots = service.oferta_flash?.cupos_disponibles ?? service.spotsLeft ?? 0
 
               return (
-              <div key={service.id} className="bg-card rounded-2xl overflow-hidden shadow-sm border border-border flex flex-col h-full">
+              <div key={service.id} id={`service-card-${service.id}`} className="bg-card rounded-2xl overflow-hidden shadow-sm border border-border flex flex-col h-full scroll-mt-24">
                 <div className="relative h-40">
                   <img
                     src={service.image || "/placeholder.svg"}
@@ -549,6 +564,7 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
                       onClick={() => {
                         if (typeof window !== "undefined") {
                           sessionStorage.setItem("palenque_return_tab", "marketplace");
+                          sessionStorage.setItem("palenque_last_viewed_service_id", String(service.id));
                         }
                         router.push(`/s/${service.id}?from=marketplace`);
                       }}
@@ -619,23 +635,23 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
                       )}
                     </div>
 
-                    {/* Botón Compacto de Rutas Disponibles */}
+                    {/* Botón Compacto de Rutas Disponibles: solo icono + número */}
                     {service.routes && service.routes.length > 0 && (
                       <button 
                         onClick={() => setServiceForRoutes(service)}
-                        className="inline-flex items-center gap-1.5 text-xs font-bold bg-[#eaf0e2] hover:bg-[#eaf0e2]/80 text-[#105238] px-2.5 py-1.5 rounded-xl border border-[#105238]/20 transition-colors shrink-0 cursor-pointer"
+                        className="inline-flex items-center gap-1 text-xs font-bold bg-[#eaf0e2] hover:bg-[#eaf0e2]/80 text-[#105238] px-2 py-1 rounded-xl border border-[#105238]/20 transition-colors shrink-0 cursor-pointer"
                         title={`Ver ${service.routes.length} ruta${service.routes.length !== 1 ? 's' : ''} disponible${service.routes.length !== 1 ? 's' : ''}`}
                       >
                         <MapPin className="w-3.5 h-3.5 text-[#105238] shrink-0" /> 
-                        <span>{service.routes.length} ruta{service.routes.length !== 1 ? 's' : ''}</span>
+                        <span>{service.routes.length}</span>
                       </button>
                     )}
                   </div>
 
-                  {/* Cupos Flash Restantes con Paleta de Marca */}
+                  {/* Cupos Flash Restantes centrados con Paleta de Marca */}
                   {hasFlashOffer && flashSpots > 0 && (
-                    <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#105238] bg-[#eaf0e2] border border-[#aeb6a1]/50 px-2 py-0.5 rounded-lg w-fit">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#8ee01a] animate-pulse" />
+                    <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-[#105238] bg-[#eaf0e2] border border-[#aeb6a1]/50 px-2.5 py-1 rounded-lg w-full text-center">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#8ee01a] animate-pulse shrink-0" />
                       <span>¡Solo quedan {flashSpots} cupo{flashSpots !== 1 ? 's' : ''} flash!</span>
                     </div>
                   )}
@@ -647,6 +663,7 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
                       onClick={() => {
                         if (typeof window !== "undefined") {
                           sessionStorage.setItem("palenque_return_tab", "marketplace");
+                          sessionStorage.setItem("palenque_last_viewed_service_id", String(service.id));
                         }
                         router.push(`/s/${service.id}?from=marketplace`);
                       }}
