@@ -143,54 +143,44 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
     searchQuery: "",
   })
 
-  const [visibleCount, setVisibleCount] = useState(24)
+  const [visibleCount, setVisibleCount] = useState(60)
   const [activePoolTooltipId, setActivePoolTooltipId] = useState<number | null>(null)
   const observerRef = useRef<HTMLDivElement | null>(null)
 
   // Reset pagination when category or search changes
   useEffect(() => {
-    setVisibleCount(24)
+    setVisibleCount(60)
   }, [selectedCategory, searchQuery, filters])
 
-  // Automatic Infinite Scroll 100% fluido en Celular y Escritorio (IntersectionObserver + Scroll Listener en contenedor real)
+  // Automatic Infinite Scroll 100% fluido en Celular y Escritorio (Capture Event + Viewport Intersection)
   useEffect(() => {
     const el = observerRef.current
     if (!el) return
 
-    // Buscar el contenedor padre real que tiene el scroll
-    const scrollParent = el.closest(".overflow-y-auto") || document.querySelector(".overflow-y-auto")
-
-    // 1. IntersectionObserver vinculado al scrollParent real
+    // 1. IntersectionObserver en viewport visible
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) {
-          setVisibleCount((prev) => prev + 24)
+        if (entries[0]?.isIntersecting) {
+          setVisibleCount((prev) => prev + 60)
         }
       },
-      { 
-        root: scrollParent || null, 
-        rootMargin: "800px" // Carga con 800px de anticipación para que nunca se quede trabado
-      }
+      { root: null, rootMargin: "800px" }
     )
 
     observer.observe(el)
 
-    // 2. Listener de scroll nativo de respaldo tanto en contenedor como en window
+    // 2. Global Capture Scroll Listener: captura el scroll del contenedor .overflow-y-auto en cualquier dispositivo
     let ticking = false
-    const handleScroll = () => {
+    const handleScroll = (e: Event) => {
       if (!ticking) {
         window.requestAnimationFrame(() => {
-          if (scrollParent) {
-            const { scrollTop, scrollHeight, clientHeight } = scrollParent as HTMLElement
-            if (scrollTop + clientHeight >= scrollHeight - 800) {
-              setVisibleCount((prev) => prev + 24)
-            }
-          } else {
-            const scrollTop = window.scrollY || document.documentElement.scrollTop
-            const scrollHeight = document.documentElement.scrollHeight
-            const clientHeight = window.innerHeight
-            if (scrollTop + clientHeight >= scrollHeight - 800) {
-              setVisibleCount((prev) => prev + 24)
+          const target = (e.target as HTMLElement) || document.documentElement
+          if (target && target.scrollHeight) {
+            const scrollTop = target.scrollTop ?? window.scrollY
+            const clientHeight = target.clientHeight ?? window.innerHeight
+            const scrollHeight = target.scrollHeight ?? document.documentElement.scrollHeight
+            if (scrollTop + clientHeight >= scrollHeight - 1200) {
+              setVisibleCount((prev) => prev + 60)
             }
           }
           ticking = false
@@ -199,17 +189,14 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
       }
     }
 
-    if (scrollParent) {
-      scrollParent.addEventListener("scroll", handleScroll, { passive: true })
-    }
-    window.addEventListener("scroll", handleScroll, { passive: true })
+    // useCapture: true permite capturar eventos de scroll en cualquier elemento descendiente
+    window.addEventListener("scroll", handleScroll, { capture: true, passive: true })
+    document.addEventListener("scroll", handleScroll, { capture: true, passive: true })
 
     return () => {
       observer.disconnect()
-      if (scrollParent) {
-        scrollParent.removeEventListener("scroll", handleScroll)
-      }
-      window.removeEventListener("scroll", handleScroll)
+      window.removeEventListener("scroll", handleScroll, true)
+      document.removeEventListener("scroll", handleScroll, true)
     }
   }, [visibleCount])
 
@@ -624,7 +611,11 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
           )})}
 
           {visibleCount < filteredServices.length && (
-            <div ref={observerRef} className="col-span-full py-6 flex items-center justify-center">
+            <div 
+              ref={observerRef} 
+              onClick={() => setVisibleCount((prev) => prev + 60)}
+              className="col-span-full py-6 flex items-center justify-center cursor-pointer"
+            >
               <div className="w-5 h-5 border-2 border-[#105238] border-t-transparent rounded-full animate-spin" />
             </div>
           )}
