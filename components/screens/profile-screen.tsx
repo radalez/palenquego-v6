@@ -66,6 +66,29 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
     }
   }, [businesses, fetchBusinesses])
 
+  const isAliadoUser = Boolean(
+    currentUser?.tipo === "ALIADO" || 
+    currentUser?.es_aliado || 
+    (currentUser as any)?.is_aliado ||
+    currentUser?.plan
+  )
+  const isChoferUser = Boolean(
+    currentUser?.tipo === "CHOFER" || 
+    currentUser?.es_chofer || 
+    (currentUser as any)?.is_chofer
+  )
+  const isBusinessActive = Boolean(userIntentions?.isBusinessOwner || isAliadoUser)
+  const isDriverActive = Boolean(userIntentions?.wantsToDrive || isChoferUser)
+
+  useEffect(() => {
+    if (isAliadoUser && !userIntentions?.isBusinessOwner) {
+      setUserIntentions({ isBusinessOwner: true })
+    }
+    if (isChoferUser && !userIntentions?.wantsToDrive) {
+      setUserIntentions({ wantsToDrive: true })
+    }
+  }, [isAliadoUser, isChoferUser, userIntentions?.isBusinessOwner, userIntentions?.wantsToDrive, setUserIntentions])
+
   const handleApplyPromoter = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!promoterPhone.trim()) {
@@ -442,40 +465,40 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
             {/* Chofer */}
             <button
               type="button"
-              onClick={() => setUserIntentions({ wantsToDrive: !userIntentions?.wantsToDrive })}
+              onClick={() => setUserIntentions({ wantsToDrive: !isDriverActive })}
               className={`p-2.5 rounded-xl border text-left transition-all flex flex-col gap-1.5 cursor-pointer ${
-                userIntentions?.wantsToDrive
+                isDriverActive
                   ? "bg-emerald-500/10 border-emerald-500 text-emerald-900 dark:text-emerald-300"
                   : "bg-muted/40 border-border text-muted-foreground hover:bg-muted"
               }`}
             >
               <div className="flex items-center justify-between">
                 <Car className="w-4 h-4" />
-                {userIntentions?.wantsToDrive && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+                {isDriverActive && <Check className="w-3.5 h-3.5 text-emerald-600" />}
               </div>
               <span className="text-xs font-bold leading-tight">Conductor</span>
               <span className="text-[10px] opacity-80 leading-none">
-                {(currentUser.tipo === "CHOFER" || currentUser.es_chofer) ? "Conductor Oficial" : "Tengo vehículo"}
+                {isChoferUser ? "Conductor Oficial" : "Tengo vehículo"}
               </span>
             </button>
 
             {/* Negocio */}
             <button
               type="button"
-              onClick={() => setUserIntentions({ isBusinessOwner: !userIntentions?.isBusinessOwner })}
+              onClick={() => setUserIntentions({ isBusinessOwner: !isBusinessActive })}
               className={`p-2.5 rounded-xl border text-left transition-all flex flex-col gap-1.5 cursor-pointer ${
-                userIntentions?.isBusinessOwner
+                isBusinessActive
                   ? "bg-emerald-500/10 border-emerald-500 text-emerald-900 dark:text-emerald-300"
                   : "bg-muted/40 border-border text-muted-foreground hover:bg-muted"
               }`}
             >
               <div className="flex items-center justify-between">
                 <Building2 className="w-4 h-4" />
-                {userIntentions?.isBusinessOwner && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+                {isBusinessActive && <Check className="w-3.5 h-3.5 text-emerald-600" />}
               </div>
               <span className="text-xs font-bold leading-tight">Negocio</span>
               <span className="text-[10px] opacity-80 leading-none">
-                {(currentUser.tipo === "ALIADO" || currentUser.es_aliado) ? "Aliado Activo" : "Transporte / Hotel"}
+                {isAliadoUser ? "Aliado Activo" : "Transporte / Hotel"}
               </span>
             </button>
           </div>
@@ -563,7 +586,7 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
           )}
 
           {/* Prompt contextual para Negocio */}
-          {userIntentions?.isBusinessOwner && (
+          {isBusinessActive && (
             <div className="mt-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2.5 min-w-0">
                 <Store className="w-5 h-5 text-emerald-600 shrink-0" />
@@ -609,7 +632,7 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
           )}
 
           {/* Oportunidad de Alianza Comercial B2B para Negocios */}
-          {userIntentions?.isBusinessOwner && (
+          {isBusinessActive && (
             <div className="mt-2.5 bg-[#eaf0e2]/80 dark:bg-[#105238]/20 border border-[#91c44a]/40 rounded-2xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex items-start sm:items-center gap-3 min-w-0">
                 <div className="w-9 h-9 rounded-lg bg-[#91c44a]/20 text-[#105238] dark:text-[#8ee01a] flex items-center justify-center shrink-0 border border-[#91c44a]/30">
