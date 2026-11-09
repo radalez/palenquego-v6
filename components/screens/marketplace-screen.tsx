@@ -143,18 +143,44 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
     searchQuery: "",
   })
 
-  const [visibleCount, setVisibleCount] = useState(60)
   const [activePoolTooltipId, setActivePoolTooltipId] = useState<number | null>(null)
   const observerInstance = useRef<IntersectionObserver | null>(null)
-  const filteredLengthRef = useRef(0)
 
-  // Reset pagination when category or search changes
+  // --- CONEXIÓN A TU API REAL ---
+  const { 
+    services, 
+    businesses, 
+    toggleFavoritePreference, 
+    registerPoolInterest,
+    userFavorites,
+    fetchServices,
+    fetchMoreServices,
+    catalogHasMore,
+    isFetchingMoreCatalog,
+    fetchBusinesses,
+    isLoading,
+    bookings,
+  } = useAppStore()
+
+  // Carga inicial y reactividad a cambios de categoría o búsqueda en el backend
   useEffect(() => {
-    setVisibleCount(60)
-  }, [selectedCategory, searchQuery, filters])
+    const params = new URLSearchParams()
+    if (selectedCategory && selectedCategory !== "all") {
+      params.append("cat", selectedCategory)
+    }
+    if (searchQuery.trim()) {
+      params.append("search", searchQuery.trim())
+    }
+    const qs = params.toString() ? `?${params.toString()}` : ""
+    fetchServices(qs)
+  }, [selectedCategory, searchQuery])
+
+  useEffect(() => {
+    fetchBusinesses()
+  }, [])
 
   // Callback Ref para el centinela del scroll infinito:
-  // Se activa inmediatamente en cuanto el nodo se monta en el DOM (resuelve de raiz el retraso de isLoading)
+  // Se activa inmediatamente cuando el nodo entra al viewport para cargar el siguiente lote de 20
   const sentinelRef = useCallback((node: HTMLDivElement | null) => {
     if (observerInstance.current) {
       observerInstance.current.disconnect()
@@ -166,12 +192,7 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
     observerInstance.current = new IntersectionObserver(
       (entries) => {
         if (entries[0]?.isIntersecting) {
-          setVisibleCount((prev) => {
-            if (prev < filteredLengthRef.current) {
-              return Math.min(prev + 40, filteredLengthRef.current)
-            }
-            return prev
-          })
+          fetchMoreServices()
         }
       },
       {
@@ -182,15 +203,13 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
     )
 
     observerInstance.current.observe(node)
-  }, [])
+  }, [fetchMoreServices])
 
-  // Listener de scroll global con captura directa + chequeo de rescate periodico:
-  // Garantiza carga continua automatica tanto en contenedores .overflow-y-auto como en window
+  // Listener de scroll global para detección de fondo en móvil y escritorio (.overflow-y-auto)
   useEffect(() => {
     let ticking = false
 
     const checkAndAdvance = () => {
-      // 1. Detectar scroll en contenedores internos de la app (.overflow-y-auto)
       const scrollables = document.querySelectorAll(".overflow-y-auto")
       let reachedBottom = false
 
@@ -203,7 +222,6 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
         }
       })
 
-      // 2. Detectar scroll en window / documentElement
       const doc = document.documentElement
       const winScrollTop = window.scrollY || doc.scrollTop || 0
       const winClientHeight = window.innerHeight || doc.clientHeight || 0
@@ -215,12 +233,7 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
       }
 
       if (reachedBottom) {
-        setVisibleCount((prev) => {
-          if (prev < filteredLengthRef.current) {
-            return Math.min(prev + 40, filteredLengthRef.current)
-          }
-          return prev
-        })
+        fetchMoreServices()
       }
     }
 
@@ -237,7 +250,6 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
     window.addEventListener("scroll", handleScroll, { capture: true, passive: true })
     document.addEventListener("scroll", handleScroll, { capture: true, passive: true })
 
-    // Chequeo periodico de seguridad (800ms) para avanzar si el usuario quedo detenido al pie de pagina
     const interval = setInterval(checkAndAdvance, 800)
 
     return () => {
@@ -248,25 +260,7 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
         observerInstance.current.disconnect()
       }
     }
-  }, [])
-
-  // --- CONEXIÓN A TU API REAL ---
-  const { 
-    services, 
-    businesses, 
-    toggleFavoritePreference, 
-    registerPoolInterest,
-    userFavorites,
-    fetchServices,
-    fetchBusinesses,
-    isLoading,
-    bookings,
-  } = useAppStore()
-
-  useEffect(() => {
-    fetchServices() // Jala servicios desde 157.245.181.207
-    fetchBusinesses() // Jala tiendas de tu servidor
-  }, [])
+  }, [fetchMoreServices])
 
   const pendingBookings = bookings.filter((b) => b.status === "PENDIENTE")
 
@@ -294,8 +288,6 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
 
     return true
   })
-
-  filteredLengthRef.current = filteredServices.length
 
   return (
     <div className="flex flex-col">
@@ -450,7 +442,7 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
           </div>
         ) : (
           <>
-            {filteredServices.slice(0, visibleCount).map((service) => {
+            {filteredServices.map((service) => {
               const hasFlashOffer = Boolean(service.oferta_flash && (service.oferta_flash.cupos_disponibles ?? 0) > 0)
               const basePrice = Number(service.price) || 0
               const flashDiscount = service.oferta_flash?.descuento_porcentaje || service.discount || 0
@@ -662,10 +654,10 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
             </div>
           )})}
 
-          {visibleCount < filteredServices.length ? (
+          {catalogHasMore ? (
             <div 
               ref={sentinelRef} 
-              onClick={() => setVisibleCount((prev) => Math.min(prev + 40, filteredLengthRef.current))}
+              onClick={() => fetchMoreServices()}
               className="col-span-full py-8 flex flex-col items-center justify-center gap-2.5 cursor-pointer select-none text-muted-foreground transition-all hover:opacity-80"
             >
               <div className="w-6 h-6 border-2 border-[#105238] border-t-transparent rounded-full animate-spin" />

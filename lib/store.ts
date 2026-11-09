@@ -407,7 +407,11 @@ interface AppState {
   fetchKycRequirements: () => Promise<void>
   fetchCurrentUser: () => Promise<void>
 
+  catalogNextUrl: string | null
+  catalogHasMore: boolean
+  isFetchingMoreCatalog: boolean
   fetchServices: (query?: string) => Promise<void>
+  fetchMoreServices: () => Promise<void>
   fetchBusinesses: () => Promise<void>
   toggleFavorite: (id: number) => void
   addPool: (pool: Omit<Pool, "id" | "createdAt">) => Pool
@@ -608,6 +612,9 @@ export const useAppStore = create<AppState>()(
         }
       },
       kycRequirements: [],
+      catalogNextUrl: null,
+      catalogHasMore: true,
+      isFetchingMoreCatalog: false,
       currentUser: { id: 0, name: "", avatar: "", is_ambassador: false },
       isAuthenticated: false,      
       accessToken: null,
@@ -876,32 +883,28 @@ export const useAppStore = create<AppState>()(
       },
 
      fetchServices: async (query = "") => {
-        const currentServices = get().services;
-        if (!currentServices || currentServices.length === 0) {
-          set({ isLoading: true });
-        }
+        set({ isLoading: true });
         try {
-          const response = await fetch(`${API_BASE}/catalog/${query}`)
+          const cleanQuery = query.startsWith("?") ? query : (query ? `/${query}` : "");
+          const response = await fetch(`${API_BASE}/catalog/${cleanQuery}`);
           if (!response.ok) {
-            console.warn(`CatÃ¡logo no disponible (status: ${response.status}). Usando datos de prueba.`);
             set({ isLoading: false });
             return;
           }
           
-          // Verificamos si la respuesta es JSON para evitar el error de "Unexpected token <"
-          const contentType = response.headers.get("content-type")
+          const contentType = response.headers.get("content-type");
           if (!contentType || !contentType.includes("application/json")) {
-            console.warn("No JSON response from server for catalog. Usando datos de prueba.");
             set({ isLoading: false });
             return;
           }
           
-          const data = await response.json()
-          const formatted = data.map((s: any) => ({
+          const data = await response.json();
+          const rawList = Array.isArray(data) ? data : (data.results || []);
+          const formatted = rawList.map((s: any) => ({
             ...s,
             id: s.id,
             name: s.nombre || s.name || "Servicio sin nombre",
-            description: s.descripcion || s.description || "Sin descripciÃ³n disponible",
+            description: s.descripcion || s.description || "Sin descripción disponible",
             location: s.ubicacion || s.location || "Palenque, El Salvador",
             price: parseFloat(s.precio_base) || parseFloat(s.price) || 0,
             image: getProxyImage(s.imagen_principal || s.imagen_url || s.image || ""),
@@ -918,21 +921,88 @@ export const useAppStore = create<AppState>()(
             oferta_flash: s.oferta_flash || null,
             capacityMin: s.capacidad_min || s.capacityMin,
             capacityMax: s.capacidad_max || s.capacityMax,
-            // GalerÃ­a: mapear images[] del API a galleryImages[]
             galleryImages: s.images && s.images.length > 0
               ? s.images.map((img: any) => getProxyImage(img.imagen || img.url || img.cloudinary_url || ""))
               : s.galleryImages || [],
-            // Normalizar features a un array de strings para evitar errores de renderizado de objetos en React
             features: s.features && s.features.length > 0
               ? s.features.map((f: any) => typeof f === "string" ? f : (f.nombre || f.name || ""))
               : [],
-            // --- ESTA ES LA LLAVE DEL RELOJ SUIZO ---
             linkTypes: s.link_types || s.linkTypes || [],
             chatbotScript: s.chatbot_script || null,
-          }))
-          set({ services: formatted, isLoading: false })
+          }));
+
+          set({ 
+            services: formatted, 
+            catalogNextUrl: data.next || null,
+            catalogHasMore: Boolean(data.next),
+            isLoading: false 
+          });
         } catch (error) {
-          set({ isLoading: false })
+          set({ isLoading: false });
+        }
+      },
+
+      fetchMoreServices: async () => {
+        const { catalogNextUrl, isFetchingMoreCatalog, services } = get();
+        if (!catalogNextUrl || isFetchingMoreCatalog) return;
+
+        set({ isFetchingMoreCatalog: true });
+        try {
+          let url = catalogNextUrl;
+          if (url.includes("/api/v1/catalog/")) {
+            const queryPart = url.split("/api/v1/catalog/")[1] || "";
+            url = `${API_BASE}/catalog/${queryPart}`;
+          }
+
+          const response = await fetch(url);
+          if (!response.ok) {
+            set({ isFetchingMoreCatalog: false });
+            return;
+          }
+          const data = await response.json();
+          const rawList = Array.isArray(data) ? data : (data.results || []);
+          const formatted = rawList.map((s: any) => ({
+            ...s,
+            id: s.id,
+            name: s.nombre || s.name || "Servicio sin nombre",
+            description: s.descripcion || s.description || "Sin descripción disponible",
+            location: s.ubicacion || s.location || "Palenque, El Salvador",
+            price: parseFloat(s.precio_base) || parseFloat(s.price) || 0,
+            image: getProxyImage(s.imagen_principal || s.imagen_url || s.image || ""),
+            allowsPool: s.permite_pool || s.allows_pool || s.allowsPool || true,
+            rating: parseFloat(s.calificacion) || s.rating || 5.0,
+            reviews: parseInt(s.numero_resenas) || s.reviews || 0,
+            businessId: s.tienda?.id || s.businessId,
+            businessName: s.tienda?.nombre_comercial || s.businessName,
+            businessAvatar: s.tienda?.logo ? getProxyImage(s.tienda.logo) : s.businessAvatar,
+            category: s.categoria?.nombre || s.category || "General",
+            spotsLeft: s.oferta_flash ? s.oferta_flash.cupos_disponibles : (s.cupos_disponibles || s.spotsLeft || 0),
+            isRemate: Boolean(s.oferta_flash || s.en_oferta || s.isRemate),
+            discount: s.oferta_flash ? s.oferta_flash.descuento_porcentaje : (s.descuento || s.discount || 0),
+            oferta_flash: s.oferta_flash || null,
+            capacityMin: s.capacidad_min || s.capacityMin,
+            capacityMax: s.capacidad_max || s.capacityMax,
+            galleryImages: s.images && s.images.length > 0
+              ? s.images.map((img: any) => getProxyImage(img.imagen || img.url || img.cloudinary_url || ""))
+              : s.galleryImages || [],
+            features: s.features && s.features.length > 0
+              ? s.features.map((f: any) => typeof f === "string" ? f : (f.nombre || f.name || ""))
+              : [],
+            linkTypes: s.link_types || s.linkTypes || [],
+            chatbotScript: s.chatbot_script || null,
+          }));
+
+          const existingIds = new Set(services.map((s: any) => s.id));
+          const newUnique = formatted.filter((s: any) => !existingIds.has(s.id));
+
+          set({
+            services: [...services, ...newUnique],
+            catalogNextUrl: data.next || null,
+            catalogHasMore: Boolean(data.next),
+            isFetchingMoreCatalog: false,
+          });
+        } catch (e) {
+          set({ isFetchingMoreCatalog: false });
         }
       },
 
