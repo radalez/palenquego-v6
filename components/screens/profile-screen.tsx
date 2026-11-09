@@ -203,7 +203,7 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
             <button
               type="button"
               onClick={() => setMobileMenuOpen(true)}
-              className="w-10 h-10 rounded-2xl bg-white/10 hover:bg-white/20 active:scale-95 text-white flex items-center justify-center transition-all shrink-0 border border-white/10"
+              className="lg:hidden w-10 h-10 rounded-2xl bg-white/10 hover:bg-white/20 active:scale-95 text-white flex items-center justify-center transition-all shrink-0 border border-white/10"
               title="Abrir menú"
             >
               <Menu className="w-5 h-5" />

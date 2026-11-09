@@ -1613,7 +1613,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
                     type="button"
                     onClick={() => setMobileMenuOpen(true)}
                     title="Abrir menú"
-                    className="w-8 h-8 rounded-xl bg-white/20 hover:bg-white/30 active:scale-95 border border-white/30 flex items-center justify-center transition-all shadow-xs shrink-0"
+                    className="lg:hidden w-8 h-8 rounded-xl bg-white/20 hover:bg-white/30 active:scale-95 border border-white/30 flex items-center justify-center transition-all shadow-xs shrink-0"
                   >
                     <Menu className="w-4 h-4 text-white stroke-[2.5]" />
                   </button>

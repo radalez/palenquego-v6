@@ -437,11 +437,11 @@ export function BusinessesScreen({ onNavigate }: BusinessesScreenProps) {
                 <p className="text-sm text-muted-foreground line-clamp-2">{business.description}</p>
 
                 {/* Action Buttons */}
-                <div className="flex gap-2 pt-2">
+                <div className="grid grid-cols-2 gap-2 pt-2">
                   <Button
                     size="sm"
                     variant="outline"
-                    className="flex-1 h-8"
+                    className="w-full h-8 flex items-center justify-center gap-1.5 font-medium hover:border-primary hover:text-primary transition-colors text-xs"
                     onClick={(e) => handleWhatsApp(business.socialLinks.whatsapp || "", e)}
                     disabled={!business.socialLinks.whatsapp}
                   >
@@ -451,20 +451,12 @@ export function BusinessesScreen({ onNavigate }: BusinessesScreenProps) {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="flex-1 h-8"
+                    className="w-full h-8 flex items-center justify-center gap-1.5 font-medium hover:border-primary hover:text-primary transition-colors text-xs"
                     onClick={(e) => handleCall(business.socialLinks.phone || "", e)}
                     disabled={!business.socialLinks.phone}
                   >
                     <Phone className="w-4 h-4 mr-1" />
                     Llamar
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="flex-1 h-8"
-                    onClick={(e) => handleShare(business, e)}
-                  >
-                    <Share2 className="w-4 h-4" />
                   </Button>
                 </div>
 
