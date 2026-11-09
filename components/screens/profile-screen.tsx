@@ -1,7 +1,9 @@
 "use client"
+import { generateVoucherPdf } from "@/lib/voucher-pdf"
 
 import { useState, useEffect } from "react"
 import {
+  Download,
   Mail,
   Phone,
   MapPin,
@@ -741,6 +743,32 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
                       Ver Voucher QR
                     </Button>
 
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={async () => {
+                        await generateVoucherPdf({
+                          qrCode: b.qrCode,
+                          serviceName: b.service?.name || "Servicio Turístico",
+                          businessName: b.service?.businessName || "Comercio Aliado",
+                          date: b.date,
+                          time: b.time,
+                          guests: b.guests,
+                          extras: b.extras,
+                          amount: b.totalPrice,
+                          status: b.status,
+                          customerName: currentUser?.name || "Viajero PalenqueGo",
+                          customerPhone: currentUser?.telefono || "",
+                          customerEmail: currentUser?.email || "",
+                          isPool: Boolean(b.poolId),
+                        })
+                      }}
+                      className="text-xs font-bold h-9 px-3 rounded-xl flex items-center gap-1.5 border-emerald-300 bg-white hover:bg-emerald-50 text-emerald-900 shadow-2xs transition-all active:scale-95"
+                    >
+                      <Download className="w-3.5 h-3.5 text-emerald-700" />
+                      PDF
+                    </Button>
+
                     <a
                       href={formatWhatsappLink(b)}
                       target="_blank"
@@ -862,6 +890,31 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
             </div>
 
             <div className="space-y-2">
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  await generateVoucherPdf({
+                    qrCode: selectedQrBooking.qrCode,
+                    serviceName: selectedQrBooking.service?.name || "Servicio Turístico",
+                    businessName: selectedQrBooking.service?.businessName || "Comercio Aliado",
+                    date: selectedQrBooking.date,
+                    time: selectedQrBooking.time,
+                    guests: selectedQrBooking.guests,
+                    extras: selectedQrBooking.extras,
+                    amount: selectedQrBooking.totalPrice,
+                    status: selectedQrBooking.status,
+                    customerName: currentUser?.name || "Viajero PalenqueGo",
+                    customerPhone: currentUser?.telefono || "",
+                    customerEmail: currentUser?.email || "",
+                    isPool: Boolean(selectedQrBooking.poolId),
+                  })
+                }}
+                className="w-full h-11 border-emerald-600 bg-emerald-50/60 hover:bg-emerald-100 text-emerald-900 font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-2xs transition-all active:scale-95"
+              >
+                <Download className="w-4 h-4 text-emerald-700" />
+                Descargar Voucher PDF Oficial
+              </Button>
+
               {selectedQrBooking.status === "PENDIENTE" && (
                 <Button
                   onClick={() => {

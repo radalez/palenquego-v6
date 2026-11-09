@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { X, MapPin, Star, Users, Calendar, Clock, Plus, Minus, Check, ChevronRight, Phone, MessageCircle, CreditCard, Building2, Tag } from "lucide-react"
+import { X, MapPin, Star, Users, Calendar, Clock, Plus, Minus, Check, ChevronRight, Phone, MessageCircle, CreditCard, Building2, Tag, Download } from "lucide-react"
+import { generateVoucherPdf } from "@/lib/voucher-pdf"
 import QRCode from "react-qr-code"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -92,6 +93,7 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
   const [phoneError, setPhoneError] = useState("")
   const [isPayingWompi, setIsPayingWompi] = useState(false)
   const [tiendaInfo, setTiendaInfo] = useState<{ nombre?: string; telefono?: string }>({})
+  const [confirmedBookingDetails, setConfirmedBookingDetails] = useState<{ dateStr: string; timeStr: string; total: number; extras: string[] } | null>(null)
 
   const calculateNights = () => {
     if (!checkIn || !checkOut) return 1
@@ -228,8 +230,14 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
       nombre: res.tienda_nombre || service.businessName,
       telefono: res.tienda_telefono || service.socialLinks?.whatsapp
     })
+    setConfirmedBookingDetails({
+      dateStr: effectiveDateStr,
+      timeStr: timeStr,
+      total: total,
+      extras: extrasSummary,
+    })
 
-    // 4. Registro local
+    // 4. Registro local con código oficial de reserva
     addBooking({
       service,
       date: effectiveDateStr,
@@ -239,7 +247,8 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
       totalPrice: total,
       status: "PENDIENTE",
       poolId: joinedPool?.id,
-    })
+      qrCode: reservaId,
+    } as any)
 
     setStep("success")
   }
@@ -873,6 +882,33 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
               >
                 <CreditCard className="w-4 h-4" />
                 {isPayingWompi ? "Generando pasarela Wompi..." : "Pagar en línea con Wompi"}
+              </Button>
+
+              <Button
+                type="button"
+                onClick={async () => {
+                  await generateVoucherPdf({
+                    qrCode: bookingResult?.qrCode || `PGO-${service.id}`,
+                    serviceName: service.name,
+                    businessName: tiendaInfo.nombre || service.businessName,
+                    date: confirmedBookingDetails?.dateStr || (selectedDate || "Hoy"),
+                    time: confirmedBookingDetails?.timeStr || (selectedTime || "10:00"),
+                    guests: guests,
+                    extras: confirmedBookingDetails?.extras || [],
+                    amount: confirmedBookingDetails?.total || calculateTotal(),
+                    status: "PENDIENTE",
+                    customerName: currentUser?.name || "Viajero PalenqueGo",
+                    customerPhone: userPhone || currentUser?.telefono || "",
+                    customerEmail: currentUser?.email || "",
+                    businessPhone: tiendaInfo.telefono || service.socialLinks?.whatsapp,
+                    isPool: Boolean(joinedPool),
+                  })
+                }}
+                variant="outline"
+                className="w-full h-12 rounded-xl font-bold border-emerald-600 bg-emerald-50/60 hover:bg-emerald-100 text-emerald-900 flex items-center justify-center gap-2 shadow-2xs transition-all active:scale-95"
+              >
+                <Download className="w-4 h-4 text-emerald-700" />
+                Descargar Voucher PDF Oficial
               </Button>
 
               <Button
