@@ -222,7 +222,7 @@ export function PoolPaymentModal({
                 >
                   {processingPayment ? (
                     <>
-                      <span className="inline-block animate-spin mr-2">⏳</span>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block mr-2" />
                       Procesando...
                     </>
                   ) : (
