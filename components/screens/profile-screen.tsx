@@ -512,22 +512,19 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
             </button>
           </div>
 
-          {/* Prompt contextual para Chofer */}
+          {/* Información para Chofer: El alta depende de la empresa aliada */}
           {userIntentions?.wantsToDrive && currentUser?.tipo !== "CHOFER" && (
-            <div className="mt-3 bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <Car className="w-5 h-5 text-amber-600 shrink-0" />
-                <p className="text-xs text-amber-950 dark:text-amber-200 leading-snug">
-                  <strong className="font-bold">Interés de Conductor:</strong> Inicia tu verificación de chofer para recibir solicitudes de viajes.
+            <div className="mt-3 bg-[#eaf0e2] border border-[#aeb6a1] rounded-xl p-3.5 flex items-start gap-3 text-left">
+              <Car className="w-5 h-5 text-[#105238] shrink-0 mt-0.5" />
+              <div className="space-y-1 min-w-0">
+                <p className="text-xs font-bold text-[#105238]">
+                  Vinculación de Conductor con Empresa Aliada
+                </p>
+                <p className="text-xs text-gray-700 leading-relaxed">
+                  En PalenqueGo, los choferes son contratados y registrados directamente por las empresas de transporte aliadas.
+                  Cuando tu empresa te envíe su enlace de invitación o registre tu vehículo, tu consola de conductor y validación de documentos se habilitarán automáticamente con esa empresa.
                 </p>
               </div>
-              <Button
-                size="sm"
-                onClick={() => onNavigateToSettings?.("kyc")}
-                className="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold h-8 px-3 rounded-lg shrink-0"
-              >
-                Verificar
-              </Button>
             </div>
           )}
 

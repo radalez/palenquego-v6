@@ -181,7 +181,7 @@ export function DriverScreen({ onNavigate }: DriverScreenProps) {
           {unitError && !myUnit && (
             <div className="flex items-center gap-2 text-amber-600 bg-amber-50 dark:bg-amber-950 rounded-lg p-3 text-sm">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              <p>{unitError} Pídele al admin que te asigne en <strong>Transport → Units</strong>.</p>
+              <p>{unitError} Para iniciar tu jornada, tu empresa aliada debe vincular tu vehículo en su panel de administración.</p>
             </div>
           )}
         </div>
@@ -215,7 +215,13 @@ export function DriverScreen({ onNavigate }: DriverScreenProps) {
               ✓ ({driverGpsCount} envíos)
             </p>
           )}
-          {driverGpsError && <p className="text-xs text-red-500">{driverGpsError}</p>}
+          {driverGpsError && (
+            <p className="text-xs text-amber-700 dark:text-amber-300 font-medium bg-amber-500/10 px-3 py-1.5 rounded-lg">
+              {driverGpsError.includes('403') || !myUnit 
+                ? 'Para transmitir tu ubicación en vivo, tu empresa de transporte debe vincular tu vehículo previamente.' 
+                : driverGpsError}
+            </p>
+          )}
         </div>
 
         {/* Panel Viajes Urbanos a Demanda (Tipo Uber) */}
