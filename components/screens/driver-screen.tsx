@@ -92,6 +92,16 @@ export function DriverScreen({ onNavigate }: DriverScreenProps) {
                 (r.estado_viaje === 'ACEPTADO' || r.estado_viaje === 'EN_CURSO')
   )
 
+  // Si el chofer ya tiene su unidad reconocida, reiniciar tracking viejo con la unidad correcta
+  useEffect(() => {
+    if (myUnit?.id && isDriverTracking && driverGpsError === 'Error: 403') {
+      stopDriverTracking();
+      setTimeout(() => {
+        startDriverTracking(myUnit.id);
+      }, 300);
+    }
+  }, [myUnit?.id, isDriverTracking, driverGpsError, startDriverTracking, stopDriverTracking]);
+
   const handleStartTracking = () => {
     if (myUnit) {
       startDriverTracking(myUnit.id)
