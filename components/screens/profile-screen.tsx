@@ -48,7 +48,7 @@ interface ProfileScreenProps {
 
 export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: ProfileScreenProps) {
   const { toast } = useToast()
-  const { currentUser, logout, bookings, pools, userFavorites, recommendations, payServiceWompi, accessToken, userIntentions, setUserIntentions, setMobileMenuOpen, businesses, fetchBusinesses } = useAppStore()
+  const { currentUser, logout, bookings, pools, userFavorites, recommendations, payServiceWompi, accessToken, userIntentions, setUserIntentions, setMobileMenuOpen, businesses, fetchBusinesses, fetchMyBookings } = useAppStore()
   const [selectedQrBooking, setSelectedQrBooking] = useState<Booking | null>(null)
   const [payingWompiId, setPayingWompiId] = useState<number | null>(null)
   const [showPromoterModal, setShowPromoterModal] = useState(false)
@@ -65,6 +65,10 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
       fetchBusinesses()
     }
   }, [businesses, fetchBusinesses])
+
+  useEffect(() => {
+    fetchMyBookings?.()
+  }, [fetchMyBookings])
 
   const isAliadoUser = Boolean(
     currentUser?.tipo === "ALIADO" || 

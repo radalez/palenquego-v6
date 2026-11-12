@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { CreditCard, Trash2, Plus, ChevronLeft, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,6 +20,12 @@ export function PaymentsExtendedScreen({ onBack }: PaymentsExtendedScreenProps) 
   })
 
   const paymentMethods = useAppStore((state) => state.paymentMethods)
+  const bookings = useAppStore((state) => state.bookings)
+  const fetchMyBookings = useAppStore((state) => state.fetchMyBookings)
+
+  useEffect(() => {
+    fetchMyBookings?.()
+  }, [fetchMyBookings])
 
   const handleAddCard = () => {
     if (cardData.cardNumber && cardData.cardholderName && cardData.expiryDate && cardData.cvv) {

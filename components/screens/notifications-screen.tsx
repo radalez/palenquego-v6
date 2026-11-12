@@ -540,7 +540,13 @@ export function NotificationsScreen({ onBack, onNavigate }: NotificationsScreenP
                                 return
                               }
 
-                              // CASO 2: ADMIN (Alianzas B2B y solicitudes)
+                              // CASO 2: RESERVAS (Ver Voucher QR, Estado y Pagar en Mi Perfil)
+                              if (notif.tipo === "RESERVA" || notif.enlace_accion === "profile" || (notif.titulo && notif.titulo.toLowerCase().includes("reserva"))) {
+                                onNavigate?.("profile")
+                                return
+                              }
+
+                              // CASO 3: ADMIN (Alianzas B2B y solicitudes)
                               if (notif.enlace_accion === "admin" || notif.enlace_accion?.includes("admin")) {
                                 window.open("https://palenquego.com/admin/marketing/promoterinvitation/", "_blank")
                                 return
@@ -583,6 +589,8 @@ export function NotificationsScreen({ onBack, onNavigate }: NotificationsScreenP
                               ? "Ver en Mis Enlaces"
                               : notif.enlace_accion === "admin" || notif.enlace_accion?.includes("admin")
                               ? "Revisar y Aprobar"
+                              : (notif.tipo === "RESERVA" || (notif.titulo && notif.titulo.toLowerCase().includes("reserva")))
+                              ? "Ver mi Reserva"
                               : (notif.tipo === "PROMOCION" || notif.enlace_accion?.startsWith("/s/"))
                               ? "Aprovechar Oferta"
                               : "Ver detalle"}{" "}

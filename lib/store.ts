@@ -905,6 +905,8 @@ interface AppState {
 
   fetchPools: () => Promise<void>
 
+  fetchMyBookings: () => Promise<void>
+
   fetchRecommendations: () => Promise<void>
 
   plans: any[]
@@ -3151,6 +3153,41 @@ export const useAppStore = create<AppState>()(
 
             }
 
+            const newBooking: Booking = {
+              id: Date.now(),
+              userId: currentUser?.id,
+              userEmail: currentUser?.email,
+              service: get().services.find((s) => s.id === serviceId) || {
+                id: serviceId,
+                name: bookingData.serviceName || "Servicio Tur?stico",
+                price: bookingData.totalPrice || 0,
+                businessName: data.tienda_nombre || "Comercio Aliado",
+                image: bookingData.serviceImage || "",
+                category: "General",
+                description: "",
+                rating: 5,
+                reviewsCount: 0,
+                images: [],
+                features: [],
+                location: "Palenque, El Salvador",
+                lat: 0,
+                lng: 0,
+              } as unknown as Service,
+              date: bookingData.date || "Hoy",
+              time: bookingData.time || "10:00",
+              guests: bookingData.guests || 1,
+              extras: bookingData.extras || [],
+              totalPrice: bookingData.totalPrice || bookingData.amount || 0,
+              status: "PENDIENTE",
+              qrCode: data.reserva_id || `RES-${serviceId}`,
+            }
+
+            set((state) => ({
+              bookings: [newBooking, ...state.bookings.filter((b) => b.qrCode !== newBooking.qrCode)]
+            }))
+
+            get().fetchMyBookings?.()
+
             return {
 
               success: true,
@@ -4426,6 +4463,57 @@ toggleFavoritePreference: (serviceId) =>
       },
 
 
+
+      fetchMyBookings: async () => {
+        const { accessToken } = get();
+        const token = accessToken || (typeof window !== "undefined" && localStorage.getItem("app-storage") ? JSON.parse(localStorage.getItem("app-storage") as string)?.state?.accessToken : "");
+        if (!token) return;
+
+        try {
+          const response = await fetch(`${API_BASE}/catalog/my-bookings/`, {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            const formattedBookings: Booking[] = data.map((b: any) => ({
+              id: b.id,
+              userId: get().currentUser?.id,
+              userEmail: get().currentUser?.email,
+              service: {
+                id: b.service?.id || b.serviceId,
+                name: b.service?.name || "Servicio Tur?stico",
+                price: b.service?.price || 0,
+                businessName: b.service?.businessName || "Comercio Aliado",
+                image: b.service?.image || "",
+                category: "General",
+                description: "",
+                rating: 5,
+                reviewsCount: 0,
+                images: b.service?.image ? [b.service.image] : [],
+                features: [],
+                location: "Palenque, El Salvador",
+                lat: 0,
+                lng: 0,
+              } as unknown as Service,
+              date: b.date || "Hoy",
+              time: b.time || "10:00",
+              guests: b.guests || 1,
+              extras: b.extras || [],
+              totalPrice: b.totalPrice || 0,
+              status: b.status === "CONFIRMADO" ? "CONFIRMADO" : "PENDIENTE",
+              qrCode: b.qrCode || b.reserva_id,
+            }));
+
+            set({ bookings: formattedBookings });
+          }
+        } catch (err) {
+          console.error("Error fetching bookings:", err);
+        }
+      },
 
       fetchRecommendations: async () => {
 
