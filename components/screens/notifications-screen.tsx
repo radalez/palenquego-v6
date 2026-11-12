@@ -22,23 +22,46 @@ interface NotificationsScreenProps {
 
 
 
-export function isCommissionOrB2bNotif(notif: any) {
-  const t = (notif?.titulo || "").toLowerCase()
-  const m = (notif?.mensaje || "").toLowerCase()
-  const link = (notif?.enlace_accion || "").toLowerCase()
+export function isPromoterOrAllyNotification(notif: any): boolean {
+  if (!notif) return false
+  const t = (notif.titulo || "").toLowerCase()
+  const m = (notif.mensaje || "").toLowerCase()
+  const link = (notif.enlace_accion || "").toLowerCase()
 
   return (
-    notif?.tipo === "COMISION" ||
+    notif.tipo === "COMISION" ||
     link === "recomendaciones" ||
     (link === "profile" && (t.includes("comision") || t.includes("alianza") || t.includes("ganar"))) ||
     t.includes("comision") ||
+    t.includes("comisiones") ||
     t.includes("alianza") ||
     t.includes("ganar comisiones") ||
+    t.includes("aliado comercial") ||
+    t.includes("promotor") ||
     m.includes("enlace exclusivo") ||
     m.includes("comparte tu enlace") ||
-    m.includes("gana comisi?n") ||
+    m.includes("gana comisi") ||
     m.includes("alianza b2b") ||
     m.includes("comisiones mutuas")
+  )
+}
+
+export function isFlashOfferNotification(notif: any): boolean {
+  if (!notif) return false
+  const t = (notif.titulo || "").toLowerCase()
+  const m = (notif.mensaje || "").toLowerCase()
+  const link = (notif.enlace_accion || "").toLowerCase()
+
+  return (
+    notif.tipo === "PROMOCION" ||
+    link.startsWith("/s/") ||
+    t.includes("oferta flash") ||
+    t.includes("oferta rel") ||
+    t.includes("promocion") ||
+    t.includes("promocion") ||
+    t.includes("descuento") ||
+    m.includes("oferta flash") ||
+    m.includes("cupos flash")
   )
 }
 
@@ -438,13 +461,19 @@ export function NotificationsScreen({ onBack, onNavigate }: NotificationsScreenP
             const filteredNotifications = inboxNotifications.filter((n) => {
               if (inboxFilter === "ALL") return true
               if (inboxFilter === "PROMOCION") {
-                // Solo ofertas de viajero para aprovechar, NUNCA comisiones/B2B de promotor
-                return (n.tipo === "PROMOCION" || n.enlace_accion?.startsWith("/s/")) && !isCommissionOrB2bNotif(n)
+                // Muestra TODAS las ofertas flash (tanto para promover como para comprar)
+                return isFlashOfferNotification(n)
               }
-              if (inboxFilter === "COMISION") {
-                return isCommissionOrB2bNotif(n)
+              if (inboxFilter === "RESERVA") {
+                return n.tipo === "RESERVA"
               }
-              return n.tipo === inboxFilter && !isCommissionOrB2bNotif(n)
+              if (inboxFilter === "SAFEFLOW") {
+                return n.tipo === "SAFEFLOW"
+              }
+              if (inboxFilter === "POOL") {
+                return n.tipo === "POOL"
+              }
+              return n.tipo === inboxFilter
             })
 
             if (filteredNotifications.length === 0) {
@@ -463,7 +492,9 @@ export function NotificationsScreen({ onBack, onNavigate }: NotificationsScreenP
 
             return filteredNotifications.map((notif) => {
               const IconComp = getNotificationIcon(notif.tipo, notif.icono)
-              const isCommission = isCommissionOrB2bNotif(notif)
+              const isPromoterOrAlly = isPromoterOrAllyNotification(notif)
+              const isFlash = isFlashOfferNotification(notif)
+
               return (
                 <div
                   key={notif.id}
@@ -478,15 +509,11 @@ export function NotificationsScreen({ onBack, onNavigate }: NotificationsScreenP
                       <div className="flex items-center justify-between gap-2 mb-1">
                         <div className="flex items-center gap-1.5 min-w-0">
                           <h4 className="font-black text-sm text-foreground truncate">{notif.titulo}</h4>
-                          {isCommission ? (
-                            <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[#105238] font-extrabold text-[10px] tracking-wide shrink-0">
-                              COMISI?N & B2B
-                            </span>
-                          ) : (notif.tipo === "PROMOCION" || notif.enlace_accion?.startsWith("/s/")) ? (
+                          {isFlash && (
                             <span className="px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-600 font-extrabold text-[10px] tracking-wide shrink-0">
                               OFERTA FLASH
                             </span>
-                          ) : null}
+                          )}
                         </div>
                         {!notif.leido && (
                           <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 animate-ping" />
@@ -497,7 +524,7 @@ export function NotificationsScreen({ onBack, onNavigate }: NotificationsScreenP
                       <div className="flex items-center justify-between pt-2 border-t border-border/50 text-[11px] text-muted-foreground">
                         <span>
                           {notif.creado_el 
-                            ? new Date(notif.creado_el).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) + " ? " + new Date(notif.creado_el).toLocaleDateString([], { day: '2-digit', month: '2-digit', year: 'numeric' })
+                            ? new Date(notif.creado_el).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) + " - " + new Date(notif.creado_el).toLocaleDateString([], { day: '2-digit', month: '2-digit', year: 'numeric' })
                             : "Reciente"}
                         </span>
 
@@ -507,19 +534,19 @@ export function NotificationsScreen({ onBack, onNavigate }: NotificationsScreenP
                             onClick={(e) => {
                               e.preventDefault()
 
-                              // 1. ALIADO / PROMOTOR / B2B: Panel de enlaces para ganar comisi?n
-                              if (isCommission) {
+                              // CASO 1: PROMOTOR O ALIADO COMERCIAL (Gana comisiones compartiendo)
+                              if (isPromoterOrAlly) {
                                 onNavigate?.("recomendaciones")
                                 return
                               }
 
-                              // 2. ADMIN: Alianzas B2B y solicitudes
+                              // CASO 2: ADMIN (Alianzas B2B y solicitudes)
                               if (notif.enlace_accion === "admin" || notif.enlace_accion?.includes("admin")) {
                                 window.open("https://palenquego.com/admin/marketing/promoterinvitation/", "_blank")
                                 return
                               }
 
-                              // 3. VIAJERO: Promociones y Ofertas Flash deben abrir directamente el servicio para comprar/reservar
+                              // CASO 3: VIAJERO (Compra / Reserva el servicio con descuento)
                               if (notif.tipo === "PROMOCION" || notif.enlace_accion?.startsWith("/s/")) {
                                 if (notif.enlace_accion?.startsWith("/s/")) {
                                   window.location.href = notif.enlace_accion
@@ -529,13 +556,13 @@ export function NotificationsScreen({ onBack, onNavigate }: NotificationsScreenP
                                 return
                               }
 
-                              // 4. Enlaces web externos
+                              // CASO 4: Enlaces externos
                               if (notif.enlace_accion && notif.enlace_accion.startsWith("http")) {
                                 window.open(notif.enlace_accion, "_blank")
                                 return
                               }
 
-                              // 5. Navegaci?n interna segura
+                              // CASO 5: Navegaci?n interna segura
                               if (notif.enlace_accion && onNavigate) {
                                 if (notif.enlace_accion === "servicios") {
                                   onNavigate("marketplace")
@@ -545,18 +572,18 @@ export function NotificationsScreen({ onBack, onNavigate }: NotificationsScreenP
                               }
                             }}
                             className={`font-bold hover:underline flex items-center gap-1 ${
-                              isCommission
+                              isPromoterOrAlly
                                 ? "text-[#105238]"
                                 : (notif.tipo === "PROMOCION" || notif.enlace_accion?.startsWith("/s/"))
                                 ? "text-amber-600"
                                 : "text-[#105238]"
                             }`}
                           >
-                            {isCommission
+                            {isPromoterOrAlly
                               ? "Ver en Mis Enlaces"
                               : notif.enlace_accion === "admin" || notif.enlace_accion?.includes("admin")
                               ? "Revisar y Aprobar"
-                              : notif.tipo === "PROMOCION" || notif.enlace_accion?.startsWith("/s/")
+                              : (notif.tipo === "PROMOCION" || notif.enlace_accion?.startsWith("/s/"))
                               ? "Aprovechar Oferta"
                               : "Ver detalle"}{" "}
                             <ExternalLink className="w-3 h-3" />
