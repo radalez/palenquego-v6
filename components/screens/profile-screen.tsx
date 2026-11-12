@@ -68,6 +68,11 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
 
   useEffect(() => {
     fetchMyBookings?.()
+    // Auto-actualizar cada 4s si el usuario tiene reservas pendientes (ej. recién pagó en Wompi o pestaña paralela)
+    const timer = setInterval(() => {
+      fetchMyBookings?.()
+    }, 4000)
+    return () => clearInterval(timer)
   }, [fetchMyBookings])
 
   const isAliadoUser = Boolean(
