@@ -72,8 +72,8 @@ export function RecommendationsScreen({ onBack }: RecommendationsScreenProps) {
 
     services, 
 
-    fetchRecommendations 
-
+    fetchRecommendations,
+    isLoading
   } = useAppStore()
 
   
@@ -284,7 +284,22 @@ export function RecommendationsScreen({ onBack }: RecommendationsScreenProps) {
 
 
 
-        {recommendations.length === 0 ? (
+        {isLoading && recommendations.length === 0 ? (
+          <div className="space-y-4">
+            {[1, 2].map((i) => (
+              <div key={i} className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 animate-pulse flex flex-col gap-3">
+                <div className="flex gap-3">
+                  <div className="w-12 h-12 bg-slate-200 rounded-xl"></div>
+                  <div className="flex-1 space-y-2 py-1">
+                    <div className="h-4 bg-slate-200 rounded w-3/4"></div>
+                    <div className="h-3 bg-slate-200 rounded w-1/2"></div>
+                  </div>
+                </div>
+                <div className="h-10 bg-slate-200 rounded-xl w-full"></div>
+              </div>
+            ))}
+          </div>
+        ) : recommendations.length === 0 ? (
 
           <div className="bg-white rounded-2xl p-8 text-center border-2 border-dashed border-slate-200">
 

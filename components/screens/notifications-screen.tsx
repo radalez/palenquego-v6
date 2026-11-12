@@ -22,11 +22,31 @@ interface NotificationsScreenProps {
 
 
 
+export function isCommissionOrB2bNotif(notif: any) {
+  const t = (notif?.titulo || "").toLowerCase()
+  const m = (notif?.mensaje || "").toLowerCase()
+  const link = (notif?.enlace_accion || "").toLowerCase()
+
+  return (
+    notif?.tipo === "COMISION" ||
+    link === "recomendaciones" ||
+    (link === "profile" && (t.includes("comision") || t.includes("alianza") || t.includes("ganar"))) ||
+    t.includes("comision") ||
+    t.includes("alianza") ||
+    t.includes("ganar comisiones") ||
+    m.includes("enlace exclusivo") ||
+    m.includes("comparte tu enlace") ||
+    m.includes("gana comisi?n") ||
+    m.includes("alianza b2b") ||
+    m.includes("comisiones mutuas")
+  )
+}
+
 export function NotificationsScreen({ onBack, onNavigate }: NotificationsScreenProps) {
 
   const [activeSubTab, setActiveSubTab] = useState<"inbox" | "settings">("inbox")
 
-  const [inboxFilter, setInboxFilter] = useState<"ALL" | "PROMOCION" | "RESERVA" | "SAFEFLOW" | "POOL">("ALL")
+  const [inboxFilter, setInboxFilter] = useState<"ALL" | "PROMOCION" | "COMISION" | "RESERVA" | "SAFEFLOW" | "POOL">("ALL")
 
   const { 
 
@@ -414,94 +434,71 @@ export function NotificationsScreen({ onBack, onNavigate }: NotificationsScreenP
 
 
 
-          {inboxNotifications.filter((n) => inboxFilter === "ALL" || n.tipo === inboxFilter).length === 0 ? (
+          {(() => {
+            const filteredNotifications = inboxNotifications.filter((n) => {
+              if (inboxFilter === "ALL") return true
+              if (inboxFilter === "PROMOCION") {
+                // Solo ofertas de viajero para aprovechar, NUNCA comisiones/B2B de promotor
+                return (n.tipo === "PROMOCION" || n.enlace_accion?.startsWith("/s/")) && !isCommissionOrB2bNotif(n)
+              }
+              if (inboxFilter === "COMISION") {
+                return isCommissionOrB2bNotif(n)
+              }
+              return n.tipo === inboxFilter && !isCommissionOrB2bNotif(n)
+            })
 
-            <div className="py-16 text-center space-y-3">
-
-              <div className="w-16 h-16 bg-muted/60 rounded-full flex items-center justify-center mx-auto text-muted-foreground">
-
-                <Bell className="w-8 h-8 opacity-40" />
-
-              </div>
-
-              <p className="font-bold text-foreground">Buzón al día</p>
-
-              <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-
-                No tienes notificaciones pendientes. Aquí recibirás confirmaciones de reservas, alertas Safe-Flow y novedades de tu cuenta.
-
-              </p>
-
-            </div>
-
-          ) : (
-
-            inboxNotifications.filter((n) => inboxFilter === "ALL" || n.tipo === inboxFilter).map((notif) => {
-
-              const IconComp = getNotificationIcon(notif.tipo, notif.icono)
-
+            if (filteredNotifications.length === 0) {
               return (
+                <div className="py-16 text-center space-y-3">
+                  <div className="w-16 h-16 bg-muted/60 rounded-full flex items-center justify-center mx-auto text-muted-foreground">
+                    <Bell className="w-8 h-8 opacity-40" />
+                  </div>
+                  <p className="font-bold text-foreground">Buz?n al d?a</p>
+                  <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+                    No tienes notificaciones pendientes en esta categor?a.
+                  </p>
+                </div>
+              )
+            }
 
+            return filteredNotifications.map((notif) => {
+              const IconComp = getNotificationIcon(notif.tipo, notif.icono)
+              const isCommission = isCommissionOrB2bNotif(notif)
+              return (
                 <div
-
                   key={notif.id}
-
                   onClick={() => !notif.leido && markNotificationAsRead(notif.id)}
-
                   className={`border rounded-2xl p-4 transition-all shadow-xs relative ${getPriorityColors(notif.prioridad, notif.leido)}`}
-
                 >
-
                   <div className="flex items-start gap-3.5">
-
                     <div className={`p-2.5 rounded-xl shrink-0 ${getIconBadgeColor(notif.prioridad)}`}>
-
                       <IconComp className="w-5 h-5" />
-
                     </div>
-
                     <div className="flex-1 min-w-0">
-
                       <div className="flex items-center justify-between gap-2 mb-1">
-
                         <div className="flex items-center gap-1.5 min-w-0">
-
                           <h4 className="font-black text-sm text-foreground truncate">{notif.titulo}</h4>
-
-                          {notif.tipo === "PROMOCION" && (
-
-                            <span className="px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-600 font-extrabold text-[10px] tracking-wide shrink-0">
-
-                              OFERTA FLASH
-
+                          {isCommission ? (
+                            <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[#105238] font-extrabold text-[10px] tracking-wide shrink-0">
+                              COMISI?N & B2B
                             </span>
-
-                          )}
-
+                          ) : (notif.tipo === "PROMOCION" || notif.enlace_accion?.startsWith("/s/")) ? (
+                            <span className="px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-600 font-extrabold text-[10px] tracking-wide shrink-0">
+                              OFERTA FLASH
+                            </span>
+                          ) : null}
                         </div>
-
                         {!notif.leido && (
-
                           <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 animate-ping" />
-
                         )}
-
                       </div>
-
                       <p className="text-xs text-muted-foreground leading-relaxed mb-3">{notif.mensaje}</p>
 
-                      
-
                       <div className="flex items-center justify-between pt-2 border-t border-border/50 text-[11px] text-muted-foreground">
-
                         <span>
-
                           {notif.creado_el 
-
-                            ? new Date(notif.creado_el).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) + " · " + new Date(notif.creado_el).toLocaleDateString([], { day: '2-digit', month: '2-digit', year: 'numeric' })
-
+                            ? new Date(notif.creado_el).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) + " ? " + new Date(notif.creado_el).toLocaleDateString([], { day: '2-digit', month: '2-digit', year: 'numeric' })
                             : "Reciente"}
-
                         </span>
 
                         {notif.enlace_accion && (
@@ -509,74 +506,71 @@ export function NotificationsScreen({ onBack, onNavigate }: NotificationsScreenP
                             href={notif.enlace_accion}
                             onClick={(e) => {
                               e.preventDefault()
-                              // 1. VIAJERO: Promociones y Ofertas Flash deben abrir directamente el servicio
-                              if (notif.tipo === "PROMOCION" || notif.enlace_accion?.startsWith("/s/")) {
-                                if (notif.enlace_accion?.startsWith("/s/")) {
-                                  window.location.href = notif.enlace_accion
-                                } else {
-                                  onNavigate?.("servicios")
-                                }
+
+                              // 1. ALIADO / PROMOTOR / B2B: Panel de enlaces para ganar comisi?n
+                              if (isCommission) {
+                                onNavigate?.("recomendaciones")
                                 return
                               }
+
                               // 2. ADMIN: Alianzas B2B y solicitudes
                               if (notif.enlace_accion === "admin" || notif.enlace_accion?.includes("admin")) {
                                 window.open("https://palenquego.com/admin/marketing/promoterinvitation/", "_blank")
                                 return
                               }
-                              // 3. ALIADO / PROMOTOR: Panel de enlaces para ganar comisión
-                              if (
-                                notif.tipo === "COMISION"
-                                || notif.enlace_accion === "recomendaciones"
-                                || notif.titulo.includes("Comisiones")
-                                || notif.titulo.includes("Alianza")
-                              ) {
-                                onNavigate?.("recomendaciones")
+
+                              // 3. VIAJERO: Promociones y Ofertas Flash deben abrir directamente el servicio para comprar/reservar
+                              if (notif.tipo === "PROMOCION" || notif.enlace_accion?.startsWith("/s/")) {
+                                if (notif.enlace_accion?.startsWith("/s/")) {
+                                  window.location.href = notif.enlace_accion
+                                } else {
+                                  onNavigate?.("marketplace")
+                                }
                                 return
                               }
+
                               // 4. Enlaces web externos
                               if (notif.enlace_accion && notif.enlace_accion.startsWith("http")) {
                                 window.open(notif.enlace_accion, "_blank")
                                 return
                               }
-                              // 5. Navegación interna
+
+                              // 5. Navegaci?n interna segura
                               if (notif.enlace_accion && onNavigate) {
-                                onNavigate(notif.enlace_accion)
+                                if (notif.enlace_accion === "servicios") {
+                                  onNavigate("marketplace")
+                                } else {
+                                  onNavigate(notif.enlace_accion)
+                                }
                               }
                             }}
                             className={`font-bold hover:underline flex items-center gap-1 ${
-                              notif.tipo === "PROMOCION" ? "text-amber-600" : "text-[#105238]"
+                              isCommission
+                                ? "text-[#105238]"
+                                : (notif.tipo === "PROMOCION" || notif.enlace_accion?.startsWith("/s/"))
+                                ? "text-amber-600"
+                                : "text-[#105238]"
                             }`}
                           >
-                            {notif.tipo === "PROMOCION" || notif.enlace_accion?.startsWith("/s/")
-                              ? "Aprovechar Oferta"
+                            {isCommission
+                              ? "Ver en Mis Enlaces"
                               : notif.enlace_accion === "admin" || notif.enlace_accion?.includes("admin")
                               ? "Revisar y Aprobar"
-                              : notif.tipo === "COMISION" || notif.enlace_accion === "recomendaciones"
-                              ? "Ver en Mis Enlaces"
+                              : notif.tipo === "PROMOCION" || notif.enlace_accion?.startsWith("/s/")
+                              ? "Aprovechar Oferta"
                               : "Ver detalle"}{" "}
                             <ExternalLink className="w-3 h-3" />
                           </a>
                         )}
-
                       </div>
-
                     </div>
-
                   </div>
-
                 </div>
-
               )
-
             })
-
-          )}
-
+          })()}
         </div>
-
       )}
-
-
 
       {/* CONTENIDO 2: AJUSTES DE CANALES, TIPOS DE ALERTAS Y HORAS SILENCIOSAS */}
 

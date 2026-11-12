@@ -39,6 +39,7 @@ import { Button } from "@/components/ui/button"
 
 type ActiveTab =
   | "marketplace"
+  | "servicios"
   | "businesses"
   | "pool"
   | "safeflow"
@@ -275,7 +276,7 @@ export default function Home() {
 
         {/* Screen Content */}
         <div className={`flex-1 ${isMapExplorer ? 'h-full overflow-hidden' : 'overflow-y-auto pb-16 lg:pb-0'}`}>
-        {activeTab === "marketplace" && (
+        {(activeTab === "marketplace" || activeTab === "servicios") && (
           <MarketplaceScreen
             onNavigate={(tab) => setActiveTab(tab as ActiveTab)}
           />
