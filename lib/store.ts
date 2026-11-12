@@ -4485,7 +4485,7 @@ toggleFavoritePreference: (serviceId) =>
               userEmail: get().currentUser?.email,
               service: {
                 id: b.service?.id || b.serviceId,
-                name: b.service?.name || "Servicio Tur?stico",
+                name: b.service?.name || "Servicio Turístico",
                 price: b.service?.price || 0,
                 businessName: b.service?.businessName || "Comercio Aliado",
                 image: b.service?.image || "",
@@ -4504,7 +4504,7 @@ toggleFavoritePreference: (serviceId) =>
               guests: b.guests || 1,
               extras: b.extras || [],
               totalPrice: b.totalPrice || 0,
-              status: b.status === "CONFIRMADO" ? "CONFIRMADO" : "PENDIENTE",
+              status: b.status === "CONFIRMADO" ? "CONFIRMADO" : (b.status === "PAGADO" || b.estado_pago === "PAGADO") ? "PAGADO" : "PENDIENTE",
               qrCode: b.qrCode || b.reserva_id,
             }));
 
