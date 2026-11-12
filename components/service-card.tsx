@@ -16,8 +16,8 @@ interface ServiceCardProps {
 
 export function ServiceCard({ service, onBook, onRouteClick }: ServiceCardProps) {
   const [showRatingModal, setShowRatingModal] = useState(false)
-  const { toggleFavorite, favorites, payService, isLoading } = useAppStore()
-  const isFavorite = favorites.includes(service.id)
+  const { toggleFavoritePreference, userFavorites, favorites, payService, isLoading } = useAppStore()
+  const isFavorite = userFavorites.some((f) => f.serviceId === service.id) || favorites.includes(service.id)
 
   return (
     <>
@@ -46,7 +46,7 @@ export function ServiceCard({ service, onBook, onRouteClick }: ServiceCardProps)
 
           {/* Favorite Button */}
           <button
-            onClick={() => toggleFavorite(service.id)}
+            onClick={() => toggleFavoritePreference(service.id)}
             className="absolute bottom-3 right-3 p-2 bg-white/90 hover:bg-white rounded-lg transition-colors"
           >
             <Heart

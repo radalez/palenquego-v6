@@ -75,6 +75,7 @@ export default function Home() {
   useEffect(() => {
     fetchCurrentUser().then(() => {
       useAppStore.getState().fetchNotifications();
+      useAppStore.getState().fetchUserLikes();
     })
   }, [fetchCurrentUser])
 

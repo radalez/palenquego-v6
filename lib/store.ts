@@ -867,6 +867,7 @@ interface AppState {
   rateService: (serviceId: number, stars: number) => void
 
   toggleFavoritePreference: (serviceId: number) => void
+  fetchUserLikes: () => Promise<void>
 
   removeFavoriteLike: (serviceId: number) => void
 
@@ -1692,6 +1693,8 @@ export const useAppStore = create<AppState>()(
 
                 localStorage.setItem("palenque_user_intentions", JSON.stringify(updatedIntentions));
 
+            get().fetchUserLikes();
+
               } catch (e) {}
 
             }
@@ -2110,13 +2113,11 @@ export const useAppStore = create<AppState>()(
 
       // --- TUS FUNCIONES ORIGINALES (SIN TOCAR NADA) ---
 
-      toggleFavorite: (id) =>
+      toggleFavorite: (id) => {
 
-        set((state) => ({
+        get().toggleFavoritePreference(id)
 
-          favorites: state.favorites.includes(id) ? state.favorites.filter((f) => f !== id) : [...state.favorites, id],
-
-        })),
+      },
 
 
 
@@ -2344,6 +2345,8 @@ export const useAppStore = create<AppState>()(
 
             }));
 
+            get().fetchUserLikes();
+
             return true;
 
           }
@@ -2433,6 +2436,8 @@ export const useAppStore = create<AppState>()(
               isLoading: false 
 
             }));
+
+            get().fetchUserLikes();
 
             return true;
 
@@ -3548,7 +3553,53 @@ export const useAppStore = create<AppState>()(
 
 
 
-      toggleFavoritePreference: (serviceId) =>
+            fetchUserLikes: async () => {
+
+        const { accessToken } = get();
+
+        if (!accessToken) return;
+
+        try {
+
+          const res = await fetchWithAuth(`${API_BASE}/catalog/my-likes/`);
+
+          if (res.ok) {
+
+            const data = await res.json();
+
+            const likedIds: number[] = Array.isArray(data.liked_service_ids) ? data.liked_service_ids : [];
+
+            const userFavs = likedIds.map((id) => ({
+
+              serviceId: id,
+
+              preference: "me_gusta" as const,
+
+              selectedForTrip: false,
+
+              addedAt: new Date(),
+
+            }));
+
+            set({
+
+              userFavorites: userFavs,
+
+              favorites: likedIds,
+
+            });
+
+          }
+
+        } catch (e) {
+
+          console.error("Error al obtener likes del usuario:", e);
+
+        }
+
+      },
+
+toggleFavoritePreference: (serviceId) =>
 
         set((state) => {
 
@@ -3579,6 +3630,8 @@ export const useAppStore = create<AppState>()(
             return {
 
               userFavorites: state.userFavorites.filter((f) => f.serviceId !== serviceId),
+
+              favorites: state.favorites.filter((f) => f !== serviceId),
 
               services: isSynthetic
 
@@ -3613,6 +3666,8 @@ export const useAppStore = create<AppState>()(
                 { serviceId, preference: "me_gusta", selectedForTrip: false, addedAt: new Date() },
 
               ],
+
+              favorites: state.favorites.includes(serviceId) ? state.favorites : [...state.favorites, serviceId],
 
             }
 
@@ -4661,6 +4716,8 @@ export const useAppStore = create<AppState>()(
             await get().fetchPools();
 
             set({ isLoading: false });
+
+            get().fetchUserLikes();
 
             return true;
 

@@ -177,6 +177,7 @@ export function MarketplaceScreen({ onNavigate, onViewServiceDetail }: Marketpla
 
   useEffect(() => {
     fetchBusinesses()
+    useAppStore.getState().fetchUserLikes()
   }, [])
 
   // Restaurar automáticamente la posición exacta del servicio visto al regresar
