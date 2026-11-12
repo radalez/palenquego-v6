@@ -509,21 +509,37 @@ export function NotificationsScreen({ onBack, onNavigate }: NotificationsScreenP
                             href={notif.enlace_accion}
                             onClick={(e) => {
                               e.preventDefault()
+                              // 1. VIAJERO: Promociones y Ofertas Flash deben abrir directamente el servicio
+                              if (notif.tipo === "PROMOCION" || notif.enlace_accion?.startsWith("/s/")) {
+                                if (notif.enlace_accion?.startsWith("/s/")) {
+                                  window.location.href = notif.enlace_accion
+                                } else {
+                                  onNavigate?.("servicios")
+                                }
+                                return
+                              }
+                              // 2. ADMIN: Alianzas B2B y solicitudes
                               if (notif.enlace_accion === "admin" || notif.enlace_accion?.includes("admin")) {
                                 window.open("https://palenquego.com/admin/marketing/promoterinvitation/", "_blank")
-                              } else if (
-                                notif.enlace_accion === "recomendaciones"
-                                || notif.tipo === "COMISION"
+                                return
+                              }
+                              // 3. ALIADO / PROMOTOR: Panel de enlaces para ganar comisión
+                              if (
+                                notif.tipo === "COMISION"
+                                || notif.enlace_accion === "recomendaciones"
                                 || notif.titulo.includes("Comisiones")
                                 || notif.titulo.includes("Alianza")
-                                || notif.titulo.includes("Oferta Flash")
                               ) {
                                 onNavigate?.("recomendaciones")
-                              } else if (notif.enlace_accion && notif.enlace_accion.startsWith("http")) {
+                                return
+                              }
+                              // 4. Enlaces web externos
+                              if (notif.enlace_accion && notif.enlace_accion.startsWith("http")) {
                                 window.open(notif.enlace_accion, "_blank")
-                              } else if (notif.enlace_accion && notif.enlace_accion.startsWith("/s/")) {
-                                window.location.href = notif.enlace_accion
-                              } else if (notif.enlace_accion && onNavigate) {
+                                return
+                              }
+                              // 5. Navegación interna
+                              if (notif.enlace_accion && onNavigate) {
                                 onNavigate(notif.enlace_accion)
                               }
                             }}
@@ -531,16 +547,15 @@ export function NotificationsScreen({ onBack, onNavigate }: NotificationsScreenP
                               notif.tipo === "PROMOCION" ? "text-amber-600" : "text-[#105238]"
                             }`}
                           >
-                            {notif.enlace_accion === "admin" || notif.enlace_accion?.includes("admin")
-                              ? "Revisar y Aprobar"
-                              : notif.tipo === "COMISION" || notif.enlace_accion === "recomendaciones" || notif.titulo.includes("Comisiones") || notif.titulo.includes("Alianza") || notif.titulo.includes("Oferta Flash")
-                              ? "Ver en Mis Enlaces"
-                              : notif.tipo === "PROMOCION"
+                            {notif.tipo === "PROMOCION" || notif.enlace_accion?.startsWith("/s/")
                               ? "Aprovechar Oferta"
+                              : notif.enlace_accion === "admin" || notif.enlace_accion?.includes("admin")
+                              ? "Revisar y Aprobar"
+                              : notif.tipo === "COMISION" || notif.enlace_accion === "recomendaciones"
+                              ? "Ver en Mis Enlaces"
                               : "Ver detalle"}{" "}
                             <ExternalLink className="w-3 h-3" />
                           </a>
-
                         )}
 
                       </div>
