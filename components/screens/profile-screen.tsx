@@ -722,7 +722,7 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
                             "text-[10px] uppercase font-bold shrink-0 px-2 py-0.5 rounded-full",
                             isPending
                               ? "bg-amber-500/20 text-amber-700 border-amber-500/40"
-                              : "bg-emerald-500/20 text-emerald-700 border-emerald-500/40"
+                              : "bg-[#eaf0e2] text-[#105238] border-[#8ee01a]"
                           )}
                         >
                           {isPending ? (
@@ -733,7 +733,7 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
                           ) : (
                             <span className="flex items-center gap-1">
                               <CheckCircle2 className="w-3 h-3" />
-                              Confirmado
+                              {b.status === "PAGADO" ? "Pagado" : "Confirmado"}
                             </span>
                           )}
                         </Badge>

@@ -508,7 +508,7 @@ export interface Booking {
 
   totalPrice: number
 
-  status: "PENDIENTE" | "CONFIRMADO" | "COMPLETADO"
+  status: "PENDIENTE" | "CONFIRMADO" | "COMPLETADO" | "PAGADO"
 
   qrCode: string
 
