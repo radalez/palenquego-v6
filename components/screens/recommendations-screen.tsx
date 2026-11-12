@@ -343,9 +343,16 @@ export function RecommendationsScreen({ onBack }: RecommendationsScreenProps) {
                         </div>
 
                         <h4 className="font-bold text-slate-900 text-base leading-snug">{displayName}</h4>
-                        <p className="text-xs text-slate-500 mt-0.5">
-                          <span className="font-semibold text-slate-700">Comercio:</span> {storeName}
-                        </p>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1.5 text-xs text-slate-500">
+                          {(rec as any).servicio_nombre && (rec as any).servicio_nombre !== displayName && (
+                            <span className="font-semibold text-emerald-900 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/70">
+                              Servicio: {(rec as any).servicio_nombre}
+                            </span>
+                          )}
+                          <p className="text-xs text-slate-500">
+                            <span className="font-semibold text-slate-700">Comercio:</span> {storeName}
+                          </p>
+                        </div>
                       </div>
                     </div>
                     <Badge 
