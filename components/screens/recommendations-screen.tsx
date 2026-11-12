@@ -398,19 +398,19 @@ export function RecommendationsScreen({ onBack }: RecommendationsScreenProps) {
                       <div className="text-[11px] text-slate-400 flex items-center justify-center gap-1 mb-0.5">
                         <Eye className="w-3 h-3" /> Vistas
                       </div>
-                      <div className="font-bold text-slate-800">{rec.stats.clicks}</div>
+                      <div className="font-bold text-slate-800">{(rec as any).clics ?? (rec as any).vistas ?? rec.stats.clicks ?? 0}</div>
                     </div>
                     <div className="text-center border-x border-slate-200">
                       <div className="text-[11px] text-slate-400 flex items-center justify-center gap-1 mb-0.5">
                         <ShoppingCart className="w-3 h-3" /> Ventas
                       </div>
-                      <div className="font-bold text-slate-800">{rec.stats.purchases || 0}</div>
+                      <div className="font-bold text-slate-800">{(rec as any).ventas ?? rec.stats.purchases ?? 0}</div>
                     </div>
                     <div className="text-center">
                       <div className="text-[11px] text-slate-400 flex items-center justify-center gap-1 mb-0.5">
                         <DollarSign className="w-3 h-3" /> Ganancia
                       </div>
-                      <div className="font-bold text-[#105238]">${rec.stats.totalEarned}</div>
+                      <div className="font-bold text-[#105238]">${(rec as any).ganancia ?? rec.stats.totalEarned ?? 0}</div>
                     </div>
                   </div>
 

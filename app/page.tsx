@@ -93,8 +93,11 @@ export default function Home() {
       // 2. Establecer nuevos tokens
       useAppStore.getState().setTokens(authToken, refreshToken || "");
 
-      // 3. Obtener el perfil del nuevo usuario y limpiar la URL
+      // 3. Obtener el perfil del nuevo usuario, sus favoritos, notificaciones y recomendaciones
       useAppStore.getState().fetchCurrentUser().then(() => {
+        useAppStore.getState().fetchNotifications();
+        useAppStore.getState().fetchUserLikes();
+        useAppStore.getState().fetchRecommendations();
         const url = new URL(window.location.href);
         url.searchParams.delete("auth_token");
         url.searchParams.delete("refresh_token");

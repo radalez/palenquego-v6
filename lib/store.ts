@@ -3554,10 +3554,8 @@ export const useAppStore = create<AppState>()(
 
 
             fetchUserLikes: async () => {
-
-        const { accessToken } = get();
-
-        if (!accessToken) return;
+        const token = get().accessToken || (typeof window !== "undefined" && localStorage.getItem("app-storage") ? JSON.parse(localStorage.getItem("app-storage") as string)?.state?.accessToken : "");
+        if (!token) return;
 
         try {
 
@@ -4476,16 +4474,15 @@ toggleFavoritePreference: (serviceId) =>
               createdAt: camp.creado_el ? new Date(camp.creado_el) : new Date(),
 
               stats: {
-
-                clicks: 0,
-
-                purchases: 0,
-
-                totalEarned: 0,
-
+                clicks: camp.clics ?? camp.vistas ?? 0,
+                purchases: camp.ventas ?? 0,
+                totalEarned: camp.ganancia ?? 0,
                 paymentStatus: "PENDIENTE",
-
               },
+              clics: camp.clics ?? camp.vistas ?? 0,
+              vistas: camp.vistas ?? camp.clics ?? 0,
+              ventas: camp.ventas ?? 0,
+              ganancia: camp.ganancia ?? 0,
 
               tipo: camp.tipo,
 
