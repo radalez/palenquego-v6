@@ -6,10 +6,10 @@ import { generateVoucherPdf } from "@/lib/voucher-pdf"
 import QRCode from "react-qr-code"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { useAppStore, type Service, type Pool } from "@/lib/store"
 import { PoolsForServiceModal } from "./pools-for-service-modal"
+import { PhoneCountryInput } from "./phone-country-input"
 
 interface BookingModalProps {
   service: Service
@@ -259,8 +259,9 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
 
   const handleConfirmBooking = async () => {
     const phoneToUse = userPhone.trim() || currentUser?.telefono || ""
-    if (!phoneToUse) {
-      setPhoneError("Por favor ingresa tu número de WhatsApp para confirmar.")
+    const digitsOnly = phoneToUse.replace(/\D/g, "")
+    if (!phoneToUse || digitsOnly.length < 7) {
+      setPhoneError("Por favor ingresa un número de WhatsApp / celular válido (mínimo 7 dígitos).")
       return
     }
     setPhoneError("")
@@ -943,26 +944,31 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
             </div>
 
             {/* Phone/WhatsApp input to ensure contactability & CRM sync */}
-            <div className="bg-muted/70 rounded-xl p-3.5 border border-border space-y-1.5 text-left">
-              <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <Phone className="w-3.5 h-3.5 text-primary" />
-                WhatsApp / Celular para coordinar tu reserva
-              </label>
-              <Input
-                type="tel"
-                placeholder="Ej: +503 7000-0000"
+            <div className="bg-muted/70 rounded-xl p-3.5 border border-border space-y-2 text-left">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                  <Phone className="w-3.5 h-3.5 text-primary" />
+                  WhatsApp / Celular para coordinar tu reserva
+                </label>
+                <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+                  Obligatorio
+                </span>
+              </div>
+
+              <PhoneCountryInput
                 value={userPhone}
-                onChange={(e) => {
-                  setUserPhone(e.target.value)
+                onChange={(fullNumber) => {
+                  setUserPhone(fullNumber)
                   if (phoneError) setPhoneError("")
                 }}
-                className="h-11 rounded-lg bg-background border-border text-sm"
+                error={phoneError}
               />
+
               {phoneError ? (
                 <p className="text-xs text-destructive font-medium">{phoneError}</p>
               ) : (
                 <p className="text-[11px] text-muted-foreground">
-                  El comercio aliado y el equipo comercial te contactarán por este medio.
+                  El comercio aliado y el equipo de PalenqueGo te contactarán por este medio para coordinar tu llegada.
                 </p>
               )}
             </div>
