@@ -115,7 +115,7 @@ export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: Desk
   const mainTabs = [
     { id: "map-explorer", label: "Inicio", icon: Home },
     { id: "marketplace", label: "Servicios", icon: Briefcase },
-    { id: "pool", label: "Pool", icon: Users },
+    { id: "pool", label: "Mis Viajes", icon: Users },
     { id: "safeflow", label: "Safe-Flow", icon: ShieldCheck },
     { id: "rutas", label: "Go", icon: Map },
   ]

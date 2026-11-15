@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X, Crown, Zap, Star, Gem, LogOut, ChevronRight, CreditCard, Bell, Shield, HelpCircle, Truck, Store, Map } from "lucide-react"
+import { X, Crown, Zap, Star, Gem, LogOut, ChevronRight, CreditCard, Bell, Shield, HelpCircle, Truck, Store, Map, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAppStore } from "@/lib/store"
 import { cn } from "@/lib/utils"
@@ -27,6 +27,7 @@ export function SidebarMenu({ activeTab, onNavigate }: SidebarMenuProps) {
   ]
 
   const menuItems = [
+    { id: "pool", label: "Mis Viajes", icon: Users },
     { id: "marketplace", label: "Servicios & Comercios", icon: Store },
     { id: "safeflow", label: "Safe-Flow (Seguridad)", icon: Shield },
     { id: "planes", label: "Planes y Membresías", icon: Crown },

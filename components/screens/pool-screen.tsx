@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import { Users, Clock, MapPin, ChevronRight, Zap, Share2, Plus, Check, Sparkles, Bell, Trash2, MessageCircle, Car, Repeat, ShieldCheck, Navigation2 } from "lucide-react"
+import { Users, Clock, MapPin, ChevronRight, Zap, Share2, Plus, Check, Sparkles, Bell, Trash2, MessageCircle, Car, Repeat, ShieldCheck, Navigation2, Ticket, QrCode as QrCodeIcon, Download, CheckCircle2, CreditCard, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { cn, formatImageUrl, handleImageFallback } from "@/lib/utils"
@@ -9,6 +9,8 @@ import { useAppStore, type Pool, type Service } from "@/lib/store"
 import { CreatePoolModal } from "@/components/create-pool-modal"
 import { HeaderWithMenu } from "@/components/header-with-menu"
 import { UserRoutesModal } from "@/components/user-routes-modal"
+import { generateVoucherPdf } from "@/lib/voucher-pdf"
+import QRCode from "react-qr-code"
 
 interface PoolScreenProps {
   onOpenShare?: (pool: Pool) => void
@@ -21,8 +23,10 @@ export function PoolScreen({ onOpenShare, onOpenPayment, onNavigate }: PoolScree
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [modalService, setModalService] = useState<Service | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<string>("FOR_YOU")
-  const [activeSection, setActiveSection] = useState<"POOLS" | "MY_ROUTES">("POOLS")
+  const [activeSection, setActiveSection] = useState<"BOOKINGS" | "POOLS" | "MY_ROUTES">("BOOKINGS")
   const [isUserRoutesModalOpen, setIsUserRoutesModalOpen] = useState(false)
+  const [selectedQrBooking, setSelectedQrBooking] = useState<any | null>(null)
+  const [payingWompiId, setPayingWompiId] = useState<number | null>(null)
 
   const { 
     pools, 
@@ -39,6 +43,9 @@ export function PoolScreen({ onOpenShare, onOpenPayment, onNavigate }: PoolScree
     myUserRoutes = [],
     fetchMyUserRoutes,
     deleteUserRoute,
+    bookings = [],
+    fetchMyBookings,
+    payServiceWompi,
   } = useAppStore()
 
   useEffect(() => {
@@ -48,7 +55,45 @@ export function PoolScreen({ onOpenShare, onOpenPayment, onNavigate }: PoolScree
     if (fetchMyUserRoutes) {
       fetchMyUserRoutes();
     }
-  }, [fetchPools, fetchServices, fetchMyPoolInterests, fetchMyUserRoutes]);
+    if (fetchMyBookings) {
+      fetchMyBookings();
+    }
+  }, [fetchPools, fetchServices, fetchMyPoolInterests, fetchMyUserRoutes, fetchMyBookings]);
+
+  const userBookings = useMemo(() => {
+    if (!currentUser) return bookings
+    return bookings.filter((b) => {
+      return b.userId === currentUser.id || (!b.userId && b.userEmail === currentUser.email)
+    })
+  }, [bookings, currentUser])
+
+  const sortedBookings = useMemo(() => {
+    return [...userBookings].sort((a, b) => {
+      if (a.status === "PENDIENTE" && b.status !== "PENDIENTE") return -1
+      if (a.status !== "PENDIENTE" && b.status === "PENDIENTE") return 1
+      return b.id - a.id
+    })
+  }, [userBookings])
+
+  const handlePayWompi = async (booking: any) => {
+    setPayingWompiId(booking.id)
+    const url = await payServiceWompi(booking.service?.id || booking.serviceId, booking.totalPrice, booking.qrCode)
+    setPayingWompiId(null)
+    if (url) {
+      window.location.href = url
+    } else {
+      alert("No se pudo iniciar la pasarela Wompi en este momento. Puedes coordinar directamente por WhatsApp con el comercio aliado.")
+    }
+  }
+
+  const formatWhatsappLink = (booking: any) => {
+    const phone = booking.service?.socialLinks?.whatsapp || booking.businessPhone || "50370000000"
+    const clean = phone.replace(/[^0-9]/g, "")
+    const msg = encodeURIComponent(
+      `¡Hola! Quisiera coordinar o enviar comprobante de pago para mi reserva #${booking.qrCode} de "${booking.service?.name}" (${booking.date}, ${booking.guests} personas). Total: $${booking.totalPrice}`
+    )
+    return `https://wa.me/${clean}?text=${msg}`
+  }
 
   const myInterestedServices = useMemo(() => {
     return services.filter((s) => (registeredPoolInterests || []).includes(s.id))
@@ -133,29 +178,43 @@ export function PoolScreen({ onOpenShare, onOpenPayment, onNavigate }: PoolScree
 
   return (
     <div className="flex flex-col pb-28">
-      <HeaderWithMenu title="Mis Viajes" subtitle="Pools grupales y tus rutas privadas" onNavigate={onNavigate} />
+      <HeaderWithMenu title="Mis Viajes" subtitle="Reservas, pools grupales y tus rutas" onNavigate={onNavigate} />
       
-      {/* Selector de Pestañas: Pools Grupales vs Mis Rutas */}
-      <div className="px-4 py-2.5 flex items-center gap-2 border-b border-border bg-white sticky top-0 z-20 shadow-2xs">
+      {/* Selector de Pestañas: Mis Reservas vs Pools vs Mis Rutas */}
+      <div className="px-4 py-2.5 flex items-center gap-2 border-b border-border bg-white sticky top-0 z-20 shadow-2xs overflow-x-auto scrollbar-none">
+        <button
+          type="button"
+          onClick={() => setActiveSection("BOOKINGS")}
+          className={cn(
+            "flex-1 py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 whitespace-nowrap cursor-pointer",
+            activeSection === "BOOKINGS"
+              ? "bg-[#064e3b] text-white shadow-xs"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          )}
+        >
+          <Ticket className="w-4 h-4" />
+          <span>Mis Reservas ({sortedBookings.length})</span>
+        </button>
+
         <button
           type="button"
           onClick={() => setActiveSection("POOLS")}
           className={cn(
-            "flex-1 py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-95",
+            "flex-1 py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 whitespace-nowrap cursor-pointer",
             activeSection === "POOLS"
               ? "bg-[#064e3b] text-white shadow-xs"
               : "bg-gray-100 text-gray-600 hover:bg-gray-200"
           )}
         >
           <Users className="w-4 h-4" />
-          <span>Pools en Grupo ({pools.length})</span>
+          <span>Pools ({pools.length})</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveSection("MY_ROUTES")}
           className={cn(
-            "flex-1 py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-95",
+            "flex-1 py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 whitespace-nowrap cursor-pointer",
             activeSection === "MY_ROUTES"
               ? "bg-[#064e3b] text-white shadow-xs"
               : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -165,6 +224,159 @@ export function PoolScreen({ onOpenShare, onOpenPayment, onNavigate }: PoolScree
           <span>Mis Rutas ({myUserRoutes?.length || 0})</span>
         </button>
       </div>
+
+      {/* Pestaña 1: Mis Reservas y Estancias */}
+      {activeSection === "BOOKINGS" && (
+        <div className="px-4 py-4 space-y-4 max-w-3xl mx-auto w-full">
+          <div className="flex items-center justify-between pb-1">
+            <div>
+              <h2 className="text-sm font-bold text-muted-foreground tracking-wide uppercase">
+                Mis Reservas y Estancias
+              </h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Vouchers, comprobantes y estado de tus actividades
+              </p>
+            </div>
+            <Badge variant="outline" className="text-xs bg-muted text-foreground">
+              {sortedBookings.length} {sortedBookings.length === 1 ? "reserva" : "reservas"}
+            </Badge>
+          </div>
+
+          {sortedBookings.length === 0 ? (
+            <div className="bg-card border border-border rounded-2xl p-8 text-center shadow-xs">
+              <Ticket className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-40" />
+              <h3 className="text-base font-bold text-foreground">Sin reservas activas</h3>
+              <p className="text-xs text-muted-foreground mt-1 max-w-xs mx-auto">
+                Aún no tienes reservas realizadas. Explora el Marketplace para reservar hoteles, tours o gastronomía.
+              </p>
+              <Button
+                className="mt-4 bg-[#105238] hover:bg-[#0c3e2b] text-white text-xs font-bold px-4 py-2 rounded-xl cursor-pointer"
+                onClick={() => onNavigate?.("marketplace")}
+              >
+                Explorar Experiencias
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3.5">
+              {sortedBookings.map((b) => {
+                const isPending = b.status === "PENDIENTE"
+                return (
+                  <div
+                    key={b.id}
+                    className={cn(
+                      "bg-card rounded-2xl p-4 border transition-all shadow-sm space-y-3",
+                      isPending ? "border-amber-500/40 bg-amber-500/5 ring-1 ring-amber-500/20" : "border-border"
+                    )}
+                  >
+                    <div className="flex gap-3">
+                      <img
+                        src={b.service?.image || "/placeholder.svg"}
+                        alt={b.service?.name}
+                        className="w-16 h-16 rounded-xl object-cover shrink-0 border border-border"
+                        onError={(e) => handleImageFallback(e)}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <h4 className="font-bold text-foreground text-sm truncate">
+                            {b.service?.name || "Servicio Reservado"}
+                          </h4>
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "text-[10px] uppercase font-bold shrink-0 px-2 py-0.5 rounded-full",
+                              isPending
+                                ? "bg-amber-500/20 text-amber-700 border-amber-500/40"
+                                : "bg-[#eaf0e2] text-[#105238] border-[#8ee01a]"
+                            )}
+                          >
+                            {isPending ? (
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                Pendiente de Pago
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3" />
+                                {b.status === "PAGADO" ? "Pagado" : "Confirmado"}
+                              </span>
+                            )}
+                          </Badge>
+                        </div>
+
+                        <p className="text-xs text-muted-foreground mt-0.5">{b.date} • {b.time}</p>
+                        <p className="text-xs font-semibold text-primary mt-1">
+                          Total: ${b.totalPrice} <span className="text-muted-foreground font-normal">({b.guests} {b.guests === 1 ? "persona" : "personas"})</span>
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Acciones para cada reserva */}
+                    <div className="flex flex-wrap gap-2 pt-2 border-t border-border/60">
+                      {isPending && (
+                        <Button
+                          size="sm"
+                          onClick={() => handlePayWompi(b)}
+                          disabled={payingWompiId === b.id}
+                          className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold h-9 px-3 rounded-xl flex items-center gap-1.5 shadow-sm cursor-pointer"
+                        >
+                          <CreditCard className="w-3.5 h-3.5" />
+                          {payingWompiId === b.id ? "Abriendo Wompi..." : "Pagar con Wompi"}
+                        </Button>
+                      )}
+
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setSelectedQrBooking(b)}
+                        className="text-xs font-medium h-9 px-3 rounded-xl flex items-center gap-1.5 bg-background hover:bg-muted cursor-pointer"
+                      >
+                        <QrCodeIcon className="w-3.5 h-3.5 text-primary" />
+                        Ver Voucher QR
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={async () => {
+                          await generateVoucherPdf({
+                            qrCode: b.qrCode,
+                            serviceName: b.service?.name || "Servicio Turístico",
+                            businessName: b.service?.businessName || "Comercio Aliado",
+                            date: b.date,
+                            time: b.time,
+                            guests: b.guests,
+                            extras: b.extras,
+                            amount: b.totalPrice,
+                            status: b.status,
+                            customerName: currentUser?.name || "Viajero PalenqueGo",
+                            customerPhone: currentUser?.telefono || "",
+                            customerEmail: currentUser?.email || "",
+                            isPool: Boolean(b.poolId),
+                          })
+                        }}
+                        className="text-xs font-bold h-9 px-3 rounded-xl flex items-center gap-1.5 border-emerald-300 bg-white hover:bg-emerald-50 text-emerald-900 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                      >
+                        <Download className="w-3.5 h-3.5 text-emerald-700" />
+                        PDF
+                      </Button>
+
+                      <a
+                        href={formatWhatsappLink(b)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-xs font-medium bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-colors cursor-pointer"
+                      >
+                        <MessageCircle className="w-3.5 h-3.5" />
+                        WhatsApp
+                      </a>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {activeSection === "POOLS" && (
         <>
@@ -716,6 +928,50 @@ export function PoolScreen({ onOpenShare, onOpenPayment, onNavigate }: PoolScree
             fetchPools()
           }}
         />
+      )}
+
+      {/* QR Voucher Modal */}
+      {selectedQrBooking && (
+        <div className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-card border border-border w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-in zoom-in-95 duration-200 text-center relative">
+            <button
+              onClick={() => setSelectedQrBooking(null)}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-muted flex items-center justify-center cursor-pointer hover:bg-muted/80 transition-colors"
+            >
+              <X className="w-4 h-4 text-muted-foreground" />
+            </button>
+
+            <h3 className="text-lg font-bold text-foreground mb-1">Voucher de Reserva</h3>
+            <p className="text-xs text-muted-foreground mb-4">{selectedQrBooking.service?.name}</p>
+
+            <div className="bg-white p-4 rounded-2xl border border-border inline-flex items-center justify-center mx-auto mb-3 shadow-xs">
+              <QRCode
+                value={selectedQrBooking.qrCode || `RES-${selectedQrBooking.id}`}
+                size={160}
+                level="M"
+              />
+            </div>
+
+            <p className="text-xs font-mono font-bold text-primary mb-3">
+              {selectedQrBooking.qrCode || `RES-${selectedQrBooking.id}`}
+            </p>
+
+            <div className="text-left text-xs space-y-1.5 bg-muted/60 p-3 rounded-xl mb-4">
+              <p><strong className="text-foreground">Fecha:</strong> {selectedQrBooking.date}</p>
+              <p><strong className="text-foreground">Hora:</strong> {selectedQrBooking.time}</p>
+              <p><strong className="text-foreground">Personas:</strong> {selectedQrBooking.guests}</p>
+              <p><strong className="text-foreground">Total:</strong> ${selectedQrBooking.totalPrice}</p>
+              <p><strong className="text-foreground">Titular:</strong> {currentUser?.name || "Viajero PalenqueGo"}</p>
+            </div>
+
+            <Button
+              className="w-full bg-[#105238] hover:bg-[#0c3e2b] text-white font-semibold rounded-xl cursor-pointer"
+              onClick={() => setSelectedQrBooking(null)}
+            >
+              Cerrar
+            </Button>
+          </div>
+        </div>
       )}
 
       {/* Modal para Crear Nueva Ruta / Pedir Viaje directamente desde Mis Viajes */}
