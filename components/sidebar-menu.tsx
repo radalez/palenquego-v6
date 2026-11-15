@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X, Crown, Zap, Star, Gem, LogOut, ChevronRight, CreditCard, Bell, Shield, HelpCircle, Truck, Store, Map, Users } from "lucide-react"
+import { X, Crown, Zap, Star, Gem, LogOut, ChevronRight, CreditCard, Bell, Shield, HelpCircle, Truck, Store, Map, Users, QrCode } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAppStore } from "@/lib/store"
 import { cn } from "@/lib/utils"
@@ -140,6 +140,30 @@ export function SidebarMenu({ activeTab, onNavigate }: SidebarMenuProps) {
                 </div>
                 <ChevronRight className="w-4 h-4 opacity-70" />
               </a>
+            </div>
+          )}
+
+          {/* Sección de Recepción (Dueños y Personal Autorizado) */}
+          {(currentUser?.es_recepcion || currentUser?.es_aliado || currentUser?.tipo === "ALIADO" || (currentUser?.reception_stores?.length ?? 0) > 0) && (
+            <div className="mb-6 p-3.5 bg-[#eaf0e2]/70 dark:bg-[#105238]/15 rounded-2xl border border-[#aeb6a1]/60 shadow-2xs">
+              <div className="flex items-center justify-between mb-2 px-1">
+                <span className="text-[11px] font-black uppercase tracking-wider text-[#105238] dark:text-[#8ee01a]">
+                  Recepción
+                </span>
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full uppercase bg-[#105238] text-[#8ee01a]">
+                  QR & Cobro
+                </span>
+              </div>
+              <button
+                onClick={() => handleNavigate("recepcion")}
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all font-bold text-sm bg-[#105238] text-white shadow-sm hover:bg-[#0c3e2b]"
+              >
+                <div className="flex items-center gap-2.5">
+                  <QrCode className="w-5 h-5 text-[#8ee01a]" />
+                  <span>Validar QR / Recepción</span>
+                </div>
+                <ChevronRight className="w-4 h-4 opacity-70" />
+              </button>
             </div>
           )}
 

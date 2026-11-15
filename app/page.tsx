@@ -29,6 +29,7 @@ import { RecommendationsScreen } from "@/components/screens/recommendations-scre
 import { DriverGPSWidget } from "@/components/driver-gps-widget"
 import { DriverScreen } from "@/components/screens/driver-screen"
 import { DriverKycScreen } from "@/components/screens/driver-kyc-screen"
+import { ReceptionScreen } from "@/components/screens/reception-screen"
 import { ShareInviteModal } from "@/components/share-invite-modal"
 import { PoolPaymentModal } from "@/components/pool-payment-modal"
 import { InstallPWABanner } from "@/components/install-pwa-banner"
@@ -47,6 +48,7 @@ type ActiveTab =
   | "rutas"
   | "rutas-classic"
   | "conductor"
+  | "recepcion"
   | "kyc"
   | "billing"
   | "planes"
@@ -302,6 +304,11 @@ export default function Home() {
 
         {/* Panel del Conductor */}
         {activeTab === "conductor" && <DriverScreen onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />}
+
+        {/* Panel de Recepción (Comercios y Personal Autorizado) */}
+        {activeTab === "recepcion" && (
+          <ReceptionScreen onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />
+        )}
         
         {/* Vista Clásica de Rutas */}
         {activeTab === "rutas-classic" && (

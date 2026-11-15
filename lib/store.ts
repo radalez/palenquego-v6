@@ -64,7 +64,7 @@ import { playNotificationSound } from "@/lib/utils"
 
 
 
-const API_BASE = "/api-proxy";
+export const API_BASE = "/api-proxy";
 
 const MEDIA_BASE = "/media-proxy";
 
@@ -695,6 +695,15 @@ interface AppState {
     es_aliado?: boolean;
 
     es_chofer?: boolean;
+
+    es_recepcion?: boolean;
+
+    reception_stores?: Array<{
+      id: number;
+      nombre_comercial: string;
+      puede_confirmar_pago: boolean;
+      is_owner: boolean;
+    }>;
 
     es_viajero?: boolean;
 
@@ -1736,6 +1745,10 @@ export const useAppStore = create<AppState>()(
                 es_aliado: isAliado,
 
                 es_chofer: isChofer,
+
+                es_recepcion: Boolean(data.es_recepcion),
+
+                reception_stores: Array.isArray(data.reception_stores) ? data.reception_stores : [],
 
                 es_viajero: true,
 

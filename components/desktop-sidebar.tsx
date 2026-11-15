@@ -216,6 +216,35 @@ export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: Desk
           </div>
         )}
 
+        {/* Sección de Recepción (Dueños y Personal Autorizado) */}
+        {(currentUser?.es_recepcion || currentUser?.es_aliado || currentUser?.tipo === "ALIADO" || (currentUser?.reception_stores?.length ?? 0) > 0) && (
+          <div className="mb-6 p-3.5 bg-[#eaf0e2]/70 dark:bg-[#105238]/15 rounded-2xl border border-[#aeb6a1]/60 shadow-2xs">
+            <div className="flex items-center justify-between mb-2 px-1">
+              <span className="text-[11px] font-black uppercase tracking-wider text-[#105238] dark:text-[#8ee01a]">
+                Recepción
+              </span>
+              <span className="text-[10px] font-black px-2 py-0.5 rounded-full uppercase bg-[#105238] text-[#8ee01a]">
+                QR & Cobro
+              </span>
+            </div>
+            <button
+              onClick={() => onNavigate("recepcion")}
+              className={cn(
+                "w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all font-bold text-sm shadow-xs cursor-pointer",
+                activeTab === "recepcion"
+                  ? "bg-[#105238] text-white"
+                  : "bg-white dark:bg-card text-[#105238] hover:bg-[#eaf0e2]",
+              )}
+            >
+              <div className="flex items-center gap-2.5">
+                <QrCode className={cn("w-5 h-5", activeTab === "recepcion" ? "text-[#8ee01a]" : "text-[#105238]")} />
+                <span>Validar QR / Recepción</span>
+              </div>
+              <ChevronRight className="w-4 h-4 opacity-70" />
+            </button>
+          </div>
+        )}
+
         {/* Main Navigation */}
         <div className="mb-6">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-2">Explorar</p>
