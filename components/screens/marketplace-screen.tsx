@@ -337,7 +337,7 @@ function CategoryCarouselStrip({
         ref={trackRef}
         className="flex gap-3 overflow-x-auto scrollbar-hide snap-x pb-1"
       >
-        {items.map((cs) => (
+        {items.slice(0, 10).map((cs) => (
           <div
             key={cs.id}
             onClick={() => onOpenService(cs.id)}
@@ -372,6 +372,133 @@ function CategoryCarouselStrip({
             </div>
           </div>
         ))}
+
+        {/* Final "Ver más" card at the end of the 10-card carousel */}
+        <button
+          type="button"
+          onClick={() => onSelectCategory(categoryId)}
+          className="w-36 shrink-0 snap-start bg-[#105238] text-white rounded-2xl p-4 flex flex-col items-center justify-center gap-2.5 hover:bg-[#0c3e2b] transition-colors cursor-pointer"
+        >
+          <span className="w-10 h-10 rounded-full bg-[#8ee01a] text-[#105238] flex items-center justify-center">
+            <ChevronRight className="w-5 h-5" />
+          </span>
+          <span className="text-xs font-black text-center leading-snug">
+            Ver más en {categoryLabel}
+          </span>
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function RoutesCarouselStrip({
+  routes,
+  onSelectRoute,
+  onViewAllRoutes,
+}: {
+  routes: any[]
+  onSelectRoute: (routeName: string) => void
+  onViewAllRoutes: () => void
+}) {
+  const trackRef = useRef<HTMLDivElement | null>(null)
+  const scrollTrack = (dir: "left" | "right") => {
+    if (!trackRef.current) return
+    trackRef.current.scrollBy({ left: dir === "right" ? 260 : -260, behavior: "smooth" })
+  }
+  if (!routes || routes.length === 0) return null
+
+  return (
+    <div className="bg-gradient-to-br from-[#105238]/10 via-[#eaf0e2]/70 to-white dark:from-card dark:to-card border border-[#105238]/25 rounded-3xl p-4 shadow-[0_8px_24px_rgba(16,82,56,0.08)] space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="w-9 h-9 rounded-2xl bg-[#105238] text-[#8ee01a] flex items-center justify-center shadow-sm shrink-0">
+            <Compass className="w-4 h-4" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-[10px] font-black uppercase tracking-wider text-[#105238]/80">
+              Tours y Transporte Go
+            </p>
+            <h4 className="text-sm sm:text-base font-extrabold text-[#105238] dark:text-foreground truncate">
+              Rutas guiadas en el mapa
+            </h4>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => scrollTrack("left")}
+            className="hidden sm:flex w-7 h-7 rounded-full bg-white border border-[#aeb6a1]/60 items-center justify-center text-[#105238] hover:bg-[#105238] hover:text-white transition-colors cursor-pointer"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => scrollTrack("right")}
+            className="hidden sm:flex w-7 h-7 rounded-full bg-white border border-[#aeb6a1]/60 items-center justify-center text-[#105238] hover:bg-[#105238] hover:text-white transition-colors cursor-pointer"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={onViewAllRoutes}
+            className="text-xs font-bold bg-[#105238] text-[#8ee01a] px-3 py-1.5 rounded-full hover:bg-[#0c3e2b] transition-colors cursor-pointer"
+          >
+            Ver mapa
+          </button>
+        </div>
+      </div>
+
+      <div ref={trackRef} className="flex gap-3 overflow-x-auto scrollbar-hide snap-x pb-1">
+        {routes.slice(0, 10).map((route: any) => {
+          const thumb = route.image || route.imagen_portada || DEFAULT_STORE_COVER
+          return (
+            <div
+              key={route.id}
+              onClick={() => onSelectRoute(route.name)}
+              className="w-44 sm:w-48 shrink-0 snap-start bg-white dark:bg-background border border-border/80 rounded-2xl overflow-hidden shadow-xs hover:shadow-md hover:border-[#105238]/40 transition-all cursor-pointer flex flex-col"
+            >
+              <div className="relative h-28 bg-muted overflow-hidden">
+                <img
+                  src={thumb}
+                  alt={route.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = DEFAULT_STORE_COVER
+                  }}
+                />
+                {route.duration && (
+                  <span className="absolute bottom-2 left-2 bg-[#105238]/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                    {route.duration}
+                  </span>
+                )}
+              </div>
+              <div className="p-2.5 flex-1 flex flex-col justify-between gap-2">
+                <p className="text-xs font-extrabold text-foreground line-clamp-2 leading-snug">{route.name}</p>
+                <div className="flex items-center justify-between pt-1 border-t border-border/50">
+                  <span className="text-xs font-black text-[#105238]">
+                    {route.price ? `$${route.price}` : "Ruta Go"}
+                  </span>
+                  <span className="text-[10px] font-bold text-[#105238] bg-[#eaf0e2] px-2 py-0.5 rounded-full">
+                    Ver ruta
+                  </span>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+
+        <button
+          type="button"
+          onClick={onViewAllRoutes}
+          className="w-36 shrink-0 snap-start bg-[#105238] text-white rounded-2xl p-4 flex flex-col items-center justify-center gap-2.5 hover:bg-[#0c3e2b] transition-colors cursor-pointer"
+        >
+          <span className="w-10 h-10 rounded-full bg-[#8ee01a] text-[#105238] flex items-center justify-center">
+            <Compass className="w-5 h-5" />
+          </span>
+          <span className="text-xs font-black text-center leading-snug">
+            Ver todas las rutas
+          </span>
+        </button>
       </div>
     </div>
   )
@@ -390,6 +517,7 @@ interface TravelerPost {
   author: string
   avatar?: string
   text: string
+  rating?: number
   taggedServiceId?: number
   taggedServiceName?: string
   createdAt: string
@@ -473,12 +601,26 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   const [openShareId, setOpenShareId] = useState<number | null>(null)
   const [copiedServiceId, setCopiedServiceId] = useState<number | null>(null)
 
-  // Traveler Post Composer state
+  // Traveler Post Composer Modal state (requires selecting a lived experience + rating)
+  const [showPublishModal, setShowPublishModal] = useState(false)
   const [composerText, setComposerText] = useState("")
-  const [composerTaggedServiceId, setComposerTaggedServiceId] = useState<number | "">("")
+  const [publishSearchQuery, setPublishSearchQuery] = useState("")
+  const [publishSearchResults, setPublishSearchResults] = useState<Array<{ id: number; name: string; image: string; location: string; category: string }>>([])
+  const [isSearchingPublish, setIsSearchingPublish] = useState(false)
+  const [selectedPublishService, setSelectedPublishService] = useState<{ id: number; name: string; image: string; location: string } | null>(null)
+  const [publishRating, setPublishRating] = useState<number>(5)
+  const [publishReaction, setPublishReaction] = useState<ReactionKey | null>("fascino")
+  const [isPublishingExperience, setIsPublishingExperience] = useState(false)
+  const [publishError, setPublishError] = useState<string | null>(null)
   const [travelerPosts, setTravelerPosts] = useState<TravelerPost[]>([])
   const [openTravelerCommentsId, setOpenTravelerCommentsId] = useState<string | null>(null)
   const [travelerCommentDrafts, setTravelerCommentDrafts] = useState<Record<string, string>>({})
+
+  // 40-item smart batch pagination & refs
+  const BATCH_SIZE = 40
+  const [batchStart, setBatchStart] = useState(0)
+  const routesTrackRef = useRef<HTMLDivElement | null>(null)
+  const feedTopRef = useRef<HTMLDivElement | null>(null)
 
   const [activePoolTooltipId, setActivePoolTooltipId] = useState<number | null>(null)
   const observerInstance = useRef<IntersectionObserver | null>(null)
@@ -802,22 +944,127 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     setCommentDrafts((prev) => ({ ...prev, [serviceId]: "" }))
   }
 
-  const handlePublishTravelerPost = (e: React.FormEvent) => {
+  // Live search for lived experiences inside the Publish Modal
+  useEffect(() => {
+    if (!showPublishModal) return
+    const q = publishSearchQuery.trim()
+    const localMatches = (q
+      ? services.filter((s) => s.name.toLowerCase().includes(q.toLowerCase()))
+      : services
+    )
+      .slice(0, 8)
+      .map((s) => ({
+        id: s.id,
+        name: s.name,
+        image: s.image || DEFAULT_STORE_COVER,
+        location: s.location || "El Salvador",
+        category: s.category || "Experiencia",
+      }))
+    setPublishSearchResults(localMatches)
+
+    if (q.length < 2) return
+    let active = true
+    const timer = setTimeout(async () => {
+      setIsSearchingPublish(true)
+      try {
+        const res = await fetch(`${API_BASE}/catalog/?search=${encodeURIComponent(q)}&page_size=8`)
+        if (!res.ok || !active) return
+        const data = await res.json()
+        const rows = Array.isArray(data) ? data : data.results || []
+        if (active && rows.length > 0) {
+          setPublishSearchResults(
+            rows.slice(0, 8).map((r: any) => ({
+              id: r.id,
+              name: r.nombre || r.name,
+              image: r.imagen_url || r.imagen_cloudinary_url || DEFAULT_STORE_COVER,
+              location: r.tienda?.nombre_comercial || "El Salvador",
+              category: r.categoria?.nombre || "Experiencia",
+            })),
+          )
+        }
+      } catch {
+        // Keep local matches
+      } finally {
+        if (active) setIsSearchingPublish(false)
+      }
+    }, 260)
+
+    return () => {
+      active = false
+      clearTimeout(timer)
+    }
+  }, [publishSearchQuery, showPublishModal, services])
+
+  const handlePublishTravelerPost = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!composerText.trim()) return
-    const taggedService = composerTaggedServiceId
-      ? services.find((s) => s.id === Number(composerTaggedServiceId))
-      : undefined
+    setPublishError(null)
+    if (!selectedPublishService) {
+      setPublishError("Debes buscar y seleccionar una experiencia que hayas vivido para publicar.")
+      return
+    }
+    if (!composerText.trim()) {
+      setPublishError("Cuéntanos cómo te fue en esa experiencia.")
+      return
+    }
+
+    setIsPublishingExperience(true)
+    const cleanText = composerText.trim()
+    let savedToServer = false
+
+    try {
+      const res = await fetchWithAuth(`${API_BASE}/catalog/${selectedPublishService.id}/reviews/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          calificacion: publishRating,
+          comentario: cleanText,
+        }),
+      })
+      if (res.status === 401) {
+        setPublishError("Inicia sesión en PalenqueGo para publicar tu calificación y comentario real.")
+        setIsPublishingExperience(false)
+        return
+      }
+      if (res.ok) {
+        const data = await res.json()
+        savedToServer = true
+        const r = data.review
+        const savedComment: ServiceComment = {
+          id: String(r?.id || Date.now()),
+          author: r?.autor_nombre || currentUser?.name || "Viajero PalenqueGo",
+          text: r?.comentario || cleanText,
+          rating: r?.calificacion || publishRating,
+          createdAt: "Ahora",
+        }
+        setServiceComments((prev) => ({
+          ...prev,
+          [selectedPublishService.id]: [savedComment, ...(prev[selectedPublishService.id] || [])],
+        }))
+      }
+    } catch {
+      // Fallback handled below
+    }
+
+    if (publishReaction) {
+      await toggleServiceReaction(selectedPublishService.id, publishReaction)
+    }
+
     const newPost: TravelerPost = {
       id: `post-${Date.now()}`,
       author: currentUser?.name || "Viajero PalenqueGo",
       avatar: currentUser?.avatar,
-      text: composerText.trim(),
-      taggedServiceId: taggedService?.id,
-      taggedServiceName: taggedService?.name,
-      createdAt: new Date().toLocaleString([], { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }),
-      reactions: { trato: 0, divertido: 0, fascino: 0, quiero_ir: 0 },
-      userReaction: null,
+      text: cleanText,
+      rating: publishRating,
+      taggedServiceId: selectedPublishService.id,
+      taggedServiceName: selectedPublishService.name,
+      createdAt: savedToServer ? "Publicado ahora" : new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      reactions: {
+        trato: publishReaction === "trato" ? 1 : 0,
+        divertido: publishReaction === "divertido" ? 1 : 0,
+        fascino: publishReaction === "fascino" ? 1 : 0,
+        quiero_ir: publishReaction === "quiero_ir" ? 1 : 0,
+      },
+      userReaction: publishReaction,
       comments: [],
     }
     setTravelerPosts((prev) => {
@@ -827,8 +1074,13 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
       }
       return updated
     })
+
     setComposerText("")
-    setComposerTaggedServiceId("")
+    setPublishSearchQuery("")
+    setSelectedPublishService(null)
+    setPublishRating(5)
+    setIsPublishingExperience(false)
+    setShowPublishModal(false)
   }
 
   const handleReactTravelerPost = (postId: string, reaction: ReactionKey) => {
@@ -962,6 +1214,29 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     [],
   )
 
+  useEffect(() => {
+    setBatchStart(0)
+  }, [selectedCategory, onlyPreferred, searchQuery])
+
+  const visibleBatchServices = useMemo(() => {
+    if (orderedServices.length <= BATCH_SIZE) return orderedServices
+    const slice = orderedServices.slice(batchStart, batchStart + BATCH_SIZE)
+    return slice.length > 0 ? slice : orderedServices.slice(0, BATCH_SIZE)
+  }, [orderedServices, batchStart])
+
+  const handleLoadNextBatch = async () => {
+    if (catalogHasMore) {
+      await fetchMoreServices()
+    }
+    if (batchStart + BATCH_SIZE < orderedServices.length) {
+      setBatchStart((prev) => prev + BATCH_SIZE)
+    } else {
+      setBatchStart(0)
+      setFeedSeed(Math.floor(Math.random() * 99999))
+    }
+    feedTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }
+
   return (
     <div className="flex flex-col min-h-screen bg-[#fafaf8] dark:bg-background">
       <HeaderWithMenu
@@ -974,7 +1249,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
       <div className="max-w-[1160px] mx-auto w-full px-4 sm:px-8 lg:px-10 pt-5 pb-28">
         <div className="flex flex-col lg:flex-row lg:justify-center lg:gap-12 items-start">
           {/* LEFT / CENTER COLUMN: SOCIAL FEED */}
-          <div className="w-full max-w-[560px] mx-auto lg:mx-0 space-y-5">
+          <div ref={feedTopRef} className="w-full max-w-[560px] mx-auto lg:mx-0 space-y-5">
             {/* Pending Booking Banner */}
             {pendingBookings.length > 0 && (
               <div className="p-3.5 bg-[#eaf0e2] border border-[#8ee01a]/70 rounded-2xl flex items-center justify-between gap-3 shadow-2xs">
@@ -1002,8 +1277,8 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
               </div>
             )}
 
-            {/* TOP "RUTAS GO" CIRCULAR STRIP (replaces Stories) */}
-            <div className="bg-card border border-border rounded-3xl p-4 shadow-2xs">
+            {/* TOP "RUTAS GO" CIRCULAR STRIP (with arrows + 10 routes + Ver más) */}
+            <div className="bg-card border border-border rounded-3xl p-4 shadow-2xs relative">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Compass className="w-4 h-4 text-[#105238]" />
@@ -1011,17 +1286,35 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                     Rutas & Destinos Go
                   </h2>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => onNavigate?.("map-explorer")}
-                  className="text-xs font-bold text-[#105238] hover:underline flex items-center gap-0.5 cursor-pointer"
-                >
-                  <span>Abrir mapa</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => routesTrackRef.current?.scrollBy({ left: -240, behavior: "smooth" })}
+                    className="hidden sm:flex w-6 h-6 rounded-full border border-border items-center justify-center text-muted-foreground hover:text-[#105238] hover:border-[#105238] transition-colors cursor-pointer"
+                    aria-label="Rutas anteriores"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => routesTrackRef.current?.scrollBy({ left: 240, behavior: "smooth" })}
+                    className="hidden sm:flex w-6 h-6 rounded-full border border-border items-center justify-center text-muted-foreground hover:text-[#105238] hover:border-[#105238] transition-colors cursor-pointer"
+                    aria-label="Siguientes rutas"
+                  >
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onNavigate?.("map-explorer")}
+                    className="text-xs font-bold text-[#105238] hover:underline flex items-center gap-0.5 ml-1 cursor-pointer"
+                  >
+                    <span>Abrir mapa</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
 
-              <div className="flex items-start gap-3.5 overflow-x-auto pb-1 scrollbar-hide">
+              <div ref={routesTrackRef} className="flex items-start gap-3.5 overflow-x-auto pb-1 scrollbar-hide">
                 {/* First Circle: Open Interactive Map Go */}
                 <button
                   type="button"
@@ -1038,8 +1331,8 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   </span>
                 </button>
 
-                {/* Real Routes Circles */}
-                {routes.slice(0, 12).map((route: any) => {
+                {/* Real Routes Circles (up to 10) */}
+                {routes.slice(0, 10).map((route: any) => {
                   const thumb = route.image || route.imagen_portada || DEFAULT_STORE_COVER
                   return (
                     <button
@@ -1067,6 +1360,20 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                     </button>
                   )
                 })}
+
+                {/* Final Circle: Ver más rutas */}
+                <button
+                  type="button"
+                  onClick={() => onNavigate?.("map-explorer")}
+                  className="flex flex-col items-center gap-1.5 shrink-0 w-18 group cursor-pointer"
+                >
+                  <div className="w-15 h-15 rounded-full bg-[#eaf0e2] border-2 border-[#105238]/30 flex items-center justify-center group-hover:bg-[#105238] group-hover:text-[#8ee01a] text-[#105238] transition-colors">
+                    <ChevronRight className="w-6 h-6" />
+                  </div>
+                  <span className="text-[11px] font-bold text-[#105238] text-center leading-tight">
+                    Ver más
+                  </span>
+                </button>
               </div>
             </div>
 
@@ -1176,54 +1483,34 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
               </div>
             </div>
 
-            {/* TRAVELER EXPERIENCE COMPOSER (Text + Optional Tagged Service, NO photo upload) */}
-            <form
-              onSubmit={handlePublishTravelerPost}
-              className="bg-card border border-border rounded-3xl p-4 shadow-2xs space-y-3"
+            {/* TRAVELER EXPERIENCE TRIGGER (Opens Blurred-Backdrop Modal) */}
+            <div
+              onClick={() => {
+                setPublishError(null)
+                setShowPublishModal(true)
+              }}
+              className="bg-card border border-border rounded-3xl p-4 shadow-2xs space-y-3 cursor-pointer hover:border-[#105238]/40 transition-colors"
             >
-              <div className="flex items-start gap-3">
+              <div className="flex items-center gap-3">
                 <Avatar className="w-10 h-10 border border-[#105238]/30 shrink-0">
                   <AvatarImage src={currentUser?.avatar} alt={currentUser?.name || "Viajero"} />
                   <AvatarFallback className="bg-[#105238] text-white font-bold text-xs">
                     {(currentUser?.name || "PG").substring(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <textarea
-                  rows={2}
-                  value={composerText}
-                  onChange={(e) => setComposerText(e.target.value)}
-                  placeholder="¿Qué experiencia de viaje quieres compartir hoy con la comunidad?"
-                  className="flex-1 bg-background border border-border rounded-2xl px-3.5 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#105238]"
-                />
-              </div>
-
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-border/60">
-                <div className="flex items-center gap-2 flex-1 min-w-[180px]">
-                  <MapPin className="w-4 h-4 text-[#105238] shrink-0" />
-                  <select
-                    value={composerTaggedServiceId}
-                    onChange={(e) => setComposerTaggedServiceId(e.target.value ? Number(e.target.value) : "")}
-                    className="h-9 rounded-xl border border-border bg-background px-2.5 text-xs font-medium text-foreground max-w-xs w-full"
-                  >
-                    <option value="">Etiquetar una experiencia (opcional)</option>
-                    {services.slice(0, 30).map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
+                <div className="flex-1 bg-background border border-border rounded-full px-4 py-2.5 text-xs sm:text-sm text-muted-foreground hover:bg-muted/40 transition-colors">
+                  ¿Viviste una experiencia increíble? Cuéntala y califica el lugar...
                 </div>
-
-                <Button
-                  type="submit"
-                  disabled={!composerText.trim()}
-                  className="h-9 px-4 rounded-xl bg-[#105238] hover:bg-[#0c3e2b] text-white font-bold text-xs gap-1.5 cursor-pointer"
-                >
-                  <Send className="w-3.5 h-3.5 text-[#8ee01a]" />
-                  <span>Publicar</span>
-                </Button>
               </div>
-            </form>
+              <div className="flex items-center justify-between pt-2 border-t border-border/60 text-xs font-bold text-[#105238]">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#eaf0e2]">
+                  <Star className="w-3.5 h-3.5 fill-[#105238]" /> Calificar lugar visitado
+                </span>
+                <span className="inline-flex items-center gap-1 text-muted-foreground font-semibold">
+                  <MapPin className="w-3.5 h-3.5 text-[#105238]" /> Buscar experiencia
+                </span>
+              </div>
+            </div>
 
             {/* USER TRAVELER POSTS */}
             {travelerPosts.map((post) => {
@@ -1254,14 +1541,28 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">{post.text}</p>
 
                   {post.taggedServiceId && post.taggedServiceName && (
-                    <button
-                      type="button"
-                      onClick={() => router.push(`/s/${post.taggedServiceId}?from=marketplace`)}
-                      className="inline-flex items-center gap-1.5 text-xs font-bold text-[#105238] bg-[#eaf0e2] hover:bg-[#eaf0e2]/80 px-3 py-1.5 rounded-xl cursor-pointer"
-                    >
-                      <MapPin className="w-3.5 h-3.5" />
-                      <span>{post.taggedServiceName}</span>
-                    </button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/s/${post.taggedServiceId}#resenas-reales`)}
+                        className="inline-flex items-center gap-1.5 text-xs font-bold text-[#105238] bg-[#eaf0e2] hover:bg-[#eaf0e2]/80 px-3 py-1.5 rounded-xl cursor-pointer"
+                      >
+                        <MapPin className="w-3.5 h-3.5" />
+                        <span>{post.taggedServiceName}</span>
+                        {post.rating && (
+                          <span className="inline-flex items-center gap-0.5 ml-1 bg-[#105238] text-[#8ee01a] px-1.5 py-0.5 rounded-full text-[10px]">
+                            <Star className="w-2.5 h-2.5 fill-[#8ee01a]" /> {post.rating}
+                          </span>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/s/${post.taggedServiceId}#resenas-reales`)}
+                        className="text-[11px] font-bold text-[#105238] hover:underline cursor-pointer"
+                      >
+                        Ver reseña en la experiencia →
+                      </button>
+                    </div>
                   )}
 
                   {/* Quick Reaction Pills */}
@@ -1354,7 +1655,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
               </div>
             ) : (
               <div className="space-y-5">
-                {orderedServices.map((service, serviceIdx) => {
+                {visibleBatchServices.map((service, serviceIdx) => {
                   const hasFlashOffer = Boolean(
                     service.oferta_flash && (service.oferta_flash.cupos_disponibles ?? 0) > 0,
                   )
@@ -1871,15 +2172,36 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                       )}
                     </article>
 
-                    {/* Inline PalenqueGo Category Carousel every 4 posts so categories appear naturally as you scroll */}
+                    {/* Cyclic Inline Carousels every 4 posts: Categories + Mapa Go Tours/Routes */}
                     {selectedCategory === "all" &&
-                      (serviceIdx + 1) % 4 === 0 &&
-                      discoveryCategories.length > 0 && (() => {
-                        const catOffset = Math.floor((serviceIdx + 1) / 4 - 1 + (feedSeed % discoveryCategories.length))
-                        const targetCat = discoveryCategories[catOffset % discoveryCategories.length]
+                      (serviceIdx + 1) % 4 === 0 && (() => {
+                        const carouselSlot = Math.floor((serviceIdx + 1) / 4) - 1
+                        // Every 3rd carousel shows Mapa Go Tours & Routes
+                        if (carouselSlot % 3 === 2 && routes.length > 0) {
+                          return (
+                            <RoutesCarouselStrip
+                              routes={routes}
+                              onSelectRoute={(routeName) => {
+                                useAppStore.getState().setReturnToMapRoute(routeName)
+                                onNavigate?.("map-explorer")
+                              }}
+                              onViewAllRoutes={() => onNavigate?.("map-explorer")}
+                            />
+                          )
+                        }
+                        if (discoveryCategories.length === 0) return null
+                        const orderedCats =
+                          preferredCategories.length > 0
+                            ? [
+                                ...discoveryCategories.filter((c) => preferredCategories.includes(c.id)),
+                                ...discoveryCategories.filter((c) => !preferredCategories.includes(c.id)),
+                              ]
+                            : discoveryCategories
+                        const catOffset = carouselSlot + (feedSeed % orderedCats.length)
+                        const targetCat = orderedCats[catOffset % orderedCats.length]
                         const catSamples = services
                           .filter((s) => matchesCategory(s, targetCat.id) && s.id !== service.id)
-                          .slice(0, 8)
+                          .slice(0, 10)
                         if (catSamples.length === 0) return null
                         return (
                           <CategoryCarouselStrip
@@ -1951,36 +2273,35 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   </div>
                 )}
 
-                {/* Pagination / Click-to-Load + Infinite Scroll Sentinel */}
-                {catalogHasMore ? (
-                  <div
-                    ref={sentinelRef}
-                    className="py-6 flex flex-col items-center justify-center gap-3"
-                  >
+                {/* Smart 40-Item Batch Refresh + Infinite Scroll Sentinel */}
+                <div
+                  ref={catalogHasMore ? sentinelRef : undefined}
+                  className="py-6 flex flex-col items-center justify-center gap-3"
+                >
+                  {(orderedServices.length >= BATCH_SIZE || catalogHasMore) && (
                     <Button
                       type="button"
-                      variant="outline"
                       disabled={isFetchingMoreCatalog}
-                      onClick={() => fetchMoreServices()}
-                      className="rounded-full px-6 h-10 border-[#105238]/40 text-[#105238] hover:bg-[#eaf0e2] font-bold text-xs gap-2 cursor-pointer"
+                      onClick={handleLoadNextBatch}
+                      className="rounded-full px-6 h-10 bg-[#105238] hover:bg-[#0c3e2b] text-[#8ee01a] font-black text-xs gap-2 shadow-sm cursor-pointer"
                     >
                       {isFetchingMoreCatalog ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>Cargando más experiencias...</span>
+                          <span>Cargando nuevas experiencias...</span>
                         </>
                       ) : (
-                        <span>Cargar más experiencias</span>
+                        <>
+                          <Shuffle className="w-3.5 h-3.5" />
+                          <span>Ver 40 experiencias nuevas</span>
+                        </>
                       )}
                     </Button>
-                  </div>
-                ) : (
-                  orderedServices.length > 0 && (
-                    <div className="py-6 text-center text-xs text-muted-foreground border-t border-border/50">
-                      Has explorado todas las experiencias disponibles ({orderedServices.length})
-                    </div>
-                  )
-                )}
+                  )}
+                  <p className="text-[11px] text-muted-foreground">
+                    Mostrando {visibleBatchServices.length} de {orderedServices.length} experiencias cargadas
+                  </p>
+                </div>
               </div>
             )}
           </div>
@@ -2313,6 +2634,214 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                 ))}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* BLURRED-BACKDROP MODAL: PUBLICAR EXPERIENCIA VIVIDA + CALIFICACION REAL */}
+      {showPublishModal && (
+        <div
+          onClick={() => setShowPublishModal(false)}
+          className="fixed inset-0 z-50 bg-black/45 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-card border border-border w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+          >
+            {/* Modal Header */}
+            <div className="px-5 py-4 border-b border-border flex items-center justify-between bg-[#fafaf8] dark:bg-card">
+              <div className="flex items-center gap-2.5">
+                <span className="w-8 h-8 rounded-xl bg-[#105238] text-[#8ee01a] flex items-center justify-center">
+                  <Star className="w-4 h-4 fill-[#8ee01a]" />
+                </span>
+                <div>
+                  <h3 className="font-black text-base text-foreground">Publicar experiencia vivida</h3>
+                  <p className="text-[11px] text-muted-foreground">
+                    Tu comentario y estrellas se guardan directo en la experiencia
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPublishModal(false)}
+                className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handlePublishTravelerPost} className="p-5 space-y-4 max-h-[82vh] overflow-y-auto hover-scrollbar">
+              {/* Step 1: Mandatory Search & Select Lived Experience */}
+              <div className="space-y-2">
+                <label className="text-xs font-extrabold text-foreground flex items-center justify-between">
+                  <span>1. ¿Qué lugar o experiencia visitaste? *</span>
+                  <span className="text-[10px] font-bold text-[#105238] bg-[#eaf0e2] px-2 py-0.5 rounded-full">
+                    Requerido
+                  </span>
+                </label>
+
+                {selectedPublishService ? (
+                  <div className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-[#eaf0e2]/70 border border-[#105238]/30">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <img
+                        src={selectedPublishService.image || DEFAULT_STORE_COVER}
+                        alt={selectedPublishService.name}
+                        className="w-11 h-11 rounded-xl object-cover shrink-0"
+                      />
+                      <div className="min-w-0">
+                        <p className="text-xs font-extrabold text-[#105238] truncate">
+                          {selectedPublishService.name}
+                        </p>
+                        <p className="text-[11px] text-[#105238]/75 truncate">
+                          {selectedPublishService.location}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPublishService(null)}
+                      className="text-xs font-bold text-[#105238] bg-white px-2.5 py-1 rounded-xl border border-[#105238]/20 hover:bg-[#105238] hover:text-white transition-colors shrink-0 cursor-pointer"
+                    >
+                      Cambiar
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <Search className="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={publishSearchQuery}
+                        onChange={(e) => setPublishSearchQuery(e.target.value)}
+                        placeholder="Escribe el nombre del lugar, restaurante, tour o hotel..."
+                        className="w-full h-10 pl-10 pr-8 rounded-2xl border border-border bg-background text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#105238]"
+                        autoFocus
+                      />
+                      {isSearchingPublish && (
+                        <Loader2 className="w-4 h-4 animate-spin text-[#105238] absolute right-3 top-1/2 -translate-y-1/2" />
+                      )}
+                    </div>
+
+                    <div className="max-h-44 overflow-y-auto hover-scrollbar border border-border/70 rounded-2xl divide-y divide-border/50 bg-background">
+                      {publishSearchResults.length === 0 ? (
+                        <p className="p-3 text-xs text-muted-foreground text-center">
+                          No encontramos experiencias con ese nombre. Prueba otra palabra.
+                        </p>
+                      ) : (
+                        publishSearchResults.map((item) => (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => setSelectedPublishService(item)}
+                            className="w-full flex items-center gap-3 p-2.5 hover:bg-[#eaf0e2]/60 transition-colors text-left cursor-pointer"
+                          >
+                            <img
+                              src={item.image || DEFAULT_STORE_COVER}
+                              alt={item.name}
+                              className="w-10 h-10 rounded-xl object-cover shrink-0"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-bold text-foreground truncate">{item.name}</p>
+                              <p className="text-[10px] text-muted-foreground truncate">
+                                {item.location} · {item.category}
+                              </p>
+                            </div>
+                            <span className="text-[10px] font-bold text-[#105238] bg-[#eaf0e2] px-2 py-0.5 rounded-full shrink-0">
+                              Elegir
+                            </span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Step 2: Star Rating + 3D Green Reaction */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div className="bg-[#fafaf8] dark:bg-background border border-border/80 rounded-2xl p-3 space-y-1.5">
+                  <span className="text-[11px] font-bold text-foreground block">2. Calificación</span>
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => setPublishRating(n)}
+                        className="p-0.5 cursor-pointer hover:scale-110 transition-transform"
+                      >
+                        <Star
+                          className={cn(
+                            "w-5 h-5",
+                            n <= publishRating ? "fill-[#105238] text-[#105238]" : "text-muted-foreground/35",
+                          )}
+                        />
+                      </button>
+                    ))}
+                    <span className="text-xs font-black text-[#105238] ml-1">{publishRating}/5</span>
+                  </div>
+                </div>
+
+                <div className="bg-[#fafaf8] dark:bg-background border border-border/80 rounded-2xl p-3 space-y-1.5">
+                  <span className="text-[11px] font-bold text-foreground block">¿Cómo te sentiste?</span>
+                  <div className="flex items-center gap-2">
+                    {REACTIONS.map((r) => (
+                      <button
+                        key={r.id}
+                        type="button"
+                        onClick={() => setPublishReaction((prev) => (prev === r.id ? null : r.id))}
+                        title={r.label}
+                        className={cn(
+                          "rounded-full transition-transform cursor-pointer",
+                          publishReaction === r.id
+                            ? "scale-110 ring-2 ring-[#8ee01a] ring-offset-1"
+                            : "opacity-65 hover:opacity-100",
+                        )}
+                      >
+                        <ReactionBadgeIcon type={r.id} size="md" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 3: Story Text (no photos for now) */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-extrabold text-foreground block">
+                  3. Cuéntale a otros viajeros cómo te fue
+                </label>
+                <textarea
+                  rows={3}
+                  value={composerText}
+                  onChange={(e) => setComposerText(e.target.value)}
+                  placeholder="¿Qué fue lo que más te gustó? ¿Cómo estuvo la atención?"
+                  className="w-full rounded-2xl border border-border bg-background px-3.5 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#105238]"
+                />
+              </div>
+
+              {publishError && (
+                <p className="text-xs font-bold text-[#105238] bg-[#eaf0e2] border border-[#105238]/20 px-3 py-2 rounded-xl">
+                  {publishError}
+                </p>
+              )}
+
+              <Button
+                type="submit"
+                disabled={!selectedPublishService || !composerText.trim() || isPublishingExperience}
+                className="w-full h-11 rounded-2xl bg-[#105238] hover:bg-[#0c3e2b] text-white font-black text-sm gap-2 cursor-pointer"
+              >
+                {isPublishingExperience ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-[#8ee01a]" />
+                    <span>Publicando reseña...</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4 text-[#8ee01a]" />
+                    <span>Publicar experiencia y calificación</span>
+                  </>
+                )}
+              </Button>
+            </form>
           </div>
         </div>
       )}
