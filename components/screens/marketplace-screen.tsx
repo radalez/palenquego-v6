@@ -676,10 +676,14 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   const [travelerCommentDrafts, setTravelerCommentDrafts] = useState<Record<string, string>>({})
   const [adRotationIndex, setAdRotationIndex] = useState(0)
 
-  // 40-item automatic reload cycle (never bloats DOM beyond 40 cards)
+  // 40-item persistent seen-tracking reload cycle (never repeats seen items, never jumps to top)
   const BATCH_SIZE = 40
-  const [batchStart, setBatchStart] = useState(0)
+  const [batchNumber, setBatchNumber] = useState(1)
+  const [currentBatchIds, setCurrentBatchIds] = useState<number[]>([])
   const [isReloadingBatch, setIsReloadingBatch] = useState(false)
+  const [allUnseenExhausted, setAllUnseenExhausted] = useState(false)
+  const seenIdsRef = useRef<Set<number>>(new Set())
+  const cardObserverRef = useRef<IntersectionObserver | null>(null)
   const lastAdvanceRef = useRef<number>(0)
   const routesTrackRef = useRef<HTMLDivElement | null>(null)
   const categoriesTrackRef = useRef<HTMLDivElement | null>(null)
@@ -737,6 +741,14 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
           localStorage.setItem("palenque_traveler_posts", JSON.stringify(freshPosts))
         }
       }
+
+      const savedSeen = localStorage.getItem("palenque_seen_experience_ids")
+      if (savedSeen) {
+        const parsedIds: number[] = JSON.parse(savedSeen)
+        if (Array.isArray(parsedIds)) {
+          seenIdsRef.current = new Set(parsedIds)
+        }
+      }
     } catch {
       // ignore storage errors
     }
@@ -782,40 +794,98 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     }
   }, [services.length])
 
-  // Silently pre-fetch next backend page so next 40 experiences are ready before user hits bottom
+  const persistSeenIds = useCallback(() => {
+    if (typeof window === "undefined") return
+    try {
+      localStorage.setItem("palenque_seen_experience_ids", JSON.stringify(Array.from(seenIdsRef.current)))
+    } catch {
+      // ignore quota errors
+    }
+  }, [])
+
+  const markServiceSeen = useCallback(
+    (id: number) => {
+      if (!seenIdsRef.current.has(id)) {
+        seenIdsRef.current.add(id)
+        persistSeenIds()
+      }
+    },
+    [persistSeenIds],
+  )
+
+  // Track individual cards as seen as soon as they enter viewport (persists across reloads & route changes)
   useEffect(() => {
-    if (catalogHasMore && !isFetchingMoreCatalog && services.length < batchStart + BATCH_SIZE * 2) {
+    if (typeof IntersectionObserver === "undefined") return
+    cardObserverRef.current = new IntersectionObserver(
+      (entries) => {
+        let added = false
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            const rawId = (entry.target as HTMLElement).dataset.serviceId
+            const id = rawId ? Number(rawId) : NaN
+            if (!Number.isNaN(id) && !seenIdsRef.current.has(id)) {
+              seenIdsRef.current.add(id)
+              added = true
+            }
+            cardObserverRef.current?.unobserve(entry.target)
+          }
+        }
+        if (added) persistSeenIds()
+      },
+      { threshold: 0.2 },
+    )
+    return () => {
+      cardObserverRef.current?.disconnect()
+      cardObserverRef.current = null
+    }
+  }, [persistSeenIds])
+
+  const observeCardRef = useCallback((el: HTMLElement | null) => {
+    if (el && cardObserverRef.current) {
+      cardObserverRef.current.observe(el)
+    }
+  }, [])
+
+  // Silently pre-fetch next backend page so next 40 unseen experiences are ready before user hits bottom
+  useEffect(() => {
+    const unseenLoaded = services.filter((s) => !seenIdsRef.current.has(s.id)).length
+    if (catalogHasMore && !isFetchingMoreCatalog && unseenLoaded < BATCH_SIZE * 2) {
       fetchMoreServices()
     }
-  }, [batchStart, services.length, catalogHasMore, isFetchingMoreCatalog, fetchMoreServices])
+  }, [services, currentBatchIds.length, catalogHasMore, isFetchingMoreCatalog, fetchMoreServices])
 
   const advanceBatchAutomatically = useCallback(async () => {
     const now = Date.now()
-    if (now - lastAdvanceRef.current < 1500 || isReloadingBatch) return
-    if (orderedServicesLengthRef.current <= BATCH_SIZE && !catalogHasMore) return
+    if (now - lastAdvanceRef.current < 1400 || isReloadingBatch || allUnseenExhausted) return
     lastAdvanceRef.current = now
+
+    // Mark every card in the current batch as seen before replacing
+    for (const id of currentBatchIds) {
+      seenIdsRef.current.add(id)
+    }
+    persistSeenIds()
+
     setIsReloadingBatch(true)
     try {
-      if (catalogHasMore && orderedServicesLengthRef.current < batchStart + BATCH_SIZE * 2) {
+      if (catalogHasMore) {
         await fetchMoreServices()
       }
-      setBatchStart((prev) => {
-        const nextStart = prev + BATCH_SIZE
-        if (nextStart < orderedServicesLengthRef.current) {
-          return nextStart
-        }
-        setFeedSeed(Math.floor(Math.random() * 99999))
-        return 0
-      })
-      setTimeout(() => {
-        feedTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
-      }, 60)
+      // Compute next 40 strictly unseen from orderedServicesRef
+      const unseen = orderedServicesRef.current.filter((s) => !seenIdsRef.current.has(s.id))
+      if (unseen.length > 0) {
+        setCurrentBatchIds(unseen.slice(0, BATCH_SIZE).map((s) => s.id))
+        setBatchNumber((prev) => prev + 1)
+        setAllUnseenExhausted(false)
+      } else if (!catalogHasMore) {
+        setCurrentBatchIds([])
+        setAllUnseenExhausted(true)
+      }
     } finally {
-      setTimeout(() => setIsReloadingBatch(false), 600)
+      setTimeout(() => setIsReloadingBatch(false), 380)
     }
-  }, [batchStart, catalogHasMore, fetchMoreServices, isReloadingBatch])
+  }, [allUnseenExhausted, catalogHasMore, currentBatchIds, fetchMoreServices, isReloadingBatch, persistSeenIds])
 
-  // Infinite batch-reload sentinel (triggers right at the end of the 40 cards)
+  // Infinite batch-reload sentinel (triggers right at the end of the 40 cards, NO jump to top)
   const sentinelRef = useCallback(
     (node: HTMLDivElement | null) => {
       if (observerInstance.current) {
@@ -829,7 +899,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
             advanceBatchAutomatically()
           }
         },
-        { root: null, rootMargin: "160px", threshold: 0 },
+        { root: null, rootMargin: "140px", threshold: 0 },
       )
       observerInstance.current.observe(node)
     },
@@ -844,7 +914,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
       scrollables.forEach((el) => {
         const target = el as HTMLElement
         if (target.scrollHeight > target.clientHeight) {
-          if (target.scrollTop + target.clientHeight >= target.scrollHeight - 250) {
+          if (target.scrollTop + target.clientHeight >= target.scrollHeight - 220) {
             reachedBottom = true
           }
         }
@@ -853,7 +923,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
       const winScrollTop = window.scrollY || doc.scrollTop || 0
       const winClientHeight = window.innerHeight || doc.clientHeight || 0
       const winScrollHeight = doc.scrollHeight || 0
-      if (winScrollHeight > winClientHeight && winScrollTop + winClientHeight >= winScrollHeight - 250) {
+      if (winScrollHeight > winClientHeight && winScrollTop + winClientHeight >= winScrollHeight - 220) {
         reachedBottom = true
       }
       if (reachedBottom) advanceBatchAutomatically()
@@ -1347,18 +1417,49 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     [],
   )
 
-  const orderedServicesLengthRef = useRef(orderedServices.length)
-  orderedServicesLengthRef.current = orderedServices.length
+  const orderedServicesRef = useRef<Service[]>(orderedServices)
+  orderedServicesRef.current = orderedServices
 
+  // Reset active batch when user changes filter/category/search, picking up to 40 unseen items
   useEffect(() => {
-    setBatchStart(0)
-  }, [selectedCategory, onlyPreferred, searchQuery])
+    const unseen = orderedServices.filter((s) => !seenIdsRef.current.has(s.id))
+    if (unseen.length > 0) {
+      setCurrentBatchIds(unseen.slice(0, BATCH_SIZE).map((s) => s.id))
+      setAllUnseenExhausted(false)
+    } else if (!catalogHasMore && orderedServices.length > 0) {
+      setCurrentBatchIds([])
+      setAllUnseenExhausted(true)
+    } else {
+      setCurrentBatchIds([])
+    }
+    setBatchNumber(1)
+  }, [selectedCategory, onlyPreferred, searchQuery, feedSeed])
+
+  // Populate initial batch as soon as services arrive from backend (if currentBatchIds is still empty)
+  useEffect(() => {
+    if (currentBatchIds.length === 0 && !isReloadingBatch && !allUnseenExhausted && orderedServices.length > 0) {
+      const unseen = orderedServices.filter((s) => !seenIdsRef.current.has(s.id))
+      if (unseen.length > 0) {
+        setCurrentBatchIds(unseen.slice(0, BATCH_SIZE).map((s) => s.id))
+      } else if (!catalogHasMore) {
+        setAllUnseenExhausted(true)
+      }
+    }
+  }, [orderedServices, currentBatchIds.length, isReloadingBatch, allUnseenExhausted, catalogHasMore])
+
+  const handleRestartCycle = useCallback(() => {
+    seenIdsRef.current.clear()
+    persistSeenIds()
+    setAllUnseenExhausted(false)
+    setBatchNumber(1)
+    setFeedSeed(Math.floor(Math.random() * 99999) + 1)
+  }, [persistSeenIds])
 
   const visibleBatchServices = useMemo(() => {
-    if (orderedServices.length <= BATCH_SIZE) return orderedServices
-    const slice = orderedServices.slice(batchStart, batchStart + BATCH_SIZE)
-    return slice.length > 0 ? slice : orderedServices.slice(0, BATCH_SIZE)
-  }, [orderedServices, batchStart])
+    if (currentBatchIds.length === 0) return []
+    const byId = new Map(orderedServices.map((s) => [s.id, s]))
+    return currentBatchIds.map((id) => byId.get(id)).filter((s): s is Service => Boolean(s))
+  }, [orderedServices, currentBatchIds])
 
   return (
     <div className="flex flex-col min-h-screen bg-[#fafaf8] dark:bg-background">
@@ -1822,10 +1923,14 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
             })}
 
             {/* SERVICE SOCIAL FEED POSTS */}
-            {isLoading ? (
-              <div className="py-12 text-center">
-                <div className="w-9 h-9 border-4 border-[#105238] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                <p className="text-sm font-medium text-muted-foreground">Cargando experiencias...</p>
+            {isLoading || isReloadingBatch ? (
+              <div className="py-16 text-center space-y-3">
+                <div className="w-10 h-10 border-4 border-[#105238] border-t-transparent rounded-full animate-spin mx-auto" />
+                <p className="text-sm font-bold text-[#105238]">
+                  {isReloadingBatch
+                    ? "Cargando las siguientes 40 experiencias nuevas..."
+                    : "Cargando experiencias..."}
+                </p>
               </div>
             ) : (
               <div className="space-y-5">
@@ -1852,7 +1957,12 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                     typeof window !== "undefined" ? `${window.location.origin}/s/${service.id}` : ""
 
                   return (
-                    <div key={`${service.id}-${serviceIdx}`} className="space-y-5">
+                    <div
+                      key={`${service.id}-${serviceIdx}`}
+                      ref={observeCardRef}
+                      data-service-id={service.id}
+                      className="space-y-5"
+                    >
                     <article
                       id={`service-card-${service.id}`}
                       className="bg-card border border-border rounded-3xl shadow-2xs overflow-visible scroll-mt-24"
@@ -2402,8 +2512,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                         // Every 3rd carousel (starting at slot 1 -> after post 8) shows Mapa Go Tours & Routes:
                         // Round 0: TOUR -> Round 1: URBANO -> Round 2: INTERURBANO (cycles across batches!)
                         if (carouselSlot % 3 === 1 && routes.length > 0) {
-                          const batchIndex = Math.floor(batchStart / BATCH_SIZE)
-                          const routesRound = batchIndex + Math.floor(carouselSlot / 3)
+                          const routesRound = (batchNumber - 1) + Math.floor(carouselSlot / 3)
                           const routeCycle: Array<"TOUR" | "URBANO" | "INTERURBANO"> = ["TOUR", "URBANO", "INTERURBANO"]
                           const targetRouteType = routeCycle[routesRound % 3]
                           return (
@@ -2450,117 +2559,155 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   )
                 })}
 
-                {/* When filtered narrowly or no more items in filter, show Recommendations & "¿A dónde quieres ir?" */}
-                {((orderedServices.length <= 5 && !catalogHasMore && !isFetchingMoreCatalog) ||
-                  (orderedServices.length <= 3 && services.length > orderedServices.length)) && (
-                  <div className="bg-card border border-border rounded-3xl p-4 sm:p-5 shadow-2xs space-y-4">
-                    <div className="flex items-center justify-between gap-2">
-                      <div>
-                        <h3 className="font-extrabold text-sm text-foreground flex items-center gap-2">
-                          <Compass className="w-4 h-4 text-[#105238]" />
-                          <span>¿A dónde quieres ir? · Recomendaciones para ti</span>
+                {/* End of Unseen Items in Filter OR Full Catalog Exhausted */}
+                {(allUnseenExhausted ||
+                  (visibleBatchServices.length <= 5 && !catalogHasMore && !isFetchingMoreCatalog)) && (
+                  <div className="bg-card border border-border rounded-3xl p-5 shadow-2xs space-y-4">
+                    {selectedCategory === "all" && !onlyPreferred && !searchQuery.trim() && allUnseenExhausted ? (
+                      <div className="space-y-3 text-center">
+                        <div className="w-12 h-12 rounded-2xl bg-[#105238] text-[#8ee01a] flex items-center justify-center mx-auto shadow-sm">
+                          <Compass className="w-6 h-6" />
+                        </div>
+                        <h3 className="font-extrabold text-base text-foreground">
+                          ¡Ya exploraste todas las experiencias nuevas!
                         </h3>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">
-                          Explora los lugares más destacados o cambia de vibra en un clic
+                        <p className="text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
+                          ¿Quieres seguir descubriendo de forma divertida? Juega <strong>Palenque Go (Swiper)</strong>: desliza con Like lo que te guste y te avisaremos automáticamente cuando se forme un Pool para ahorrar en grupo.
                         </p>
+                        <div className="flex flex-wrap items-center justify-center gap-2.5 pt-1">
+                          <Button
+                            type="button"
+                            onClick={() => onNavigate?.("rutas")}
+                            className="h-10 px-5 rounded-full bg-[#105238] hover:bg-[#0c3e2b] text-[#8ee01a] font-black text-xs gap-2 cursor-pointer"
+                          >
+                            <Sparkles className="w-4 h-4" />
+                            <span>Jugar Palenque Go (Swiper)</span>
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleRestartCycle}
+                            className="h-10 px-5 rounded-full border-[#aeb6a1] text-[#105238] hover:bg-[#eaf0e2] font-bold text-xs gap-2 cursor-pointer"
+                          >
+                            <Shuffle className="w-3.5 h-3.5" />
+                            <span>Reiniciar ciclo con nuevo orden</span>
+                          </Button>
+                        </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOnlyPreferred(false)
-                          setSelectedCategory("all")
-                          setSearchQuery("")
-                          setFeedSeed(Math.floor(Math.random() * 99999) + 1)
-                        }}
-                        className="text-xs font-bold text-[#105238] hover:underline shrink-0 cursor-pointer"
-                      >
-                        Ver todas
-                      </button>
-                    </div>
-
-                    {/* Quick Destination / Category Pills */}
-                    <div className="flex flex-wrap gap-1.5">
-                      {discoveryCategories.slice(0, 6).map((cat) => {
-                        const CatIcon = cat.icon
-                        return (
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between gap-2">
+                          <div>
+                            <h3 className="font-extrabold text-sm text-foreground flex items-center gap-2">
+                              <Compass className="w-4 h-4 text-[#105238]" />
+                              <span>¿A dónde quieres ir? · Recomendaciones para ti</span>
+                            </h3>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">
+                              Ya viste todo en esta selección. Elige otra categoría o descubre estos destacados:
+                            </p>
+                          </div>
                           <button
-                            key={cat.id}
                             type="button"
                             onClick={() => {
                               setOnlyPreferred(false)
-                              setSelectedCategory(cat.id)
+                              setSelectedCategory("all")
+                              setSearchQuery("")
+                              setAllUnseenExhausted(false)
                               setFeedSeed(Math.floor(Math.random() * 99999) + 1)
-                              feedTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
                             }}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-[#eaf0e2] text-[#105238] hover:bg-[#105238] hover:text-[#8ee01a] transition-colors cursor-pointer"
+                            className="text-xs font-bold text-[#105238] hover:underline shrink-0 cursor-pointer"
                           >
-                            <CatIcon className="w-3.5 h-3.5" />
-                            <span>{cat.label}</span>
+                            Ver todas
                           </button>
-                        )
-                      })}
-                      <button
-                        type="button"
-                        onClick={() => onNavigate?.("map-explorer")}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black bg-[#105238] text-[#8ee01a] hover:bg-[#0c3e2b] transition-colors cursor-pointer"
-                      >
-                        <MapPin className="w-3.5 h-3.5" />
-                        <span>Abrir Mapa Go</span>
-                      </button>
-                    </div>
+                        </div>
 
-                    {topRatedServices.filter((ts) => !orderedServices.some((os) => os.id === ts.id)).length > 0 && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {topRatedServices
-                          .filter((ts) => !orderedServices.some((os) => os.id === ts.id))
-                          .slice(0, 4)
-                          .map((ts) => (
-                            <button
-                              key={ts.id}
-                              type="button"
-                              onClick={() => router.push(`/s/${ts.id}?from=marketplace`)}
-                              className="flex items-center gap-3 p-2.5 rounded-2xl border border-border/70 hover:border-[#105238]/40 bg-[#fafaf8] dark:bg-background transition-colors text-left cursor-pointer"
-                            >
-                              <img
-                                src={getProxyImage(ts.image || "") || DEFAULT_STORE_COVER}
-                                alt={ts.name}
-                                className="w-14 h-14 rounded-xl object-cover shrink-0"
-                                onError={(e) => {
-                                  e.currentTarget.src = DEFAULT_STORE_COVER
+                        <div className="flex flex-wrap gap-1.5">
+                          {discoveryCategories.slice(0, 6).map((cat) => {
+                            const CatIcon = cat.icon
+                            return (
+                              <button
+                                key={cat.id}
+                                type="button"
+                                onClick={() => {
+                                  setOnlyPreferred(false)
+                                  setSelectedCategory(cat.id)
+                                  setAllUnseenExhausted(false)
+                                  setFeedSeed(Math.floor(Math.random() * 99999) + 1)
                                 }}
-                              />
-                              <div className="min-w-0 flex-1">
-                                <p className="font-bold text-xs text-foreground truncate">{ts.name}</p>
-                                <p className="text-[11px] text-muted-foreground truncate">{ts.location}</p>
-                                <div className="flex items-center justify-between mt-1">
-                                  <span className="text-xs font-black text-[#105238]">${ts.price} /p</span>
-                                  <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-[#105238]">
-                                    <Star className="w-3 h-3 fill-[#105238]" /> {ts.rating}
-                                  </span>
-                                </div>
-                              </div>
-                            </button>
-                          ))}
-                      </div>
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-[#eaf0e2] text-[#105238] hover:bg-[#105238] hover:text-[#8ee01a] transition-colors cursor-pointer"
+                              >
+                                <CatIcon className="w-3.5 h-3.5" />
+                                <span>{cat.label}</span>
+                              </button>
+                            )
+                          })}
+                          <button
+                            type="button"
+                            onClick={() => onNavigate?.("map-explorer")}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black bg-[#105238] text-[#8ee01a] hover:bg-[#0c3e2b] transition-colors cursor-pointer"
+                          >
+                            <MapPin className="w-3.5 h-3.5" />
+                            <span>Abrir Mapa Go</span>
+                          </button>
+                        </div>
+
+                        {topRatedServices.filter((ts) => !visibleBatchServices.some((os) => os.id === ts.id)).length > 0 && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {topRatedServices
+                              .filter((ts) => !visibleBatchServices.some((os) => os.id === ts.id))
+                              .slice(0, 4)
+                              .map((ts) => (
+                                <button
+                                  key={ts.id}
+                                  type="button"
+                                  onClick={() => router.push(`/s/${ts.id}?from=marketplace`)}
+                                  className="flex items-center gap-3 p-2.5 rounded-2xl border border-border/70 hover:border-[#105238]/40 bg-[#fafaf8] dark:bg-background transition-colors text-left cursor-pointer"
+                                >
+                                  <img
+                                    src={getProxyImage(ts.image || "") || DEFAULT_STORE_COVER}
+                                    alt={ts.name}
+                                    className="w-14 h-14 rounded-xl object-cover shrink-0"
+                                    onError={(e) => {
+                                      e.currentTarget.src = DEFAULT_STORE_COVER
+                                    }}
+                                  />
+                                  <div className="min-w-0 flex-1">
+                                    <p className="font-bold text-xs text-foreground truncate">{ts.name}</p>
+                                    <p className="text-[11px] text-muted-foreground truncate">{ts.location}</p>
+                                    <div className="flex items-center justify-between mt-1">
+                                      <span className="text-xs font-black text-[#105238]">${ts.price} /p</span>
+                                      <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-[#105238]">
+                                        <Star className="w-3 h-3 fill-[#105238]" /> {ts.rating}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </button>
+                              ))}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 )}
 
-                {/* Automatic 40-Item Reload Sentinel (only shows loader when there are more batches or pages to load) */}
-                {(catalogHasMore || isFetchingMoreCatalog || isReloadingBatch || orderedServices.length > BATCH_SIZE) && (
-                  <div
-                    ref={sentinelRef}
-                    className="py-6 flex flex-col items-center justify-center gap-2"
-                  >
-                    <div className="flex items-center gap-2 text-xs font-bold text-[#105238] bg-[#eaf0e2] px-4 py-2 rounded-full shadow-2xs">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Cargando las siguientes 40 experiencias nuevas...</span>
+                {/* Automatic 40-Item In-Place Reload Sentinel (NO scroll-to-top jump) */}
+                {!allUnseenExhausted &&
+                  visibleBatchServices.length > 0 &&
+                  (catalogHasMore ||
+                    isFetchingMoreCatalog ||
+                    orderedServices.some(
+                      (s) => !seenIdsRef.current.has(s.id) && !currentBatchIds.includes(s.id),
+                    )) && (
+                    <div ref={sentinelRef} className="py-6 flex flex-col items-center justify-center gap-2">
+                      <div className="flex items-center gap-2 text-xs font-bold text-[#105238] bg-[#eaf0e2] px-4 py-2 rounded-full shadow-2xs">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Cargando las siguientes 40 experiencias nuevas...</span>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">
+                        Bloque {batchNumber} · Mostrando {visibleBatchServices.length} experiencias no vistas
+                      </p>
                     </div>
-                    <p className="text-[11px] text-muted-foreground">
-                      Bloque {Math.floor(batchStart / BATCH_SIZE) + 1} · Mostrando {visibleBatchServices.length} experiencias (recarga automática al final)
-                    </p>
-                  </div>
-                )}
+                  )}
               </div>
             )}
           </div>
