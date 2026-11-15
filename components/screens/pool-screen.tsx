@@ -388,7 +388,7 @@ export function PoolScreen({ onOpenShare, onOpenPayment, onNavigate }: PoolScree
       )}
 
       {activeSection === "POOLS" && (
-        <>
+        <div className="max-w-3xl mx-auto w-full">
           <div className="px-4 py-3 flex items-center justify-between border-b border-border">
             <p className="text-muted-foreground text-sm">Ahorra compartiendo gastos en grupo</p>
             <Button
@@ -536,7 +536,7 @@ export function PoolScreen({ onOpenShare, onOpenPayment, onNavigate }: PoolScree
               </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {myInterestedServices.map((service) => {
                 const precioBase = Number(service.precio_base || service.price || 0)
                 const precioPool = precioBase > 0 ? precioBase * 0.8 : 0
@@ -656,7 +656,7 @@ export function PoolScreen({ onOpenShare, onOpenPayment, onNavigate }: PoolScree
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filteredPools.map((pool) => {
               const progress = ((pool.currentMembers ?? 0) / (pool.targetMembers ?? 1)) * 100
               const pricePerPerson = (pool.totalPrice ?? 0) / (pool.targetMembers ?? 1)
@@ -772,12 +772,12 @@ export function PoolScreen({ onOpenShare, onOpenPayment, onNavigate }: PoolScree
           </div>
         </div>
       </div>
-    </>
-  )}
+        </div>
+      )}
 
       {/* SECCIÓN MIS RUTAS & TRASLADOS PRIVADOS */}
       {activeSection === "MY_ROUTES" && (
-        <div className="px-4 py-4 space-y-4">
+        <div className="px-4 py-4 space-y-4 max-w-3xl mx-auto w-full">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0 flex-1">
               <h3 className="font-bold text-gray-900 text-base">Tus Rutas y Traslados</h3>
