@@ -252,4 +252,31 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
+  /* Facebook-style subtle scrollbar that appears only on hover */
+  .hover-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
+  .hover-scrollbar:hover {
+    scrollbar-color: rgba(16, 82, 56, 0.22) transparent;
+  }
+  .hover-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .hover-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .hover-scrollbar::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: 9999px;
+    transition: background-color 0.2s ease;
+  }
+  .hover-scrollbar:hover::-webkit-scrollbar-thumb {
+    background-color: rgba(16, 82, 56, 0.22);
+  }
+  .hover-scrollbar:hover::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(16, 82, 56, 0.38);
+  }
 }

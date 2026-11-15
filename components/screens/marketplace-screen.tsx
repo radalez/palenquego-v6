@@ -1985,8 +1985,8 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
             )}
           </div>
 
-          {/* RIGHT STICKY SIDEBAR ON DESKTOP */}
-          <aside className="hidden lg:block lg:w-[300px] xl:w-[320px] shrink-0 lg:sticky lg:top-5 space-y-5">
+          {/* RIGHT STICKY SIDEBAR ON DESKTOP (scrolls smoothly on hover so nothing gets cut off) */}
+          <aside className="hidden lg:block lg:w-[300px] xl:w-[320px] shrink-0 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto hover-scrollbar pr-1 space-y-4">
             {/* Next Booking Summary */}
             {bookings.length > 0 && (
               <div className="bg-card border border-border rounded-3xl p-5 shadow-2xs space-y-3">
@@ -2028,18 +2028,20 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
               </div>
             )}
 
-            {/* Ofertas Flash Highlight Card */}
-            <div className="bg-[#105238] text-white rounded-3xl p-5 shadow-md space-y-3">
+            {/* Ofertas Flash Highlight Card (Light, Airy & Refined) */}
+            <div className="bg-gradient-to-br from-[#eaf0e2]/80 via-white to-white dark:from-card dark:to-card border border-[#8ee01a]/70 rounded-3xl p-4 shadow-2xs space-y-3">
               <div className="flex items-center justify-between">
-                <span className="inline-flex items-center gap-1.5 text-xs font-black text-[#8ee01a] uppercase tracking-wider">
-                  <Zap className="w-4 h-4 fill-[#8ee01a]" />
+                <span className="inline-flex items-center gap-1.5 text-xs font-black text-[#105238] uppercase tracking-wider">
+                  <span className="w-6 h-6 rounded-full bg-[#105238] text-[#8ee01a] flex items-center justify-center">
+                    <Zap className="w-3.5 h-3.5 fill-[#8ee01a]" />
+                  </span>
                   Ofertas Flash
                 </span>
-                <span className="text-[11px] font-bold bg-white/15 px-2.5 py-0.5 rounded-full">
+                <span className="text-[11px] font-bold bg-[#105238] text-[#8ee01a] px-2.5 py-0.5 rounded-full">
                   {flashServices.length} activas
                 </span>
               </div>
-              <p className="text-xs text-white/85 leading-relaxed">
+              <p className="text-xs text-muted-foreground leading-relaxed">
                 Cupos limitados con descuento directo antes de que expire el reloj.
               </p>
               {flashServices.slice(0, 2).map((fs) => (
@@ -2047,10 +2049,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   key={fs.id}
                   type="button"
                   onClick={() => router.push(`/s/${fs.id}?from=marketplace`)}
-                  className="w-full text-left bg-white/10 hover:bg-white/15 rounded-2xl p-2.5 flex items-center justify-between gap-2 transition-colors cursor-pointer"
+                  className="w-full text-left bg-white dark:bg-background hover:bg-[#eaf0e2]/60 border border-border/70 rounded-2xl p-2.5 flex items-center justify-between gap-2 transition-colors cursor-pointer"
                 >
-                  <span className="text-xs font-bold truncate">{fs.name}</span>
-                  <span className="text-xs font-black text-[#8ee01a] shrink-0">
+                  <span className="text-xs font-bold text-foreground truncate">{fs.name}</span>
+                  <span className="text-xs font-black text-[#105238] shrink-0">
                     ${fs.oferta_flash?.precio_promocional}
                   </span>
                 </button>
@@ -2061,7 +2063,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   setOnlyPreferred(false)
                   setSelectedCategory((prev) => (prev === "flash" ? "all" : "flash"))
                 }}
-                className="w-full h-9 rounded-xl bg-[#8ee01a] hover:bg-[#8ee01a]/90 text-[#105238] font-black text-xs cursor-pointer"
+                className="w-full h-9 rounded-xl bg-[#105238] hover:bg-[#0c3e2b] text-[#8ee01a] font-black text-xs cursor-pointer"
               >
                 {selectedCategory === "flash" ? "Ver todas las experiencias" : "Ver promociones"}
               </Button>
