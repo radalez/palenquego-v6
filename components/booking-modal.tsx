@@ -50,14 +50,33 @@ const generateUpcomingDates = (count = 7) => {
 
 const upcomingDates = generateUpcomingDates(7)
 
-const timeSlots = [
+const formatTimeLabel = (timeStr: string) => {
+  if (!timeStr) return ""
+  const [hStr, mStr] = timeStr.split(":")
+  const hour = parseInt(hStr, 10)
+  if (isNaN(hour)) return timeStr
+  const minute = mStr || "00"
+  const ampm = hour >= 12 ? "PM" : "AM"
+  const hour12 = hour % 12 === 0 ? 12 : hour % 12
+  return `${String(hour12).padStart(2, "0")}:${minute} ${ampm}`
+}
+
+const defaultTimeSlots = [
+  { value: "07:00", label: "07:00 AM" },
+  { value: "08:00", label: "08:00 AM" },
   { value: "09:00", label: "09:00 AM" },
   { value: "10:00", label: "10:00 AM" },
   { value: "11:00", label: "11:00 AM" },
+  { value: "12:00", label: "12:00 PM" },
+  { value: "13:00", label: "01:00 PM" },
   { value: "14:00", label: "02:00 PM" },
   { value: "15:00", label: "03:00 PM" },
   { value: "16:00", label: "04:00 PM" },
   { value: "17:00", label: "05:00 PM" },
+  { value: "18:00", label: "06:00 PM" },
+  { value: "19:00", label: "07:00 PM" },
+  { value: "20:00", label: "08:00 PM" },
+  { value: "21:00", label: "09:00 PM" },
 ]
 
 export function BookingModal({ service, onClose }: BookingModalProps) {
@@ -583,7 +602,7 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
                   </div>
 
                   {/* Quick Date Pills Horizontal Slider */}
-                  <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none items-center">
+                  <div className="flex gap-2 overflow-x-auto pt-3.5 pb-2 scrollbar-none items-center">
                     {/* Custom Future Date Pill placed FIRST so it's always immediately visible */}
                     <div className="relative min-w-[76px] h-[72px] flex flex-col items-center justify-center p-2 rounded-xl border-2 border-dashed border-primary/50 bg-primary/10 hover:bg-primary/20 transition-all text-center cursor-pointer group shrink-0">
                       <Calendar className="w-5 h-5 text-primary mb-0.5 group-hover:scale-110 transition-transform" />
@@ -640,8 +659,8 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
                           )}
                         >
                           {isPillDateInFlash && (
-                            <span className="absolute -top-1.5 -right-1 px-1.5 py-0.2 bg-amber-600 text-white text-[8px] font-black rounded-full uppercase tracking-tighter shadow-xs">
-                              Flash
+                            <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[9px] font-black rounded-full uppercase tracking-wider shadow-sm z-10 border border-white dark:border-gray-900 whitespace-nowrap">
+                              FLASH
                             </span>
                           )}
                           <span className={cn("text-xs font-medium uppercase", selectedDate === d.formatted ? "text-primary-foreground/90" : isPillDateInFlash ? "text-amber-700 dark:text-amber-300 font-bold" : "text-muted-foreground")}>
@@ -659,25 +678,91 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
 
                 {/* Time Selection */}
                 <div>
-                  <label className="text-sm font-medium text-foreground mb-2 block">
-                    <Clock className="w-4 h-4 inline mr-2 text-primary" />
-                    Seleccionar hora
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                      <Clock className="w-4 h-4 text-primary" />
+                      Seleccionar hora
+                    </label>
+
+                    {/* Selector interactivo de Cualquier Hora Personalizada */}
+                    <div className="relative inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/30 hover:bg-primary/20 transition-all cursor-pointer shadow-xs group">
+                      <Clock className="w-3.5 h-3.5 text-primary group-hover:scale-110 transition-transform" />
+                      <span className="text-xs font-bold text-primary">
+                        {defaultTimeSlots.some((s) => s.value === selectedTime) ? "Elegir otra hora" : `🕒 ${formatTimeLabel(selectedTime)}`}
+                      </span>
+                      <input
+                        type="time"
+                        value={selectedTime}
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            setSelectedTime(e.target.value)
+                          }
+                        }}
+                        onClick={(e) => {
+                          try {
+                            if ("showPicker" in e.currentTarget) {
+                              e.currentTarget.showPicker()
+                            }
+                          } catch (err) {}
+                        }}
+                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-30 block"
+                        title="Haz clic para elegir cualquier hora personalizada (minuto a minuto)"
+                      />
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-4 gap-2">
-                    {timeSlots.map((slot) => (
-                      <button
-                        key={slot.value}
-                        onClick={() => setSelectedTime(slot.value)}
-                        className={cn(
-                          "py-2.5 px-2 rounded-xl text-xs font-semibold border transition-all shadow-sm text-center",
-                          selectedTime === slot.value
-                            ? "bg-primary text-primary-foreground border-primary ring-2 ring-primary/30"
-                            : "bg-card text-foreground border-border hover:bg-muted/80",
-                        )}
-                      >
-                        {slot.label}
-                      </button>
-                    ))}
+                    {defaultTimeSlots.map((slot) => {
+                      const isSelected = selectedTime === slot.value
+                      return (
+                        <button
+                          key={slot.value}
+                          type="button"
+                          onClick={() => setSelectedTime(slot.value)}
+                          className={cn(
+                            "py-2.5 px-2 rounded-xl text-xs font-semibold border transition-all shadow-sm text-center cursor-pointer",
+                            isSelected
+                              ? "bg-primary text-primary-foreground border-primary ring-2 ring-primary/30"
+                              : "bg-card text-foreground border-border hover:bg-muted/80",
+                          )}
+                        >
+                          {slot.label}
+                        </button>
+                      )
+                    })}
+
+                    {/* Botón Chip para otra hora personalizada directa */}
+                    <div className={cn(
+                      "relative flex items-center justify-center py-2.5 px-2 rounded-xl text-xs font-bold border-2 transition-all text-center cursor-pointer group shadow-sm",
+                      !defaultTimeSlots.some((s) => s.value === selectedTime)
+                        ? "bg-primary text-primary-foreground border-primary ring-2 ring-primary/30"
+                        : "border-dashed border-primary/40 bg-primary/10 hover:bg-primary/20 text-primary"
+                    )}>
+                      <Clock className="w-3.5 h-3.5 mr-1 shrink-0" />
+                      <span className="truncate">
+                        {!defaultTimeSlots.some((s) => s.value === selectedTime)
+                          ? formatTimeLabel(selectedTime)
+                          : "Otra hora"}
+                      </span>
+                      <input
+                        type="time"
+                        value={selectedTime}
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            setSelectedTime(e.target.value)
+                          }
+                        }}
+                        onClick={(e) => {
+                          try {
+                            if ("showPicker" in e.currentTarget) {
+                              e.currentTarget.showPicker()
+                            }
+                          } catch (err) {}
+                        }}
+                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-30 block"
+                        title="Seleccionar hora exacta minuto a minuto"
+                      />
+                    </div>
                   </div>
                 </div>
               </>
