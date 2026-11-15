@@ -209,7 +209,7 @@ export function ReceptionScreen({ onNavigate }: ReceptionScreenProps) {
 
   const executeQrAction = async (
     action: "redeem" | "pay_and_redeem",
-    paymentMethod?: "POS / MAQUINITA" | "EFECTIVO",
+    paymentMethod?: "POS / TARJETA" | "EFECTIVO",
   ) => {
     if (!scannedBooking) return
     const token = getToken()
@@ -229,7 +229,7 @@ export function ReceptionScreen({ onNavigate }: ReceptionScreenProps) {
         body: JSON.stringify({
           qr_code: scannedBooking.reserva_id,
           action,
-          payment_method: paymentMethod || "POS / MAQUINITA",
+          payment_method: paymentMethod || "POS / TARJETA",
         }),
       })
       const data = await res.json()
@@ -437,10 +437,10 @@ export function ReceptionScreen({ onNavigate }: ReceptionScreenProps) {
                 <div>
                   <h2 className="font-bold text-foreground text-base flex items-center gap-2">
                     <Keyboard className="w-5 h-5 text-[#105238]" />
-                    <span>Lector de Maquinita / Código QR</span>
+                    <span>Lector QR o Código de Reserva</span>
                   </h2>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Apunta con tu lector USB / Bluetooth (maquinita) o usa la cámara del dispositivo.
+                    Usa un lector de código QR (USB / Bluetooth), escribe el código o usa la cámara.
                   </p>
                 </div>
                 <Button
@@ -471,7 +471,7 @@ export function ReceptionScreen({ onNavigate }: ReceptionScreenProps) {
                   type="text"
                   value={qrInput}
                   onChange={(e) => setQrInput(e.target.value)}
-                  placeholder="Escanea aquí con la maquinita o escribe el código (ej. RES-1234)"
+                  placeholder="Escanea con lector QR o escribe el código (ej. RES-1234)"
                   className="flex-1 h-12 px-4 rounded-2xl border border-border bg-background text-sm font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-[#105238]"
                 />
                 <Button
@@ -613,11 +613,11 @@ export function ReceptionScreen({ onNavigate }: ReceptionScreenProps) {
                             <Button
                               type="button"
                               disabled={actionLoading}
-                              onClick={() => executeQrAction("pay_and_redeem", "POS / MAQUINITA")}
+                              onClick={() => executeQrAction("pay_and_redeem", "POS / TARJETA")}
                               className="h-12 rounded-2xl bg-[#105238] hover:bg-[#0c3e2b] text-white font-bold text-xs sm:text-sm gap-2 cursor-pointer"
                             >
                               <CreditCard className="w-4 h-4 text-[#8ee01a]" />
-                              <span>Cobrado con Maquinita / POS</span>
+                              <span>Cobrado con POS / Tarjeta</span>
                             </Button>
                             <Button
                               type="button"
@@ -824,7 +824,7 @@ export function ReceptionScreen({ onNavigate }: ReceptionScreenProps) {
                     onChange={(e) => setCanConfirmPaymentPerm(e.target.checked)}
                     className="rounded border-border accent-[#105238]"
                   />
-                  <span>Permitir confirmar cobros con Maquinita / POS o Efectivo</span>
+                  <span>Permitir confirmar cobros con POS / Tarjeta o Efectivo</span>
                 </label>
               </form>
 
