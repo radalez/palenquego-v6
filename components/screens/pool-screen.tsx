@@ -778,17 +778,17 @@ export function PoolScreen({ onOpenShare, onOpenPayment, onNavigate }: PoolScree
       {/* SECCIÓN MIS RUTAS & TRASLADOS PRIVADOS */}
       {activeSection === "MY_ROUTES" && (
         <div className="px-4 py-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
               <h3 className="font-bold text-gray-900 text-base">Tus Rutas y Traslados</h3>
-              <p className="text-xs text-gray-500">Tus viajes privados creados con tarifa propuesta</p>
+              <p className="text-xs text-gray-500 leading-snug">Tus viajes privados creados con tarifa propuesta</p>
             </div>
             <button
               type="button"
               onClick={() => setIsUserRoutesModalOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#064e3b] text-white font-bold text-xs shadow-xs hover:bg-[#043324] transition-all active:scale-95"
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-[#105238] text-white font-bold text-xs shadow-xs hover:bg-[#0c3e2b] transition-all active:scale-95 whitespace-nowrap shrink-0 cursor-pointer"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4 shrink-0" />
               <span>Nueva Ruta</span>
             </button>
           </div>
