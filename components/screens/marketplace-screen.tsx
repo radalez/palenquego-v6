@@ -682,6 +682,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   const [isReloadingBatch, setIsReloadingBatch] = useState(false)
   const lastAdvanceRef = useRef<number>(0)
   const routesTrackRef = useRef<HTMLDivElement | null>(null)
+  const categoriesTrackRef = useRef<HTMLDivElement | null>(null)
   const feedTopRef = useRef<HTMLDivElement | null>(null)
 
   const [activePoolTooltipId, setActivePoolTooltipId] = useState<number | null>(null)
@@ -1320,12 +1321,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     })
 
     for (const key of bucketKeys) {
-      buckets.get(key)!.sort((a, b) => {
-        const aFlash = a.oferta_flash && (a.oferta_flash.cupos_disponibles ?? 0) > 0 ? 1 : 0
-        const bFlash = b.oferta_flash && (b.oferta_flash.cupos_disponibles ?? 0) > 0 ? 1 : 0
-        if (aFlash !== bFlash) return bFlash - aFlash
-        return pseudoScore(a.id) - pseudoScore(b.id)
-      })
+      buckets.get(key)!.sort((a, b) => pseudoScore(a.id) - pseudoScore(b.id))
     }
 
     // Interleave round-robin across categories
@@ -1569,55 +1565,82 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
               </div>
             </div>
 
-            {/* STICKY CATEGORY PILLS BAR (stays accessible while scrolling) */}
+            {/* STICKY CATEGORY PILLS BAR (with preferred categories first + scroll arrows) */}
             <div className="sticky top-0 z-20 bg-[#fafaf8]/95 dark:bg-background/95 backdrop-blur-md py-2 -mx-1 px-1">
-              <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-                {preferredCategories.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedCategory("all")
-                      setOnlyPreferred((prev) => !prev)
-                    }}
-                    className={cn(
-                      "flex items-center gap-1.5 px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all text-xs font-bold cursor-pointer",
-                      onlyPreferred && selectedCategory === "all"
-                        ? "bg-[#105238] text-[#8ee01a] shadow-sm"
-                        : "bg-[#eaf0e2] text-[#105238] border border-[#aeb6a1]/50",
-                    )}
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Para ti ({preferredCategories.length})</span>
-                  </button>
-                )}
-
-                {categories.map((cat) => {
-                  const Icon = cat.icon
-                  const isActive = selectedCategory === cat.id && !(onlyPreferred && cat.id === "all")
-                  const isSpecial = (cat as any).isSpecial
-                  return (
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => categoriesTrackRef.current?.scrollBy({ left: -220, behavior: "smooth" })}
+                  className="hidden sm:flex w-7 h-7 rounded-full bg-white dark:bg-card border border-border/80 items-center justify-center text-[#105238] hover:bg-[#eaf0e2] transition-colors shrink-0 shadow-2xs cursor-pointer"
+                  aria-label="Categorías anteriores"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <div ref={categoriesTrackRef} className="flex-1 flex gap-2 overflow-x-auto scrollbar-hide">
+                  {preferredCategories.length > 0 && (
                     <button
-                      key={cat.id}
+                      type="button"
                       onClick={() => {
-                        setOnlyPreferred(false)
-                        setSelectedCategory(cat.id)
+                        setSelectedCategory("all")
+                        setOnlyPreferred((prev) => !prev)
+                        setFeedSeed(Math.floor(Math.random() * 99999) + 1)
                       }}
                       className={cn(
-                        "flex items-center gap-1.5 px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all text-xs font-semibold cursor-pointer",
-                        isActive
-                          ? isSpecial
-                            ? "bg-[#105238] text-white shadow-md font-bold ring-2 ring-[#8ee01a]/50"
-                            : "bg-[#105238] text-white shadow-sm font-semibold"
-                          : isSpecial
-                            ? "bg-[#eaf0e2] text-[#105238] border border-[#8ee01a]/60 hover:bg-[#eaf0e2]/80 font-bold"
-                            : "bg-muted text-muted-foreground hover:bg-muted/80",
+                        "flex items-center gap-1.5 px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all text-xs font-bold cursor-pointer shrink-0",
+                        onlyPreferred && selectedCategory === "all"
+                          ? "bg-[#105238] text-[#8ee01a] shadow-sm"
+                          : "bg-[#eaf0e2] text-[#105238] border border-[#aeb6a1]/50",
                       )}
                     >
-                      <Icon className={cn("w-3.5 h-3.5", isSpecial ? "text-[#8ee01a] fill-[#8ee01a]" : "")} />
-                      <span>{cat.label}</span>
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Para ti ({preferredCategories.length})</span>
                     </button>
-                  )
-                })}
+                  )}
+
+                  {[
+                    ...categories.filter((c) => c.id === "all" || c.id === "flash"),
+                    ...categories.filter((c) => c.id !== "all" && c.id !== "flash" && preferredCategories.includes(c.id)),
+                    ...categories.filter((c) => c.id !== "all" && c.id !== "flash" && !preferredCategories.includes(c.id)),
+                  ].map((cat) => {
+                    const Icon = cat.icon
+                    const isActive = selectedCategory === cat.id && !(onlyPreferred && cat.id === "all")
+                    const isSpecial = (cat as any).isSpecial
+                    const isPreferred = preferredCategories.includes(cat.id)
+                    return (
+                      <button
+                        key={cat.id}
+                        onClick={() => {
+                          setOnlyPreferred(false)
+                          setSelectedCategory(cat.id)
+                          setFeedSeed(Math.floor(Math.random() * 99999) + 1)
+                        }}
+                        className={cn(
+                          "flex items-center gap-1.5 px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all text-xs font-semibold cursor-pointer shrink-0",
+                          isActive
+                            ? isSpecial
+                              ? "bg-[#105238] text-white shadow-md font-bold ring-2 ring-[#8ee01a]/50"
+                              : "bg-[#105238] text-white shadow-sm font-semibold"
+                            : isSpecial
+                              ? "bg-[#eaf0e2] text-[#105238] border border-[#8ee01a]/60 hover:bg-[#eaf0e2]/80 font-bold"
+                              : isPreferred
+                                ? "bg-[#eaf0e2]/60 text-[#105238] border border-[#105238]/25 hover:bg-[#eaf0e2]"
+                                : "bg-muted text-muted-foreground hover:bg-muted/80",
+                        )}
+                      >
+                        <Icon className={cn("w-3.5 h-3.5", isSpecial ? "text-[#8ee01a] fill-[#8ee01a]" : "")} />
+                        <span>{cat.label}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => categoriesTrackRef.current?.scrollBy({ left: 220, behavior: "smooth" })}
+                  className="hidden sm:flex w-7 h-7 rounded-full bg-white dark:bg-card border border-border/80 items-center justify-center text-[#105238] hover:bg-[#eaf0e2] transition-colors shrink-0 shadow-2xs cursor-pointer"
+                  aria-label="Más categorías"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
             </div>
 
@@ -2427,73 +2450,117 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   )
                 })}
 
-                {/* When filtered narrowly (e.g. 1 Flash Offer), show Más destacados below so the feed never feels empty */}
-                {orderedServices.length <= 3 && services.length > orderedServices.length && (
-                  <div className="bg-card border border-border rounded-3xl p-4 sm:p-5 shadow-2xs space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-extrabold text-sm text-foreground flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-[#105238]" />
-                        <span>Más destacados que te pueden gustar</span>
-                      </h3>
+                {/* When filtered narrowly or no more items in filter, show Recommendations & "¿A dónde quieres ir?" */}
+                {((orderedServices.length <= 5 && !catalogHasMore && !isFetchingMoreCatalog) ||
+                  (orderedServices.length <= 3 && services.length > orderedServices.length)) && (
+                  <div className="bg-card border border-border rounded-3xl p-4 sm:p-5 shadow-2xs space-y-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <h3 className="font-extrabold text-sm text-foreground flex items-center gap-2">
+                          <Compass className="w-4 h-4 text-[#105238]" />
+                          <span>¿A dónde quieres ir? · Recomendaciones para ti</span>
+                        </h3>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          Explora los lugares más destacados o cambia de vibra en un clic
+                        </p>
+                      </div>
                       <button
                         type="button"
                         onClick={() => {
                           setOnlyPreferred(false)
                           setSelectedCategory("all")
                           setSearchQuery("")
+                          setFeedSeed(Math.floor(Math.random() * 99999) + 1)
                         }}
-                        className="text-xs font-bold text-[#105238] hover:underline cursor-pointer"
+                        className="text-xs font-bold text-[#105238] hover:underline shrink-0 cursor-pointer"
                       >
                         Ver todas
                       </button>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {topRatedServices
-                        .filter((ts) => !orderedServices.some((os) => os.id === ts.id))
-                        .slice(0, 4)
-                        .map((ts) => (
+
+                    {/* Quick Destination / Category Pills */}
+                    <div className="flex flex-wrap gap-1.5">
+                      {discoveryCategories.slice(0, 6).map((cat) => {
+                        const CatIcon = cat.icon
+                        return (
                           <button
-                            key={ts.id}
+                            key={cat.id}
                             type="button"
-                            onClick={() => router.push(`/s/${ts.id}?from=marketplace`)}
-                            className="flex items-center gap-3 p-2.5 rounded-2xl border border-border/70 hover:border-[#105238]/40 bg-[#fafaf8] dark:bg-background transition-colors text-left cursor-pointer"
+                            onClick={() => {
+                              setOnlyPreferred(false)
+                              setSelectedCategory(cat.id)
+                              setFeedSeed(Math.floor(Math.random() * 99999) + 1)
+                              feedTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-[#eaf0e2] text-[#105238] hover:bg-[#105238] hover:text-[#8ee01a] transition-colors cursor-pointer"
                           >
-                            <img
-                              src={ts.image || DEFAULT_STORE_COVER}
-                              alt={ts.name}
-                              className="w-14 h-14 rounded-xl object-cover shrink-0"
-                            />
-                            <div className="min-w-0 flex-1">
-                              <p className="font-bold text-xs text-foreground truncate">{ts.name}</p>
-                              <p className="text-[11px] text-muted-foreground truncate">{ts.location}</p>
-                              <div className="flex items-center justify-between mt-1">
-                                <span className="text-xs font-black text-[#105238]">${ts.price} /p</span>
-                                <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-[#105238]">
-                                  <Star className="w-3 h-3 fill-[#105238]" /> {ts.rating}
-                                </span>
-                              </div>
-                            </div>
+                            <CatIcon className="w-3.5 h-3.5" />
+                            <span>{cat.label}</span>
                           </button>
-                        ))}
+                        )
+                      })}
+                      <button
+                        type="button"
+                        onClick={() => onNavigate?.("map-explorer")}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black bg-[#105238] text-[#8ee01a] hover:bg-[#0c3e2b] transition-colors cursor-pointer"
+                      >
+                        <MapPin className="w-3.5 h-3.5" />
+                        <span>Abrir Mapa Go</span>
+                      </button>
                     </div>
+
+                    {topRatedServices.filter((ts) => !orderedServices.some((os) => os.id === ts.id)).length > 0 && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {topRatedServices
+                          .filter((ts) => !orderedServices.some((os) => os.id === ts.id))
+                          .slice(0, 4)
+                          .map((ts) => (
+                            <button
+                              key={ts.id}
+                              type="button"
+                              onClick={() => router.push(`/s/${ts.id}?from=marketplace`)}
+                              className="flex items-center gap-3 p-2.5 rounded-2xl border border-border/70 hover:border-[#105238]/40 bg-[#fafaf8] dark:bg-background transition-colors text-left cursor-pointer"
+                            >
+                              <img
+                                src={getProxyImage(ts.image || "") || DEFAULT_STORE_COVER}
+                                alt={ts.name}
+                                className="w-14 h-14 rounded-xl object-cover shrink-0"
+                                onError={(e) => {
+                                  e.currentTarget.src = DEFAULT_STORE_COVER
+                                }}
+                              />
+                              <div className="min-w-0 flex-1">
+                                <p className="font-bold text-xs text-foreground truncate">{ts.name}</p>
+                                <p className="text-[11px] text-muted-foreground truncate">{ts.location}</p>
+                                <div className="flex items-center justify-between mt-1">
+                                  <span className="text-xs font-black text-[#105238]">${ts.price} /p</span>
+                                  <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-[#105238]">
+                                    <Star className="w-3 h-3 fill-[#105238]" /> {ts.rating}
+                                  </span>
+                                </div>
+                              </div>
+                            </button>
+                          ))}
+                      </div>
+                    )}
                   </div>
                 )}
 
-                {/* Automatic 40-Item Reload Sentinel (reloads next 40 unseen experiences smoothly without bloating DOM) */}
-                <div
-                  ref={sentinelRef}
-                  className="py-6 flex flex-col items-center justify-center gap-2"
-                >
-                  {(catalogHasMore || isFetchingMoreCatalog || isReloadingBatch || orderedServices.length > BATCH_SIZE) && (
+                {/* Automatic 40-Item Reload Sentinel (only shows loader when there are more batches or pages to load) */}
+                {(catalogHasMore || isFetchingMoreCatalog || isReloadingBatch || orderedServices.length > BATCH_SIZE) && (
+                  <div
+                    ref={sentinelRef}
+                    className="py-6 flex flex-col items-center justify-center gap-2"
+                  >
                     <div className="flex items-center gap-2 text-xs font-bold text-[#105238] bg-[#eaf0e2] px-4 py-2 rounded-full shadow-2xs">
                       <Loader2 className="w-4 h-4 animate-spin" />
                       <span>Cargando las siguientes 40 experiencias nuevas...</span>
                     </div>
-                  )}
-                  <p className="text-[11px] text-muted-foreground">
-                    Bloque {Math.floor(batchStart / BATCH_SIZE) + 1} · Mostrando {visibleBatchServices.length} experiencias (recarga automática al final)
-                  </p>
-                </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      Bloque {Math.floor(batchStart / BATCH_SIZE) + 1} · Mostrando {visibleBatchServices.length} experiencias (recarga automática al final)
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>
