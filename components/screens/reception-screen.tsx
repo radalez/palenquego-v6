@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { Scanner } from "@yudiel/react-qr-scanner"
+import QRCode from "react-qr-code"
 import {
   QrCode,
   Camera,
@@ -20,6 +21,7 @@ import {
   Store as StoreIcon,
   AlertCircle,
   X,
+  ExternalLink,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { HeaderWithMenu } from "@/components/header-with-menu"
@@ -80,6 +82,9 @@ export function ReceptionScreen({ onNavigate }: ReceptionScreenProps) {
   const [scanError, setScanError] = useState<string | null>(null)
   const [scannedBooking, setScannedBooking] = useState<ReceptionBooking | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [wompiUrl, setWompiUrl] = useState<string | null>(null)
+  const [wompiLoading, setWompiLoading] = useState(false)
+  const [confirmPhysicalMethod, setConfirmPhysicalMethod] = useState<"POS / TARJETA" | "EFECTIVO" | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   // Bookings list state
@@ -181,6 +186,8 @@ export function ReceptionScreen({ onNavigate }: ReceptionScreenProps) {
     setScanLoading(true)
     setScanError(null)
     setSuccessMessage(null)
+    setWompiUrl(null)
+    setConfirmPhysicalMethod(null)
 
     try {
       const res = await fetch(`${API_BASE}/catalog/validate-qr/`, {
@@ -324,10 +331,47 @@ export function ReceptionScreen({ onNavigate }: ReceptionScreenProps) {
     }
   }
 
+  const generateWompiLink = async () => {
+    if (!scannedBooking) return
+    const token = getToken()
+    if (!token) return
+
+    setWompiLoading(true)
+    setScanError(null)
+    try {
+      const res = await fetch(`${API_BASE}/catalog/reception-wompi-link/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          qr_code: scannedBooking.reserva_id,
+          redirect_url:
+            typeof window !== "undefined"
+              ? `${window.location.origin}/?payment=success`
+              : "https://palenquegov6.netlify.app/?payment=success",
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.payment_url) {
+        setScanError(data.error || "No se pudo generar el enlace de Wompi.")
+      } else {
+        setWompiUrl(data.payment_url)
+      }
+    } catch {
+      setScanError("Error de conexión al generar enlace de Wompi.")
+    } finally {
+      setWompiLoading(false)
+    }
+  }
+
   const resetScanner = () => {
     setScannedBooking(null)
     setScanError(null)
     setSuccessMessage(null)
+    setWompiUrl(null)
+    setConfirmPhysicalMethod(null)
     setQrInput("")
     setTimeout(() => inputRef.current?.focus(), 80)
   }
@@ -605,30 +649,84 @@ export function ReceptionScreen({ onNavigate }: ReceptionScreenProps) {
                   <div className="space-y-2.5 pt-2">
                     {scannedBooking.estado_pago !== "PAGADO" ? (
                       scannedBooking.can_confirm_payment !== false ? (
-                        <div className="space-y-2">
-                          <p className="text-xs font-bold text-foreground">
-                            Esta reserva está pendiente de pago (${scannedBooking.monto_total.toFixed(2)}). Cobra al cliente y confirma:
-                          </p>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                            <Button
-                              type="button"
-                              disabled={actionLoading}
-                              onClick={() => executeQrAction("pay_and_redeem", "POS / TARJETA")}
-                              className="h-12 rounded-2xl bg-[#105238] hover:bg-[#0c3e2b] text-white font-bold text-xs sm:text-sm gap-2 cursor-pointer"
-                            >
-                              <CreditCard className="w-4 h-4 text-[#8ee01a]" />
-                              <span>Cobrado con POS / Tarjeta</span>
-                            </Button>
-                            <Button
-                              type="button"
-                              disabled={actionLoading}
-                              onClick={() => executeQrAction("pay_and_redeem", "EFECTIVO")}
-                              variant="outline"
-                              className="h-12 rounded-2xl border-[#105238] text-[#105238] hover:bg-[#eaf0e2] font-bold text-xs sm:text-sm gap-2 cursor-pointer"
-                            >
-                              <Banknote className="w-4 h-4" />
-                              <span>Cobrado en Efectivo y Validar</span>
-                            </Button>
+                        <div className="space-y-3">
+                          <div className="bg-[#eaf0e2]/70 border border-[#aeb6a1]/60 rounded-2xl p-3.5 space-y-2.5">
+                            <p className="text-xs font-bold text-[#105238]">
+                              Cobro real en puerta con tarjeta (Wompi):
+                            </p>
+                            {!wompiUrl ? (
+                              <Button
+                                type="button"
+                                disabled={wompiLoading || actionLoading}
+                                onClick={generateWompiLink}
+                                className="w-full h-12 rounded-2xl bg-[#105238] hover:bg-[#0c3e2b] text-white font-bold text-xs sm:text-sm gap-2 cursor-pointer"
+                              >
+                                <QrCode className="w-4 h-4 text-[#8ee01a]" />
+                                <span>
+                                  {wompiLoading
+                                    ? "Generando enlace Wompi..."
+                                    : `Generar Link / QR de Pago Wompi ($${scannedBooking.monto_total.toFixed(2)})`}
+                                </span>
+                              </Button>
+                            ) : (
+                              <div className="bg-white dark:bg-card border border-[#105238]/30 rounded-2xl p-4 flex flex-col items-center text-center gap-3">
+                                <p className="text-xs font-bold text-foreground">
+                                  Pídele al cliente escanear este QR con su celular para pagar en Wompi:
+                                </p>
+                                <div className="p-3 bg-white rounded-2xl border border-border shadow-2xs">
+                                  <QRCode value={wompiUrl} size={168} />
+                                </div>
+                                <div className="flex flex-wrap gap-2 w-full">
+                                  <a
+                                    href={wompiUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex-1 h-10 rounded-xl bg-[#105238] hover:bg-[#0c3e2b] text-white font-bold text-xs flex items-center justify-center gap-1.5 px-3"
+                                  >
+                                    <ExternalLink className="w-3.5 h-3.5 text-[#8ee01a]" />
+                                    <span>Abrir Pasarela Wompi</span>
+                                  </a>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    disabled={scanLoading}
+                                    onClick={() => lookupQrCode(scannedBooking.reserva_id)}
+                                    className="flex-1 h-10 rounded-xl border-[#105238] text-[#105238] font-bold text-xs gap-1.5 cursor-pointer"
+                                  >
+                                    <RefreshCw className={cn("w-3.5 h-3.5", scanLoading && "animate-spin")} />
+                                    <span>Verificar si ya pagó</span>
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="space-y-2 pt-1">
+                            <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                              O si ya recibiste el pago físico en tu comercio:
+                            </p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                              <Button
+                                type="button"
+                                disabled={actionLoading}
+                                onClick={() => setConfirmPhysicalMethod("POS / TARJETA")}
+                                variant="outline"
+                                className="h-11 rounded-2xl border-[#105238]/50 text-[#105238] hover:bg-[#eaf0e2] font-bold text-xs gap-2 cursor-pointer"
+                              >
+                                <CreditCard className="w-4 h-4" />
+                                <span>Ya cobré en Datáfono propio</span>
+                              </Button>
+                              <Button
+                                type="button"
+                                disabled={actionLoading}
+                                onClick={() => setConfirmPhysicalMethod("EFECTIVO")}
+                                variant="outline"
+                                className="h-11 rounded-2xl border-[#105238]/50 text-[#105238] hover:bg-[#eaf0e2] font-bold text-xs gap-2 cursor-pointer"
+                              >
+                                <Banknote className="w-4 h-4" />
+                                <span>Ya cobré en Efectivo</span>
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       ) : (
@@ -914,6 +1012,66 @@ export function ReceptionScreen({ onNavigate }: ReceptionScreenProps) {
           </div>
         )}
       </div>
+
+      {/* Explicit Confirmation Modal for Physical / Cash / Own POS Payment */}
+      {confirmPhysicalMethod && scannedBooking && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-11 h-11 rounded-2xl bg-[#eaf0e2] text-[#105238] flex items-center justify-center shrink-0">
+                {confirmPhysicalMethod === "EFECTIVO" ? (
+                  <Banknote className="w-5 h-5" />
+                ) : (
+                  <CreditCard className="w-5 h-5" />
+                )}
+              </div>
+              <div>
+                <h3 className="font-extrabold text-foreground text-base">
+                  Confirmar cobro físico recibido
+                </h3>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  ¿Confirmas que ya recibiste{" "}
+                  <strong className="text-[#105238]">
+                    ${scannedBooking.monto_total.toFixed(2)}
+                  </strong>{" "}
+                  {confirmPhysicalMethod === "EFECTIVO"
+                    ? "en efectivo en caja"
+                    : "en tu datáfono bancario propio"}
+                  ?
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-[#eaf0e2]/60 border border-[#aeb6a1]/50 rounded-2xl p-3 text-xs text-[#105238]">
+              Esta acción no debita tarjetas por internet; registra el cobro físico en tu comercio y marca el Voucher QR como <strong>PAGADO y CANJEADO</strong> a tu nombre.
+            </div>
+
+            <div className="flex gap-2.5 pt-1">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={actionLoading}
+                onClick={() => setConfirmPhysicalMethod(null)}
+                className="flex-1 h-11 rounded-2xl font-bold text-xs cursor-pointer"
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                disabled={actionLoading}
+                onClick={async () => {
+                  const method = confirmPhysicalMethod
+                  setConfirmPhysicalMethod(null)
+                  await executeQrAction("pay_and_redeem", method)
+                }}
+                className="flex-1 h-11 rounded-2xl bg-[#105238] hover:bg-[#0c3e2b] text-white font-bold text-xs cursor-pointer"
+              >
+                {actionLoading ? "Registrando..." : "Sí, ya recibí el dinero"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
