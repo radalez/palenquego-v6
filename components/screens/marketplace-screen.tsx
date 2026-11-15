@@ -676,9 +676,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   const [travelerCommentDrafts, setTravelerCommentDrafts] = useState<Record<string, string>>({})
   const [adRotationIndex, setAdRotationIndex] = useState(0)
 
-  // 40-item automatic infinite scroll & refs
+  // 40-item automatic reload cycle (never bloats DOM beyond 40 cards)
   const BATCH_SIZE = 40
-  const [visibleCount, setVisibleCount] = useState(BATCH_SIZE)
+  const [batchStart, setBatchStart] = useState(0)
+  const [isReloadingBatch, setIsReloadingBatch] = useState(false)
   const lastAdvanceRef = useRef<number>(0)
   const routesTrackRef = useRef<HTMLDivElement | null>(null)
   const feedTopRef = useRef<HTMLDivElement | null>(null)
@@ -780,17 +781,40 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     }
   }, [services.length])
 
-  const advanceInfiniteFeed = useCallback(() => {
-    const now = Date.now()
-    if (now - lastAdvanceRef.current < 450) return
-    lastAdvanceRef.current = now
-    if (catalogHasMore) {
+  // Silently pre-fetch next backend page so next 40 experiences are ready before user hits bottom
+  useEffect(() => {
+    if (catalogHasMore && !isFetchingMoreCatalog && services.length < batchStart + BATCH_SIZE * 2) {
       fetchMoreServices()
     }
-    setVisibleCount((prev) => prev + BATCH_SIZE)
-  }, [catalogHasMore, fetchMoreServices])
+  }, [batchStart, services.length, catalogHasMore, isFetchingMoreCatalog, fetchMoreServices])
 
-  // Infinite scroll sentinel
+  const advanceBatchAutomatically = useCallback(async () => {
+    const now = Date.now()
+    if (now - lastAdvanceRef.current < 1500 || isReloadingBatch) return
+    if (orderedServicesLengthRef.current <= BATCH_SIZE && !catalogHasMore) return
+    lastAdvanceRef.current = now
+    setIsReloadingBatch(true)
+    try {
+      if (catalogHasMore && orderedServicesLengthRef.current < batchStart + BATCH_SIZE * 2) {
+        await fetchMoreServices()
+      }
+      setBatchStart((prev) => {
+        const nextStart = prev + BATCH_SIZE
+        if (nextStart < orderedServicesLengthRef.current) {
+          return nextStart
+        }
+        setFeedSeed(Math.floor(Math.random() * 99999))
+        return 0
+      })
+      setTimeout(() => {
+        feedTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+      }, 60)
+    } finally {
+      setTimeout(() => setIsReloadingBatch(false), 600)
+    }
+  }, [batchStart, catalogHasMore, fetchMoreServices, isReloadingBatch])
+
+  // Infinite batch-reload sentinel (triggers right at the end of the 40 cards)
   const sentinelRef = useCallback(
     (node: HTMLDivElement | null) => {
       if (observerInstance.current) {
@@ -801,14 +825,14 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
       observerInstance.current = new IntersectionObserver(
         (entries) => {
           if (entries[0]?.isIntersecting) {
-            advanceInfiniteFeed()
+            advanceBatchAutomatically()
           }
         },
-        { root: null, rootMargin: "900px", threshold: 0 },
+        { root: null, rootMargin: "160px", threshold: 0 },
       )
       observerInstance.current.observe(node)
     },
-    [advanceInfiniteFeed],
+    [advanceBatchAutomatically],
   )
 
   useEffect(() => {
@@ -819,7 +843,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
       scrollables.forEach((el) => {
         const target = el as HTMLElement
         if (target.scrollHeight > target.clientHeight) {
-          if (target.scrollTop + target.clientHeight >= target.scrollHeight - 1000) {
+          if (target.scrollTop + target.clientHeight >= target.scrollHeight - 250) {
             reachedBottom = true
           }
         }
@@ -828,10 +852,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
       const winScrollTop = window.scrollY || doc.scrollTop || 0
       const winClientHeight = window.innerHeight || doc.clientHeight || 0
       const winScrollHeight = doc.scrollHeight || 0
-      if (winScrollHeight > winClientHeight && winScrollTop + winClientHeight >= winScrollHeight - 1000) {
+      if (winScrollHeight > winClientHeight && winScrollTop + winClientHeight >= winScrollHeight - 250) {
         reachedBottom = true
       }
-      if (reachedBottom) advanceInfiniteFeed()
+      if (reachedBottom) advanceBatchAutomatically()
     }
     const handleScroll = () => {
       if (!ticking) {
@@ -844,14 +868,12 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     }
     window.addEventListener("scroll", handleScroll, { capture: true, passive: true })
     document.addEventListener("scroll", handleScroll, { capture: true, passive: true })
-    const interval = setInterval(checkAndAdvance, 1000)
     return () => {
       window.removeEventListener("scroll", handleScroll, true)
       document.removeEventListener("scroll", handleScroll, true)
-      clearInterval(interval)
       if (observerInstance.current) observerInstance.current.disconnect()
     }
-  }, [advanceInfiniteFeed])
+  }, [advanceBatchAutomatically])
 
   const savePreferences = (prefs: string[]) => {
     setPreferredCategories(prefs)
@@ -1329,38 +1351,18 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     [],
   )
 
+  const orderedServicesLengthRef = useRef(orderedServices.length)
+  orderedServicesLengthRef.current = orderedServices.length
+
   useEffect(() => {
-    setVisibleCount(BATCH_SIZE)
+    setBatchStart(0)
   }, [selectedCategory, onlyPreferred, searchQuery])
 
   const visibleBatchServices = useMemo(() => {
-    if (orderedServices.length === 0) return []
-    if (visibleCount <= orderedServices.length) {
-      return orderedServices.slice(0, visibleCount)
-    }
-    // If all loaded services have been seen and backend has no more, seamlessly cycle with fresh order
-    if (catalogHasMore || orderedServices.length <= BATCH_SIZE) {
-      return orderedServices
-    }
-    const result = [...orderedServices]
-    let cycle = 1
-    while (result.length < visibleCount) {
-      const rotated = [
-        ...orderedServices.slice((cycle * 13) % orderedServices.length),
-        ...orderedServices.slice(0, (cycle * 13) % orderedServices.length),
-      ]
-      result.push(...rotated)
-      cycle += 1
-    }
-    return result.slice(0, visibleCount)
-  }, [orderedServices, visibleCount, catalogHasMore])
-
-  const handleLoadNextBatch = async () => {
-    if (catalogHasMore) {
-      await fetchMoreServices()
-    }
-    setVisibleCount((prev) => prev + BATCH_SIZE)
-  }
+    if (orderedServices.length <= BATCH_SIZE) return orderedServices
+    const slice = orderedServices.slice(batchStart, batchStart + BATCH_SIZE)
+    return slice.length > 0 ? slice : orderedServices.slice(0, BATCH_SIZE)
+  }, [orderedServices, batchStart])
 
   return (
     <div className="flex flex-col min-h-screen bg-[#fafaf8] dark:bg-background">
@@ -2375,9 +2377,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                       (serviceIdx + 1) % 4 === 0 && (() => {
                         const carouselSlot = Math.floor((serviceIdx + 1) / 4) - 1
                         // Every 3rd carousel (starting at slot 1 -> after post 8) shows Mapa Go Tours & Routes:
-                        // Round 0: TOUR -> Round 1: URBANO -> Round 2: INTERURBANO
+                        // Round 0: TOUR -> Round 1: URBANO -> Round 2: INTERURBANO (cycles across batches!)
                         if (carouselSlot % 3 === 1 && routes.length > 0) {
-                          const routesRound = Math.floor(carouselSlot / 3)
+                          const batchIndex = Math.floor(batchStart / BATCH_SIZE)
+                          const routesRound = batchIndex + Math.floor(carouselSlot / 3)
                           const routeCycle: Array<"TOUR" | "URBANO" | "INTERURBANO"> = ["TOUR", "URBANO", "INTERURBANO"]
                           const targetRouteType = routeCycle[routesRound % 3]
                           return (
@@ -2476,19 +2479,19 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   </div>
                 )}
 
-                {/* Automatic Infinite Scroll Sentinel (no manual button) */}
+                {/* Automatic 40-Item Reload Sentinel (reloads next 40 unseen experiences smoothly without bloating DOM) */}
                 <div
                   ref={sentinelRef}
                   className="py-6 flex flex-col items-center justify-center gap-2"
                 >
-                  {(catalogHasMore || isFetchingMoreCatalog || orderedServices.length > BATCH_SIZE) && (
-                    <div className="flex items-center gap-2 text-xs font-bold text-[#105238] bg-[#eaf0e2] px-4 py-2 rounded-full">
+                  {(catalogHasMore || isFetchingMoreCatalog || isReloadingBatch || orderedServices.length > BATCH_SIZE) && (
+                    <div className="flex items-center gap-2 text-xs font-bold text-[#105238] bg-[#eaf0e2] px-4 py-2 rounded-full shadow-2xs">
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Cargando más experiencias nuevas...</span>
+                      <span>Cargando las siguientes 40 experiencias nuevas...</span>
                     </div>
                   )}
                   <p className="text-[11px] text-muted-foreground">
-                    Explorando {visibleBatchServices.length} experiencias
+                    Bloque {Math.floor(batchStart / BATCH_SIZE) + 1} · Mostrando {visibleBatchServices.length} experiencias (recarga automática al final)
                   </p>
                 </div>
               </div>
