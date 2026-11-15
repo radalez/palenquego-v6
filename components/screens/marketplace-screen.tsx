@@ -28,6 +28,7 @@ import {
   SlidersHorizontal,
   Calendar,
   Store as StoreIcon,
+  ChevronLeft,
   ChevronRight,
   Check,
   Mail,
@@ -41,7 +42,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
-import { useAppStore, type Service, DEFAULT_STORE_COVER } from "@/lib/store"
+import { useAppStore, type Service, DEFAULT_STORE_COVER, API_BASE, fetchWithAuth } from "@/lib/store"
 import { BookingModal } from "@/components/booking-modal"
 import { HeaderWithMenu } from "@/components/header-with-menu"
 import { RatingModal } from "@/components/rating-modal"
@@ -114,15 +115,17 @@ const REACTIONS: Array<{ id: ReactionKey; label: string; icon: any }> = [
 function ReactionBadgeIcon({
   type,
   size = "md",
+  animateOnHover = false,
   animated = false,
 }: {
   type: ReactionKey
   size?: "xs" | "sm" | "md" | "lg"
+  animateOnHover?: boolean
   animated?: boolean
 }) {
   const sizeClass =
     size === "lg"
-      ? "w-10 h-10"
+      ? "w-11 h-11"
       : size === "md"
         ? "w-5 h-5"
         : size === "sm"
@@ -136,18 +139,34 @@ function ReactionBadgeIcon({
         ? "w-3.5 h-3.5"
         : "w-2.5 h-2.5"
 
+  const base3D =
+    size === "lg"
+      ? "relative overflow-hidden shadow-[0_8px_18px_rgba(16,82,56,0.38),inset_0_2px_4px_rgba(255,255,255,0.48),inset_0_-3px_5px_rgba(10,48,32,0.45)]"
+      : "relative overflow-hidden shadow-[0_2px_6px_rgba(16,82,56,0.28),inset_0_1px_2px_rgba(255,255,255,0.4)]"
+
+  const glossOverlay = (
+    <span className="pointer-events-none absolute inset-x-1 top-0.5 h-[42%] rounded-full bg-gradient-to-b from-white/45 to-transparent" />
+  )
+
   if (type === "trato") {
     return (
       <span
         className={cn(
           sizeClass,
-          "rounded-full bg-gradient-to-br from-[#105238] to-[#1a7a54] border border-[#8ee01a]/70 flex items-center justify-center shadow-sm shrink-0",
+          base3D,
+          "rounded-full bg-gradient-to-br from-[#1b7a53] via-[#105238] to-[#083523] border border-[#8ee01a]/70 flex items-center justify-center shrink-0",
         )}
       >
+        {glossOverlay}
         <svg
           viewBox="0 0 24 24"
           fill="none"
-          className={cn(innerSize, animated && "animate-fb-thumb")}
+          className={cn(
+            innerSize,
+            "relative z-10 drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]",
+            animated && "animate-fb-thumb",
+            animateOnHover && "group-hover/emoji:animate-fb-thumb",
+          )}
         >
           <path
             d="M7 11v9H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3Zm2 9h7.5a2 2 0 0 0 1.94-1.52l1.2-4.8A2 2 0 0 0 17.7 11H14V6.5A2.5 2.5 0 0 0 11.5 4l-.4.02a.5.5 0 0 0-.45.38L9 11v9Z"
@@ -163,18 +182,25 @@ function ReactionBadgeIcon({
       <span
         className={cn(
           sizeClass,
-          "rounded-full bg-gradient-to-br from-[#c4d551] to-[#91c44a] border border-[#105238]/30 flex items-center justify-center shadow-sm shrink-0",
+          base3D,
+          "rounded-full bg-gradient-to-br from-[#a3f033] via-[#8ee01a] to-[#5da30d] border border-[#105238]/35 flex items-center justify-center shrink-0",
         )}
       >
+        {glossOverlay}
         <svg
           viewBox="0 0 24 24"
           fill="none"
-          className={cn(innerSize, animated && "animate-fb-laugh")}
+          className={cn(
+            innerSize,
+            "relative z-10 drop-shadow-[0_1px_1px_rgba(16,82,56,0.25)]",
+            animated && "animate-fb-laugh",
+            animateOnHover && "group-hover/emoji:animate-fb-laugh",
+          )}
         >
           <path
             d="M7.5 10.5c.6-1 1.7-1 2.3 0M14.2 10.5c.6-1 1.7-1 2.3 0"
             stroke="#105238"
-            strokeWidth="2.2"
+            strokeWidth="2.3"
             strokeLinecap="round"
           />
           <path
@@ -191,13 +217,20 @@ function ReactionBadgeIcon({
       <span
         className={cn(
           sizeClass,
-          "rounded-full bg-gradient-to-br from-[#0f766e] to-[#105238] border border-[#8ee01a]/80 flex items-center justify-center shadow-sm shrink-0",
+          base3D,
+          "rounded-full bg-gradient-to-br from-[#209668] via-[#105238] to-[#063625] border border-[#8ee01a]/85 flex items-center justify-center shrink-0",
         )}
       >
+        {glossOverlay}
         <svg
           viewBox="0 0 24 24"
           fill="none"
-          className={cn(innerSize, animated && "animate-fb-sparkle")}
+          className={cn(
+            innerSize,
+            "relative z-10 drop-shadow-[0_2px_4px_rgba(142,224,26,0.45)]",
+            animated && "animate-fb-sparkle",
+            animateOnHover && "group-hover/emoji:animate-fb-sparkle",
+          )}
         >
           <path
             d="M12 2.5l2.4 5.9 6.1.6-4.6 4.1 1.4 6-5.3-3.2-5.3 3.2 1.4-6L3.5 9l6.1-.6L12 2.5Z"
@@ -212,18 +245,135 @@ function ReactionBadgeIcon({
     <span
       className={cn(
         sizeClass,
-        "rounded-full bg-gradient-to-br from-[#0284c7] to-[#105238] border border-[#8ee01a]/60 flex items-center justify-center shadow-sm shrink-0",
+        base3D,
+        "rounded-full bg-gradient-to-br from-[#34d399] via-[#107a55] to-[#105238] border border-[#eaf0e2]/80 flex items-center justify-center shrink-0",
       )}
     >
+      {glossOverlay}
       <svg
         viewBox="0 0 24 24"
         fill="none"
-        className={cn(innerSize, animated && "animate-fb-compass")}
+        className={cn(
+          innerSize,
+          "relative z-10 drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]",
+          animated && "animate-fb-compass",
+          animateOnHover && "group-hover/emoji:animate-fb-compass",
+        )}
       >
-        <circle cx="12" cy="12" r="8.5" stroke="#ffffff" strokeWidth="1.8" />
+        <circle cx="12" cy="12" r="8.5" stroke="#ffffff" strokeWidth="1.9" />
         <path d="M15.5 8.5l-2.2 5.2-5.2 2.2 2.2-5.2 5.2-2.2Z" fill="#8ee01a" />
       </svg>
     </span>
+  )
+}
+
+function CategoryCarouselStrip({
+  categoryLabel,
+  categoryId,
+  icon: CatIcon,
+  items,
+  onSelectCategory,
+  onOpenService,
+}: {
+  categoryLabel: string
+  categoryId: string
+  icon: any
+  items: Service[]
+  onSelectCategory: (id: string) => void
+  onOpenService: (id: number) => void
+}) {
+  const trackRef = useRef<HTMLDivElement | null>(null)
+
+  const scrollTrack = (dir: "left" | "right") => {
+    if (!trackRef.current) return
+    trackRef.current.scrollBy({ left: dir === "right" ? 260 : -260, behavior: "smooth" })
+  }
+
+  return (
+    <div className="bg-gradient-to-br from-[#eaf0e2] via-[#f4f7ef] to-white dark:from-card dark:to-card border border-[#aeb6a1]/60 rounded-3xl p-4 shadow-[0_8px_24px_rgba(16,82,56,0.08)] space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="w-9 h-9 rounded-2xl bg-gradient-to-br from-[#1b7a53] to-[#105238] text-[#8ee01a] flex items-center justify-center shadow-[0_4px_10px_rgba(16,82,56,0.3)] shrink-0">
+            <CatIcon className="w-4 h-4" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-[10px] font-black uppercase tracking-wider text-[#105238]/75">
+              Colección PalenqueGo
+            </p>
+            <h4 className="text-sm sm:text-base font-extrabold text-[#105238] dark:text-foreground truncate">
+              Explora {categoryLabel}
+            </h4>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => scrollTrack("left")}
+            className="hidden sm:flex w-7 h-7 rounded-full bg-white border border-[#aeb6a1]/60 items-center justify-center text-[#105238] hover:bg-[#105238] hover:text-white transition-colors cursor-pointer"
+            aria-label="Anterior"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => scrollTrack("right")}
+            className="hidden sm:flex w-7 h-7 rounded-full bg-white border border-[#aeb6a1]/60 items-center justify-center text-[#105238] hover:bg-[#105238] hover:text-white transition-colors cursor-pointer"
+            aria-label="Siguiente"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onSelectCategory(categoryId)}
+            className="text-xs font-bold bg-[#105238] text-[#8ee01a] px-3 py-1.5 rounded-full hover:bg-[#0c3e2b] transition-colors cursor-pointer"
+          >
+            Ver todo
+          </button>
+        </div>
+      </div>
+
+      <div
+        ref={trackRef}
+        className="flex gap-3 overflow-x-auto scrollbar-hide snap-x pb-1"
+      >
+        {items.map((cs) => (
+          <div
+            key={cs.id}
+            onClick={() => onOpenService(cs.id)}
+            className="w-44 sm:w-48 shrink-0 snap-start bg-white dark:bg-background border border-border/80 rounded-2xl overflow-hidden shadow-xs hover:shadow-md hover:border-[#105238]/40 transition-all cursor-pointer flex flex-col"
+          >
+            <div className="relative h-28 bg-muted overflow-hidden">
+              <img
+                src={cs.image || DEFAULT_STORE_COVER}
+                alt={cs.name}
+                className="w-full h-full object-cover"
+              />
+              <span className="absolute top-2 right-2 bg-white/95 text-[#105238] text-[10px] font-black px-2 py-0.5 rounded-full inline-flex items-center gap-0.5 shadow-xs">
+                <Star className="w-2.5 h-2.5 fill-[#105238]" /> {cs.rating}
+              </span>
+            </div>
+            <div className="p-2.5 flex-1 flex flex-col justify-between gap-2">
+              <div>
+                <p className="text-xs font-extrabold text-foreground line-clamp-1">{cs.name}</p>
+                <p className="text-[10px] text-muted-foreground truncate flex items-center gap-1 mt-0.5">
+                  <MapPin className="w-2.5 h-2.5 text-[#105238] shrink-0" />
+                  <span className="truncate">{cs.location}</span>
+                </p>
+              </div>
+              <div className="flex items-center justify-between pt-1 border-t border-border/50">
+                <span className="text-xs font-black text-[#105238]">
+                  ${Number(cs.price || 0).toFixed(0)} <span className="text-[10px] font-normal text-muted-foreground">/p</span>
+                </span>
+                <span className="text-[10px] font-bold text-[#105238] bg-[#eaf0e2] px-2 py-0.5 rounded-full">
+                  Explorar
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
 
@@ -497,7 +647,50 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     }, 220)
   }
 
-  const toggleServiceReaction = (serviceId: number, reaction: ReactionKey) => {
+  // Hydrate real backend reactions & reviews from catalog payload
+  useEffect(() => {
+    if (!services || services.length === 0) return
+    setServiceReactions((prev) => {
+      const next = { ...prev }
+      for (const s of services) {
+        if (s.reactions_summary) {
+          const totalSrv = Object.values(s.reactions_summary.counts || {}).reduce((a, b) => a + b, 0)
+          if (totalSrv > 0 || s.reactions_summary.user_reaction) {
+            next[s.id] = {
+              counts: {
+                trato: s.reactions_summary.counts?.trato || 0,
+                divertido: s.reactions_summary.counts?.divertido || 0,
+                fascino: s.reactions_summary.counts?.fascino || 0,
+                quiero_ir: s.reactions_summary.counts?.quiero_ir || 0,
+              },
+              userReaction: (s.reactions_summary.user_reaction as ReactionKey) || null,
+            }
+          }
+        }
+      }
+      return next
+    })
+    setServiceComments((prev) => {
+      const next = { ...prev }
+      for (const s of services) {
+        if (s.recent_reviews && s.recent_reviews.length > 0) {
+          next[s.id] = s.recent_reviews.map((r) => ({
+            id: String(r.id),
+            author: r.autor_nombre || "Viajero PalenqueGo",
+            text: r.comentario,
+            rating: r.calificacion,
+            createdAt: new Date(r.creado_el).toLocaleDateString("es-SV", {
+              day: "2-digit",
+              month: "short",
+            }),
+          }))
+        }
+      }
+      return next
+    })
+  }, [services])
+
+  const toggleServiceReaction = async (serviceId: number, reaction: ReactionKey) => {
     if (reactionCloseTimerRef.current) {
       clearTimeout(reactionCloseTimerRef.current)
       reactionCloseTimerRef.current = null
@@ -529,12 +722,69 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
       setJustReactedServiceId((curr) => (curr === serviceId ? null : curr))
     }, 450)
     setOpenReactionPickerId(null)
+
+    try {
+      const res = await fetchWithAuth(`${API_BASE}/catalog/${serviceId}/react/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tipo: reaction }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setServiceReactions((prev) => ({
+          ...prev,
+          [serviceId]: {
+            counts: {
+              trato: data.counts?.trato || 0,
+              divertido: data.counts?.divertido || 0,
+              fascino: data.counts?.fascino || 0,
+              quiero_ir: data.counts?.quiero_ir || 0,
+            },
+            userReaction: (data.user_reaction as ReactionKey) || null,
+          },
+        }))
+      }
+    } catch {
+      // Optimistic local state already applied
+    }
   }
 
-  const handleAddServiceComment = (serviceId: number) => {
+  const handleAddServiceComment = async (serviceId: number) => {
     const text = (commentDrafts[serviceId] || "").trim()
     if (!text) return
     const rating = commentRatings[serviceId] || 5
+
+    try {
+      const res = await fetchWithAuth(`${API_BASE}/catalog/${serviceId}/reviews/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ calificacion: rating, comentario: text }),
+      })
+      if (res.status === 401) {
+        alert("Inicia sesión para publicar tu reseña y calificación con estrellas.")
+        return
+      }
+      if (res.ok) {
+        const data = await res.json()
+        const r = data.review
+        const savedComment: ServiceComment = {
+          id: String(r?.id || Date.now()),
+          author: r?.autor_nombre || currentUser?.name || "Viajero PalenqueGo",
+          text: r?.comentario || text,
+          rating: r?.calificacion || rating,
+          createdAt: "Ahora",
+        }
+        setServiceComments((prev) => ({
+          ...prev,
+          [serviceId]: [savedComment, ...(prev[serviceId] || [])],
+        }))
+        setCommentDrafts((prev) => ({ ...prev, [serviceId]: "" }))
+        return
+      }
+    } catch {
+      // Fallback local
+    }
+
     const newComment: ServiceComment = {
       id: `${Date.now()}`,
       author: currentUser?.name || "Viajero PalenqueGo",
@@ -1416,7 +1666,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                       <span className="pointer-events-none opacity-0 group-hover/emoji:opacity-100 transition-opacity duration-150 absolute -top-8 left-1/2 -translate-x-1/2 bg-[#105238] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap shadow-lg">
                                         {r.label}
                                       </span>
-                                      <ReactionBadgeIcon type={r.id} size="lg" animated />
+                                      <ReactionBadgeIcon type={r.id} size="lg" animateOnHover />
                                     </button>
                                   )
                                 })}
@@ -1621,68 +1871,28 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                       )}
                     </article>
 
-                    {/* Inline Category Discovery Card every 5 posts so categories appear naturally as you scroll */}
+                    {/* Inline PalenqueGo Category Carousel every 4 posts so categories appear naturally as you scroll */}
                     {selectedCategory === "all" &&
-                      (serviceIdx + 1) % 5 === 0 &&
+                      (serviceIdx + 1) % 4 === 0 &&
                       discoveryCategories.length > 0 && (() => {
-                        const catOffset = Math.floor((serviceIdx + 1) / 5 - 1 + (feedSeed % discoveryCategories.length))
+                        const catOffset = Math.floor((serviceIdx + 1) / 4 - 1 + (feedSeed % discoveryCategories.length))
                         const targetCat = discoveryCategories[catOffset % discoveryCategories.length]
-                        const CatIcon = targetCat.icon
                         const catSamples = services
                           .filter((s) => matchesCategory(s, targetCat.id) && s.id !== service.id)
-                          .slice(0, 2)
+                          .slice(0, 8)
                         if (catSamples.length === 0) return null
                         return (
-                          <div className="bg-[#eaf0e2]/55 dark:bg-card border border-[#aeb6a1]/50 rounded-3xl p-4 space-y-3">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <span className="w-7 h-7 rounded-xl bg-[#105238] text-[#8ee01a] flex items-center justify-center">
-                                  <CatIcon className="w-4 h-4" />
-                                </span>
-                                <div>
-                                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#105238]/75">
-                                    Explora otra vibra
-                                  </p>
-                                  <h4 className="text-sm font-extrabold text-[#105238] dark:text-foreground">
-                                    {targetCat.label}
-                                  </h4>
-                                </div>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setOnlyPreferred(false)
-                                  setSelectedCategory(targetCat.id)
-                                }}
-                                className="text-xs font-bold text-[#105238] hover:underline flex items-center gap-0.5 cursor-pointer"
-                              >
-                                <span>Ver más</span>
-                                <ChevronRight className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                              {catSamples.map((cs) => (
-                                <button
-                                  key={cs.id}
-                                  type="button"
-                                  onClick={() => router.push(`/s/${cs.id}?from=marketplace`)}
-                                  className="flex items-center gap-2.5 bg-white dark:bg-background border border-border/70 rounded-2xl p-2 text-left hover:border-[#105238]/40 transition-colors cursor-pointer"
-                                >
-                                  <img
-                                    src={cs.image || DEFAULT_STORE_COVER}
-                                    alt={cs.name}
-                                    className="w-12 h-12 rounded-xl object-cover shrink-0"
-                                  />
-                                  <div className="min-w-0 flex-1">
-                                    <p className="text-xs font-bold text-foreground truncate">{cs.name}</p>
-                                    <p className="text-[11px] font-black text-[#105238]">
-                                      ${Number(cs.price || 0).toFixed(2)} <span className="font-normal text-muted-foreground">/p</span>
-                                    </p>
-                                  </div>
-                                </button>
-                              ))}
-                            </div>
-                          </div>
+                          <CategoryCarouselStrip
+                            categoryLabel={targetCat.label}
+                            categoryId={targetCat.id}
+                            icon={targetCat.icon}
+                            items={catSamples}
+                            onSelectCategory={(catId) => {
+                              setOnlyPreferred(false)
+                              setSelectedCategory(catId)
+                            }}
+                            onOpenService={(sid) => router.push(`/s/${sid}?from=marketplace`)}
+                          />
                         )
                       })()}
                   </div>

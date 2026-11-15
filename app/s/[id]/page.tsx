@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useAppStore } from "@/lib/store"
 import { BookingModal } from "@/components/booking-modal"
+import { RealReviewsSection } from "@/components/real-reviews-section"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 
 interface ServiceDetailPageProps {
@@ -635,6 +636,9 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
                   </div>
                 </div>
               )}
+
+              {/* Real Reviews & Ratings Section */}
+              <RealReviewsSection mode="service" targetId={service.id} />
             </div>
           </div>
 

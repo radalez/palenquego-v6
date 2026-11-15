@@ -23,6 +23,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 import { useAppStore, DEFAULT_STORE_COVER } from "@/lib/store"
 import { BookingModal } from "@/components/booking-modal"
+import { RealReviewsSection } from "@/components/real-reviews-section"
 
 interface BusinessDetailPageProps {
   params: Promise<{ id: string }>
@@ -485,6 +486,15 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
                     <p className="text-muted-foreground text-sm">No hay servicios disponibles por el momento.</p>
                   </div>
                 )}
+              </div>
+
+              {/* Real Reviews & Ratings Section */}
+              <div className="pt-2">
+                <RealReviewsSection
+                  mode="business"
+                  targetId={business.id}
+                  servicesForBusiness={businessServices.map((s) => ({ id: s.id, name: s.name }))}
+                />
               </div>
             </div>
           </div>

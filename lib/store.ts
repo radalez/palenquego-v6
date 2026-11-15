@@ -250,6 +250,21 @@ export interface Service {
 
   ratings?: Rating[]
 
+  recent_reviews?: Array<{
+    id: number
+    servicio?: number
+    servicio_nombre?: string
+    autor_nombre: string
+    calificacion: number
+    comentario: string
+    creado_el: string
+  }>
+
+  reactions_summary?: {
+    counts: Record<string, number>
+    user_reaction: string | null
+  }
+
   routes?: { id: number; name: string }[]
 
   linkTypes?: ("oferta" | "descuento" | "feriado")[]
@@ -1846,6 +1861,10 @@ export const useAppStore = create<AppState>()(
 
             reviews: parseInt(s.numero_resenas) || s.reviews || 0,
 
+            recent_reviews: s.recent_reviews || [],
+
+            reactions_summary: s.reactions_summary || undefined,
+
             businessId: s.tienda?.id || s.businessId,
 
             businessName: s.tienda?.nombre_comercial || s.businessName,
@@ -1967,6 +1986,10 @@ export const useAppStore = create<AppState>()(
             rating: parseFloat(s.calificacion) || s.rating || 5.0,
 
             reviews: parseInt(s.numero_resenas) || s.reviews || 0,
+
+            recent_reviews: s.recent_reviews || [],
+
+            reactions_summary: s.reactions_summary || undefined,
 
             businessId: s.tienda?.id || s.businessId,
 
