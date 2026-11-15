@@ -887,12 +887,29 @@ interface MarketplaceScreenProps {
   onViewServiceDetail?: (service: Service) => void
 }
 
+let cachedMarketplaceSession: {
+  selectedCategory: string
+  searchQuery: string
+  onlyPreferred: boolean
+  feedSeed: number
+  batchNumber: number
+  currentBatchIds: number[]
+  servicesSnapshot: Service[]
+  globalPoolSnapshot: Service[]
+  scrollY: number
+  shouldRestoreOnMount: boolean
+} | null = null
+
 export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   const router = useRouter()
   const [selectedService, setSelectedService] = useState<Service | null>(null)
   const [serviceForRoutes, setServiceForRoutes] = useState<Service | null>(null)
-  const [selectedCategory, setSelectedCategory] = useState("all")
-  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedCategory, setSelectedCategory] = useState(() =>
+    cachedMarketplaceSession?.shouldRestoreOnMount ? cachedMarketplaceSession.selectedCategory : "all",
+  )
+  const [searchQuery, setSearchQuery] = useState(() =>
+    cachedMarketplaceSession?.shouldRestoreOnMount ? cachedMarketplaceSession.searchQuery : "",
+  )
   const [serviceToRate, setServiceToRate] = useState<Service | null>(null)
   const [showFilterPanel, setShowFilterPanel] = useState(false)
   const [showComparisonModal, setShowComparisonModal] = useState(false)
@@ -906,8 +923,14 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   // Preferences Modal state
   const [preferredCategories, setPreferredCategories] = useState<string[]>([])
   const [showPreferencesModal, setShowPreferencesModal] = useState(false)
-  const [onlyPreferred, setOnlyPreferred] = useState(false)
-  const [feedSeed, setFeedSeed] = useState<number>(() => Math.floor(Math.random() * 99999))
+  const [onlyPreferred, setOnlyPreferred] = useState(() =>
+    cachedMarketplaceSession?.shouldRestoreOnMount ? cachedMarketplaceSession.onlyPreferred : false,
+  )
+  const [feedSeed, setFeedSeed] = useState<number>(() =>
+    cachedMarketplaceSession?.shouldRestoreOnMount
+      ? cachedMarketplaceSession.feedSeed
+      : Math.floor(Math.random() * 99999),
+  )
 
   // Social Feed state (reactions, inline comments, traveler posts, share popover)
   const [openReactionPickerId, setOpenReactionPickerId] = useState<number | null>(null)
@@ -940,8 +963,12 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
 
   // 40-item persistent seen-tracking reload cycle (never repeats seen items, never jumps to top)
   const BATCH_SIZE = 40
-  const [batchNumber, setBatchNumber] = useState(1)
-  const [currentBatchIds, setCurrentBatchIds] = useState<number[]>([])
+  const [batchNumber, setBatchNumber] = useState(() =>
+    cachedMarketplaceSession?.shouldRestoreOnMount ? cachedMarketplaceSession.batchNumber : 1,
+  )
+  const [currentBatchIds, setCurrentBatchIds] = useState<number[]>(() =>
+    cachedMarketplaceSession?.shouldRestoreOnMount ? cachedMarketplaceSession.currentBatchIds : [],
+  )
   const [isLoadingFeed, setIsLoadingFeed] = useState(false)
   const [isReloadingBatch, setIsReloadingBatch] = useState(false)
   const [allUnseenExhausted, setAllUnseenExhausted] = useState(false)
@@ -967,7 +994,9 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
 
   const [activePoolTooltipId, setActivePoolTooltipId] = useState<number | null>(null)
   const observerInstance = useRef<IntersectionObserver | null>(null)
-  const [globalCatalogPool, setGlobalCatalogPool] = useState<Service[]>([])
+  const [globalCatalogPool, setGlobalCatalogPool] = useState<Service[]>(
+    () => cachedMarketplaceSession?.globalPoolSnapshot || [],
+  )
   const [feedSurveyIntent, setFeedSurveyIntent] = useState<"group" | "flash" | "business" | "driver" | null>(null)
   const [canShowUpgradeReel, setCanShowUpgradeReel] = useState(false)
 
@@ -1136,8 +1165,26 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     return `?${params.toString()}`
   }, [selectedCategory, onlyPreferred, preferredCategories, searchQuery])
 
-  // Single-request 40-item random unseen catalog fetch (never loops over pages)
+  // Single-request 40-item random unseen catalog fetch (or instant 0ms restore when returning from a service detail!)
   useEffect(() => {
+    if (cachedMarketplaceSession?.shouldRestoreOnMount) {
+      const snap = cachedMarketplaceSession
+      snap.shouldRestoreOnMount = false
+      if (snap.servicesSnapshot.length > 0) {
+        useAppStore.setState({ services: snap.servicesSnapshot, isLoading: false })
+      }
+      setCurrentBatchIds(snap.currentBatchIds)
+      setBatchNumber(snap.batchNumber)
+      setAllUnseenExhausted(false)
+      setIsLoadingFeed(false)
+      if (typeof window !== "undefined" && snap.scrollY > 0) {
+        requestAnimationFrame(() => {
+          window.scrollTo({ top: snap.scrollY, behavior: "instant" as ScrollBehavior })
+        })
+      }
+      return
+    }
+
     let cancelled = false
     setIsLoadingFeed(true)
     const safetyTimer = setTimeout(() => {
@@ -1180,6 +1227,60 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
       clearTimeout(safetyTimer)
     }
   }, [buildUnseenCatalogQuery, feedSeed, fetchServices])
+
+  const openServiceDetailInstant = useCallback(
+    (serviceOrId: Service | number, hash = "") => {
+      const targetId = typeof serviceOrId === "number" ? serviceOrId : serviceOrId.id
+      const currentStoreServices = useAppStore.getState().services
+      const svcObj =
+        typeof serviceOrId === "object"
+          ? serviceOrId
+          : currentStoreServices.find((s) => s.id === targetId) ||
+            globalCatalogPool.find((s) => s.id === targetId) ||
+            null
+
+      if (svcObj && !currentStoreServices.some((s) => s.id === svcObj.id)) {
+        useAppStore.setState({ services: [...currentStoreServices, svcObj] })
+      }
+
+      cachedMarketplaceSession = {
+        selectedCategory,
+        searchQuery,
+        onlyPreferred,
+        feedSeed,
+        batchNumber,
+        currentBatchIds,
+        servicesSnapshot: useAppStore.getState().services,
+        globalPoolSnapshot: globalCatalogPool,
+        scrollY: typeof window !== "undefined" ? window.scrollY : 0,
+        shouldRestoreOnMount: true,
+      }
+
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("palenque_return_tab", "marketplace")
+        sessionStorage.setItem("palenque_last_viewed_service_id", String(targetId))
+        if (svcObj) {
+          try {
+            sessionStorage.setItem("palenque_instant_service", JSON.stringify(svcObj))
+          } catch {
+            // ignore storage errors
+          }
+        }
+      }
+
+      router.push(`/s/${targetId}?from=marketplace${hash}`)
+    },
+    [
+      selectedCategory,
+      searchQuery,
+      onlyPreferred,
+      feedSeed,
+      batchNumber,
+      currentBatchIds,
+      globalCatalogPool,
+      router,
+    ],
+  )
 
   useEffect(() => {
     fetchBusinesses()
@@ -2554,7 +2655,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                     return (
                       <button
                         type="button"
-                        onClick={() => router.push(`/s/${post.taggedServiceId}#resenas-reales`)}
+                        onClick={() =>
+                          post.taggedServiceId &&
+                          openServiceDetailInstant(matchedSvc || post.taggedServiceId, "#resenas-reales")
+                        }
                         className="w-full flex items-center gap-3 p-2.5 rounded-2xl bg-[#eaf0e2]/65 hover:bg-[#eaf0e2] border border-[#aeb6a1]/50 transition-colors text-left cursor-pointer group/svc"
                       >
                         <img
@@ -2771,13 +2875,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                       <div className="px-4 pb-3 space-y-1.5">
                         <div className="flex items-start justify-between gap-2">
                           <h3
-                            onClick={() => {
-                              if (typeof window !== "undefined") {
-                                sessionStorage.setItem("palenque_return_tab", "marketplace")
-                                sessionStorage.setItem("palenque_last_viewed_service_id", String(service.id))
-                              }
-                              router.push(`/s/${service.id}?from=marketplace`)
-                            }}
+                            onClick={() => openServiceDetailInstant(service)}
                             className="font-extrabold text-base sm:text-lg text-foreground hover:text-[#105238] transition-colors cursor-pointer leading-snug"
                           >
                             {service.name}
@@ -2799,13 +2897,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                       {/* Post Media */}
                       <div
                         className="relative h-60 sm:h-76 bg-muted overflow-hidden cursor-pointer"
-                        onClick={() => {
-                          if (typeof window !== "undefined") {
-                            sessionStorage.setItem("palenque_return_tab", "marketplace")
-                            sessionStorage.setItem("palenque_last_viewed_service_id", String(service.id))
-                          }
-                          router.push(`/s/${service.id}?from=marketplace`)
-                        }}
+                        onClick={() => openServiceDetailInstant(service)}
                       >
                         <img
                           src={service.image || "/placeholder.svg"}
@@ -3333,7 +3425,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                             setAllUnseenExhausted(false)
                             setFeedSeed(Math.floor(Math.random() * 99999) + 1)
                           }}
-                          onOpenService={(sid) => router.push(`/s/${sid}?from=marketplace`)}
+                          onOpenService={(sid) => {
+                            const matched = catSamples.find((s) => s.id === sid) || sid
+                            openServiceDetailInstant(matched)
+                          }}
                         />
                       )
                     })()}
@@ -3439,7 +3534,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                             <button
                               key={ts.id}
                               type="button"
-                              onClick={() => router.push(`/s/${ts.id}?from=marketplace`)}
+                              onClick={() => openServiceDetailInstant(ts)}
                               className="flex items-center gap-3 p-2.5 rounded-2xl border border-border/70 hover:border-[#105238]/40 bg-[#fafaf8] dark:bg-background transition-colors text-left cursor-pointer"
                             >
                               <img
@@ -3552,7 +3647,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                         <button
                           key={`${ad.id}-${firstIdx}-${idx}`}
                           type="button"
-                          onClick={() => router.push(`/s/${ad.id}?from=marketplace`)}
+                          onClick={() => openServiceDetailInstant(ad)}
                           className="w-full flex items-center gap-3 p-2 rounded-2xl hover:bg-card hover:shadow-xs border border-transparent hover:border-border/70 transition-all text-left cursor-pointer group/ad animate-in fade-in duration-300"
                         >
                           <div className="relative w-24 h-24 rounded-2xl overflow-hidden shrink-0 bg-muted border border-border/50">
@@ -3609,7 +3704,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                 <button
                   key={fs.id}
                   type="button"
-                  onClick={() => router.push(`/s/${fs.id}?from=marketplace`)}
+                  onClick={() => openServiceDetailInstant(fs)}
                   className="w-full text-left bg-white dark:bg-background hover:bg-[#eaf0e2]/60 border border-border/70 rounded-2xl p-2 flex items-center justify-between gap-2.5 transition-colors cursor-pointer"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
@@ -3678,7 +3773,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   <button
                     key={ts.id}
                     type="button"
-                    onClick={() => router.push(`/s/${ts.id}?from=marketplace`)}
+                    onClick={() => openServiceDetailInstant(ts)}
                     className="w-full flex items-center gap-3 p-2 rounded-2xl hover:bg-muted/50 transition-colors text-left cursor-pointer"
                   >
                     <img

@@ -29,6 +29,8 @@ import { cn } from "@/lib/utils"
 import { useAppStore, type Service } from "@/lib/store"
 import { BookingModal } from "@/components/booking-modal"
 import { RealReviewsSection } from "@/components/real-reviews-section"
+import { DesktopSidebar } from "@/components/desktop-sidebar"
+import { SidebarMenu } from "@/components/sidebar-menu"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 
 interface ServiceDetailPageProps {
@@ -71,34 +73,59 @@ const ScriptInjector = ({ htmlContent }: { htmlContent: string }) => {
 export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
   const router = useRouter()
   const resolvedParams = use(params)
-  const { services, fetchServices, fetchServiceById, toggleFavoritePreference, userFavorites } = useAppStore()
+  const { services, fetchServiceById, toggleFavoritePreference, userFavorites } = useAppStore()
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [showBookingModal, setShowBookingModal] = useState(false)
   const [activeSection, setActiveSection] = useState<string>("vista-general")
   const [showDesktopShare, setShowDesktopShare] = useState(false)
   const [copiedLink, setCopiedLink] = useState(false)
+  const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false)
   const sharePopoverRef = useRef<HTMLDivElement>(null)
-  const [fetchedService, setFetchedService] = useState<Service | null>(null)
 
   const serviceId = parseInt(resolvedParams.id)
-  const service = services.find((s) => s.id === serviceId) || fetchedService
+
+  const [fetchedService, setFetchedService] = useState<Service | null>(() => {
+    if (typeof window === "undefined") return null
+    try {
+      const raw = sessionStorage.getItem("palenque_instant_service")
+      if (!raw) return null
+      const parsed = JSON.parse(raw)
+      if (parsed && Number(parsed.id) === serviceId) {
+        return parsed as Service
+      }
+    } catch {
+      // ignore
+    }
+    return null
+  })
+
+  const service = fetchedService || services.find((s) => s.id === serviceId) || null
   const [isLoading, setIsLoading] = useState(!service)
 
   useEffect(() => {
+    let cancelled = false
     if (service) {
       setIsLoading(false)
-      return
+      // Silently enrich details (gallery images, features, extras, routes) in background without spinner
+      fetchServiceById(serviceId)
+        .then((direct) => {
+          if (!cancelled && direct) {
+            setFetchedService(direct)
+          }
+        })
+        .catch(() => {})
+      return () => {
+        cancelled = true
+      }
     }
-    let cancelled = false
+
     const load = async () => {
       setIsLoading(true)
       try {
         const direct = await fetchServiceById(serviceId)
         if (!cancelled && direct) {
           setFetchedService(direct)
-          return
         }
-        await fetchServices()
       } finally {
         if (!cancelled) setIsLoading(false)
       }
@@ -107,7 +134,7 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
     return () => {
       cancelled = true
     }
-  }, [serviceId, Boolean(service)])
+  }, [serviceId])
 
   useEffect(() => {
     if (!showDesktopShare) return
@@ -237,7 +264,39 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
   ].filter((sec) => sec.visible)
 
   return (
-    <main className="min-h-screen bg-[#fafaf8] dark:bg-background flex flex-col pb-32 lg:pb-16">
+    <div className="min-h-screen bg-[#fafaf8] dark:bg-background flex w-full">
+      {/* Desktop Left Sidebar so user stays inside the PalenqueGo app shell */}
+      {!isDesktopSidebarCollapsed && (
+        <div className="hidden lg:block h-screen sticky top-0 shrink-0 z-30">
+          <DesktopSidebar
+            activeTab="marketplace"
+            onNavigate={navigateToTab}
+            onToggleCollapse={() => setIsDesktopSidebarCollapsed(true)}
+          />
+        </div>
+      )}
+
+      {isDesktopSidebarCollapsed && (
+        <div className="hidden lg:block fixed top-1/2 -translate-y-1/2 left-0 z-50">
+          <button
+            type="button"
+            onClick={() => setIsDesktopSidebarCollapsed(false)}
+            title="Mostrar menú de navegación"
+            className="bg-white/95 hover:bg-[#eaf0e2] text-[#105238] py-3.5 px-1.5 rounded-r-2xl shadow-xl border-r border-y border-[#aeb6a1]/80 flex flex-col items-center justify-center gap-1 transition-all active:scale-95 group hover:px-2.5 cursor-pointer"
+          >
+            <ChevronRight className="w-4 h-4 text-[#105238] group-hover:translate-x-0.5 transition-transform" />
+            <span className="text-[9px] font-black uppercase [writing-mode:vertical-lr] tracking-widest text-[#105238]">
+              Menú
+            </span>
+          </button>
+        </div>
+      )}
+
+      <div className="lg:hidden">
+        <SidebarMenu activeTab="marketplace" onNavigate={navigateToTab} />
+      </div>
+
+      <main className="flex-1 min-w-0 min-h-screen bg-[#fafaf8] dark:bg-background flex flex-col pb-32 lg:pb-16">
       {/* Mobile Header */}
       <div className="md:hidden sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 flex items-center justify-between">
         <button
@@ -660,23 +719,27 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
                     <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#eaf0e2] text-[#105238] text-[10px] font-black uppercase tracking-wider mb-1">
                       Oferta Flash -{service.oferta_flash.descuento_porcentaje}%
                     </span>
-                    <div className="flex items-baseline justify-center gap-2">
+                    <div className="flex items-baseline justify-center gap-1.5">
                       <span className="text-4xl font-black text-[#105238] dark:text-[#8ee01a]">
                         ${service.oferta_flash.precio_promocional.toFixed(2)}
                       </span>
-                      <span className="text-base line-through text-muted-foreground">${service.price}</span>
+                      <span className="text-sm font-bold text-[#105238]/80 dark:text-[#8ee01a]/80">/p</span>
+                      <span className="text-base line-through text-muted-foreground ml-1">${service.price}</span>
                     </div>
                     <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-wider mt-1">
-                      Precio por cupo
+                      Tarifa promocional /p
                     </p>
                   </>
                 ) : (
                   <>
-                    <span className="text-4xl font-black text-[#105238] dark:text-[#8ee01a] block leading-none">
-                      ${service.price}
-                    </span>
+                    <div className="flex items-baseline justify-center gap-1.5 leading-none">
+                      <span className="text-4xl font-black text-[#105238] dark:text-[#8ee01a]">
+                        ${service.price}
+                      </span>
+                      <span className="text-base font-extrabold text-[#105238]/80 dark:text-[#8ee01a]/80">/p</span>
+                    </div>
                     <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-wider mt-1.5">
-                      Precio Base
+                      Tarifa por persona (/p)
                     </p>
                   </>
                 )}
@@ -695,9 +758,9 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
                     </button>
                     <button
                       onClick={handleCall}
-                      className="w-full flex items-center justify-center gap-2 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold shadow-xs transition-all active:scale-[0.99] cursor-pointer text-sm"
+                      className="w-full flex items-center justify-center gap-2 h-12 bg-[#eaf0e2] hover:bg-[#dfe8d4] text-[#105238] border border-[#aeb6a1]/70 rounded-2xl font-bold shadow-xs transition-all active:scale-[0.99] cursor-pointer text-sm"
                     >
-                      <Phone className="w-5 h-5" />
+                      <Phone className="w-5 h-5 text-[#105238]" />
                       <span>Llamar</span>
                     </button>
                   </>
@@ -819,16 +882,16 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
             <>
               <button
                 onClick={handleWhatsApp}
-                className="flex-1 flex items-center justify-center gap-2 py-3 bg-green-600 hover:bg-green-700 text-white rounded-full font-bold shadow-lg transition-transform active:scale-95"
+                className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#00a884] hover:bg-[#008f6f] text-white rounded-full font-bold shadow-lg transition-transform active:scale-95"
               >
                 <MessageCircle className="w-5 h-5" />
                 WhatsApp
               </button>
               <button
                 onClick={handleCall}
-                className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-bold shadow-lg transition-transform active:scale-95"
+                className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#eaf0e2] hover:bg-[#dfe8d4] text-[#105238] border border-[#aeb6a1]/70 rounded-full font-bold shadow-lg transition-transform active:scale-95"
               >
-                <Phone className="w-5 h-5" />
+                <Phone className="w-5 h-5 text-[#105238]" />
                 Llamar
               </button>
               <button
@@ -842,7 +905,7 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
         </div>
         <div className={`flex ${service.chatbotScript ? "justify-start" : "justify-center"} w-full`}>
           <Button
-            className={`h-14 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full font-black text-lg shadow-xl ${
+            className={`h-14 bg-[#105238] hover:bg-[#0c3e2b] text-white rounded-full font-black text-lg shadow-xl ${
               service.chatbotScript ? "w-[80%]" : "w-full"
             }`}
             onClick={() => setShowBookingModal(true)}
@@ -857,6 +920,7 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
 
       {/* Chatbot Script Injector */}
       {service.chatbotScript && <ScriptInjector htmlContent={service.chatbotScript} />}
-    </main>
+      </main>
+    </div>
   )
 }
