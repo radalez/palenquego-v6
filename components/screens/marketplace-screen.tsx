@@ -576,7 +576,9 @@ interface TravelerPost {
   rating?: number
   taggedServiceId?: number
   taggedServiceName?: string
+  taggedServiceImage?: string
   createdAt: string
+  createdAtMs?: number
   reactions: Record<ReactionKey, number>
   userReaction?: ReactionKey | null
   comments: ServiceComment[]
@@ -672,6 +674,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   const [travelerPosts, setTravelerPosts] = useState<TravelerPost[]>([])
   const [openTravelerCommentsId, setOpenTravelerCommentsId] = useState<string | null>(null)
   const [travelerCommentDrafts, setTravelerCommentDrafts] = useState<Record<string, string>>({})
+  const [adRotationIndex, setAdRotationIndex] = useState(0)
 
   // 40-item automatic infinite scroll & refs
   const BATCH_SIZE = 40
@@ -720,10 +723,29 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
       if (savedComments) setServiceComments(JSON.parse(savedComments))
 
       const savedPosts = localStorage.getItem("palenque_traveler_posts")
-      if (savedPosts) setTravelerPosts(JSON.parse(savedPosts))
+      if (savedPosts) {
+        const parsed: TravelerPost[] = JSON.parse(savedPosts)
+        const now = Date.now()
+        const twentyFourHours = 24 * 60 * 60 * 1000
+        const freshPosts = parsed.filter(
+          (p) => typeof p.createdAtMs === "number" && now - p.createdAtMs < twentyFourHours,
+        )
+        setTravelerPosts(freshPosts)
+        if (freshPosts.length !== parsed.length) {
+          localStorage.setItem("palenque_traveler_posts", JSON.stringify(freshPosts))
+        }
+      }
     } catch {
       // ignore storage errors
     }
+  }, [])
+
+  // Rotate Facebook-style Publicidad Flash Ads every 6 seconds
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setAdRotationIndex((prev) => prev + 1)
+    }, 6000)
+    return () => clearInterval(timer)
   }, [])
 
   // Backend catalog fetch
@@ -1147,7 +1169,9 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
       rating: publishRating,
       taggedServiceId: selectedPublishService.id,
       taggedServiceName: selectedPublishService.name,
+      taggedServiceImage: selectedPublishService.image || DEFAULT_STORE_COVER,
       createdAt: savedToServer ? "Publicado ahora" : new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      createdAtMs: Date.now(),
       reactions: {
         trato: publishReaction === "trato" ? 1 : 0,
         divertido: publishReaction === "divertido" ? 1 : 0,
@@ -1652,30 +1676,43 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
 
                   <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">{post.text}</p>
 
-                  {post.taggedServiceId && post.taggedServiceName && (
-                    <div className="flex flex-wrap items-center gap-2">
+                  {post.taggedServiceId && post.taggedServiceName && (() => {
+                    const matchedSvc = services.find((s) => s.id === post.taggedServiceId)
+                    const svcThumb =
+                      getProxyImage(post.taggedServiceImage || matchedSvc?.image || "") || DEFAULT_STORE_COVER
+                    return (
                       <button
                         type="button"
                         onClick={() => router.push(`/s/${post.taggedServiceId}#resenas-reales`)}
-                        className="inline-flex items-center gap-1.5 text-xs font-bold text-[#105238] bg-[#eaf0e2] hover:bg-[#eaf0e2]/80 px-3 py-1.5 rounded-xl cursor-pointer"
+                        className="w-full flex items-center gap-3 p-2.5 rounded-2xl bg-[#eaf0e2]/65 hover:bg-[#eaf0e2] border border-[#aeb6a1]/50 transition-colors text-left cursor-pointer group/svc"
                       >
-                        <MapPin className="w-3.5 h-3.5" />
-                        <span>{post.taggedServiceName}</span>
-                        {post.rating && (
-                          <span className="inline-flex items-center gap-0.5 ml-1 bg-[#105238] text-[#8ee01a] px-1.5 py-0.5 rounded-full text-[10px]">
-                            <Star className="w-2.5 h-2.5 fill-[#8ee01a]" /> {post.rating}
-                          </span>
-                        )}
+                        <img
+                          src={svcThumb}
+                          alt={post.taggedServiceName}
+                          className="w-16 h-16 rounded-xl object-cover shrink-0 border border-white shadow-2xs"
+                          onError={(e) => {
+                            e.currentTarget.src = DEFAULT_STORE_COVER
+                          }}
+                        />
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="inline-flex items-center gap-1 text-xs font-extrabold text-[#105238] truncate">
+                              <MapPin className="w-3.5 h-3.5 shrink-0" />
+                              <span className="truncate">{post.taggedServiceName}</span>
+                            </span>
+                            {post.rating && (
+                              <span className="inline-flex items-center gap-0.5 bg-[#105238] text-[#8ee01a] px-1.5 py-0.5 rounded-full text-[10px] font-black shrink-0">
+                                <Star className="w-2.5 h-2.5 fill-[#8ee01a]" /> {post.rating}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] font-bold text-[#105238]/90 group-hover/svc:underline">
+                            Ver reseña en la experiencia →
+                          </p>
+                        </div>
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => router.push(`/s/${post.taggedServiceId}#resenas-reales`)}
-                        className="text-[11px] font-bold text-[#105238] hover:underline cursor-pointer"
-                      >
-                        Ver reseña en la experiencia →
-                      </button>
-                    </div>
-                  )}
+                    )
+                  })()}
 
                   {/* Quick Reaction Pills */}
                   <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-border/60">
@@ -2501,6 +2538,73 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
               </div>
             )}
 
+            {/* Facebook-style Publicidad Zone (Rotating 10 Flash/Featured Experiences with Real Photos) */}
+            {(() => {
+              const hasRealPhoto = (s: Service) =>
+                Boolean(s.image && !s.image.includes("placeholder") && s.image !== DEFAULT_STORE_COVER)
+              const flashWithPhoto = flashServices.filter(hasRealPhoto)
+              const extraWithPhoto = services.filter(
+                (s) => hasRealPhoto(s) && !flashWithPhoto.some((fs) => fs.id === s.id),
+              )
+              const adPool = [...flashWithPhoto, ...extraWithPhoto].slice(0, 10)
+              if (adPool.length === 0) return null
+              const firstIdx = (adRotationIndex * 2) % adPool.length
+              const secondIdx = (firstIdx + 1) % adPool.length
+              const visibleAds = adPool.length > 1 ? [adPool[firstIdx], adPool[secondIdx]] : [adPool[firstIdx]]
+              return (
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between px-1">
+                    <h3 className="text-sm font-extrabold text-muted-foreground tracking-tight">Publicidad</h3>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-[#105238] bg-[#eaf0e2] px-2 py-0.5 rounded-full">
+                      Ofertas Flash
+                    </span>
+                  </div>
+                  <div className="space-y-2.5">
+                    {visibleAds.map((ad, idx) => {
+                      const baseP = Number(ad.price) || 15
+                      const discPct = ad.oferta_flash?.descuento_porcentaje || (idx === 0 ? 20 : 15)
+                      const promoP = ad.oferta_flash?.precio_promocional ?? +(baseP * (1 - discPct / 100)).toFixed(2)
+                      return (
+                        <button
+                          key={`${ad.id}-${firstIdx}-${idx}`}
+                          type="button"
+                          onClick={() => router.push(`/s/${ad.id}?from=marketplace`)}
+                          className="w-full flex items-center gap-3 p-2 rounded-2xl hover:bg-card hover:shadow-xs border border-transparent hover:border-border/70 transition-all text-left cursor-pointer group/ad animate-in fade-in duration-300"
+                        >
+                          <div className="relative w-24 h-24 rounded-2xl overflow-hidden shrink-0 bg-muted border border-border/50">
+                            <img
+                              src={getProxyImage(ad.image || "") || DEFAULT_STORE_COVER}
+                              alt={ad.name}
+                              className="w-full h-full object-cover group-hover/ad:scale-105 transition-transform duration-300"
+                              onError={(e) => {
+                                e.currentTarget.src = DEFAULT_STORE_COVER
+                              }}
+                            />
+                            <span className="absolute top-1.5 left-1.5 bg-[#105238] text-[#8ee01a] text-[10px] font-black px-1.5 py-0.5 rounded-full shadow-sm">
+                              -{discPct}%
+                            </span>
+                          </div>
+                          <div className="min-w-0 flex-1 space-y-1">
+                            <p className="text-[13px] font-extrabold text-foreground leading-snug line-clamp-2 group-hover/ad:text-[#105238] transition-colors">
+                              {ad.name}
+                            </p>
+                            <div className="flex items-baseline gap-1.5">
+                              <span className="text-sm font-black text-[#105238]">${promoP}</span>
+                              <span className="text-[11px] line-through text-muted-foreground">${baseP}</span>
+                              <span className="text-[10px] text-muted-foreground">/p</span>
+                            </div>
+                            <p className="text-[11px] text-muted-foreground truncate">
+                              palenquego.com · {ad.category || "Oferta Flash"}
+                            </p>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })()}
+
             {/* Ofertas Flash Highlight Card (Light, Airy & Refined) */}
             <div className="bg-gradient-to-br from-[#eaf0e2]/80 via-white to-white dark:from-card dark:to-card border border-[#8ee01a]/70 rounded-3xl p-4 shadow-2xs space-y-3">
               <div className="flex items-center justify-between">
@@ -2522,9 +2626,19 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   key={fs.id}
                   type="button"
                   onClick={() => router.push(`/s/${fs.id}?from=marketplace`)}
-                  className="w-full text-left bg-white dark:bg-background hover:bg-[#eaf0e2]/60 border border-border/70 rounded-2xl p-2.5 flex items-center justify-between gap-2 transition-colors cursor-pointer"
+                  className="w-full text-left bg-white dark:bg-background hover:bg-[#eaf0e2]/60 border border-border/70 rounded-2xl p-2 flex items-center justify-between gap-2.5 transition-colors cursor-pointer"
                 >
-                  <span className="text-xs font-bold text-foreground truncate">{fs.name}</span>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <img
+                      src={getProxyImage(fs.image || "") || DEFAULT_STORE_COVER}
+                      alt={fs.name}
+                      className="w-10 h-10 rounded-xl object-cover shrink-0 border border-border/50"
+                      onError={(e) => {
+                        e.currentTarget.src = DEFAULT_STORE_COVER
+                      }}
+                    />
+                    <span className="text-xs font-bold text-foreground truncate">{fs.name}</span>
+                  </div>
                   <span className="text-xs font-black text-[#105238] shrink-0">
                     ${fs.oferta_flash?.precio_promocional}
                   </span>
