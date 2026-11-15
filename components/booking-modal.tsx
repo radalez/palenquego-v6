@@ -32,11 +32,16 @@ const generateUpcomingDates = (count = 7) => {
     const dateNum = String(dateObj.getDate())
     const monthName = months[dateObj.getMonth()]
     const formatted = `${dateNum} ${monthName}`
+    const y = dateObj.getFullYear()
+    const m = String(dateObj.getMonth() + 1).padStart(2, "0")
+    const d = String(dateObj.getDate()).padStart(2, "0")
+    const isoDate = `${y}-${m}-${d}`
     result.push({
       day: dayName,
       date: dateNum,
       month: monthName,
       formatted,
+      isoDate,
       isToday: i === 0,
     })
   }
@@ -81,6 +86,7 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
   const [checkOut, setCheckOut] = useState(tomorrowIso)
 
   const [selectedDate, setSelectedDate] = useState(upcomingDates[0]?.formatted || "")
+  const [selectedIsoDate, setSelectedIsoDate] = useState(upcomingDates[0]?.isoDate || todayIso)
   const [selectedTime, setSelectedTime] = useState("10:00")
   
   const [selectedExtras, setSelectedExtras] = useState<Record<string, number>>({})
@@ -94,6 +100,46 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
   const [isPayingWompi, setIsPayingWompi] = useState(false)
   const [tiendaInfo, setTiendaInfo] = useState<{ nombre?: string; telefono?: string }>({})
   const [confirmedBookingDetails, setConfirmedBookingDetails] = useState<{ dateStr: string; timeStr: string; total: number; extras: string[] } | null>(null)
+
+  // Helper para convertir cualquier fecha u objeto Date a YYYY-MM-DD local
+  const formatToLocalIso = (d: string | Date | undefined | null) => {
+    if (!d) return ""
+    const dt = typeof d === "string" ? new Date(d) : d
+    if (isNaN(dt.getTime())) return ""
+    const y = dt.getFullYear()
+    const m = String(dt.getMonth() + 1).padStart(2, "0")
+    const day = String(dt.getDate()).padStart(2, "0")
+    return `${y}-${m}-${day}`
+  }
+
+  // Validador estricto de FECHA y HORA: la reserva SOLO aplica descuento flash si cae dentro del rango exacto (fecha y hora)
+  const isFlashOfferActiveForSelectedDateTime = (() => {
+    const of = service.oferta_flash
+    if (!of || of.cupos_disponibles <= 0) return false
+
+    const now = new Date()
+    const offerEnd = new Date(of.fecha_fin)
+    if (now > offerEnd) return false
+
+    // 1. Obtener la fecha seleccionada en YYYY-MM-DD
+    const bookingDateStr = isHotelService ? checkIn : selectedIsoDate
+    if (!bookingDateStr) return false
+
+    // 2. Obtener la hora seleccionada
+    const bookingTimeStr = isHotelService ? "12:00" : (selectedTime || "10:00")
+
+    // 3. Construir la fecha y hora exacta de la reserva en tiempo local
+    const [bYear, bMonth, bDay] = bookingDateStr.split("-").map(Number)
+    const [bHour, bMinute] = bookingTimeStr.split(":").map(Number)
+    const bookingDateTime = new Date(bYear, (bMonth || 1) - 1, bDay || 1, bHour || 0, bMinute || 0, 0)
+    if (isNaN(bookingDateTime.getTime())) return false
+
+    // 4. Fechas y horas de la oferta
+    const offerStart = of.fecha_inicio ? new Date(of.fecha_inicio) : new Date(now.getTime() - 24 * 3600 * 1000)
+
+    // La reserva debe caer exactamente entre fecha_inicio y fecha_fin
+    return bookingDateTime >= offerStart && bookingDateTime <= offerEnd
+  })()
 
   const calculateNights = () => {
     if (!checkIn || !checkOut) return 1
@@ -134,7 +180,7 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
 
   const calculateTotal = () => {
     let basePrice = Number(service.price)
-    if (service.oferta_flash && service.oferta_flash.cupos_disponibles > 0 && service.oferta_flash.precio_promocional) {
+    if (isFlashOfferActiveForSelectedDateTime && service.oferta_flash && service.oferta_flash.cupos_disponibles > 0 && service.oferta_flash.precio_promocional) {
       basePrice = Number(service.oferta_flash.precio_promocional)
     }
     let total = isHotelService ? (basePrice * nightsCount * Number(guests)) : (basePrice * Number(guests))
@@ -215,12 +261,15 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
       .map(([name, qty]) => `${qty}x ${name}`)
 
     // 3. Disparar al backend (y registrar inmediatamente en el CRM Invictus)
+    const bookingIsoDate = isHotelService ? checkIn : selectedIsoDate
     const res = await createServiceBooking(service.id, {
-      date: effectiveDateStr,
+      date: bookingIsoDate,
+      display_date: effectiveDateStr,
       time: timeStr,
       guests: guests,
       extras: extrasSummary,
       amount: total,
+      totalPrice: total,
       telefono: phoneToUse,
     })
 
@@ -327,7 +376,23 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
                   <span className="text-sm font-medium">{service.rating}</span>
                 </div>
                 <p className="text-lg font-bold text-primary mt-1">
-                  ${service.price} {isHotelService ? "/ persona / noche" : service.categoria?.unidad_singular ? `/ ${service.categoria.unidad_singular.toLowerCase()}` : "/ persona"}
+                  {isFlashOfferActiveForSelectedDateTime && service.oferta_flash ? (
+                    <span className="flex items-baseline gap-2">
+                      <span className="text-2xl font-black text-[#105238] dark:text-[#8ee01a]">
+                        ${service.oferta_flash.precio_promocional.toFixed(2)}
+                      </span>
+                      <span className="text-sm line-through text-muted-foreground font-normal">
+                        ${service.price}
+                      </span>
+                      <span className="text-xs text-muted-foreground font-normal">
+                        {isHotelService ? "/ persona / noche" : service.categoria?.unidad_singular ? `/ ${service.categoria.unidad_singular.toLowerCase()}` : "/ persona"}
+                      </span>
+                    </span>
+                  ) : (
+                    <span>
+                      ${service.price} {isHotelService ? "/ persona / noche" : service.categoria?.unidad_singular ? `/ ${service.categoria.unidad_singular.toLowerCase()}` : "/ persona"}
+                    </span>
+                  )}
                 </p>
 
                 {/* Stock Badge */}
@@ -337,20 +402,34 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
                 </div>
 
                 {service.oferta_flash && service.oferta_flash.cupos_disponibles > 0 && (
-                  <div className="mt-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-100 flex items-center justify-between">
-                    <div>
-                      <div className="flex items-center gap-1.5 font-bold text-xs">
-                        <Tag className="w-3.5 h-3.5 text-amber-600" />
-                        <span>Oferta Flash ({service.oferta_flash.descuento_porcentaje}% OFF)</span>
+                  isFlashOfferActiveForSelectedDateTime ? (
+                    <div className="mt-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-100 flex items-center justify-between transition-all">
+                      <div>
+                        <div className="flex items-center gap-1.5 font-bold text-xs text-amber-800 dark:text-amber-200">
+                          <Tag className="w-3.5 h-3.5 text-amber-600" />
+                          <span>Oferta Flash Aplicada ({service.oferta_flash.descuento_porcentaje}% OFF)</span>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          ${service.oferta_flash.precio_promocional.toFixed(2)} por cupo · Quedan {service.oferta_flash.cupos_disponibles} cupos
+                        </p>
                       </div>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">
-                        ${service.oferta_flash.precio_promocional.toFixed(2)} por cupo · Quedan {service.oferta_flash.cupos_disponibles} cupos
-                      </p>
+                      <Badge className="bg-amber-600 text-white font-extrabold text-[10px]">
+                        FLASH
+                      </Badge>
                     </div>
-                    <Badge className="bg-amber-600 text-white font-extrabold text-[10px]">
-                      FLASH
-                    </Badge>
-                  </div>
+                  ) : (
+                    <div className="mt-2 p-2.5 rounded-xl bg-muted/60 border border-border text-muted-foreground flex items-center justify-between text-xs transition-all">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <Tag className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                        <span className="text-[11px] leading-tight text-muted-foreground">
+                          Oferta Flash no aplicable para esta fecha u hora. Tarifa regular en uso.
+                        </span>
+                      </div>
+                      <Badge variant="outline" className="text-[10px] text-muted-foreground border-border shrink-0 font-bold">
+                        REGULAR
+                      </Badge>
+                    </div>
+                  )
                 )}
               </div>
             </div>
@@ -487,6 +566,7 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
                             const monthName = months[parseInt(month, 10) - 1]
                             const formatted = `${parseInt(day, 10)} ${monthName}`
                             setSelectedDate(formatted)
+                            setSelectedIsoDate(e.target.value)
                           }
                         }}
                         onClick={(e) => {
@@ -519,6 +599,7 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
                             const monthName = months[parseInt(month, 10) - 1]
                             const formatted = `${parseInt(day, 10)} ${monthName}`
                             setSelectedDate(formatted)
+                            setSelectedIsoDate(e.target.value)
                           }
                         }}
                         onClick={(e) => {
@@ -533,26 +614,46 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
                       />
                     </div>
 
-                    {upcomingDates.map((d, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setSelectedDate(d.formatted)}
-                        className={cn(
-                          "flex flex-col items-center px-4 py-3 rounded-xl min-w-[72px] border transition-all shadow-sm shrink-0",
-                          selectedDate === d.formatted
-                            ? "bg-primary text-primary-foreground border-primary font-semibold ring-2 ring-primary/30"
-                            : "bg-card text-foreground border-border hover:bg-muted/80",
-                        )}
-                      >
-                        <span className={cn("text-xs font-medium uppercase", selectedDate === d.formatted ? "text-primary-foreground/90" : "text-muted-foreground")}>
-                          {d.day}
-                        </span>
-                        <span className="text-lg font-bold my-0.5">{d.date}</span>
-                        <span className={cn("text-xs font-medium", selectedDate === d.formatted ? "text-primary-foreground/90" : "text-muted-foreground")}>
-                          {d.month}
-                        </span>
-                      </button>
-                    ))}
+                    {upcomingDates.map((d, i) => {
+                      const isPillDateInFlash = (() => {
+                        const of = service.oferta_flash
+                        if (!of || of.cupos_disponibles <= 0) return false
+                        const offerStart = of.fecha_inicio ? formatToLocalIso(of.fecha_inicio) : formatToLocalIso(new Date())
+                        const offerEnd = formatToLocalIso(of.fecha_fin)
+                        return d.isoDate >= offerStart && d.isoDate <= offerEnd
+                      })()
+
+                      return (
+                        <button
+                          key={i}
+                          onClick={() => {
+                            setSelectedDate(d.formatted)
+                            setSelectedIsoDate(d.isoDate)
+                          }}
+                          className={cn(
+                            "flex flex-col items-center px-4 py-3 rounded-xl min-w-[72px] border transition-all shadow-sm shrink-0 relative",
+                            selectedDate === d.formatted
+                              ? "bg-primary text-primary-foreground border-primary font-semibold ring-2 ring-primary/30"
+                              : isPillDateInFlash
+                              ? "bg-amber-500/10 border-amber-500/40 text-amber-900 dark:text-amber-100 hover:bg-amber-500/20"
+                              : "bg-card text-foreground border-border hover:bg-muted/80",
+                          )}
+                        >
+                          {isPillDateInFlash && (
+                            <span className="absolute -top-1.5 -right-1 px-1.5 py-0.2 bg-amber-600 text-white text-[8px] font-black rounded-full uppercase tracking-tighter shadow-xs">
+                              Flash
+                            </span>
+                          )}
+                          <span className={cn("text-xs font-medium uppercase", selectedDate === d.formatted ? "text-primary-foreground/90" : isPillDateInFlash ? "text-amber-700 dark:text-amber-300 font-bold" : "text-muted-foreground")}>
+                            {d.day}
+                          </span>
+                          <span className="text-lg font-bold my-0.5">{d.date}</span>
+                          <span className={cn("text-xs font-medium", selectedDate === d.formatted ? "text-primary-foreground/90" : "text-muted-foreground")}>
+                            {d.month}
+                          </span>
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
 
@@ -591,10 +692,18 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
                 </span>
               </div>
               <div className="text-right text-xs text-muted-foreground font-medium">
-                {isHotelService ? (
+                {isFlashOfferActiveForSelectedDateTime && service.oferta_flash ? (
+                  <span>
+                    {guests} {guests === 1 ? "persona" : "personas"} × ${service.oferta_flash.precio_promocional.toFixed(2)}
+                    <span className="text-[10px] text-amber-600 block font-bold">Oferta Flash aplicada</span>
+                  </span>
+                ) : isHotelService ? (
                   <span>{guests} {guests === 1 ? "persona" : "personas"} × {nightsCount} {nightsCount === 1 ? "noche" : "noches"} × ${service.price}</span>
                 ) : (
-                  <span>{guests} {guests === 1 ? "persona" : "personas"} × ${service.price}</span>
+                  <span>
+                    {guests} {guests === 1 ? "persona" : "personas"} × ${service.price}
+                    {service.oferta_flash && <span className="text-[10px] text-muted-foreground block">Tarifa regular</span>}
+                  </span>
                 )}
               </div>
             </div>
