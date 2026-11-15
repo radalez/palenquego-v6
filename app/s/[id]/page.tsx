@@ -20,6 +20,9 @@ import {
   User,
   Instagram,
   Globe,
+  Mail,
+  Link2,
+  Check,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -70,6 +73,21 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
   const { services, toggleFavoritePreference, userFavorites } = useAppStore()
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [showBookingModal, setShowBookingModal] = useState(false)
+  const [activeSection, setActiveSection] = useState<string>("vista-general")
+  const [showDesktopShare, setShowDesktopShare] = useState(false)
+  const [copiedLink, setCopiedLink] = useState(false)
+  const sharePopoverRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!showDesktopShare) return
+    const handleClickOutside = (e: MouseEvent) => {
+      if (sharePopoverRef.current && !sharePopoverRef.current.contains(e.target as Node)) {
+        setShowDesktopShare(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [showDesktopShare])
 
   const service = services.find((s) => s.id === parseInt(resolvedParams.id))
 
@@ -143,13 +161,42 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
     }
   }
 
-  const desktopNavItems = [
-    { id: "map-explorer", label: "Inicio", active: false },
-    { id: "marketplace", label: "Servicios", active: true },
-    { id: "pool", label: "Mis Viajes", active: false },
-    { id: "safeflow", label: "Safe-Flow", active: false },
-    { id: "rutas", label: "Go", active: false },
-  ]
+  const shareUrl = typeof window !== "undefined" ? window.location.href : ""
+  const shareText = `${serviceTitle} en PalenqueGo`
+
+  const handleCopyLink = async () => {
+    if (!shareUrl) return
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+      setCopiedLink(true)
+      setTimeout(() => setCopiedLink(false), 2000)
+    } catch {
+      // Fallback
+    }
+  }
+
+  const scrollToSection = (sectionId: string) => {
+    setActiveSection(sectionId)
+    const el = document.getElementById(sectionId)
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" })
+    }
+  }
+
+  const internalSections = [
+    { id: "vista-general", label: "Resumen", visible: true },
+    { id: "oferta-flash", label: "Oferta Flash", visible: Boolean(hasActiveFlash && service.oferta_flash) },
+    { id: "comercio", label: "Comercio", visible: Boolean(service.businessName) },
+    { id: "descripcion", label: "Descripción", visible: Boolean(serviceDescription) },
+    { id: "rutas", label: "Rutas", visible: Boolean(service.routes && service.routes.length > 0) },
+    { id: "caracteristicas", label: "Características", visible: Boolean(service.features && service.features.length > 0) },
+    { id: "extras", label: "Extras", visible: Boolean(service.extras && service.extras.length > 0) },
+    {
+      id: "redes",
+      label: "Redes",
+      visible: Boolean(service.socialLinks && (service.socialLinks.instagram || service.socialLinks.facebook)),
+    },
+  ].filter((sec) => sec.visible)
 
   return (
     <main className="min-h-screen bg-[#fafaf8] dark:bg-background flex flex-col pb-32 lg:pb-16">
@@ -192,16 +239,16 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
             </span>
           </button>
 
-          {/* Internal App Navigation Links */}
-          <nav className="flex items-center gap-6 h-full">
-            {desktopNavItems.map((item) => (
+          {/* Internal Section Navigation Links */}
+          <nav className="flex items-center gap-5 h-full overflow-x-auto no-scrollbar">
+            {internalSections.map((item) => (
               <button
                 key={item.id}
                 type="button"
-                onClick={() => navigateToTab(item.id)}
+                onClick={() => scrollToSection(item.id)}
                 className={cn(
-                  "h-full inline-flex items-center text-sm font-semibold border-b-2 transition-colors cursor-pointer",
-                  item.active
+                  "h-full inline-flex items-center text-sm font-semibold border-b-2 transition-colors cursor-pointer whitespace-nowrap",
+                  activeSection === item.id
                     ? "border-[#105238] text-[#105238] dark:border-[#8ee01a] dark:text-[#8ee01a] font-bold"
                     : "border-transparent text-muted-foreground hover:text-foreground",
                 )}
@@ -275,7 +322,10 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
           {/* Left Column: Media + Full Details */}
           <div className="lg:col-span-8 space-y-6">
             {/* Image Slider */}
-            <div className="relative h-64 sm:h-80 md:h-[380px] md:rounded-3xl bg-muted overflow-hidden shadow-xs border-b md:border border-border/60">
+            <div
+              id="vista-general"
+              className="scroll-mt-24 relative h-64 sm:h-80 md:h-[380px] md:rounded-3xl bg-muted overflow-hidden shadow-xs border-b md:border border-border/60"
+            >
               <img
                 src={images[currentImageIndex] || "/placeholder.svg"}
                 alt={serviceTitle}
@@ -347,7 +397,10 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
 
               {/* Oferta Flash Banner */}
               {hasActiveFlash && service.oferta_flash && (
-                <div className="bg-[#eaf0e2] dark:bg-[#105238]/20 border border-[#8ee01a] rounded-2xl p-4 md:p-5 shadow-xs">
+                <div
+                  id="oferta-flash"
+                  className="scroll-mt-24 bg-[#eaf0e2] dark:bg-[#105238]/20 border border-[#8ee01a] rounded-2xl p-4 md:p-5 shadow-xs"
+                >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <div className="p-2.5 rounded-xl bg-[#105238] text-[#8ee01a] shrink-0">
@@ -397,8 +450,9 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
               {/* Business Card */}
               {service.businessName && (
                 <button
+                  id="comercio"
                   onClick={() => router.push(`/b/${service.businessId}`)}
-                  className="w-full bg-[#eaf0e2]/60 dark:bg-card border border-[#aeb6a1]/60 rounded-2xl p-4 hover:border-[#105238] hover:shadow-sm transition-all cursor-pointer"
+                  className="scroll-mt-24 w-full bg-[#eaf0e2]/60 dark:bg-card border border-[#aeb6a1]/60 rounded-2xl p-4 hover:border-[#105238] hover:shadow-sm transition-all cursor-pointer"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3.5 flex-1">
@@ -430,7 +484,7 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
 
               {/* Description */}
               {serviceDescription && (
-                <div className="bg-card border border-border rounded-2xl p-5 shadow-2xs">
+                <div id="descripcion" className="scroll-mt-24 bg-card border border-border rounded-2xl p-5 shadow-2xs">
                   <div className="flex items-center gap-2 mb-2">
                     <FileText className="w-5 h-5 text-[#105238]" />
                     <h2 className="font-bold text-foreground text-sm uppercase tracking-wider">Descripción</h2>
@@ -441,7 +495,7 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
 
               {/* Associated Routes */}
               {service.routes && service.routes.length > 0 && (
-                <div className="bg-card border border-border rounded-2xl p-5 shadow-2xs">
+                <div id="rutas" className="scroll-mt-24 bg-card border border-border rounded-2xl p-5 shadow-2xs">
                   <span className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-[#105238]" /> Disponible en rutas:
                   </span>
@@ -464,7 +518,7 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
 
               {/* Features */}
               {service.features && service.features.length > 0 && (
-                <div>
+                <div id="caracteristicas" className="scroll-mt-24">
                   <div className="flex items-center gap-2 mb-3">
                     <Sparkles className="w-5 h-5 text-[#105238]" />
                     <h2 className="font-bold text-foreground text-base md:text-lg uppercase tracking-tight">
@@ -489,7 +543,7 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
 
               {/* Extras */}
               {service.extras && service.extras.length > 0 && (
-                <div>
+                <div id="extras" className="scroll-mt-24">
                   <div className="flex items-center gap-2 mb-3">
                     <Gift className="w-5 h-5 text-[#105238]" />
                     <h2 className="font-bold text-foreground text-base md:text-lg uppercase tracking-tight">
@@ -517,7 +571,7 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
 
               {/* Social Links (Zero Emojis) */}
               {service.socialLinks && (service.socialLinks.instagram || service.socialLinks.facebook) && (
-                <div className="pt-4 border-t border-border">
+                <div id="redes" className="scroll-mt-24 pt-4 border-t border-border">
                   <div className="flex items-center gap-2 mb-4">
                     <Share2 className="w-5 h-5 text-[#105238]" />
                     <h2 className="font-bold text-foreground text-base md:text-lg uppercase tracking-tight">
@@ -629,14 +683,86 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
                   />
                   <span>{isFavorite ? "Guardado" : "Guardar"}</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={handleShare}
-                  className="flex-1 h-10 rounded-xl border border-border bg-background hover:bg-muted text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <Share2 className="w-4 h-4 text-muted-foreground" />
-                  <span>Compartir</span>
-                </button>
+                <div className="relative flex-1" ref={sharePopoverRef}>
+                  {showDesktopShare && (
+                    <div className="hidden lg:flex items-center gap-2 absolute bottom-full right-0 mb-3 bg-[#151b26] text-white px-3 py-2 rounded-full shadow-2xl border border-white/10 z-50 whitespace-nowrap">
+                      <a
+                        href={`https://wa.me/?text=${encodeURIComponent(`${shareText} ${shareUrl}`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Compartir en WhatsApp"
+                        onClick={() => setShowDesktopShare(false)}
+                        className="w-9 h-9 rounded-full bg-[#25D366] hover:scale-110 transition-transform flex items-center justify-center text-white"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                      </a>
+                      <a
+                        href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Compartir en Facebook"
+                        onClick={() => setShowDesktopShare(false)}
+                        className="w-9 h-9 rounded-full bg-[#1877F2] hover:scale-110 transition-transform flex items-center justify-center text-white"
+                      >
+                        <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M13.5 22v-8h2.7l.4-3h-3.1V9.1c0-.9.3-1.5 1.5-1.5h1.7V5c-.3 0-1.3-.1-2.5-.1-2.4 0-4.1 1.5-4.1 4.2V11H7.5v3h2.6v8h3.4z" />
+                        </svg>
+                      </a>
+                      <a
+                        href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Compartir en X"
+                        onClick={() => setShowDesktopShare(false)}
+                        className="w-9 h-9 rounded-full bg-black border border-white/15 hover:scale-110 transition-transform flex items-center justify-center text-white"
+                      >
+                        <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                        </svg>
+                      </a>
+                      <a
+                        href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Compartir en LinkedIn"
+                        onClick={() => setShowDesktopShare(false)}
+                        className="w-9 h-9 rounded-full bg-[#0A66C2] hover:scale-110 transition-transform flex items-center justify-center text-white"
+                      >
+                        <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M6.94 8.5H3.56V19.5H6.94V8.5ZM5.25 3.5C4.14 3.5 3.25 4.39 3.25 5.5C3.25 6.6 4.14 7.5 5.25 7.5C6.35 7.5 7.25 6.6 7.25 5.5C7.25 4.39 6.35 3.5 5.25 3.5ZM20.44 13.02C20.44 9.88 18.76 8.22 16.16 8.22C14.37 8.22 13.48 9.2 13.02 9.93V8.5H9.65C9.7 9.48 9.65 19.5 9.65 19.5H13.02V13.36C13.02 13.02 13.05 12.69 13.15 12.45C13.42 11.78 14.03 11.09 15.07 11.09C16.41 11.09 17.06 12.11 17.06 13.6V19.5H20.44V13.02Z" />
+                        </svg>
+                      </a>
+                      <a
+                        href={`mailto:?subject=${encodeURIComponent(serviceTitle)}&body=${encodeURIComponent(`${shareText}\n${shareUrl}`)}`}
+                        title="Compartir por Correo"
+                        onClick={() => setShowDesktopShare(false)}
+                        className="w-9 h-9 rounded-full bg-[#105238] hover:scale-110 transition-transform flex items-center justify-center text-[#8ee01a]"
+                      >
+                        <Mail className="w-4 h-4" />
+                      </a>
+                      <button
+                        type="button"
+                        onClick={handleCopyLink}
+                        title={copiedLink ? "Enlace copiado" : "Copiar enlace"}
+                        className={cn(
+                          "w-9 h-9 rounded-full hover:scale-110 transition-all flex items-center justify-center text-white cursor-pointer",
+                          copiedLink ? "bg-[#105238] text-[#8ee01a]" : "bg-[#374151]",
+                        )}
+                      >
+                        {copiedLink ? <Check className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
+                      </button>
+                      <span className="absolute -bottom-1.5 right-10 w-3 h-3 bg-[#151b26] rotate-45 border-r border-b border-white/10" />
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setShowDesktopShare((prev) => !prev)}
+                    className="w-full h-10 rounded-xl border border-border bg-background hover:bg-muted text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <Share2 className="w-4 h-4 text-muted-foreground" />
+                    <span>{copiedLink ? "¡Copiado!" : "Compartir"}</span>
+                  </button>
+                </div>
               </div>
             </div>
           </aside>
