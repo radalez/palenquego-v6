@@ -2544,7 +2544,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
       </div>
 
       {/* HEADER OVERLAY sobre el mapa */}
-      <div className="relative z-20 bg-[#0B1F15] px-4 pt-12 pb-4 flex items-center gap-3 overflow-hidden">
+      <div className="relative z-20 bg-[#0B1F15] px-4 pt-12 md:pt-3.5 pb-4 md:pb-3.5 flex items-center gap-3 overflow-hidden">
         {selectedRoute && (
           <div className="absolute inset-0 pointer-events-none z-0">
             <img 
@@ -2588,8 +2588,8 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
         </button>
       </div>
 
-      {/* STATS BAR */}
-      <div className="relative z-20 mx-4 mt-2 bg-white rounded-2xl shadow-lg px-4 py-3 flex items-center justify-around">
+      {/* STATS BAR: Móvil completo, Escritorio compacto en esquina superior izquierda */}
+      <div className="relative z-20 mx-4 mt-2 md:hidden bg-white rounded-2xl shadow-lg px-4 py-3 flex items-center justify-around">
         <div className="flex flex-col items-center">
           <span className="text-lg font-bold text-gray-900">{selectedRoute?.stops?.length || 0}</span>
           <span className="text-[10px] text-gray-500">Paradas</span>
@@ -2599,7 +2599,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
           <span className="text-lg font-bold text-gray-900">
             {selectedRoute?.price_one_way ? `$${selectedRoute.price_one_way}` : '—'}
           </span>
-          <span className="text-[10px] text-gray-500">Por persona</span>
+          <span className="text-[10px] text-gray-500">/p</span>
         </div>
         <div className="w-px h-8 bg-gray-100" />
         <div className="flex flex-col items-center">
@@ -2614,9 +2614,54 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
         </div>
       </div>
 
-      {/* TARJETA DE ESTADO DE VIAJE SI ES RUTA A DEMANDA */}
+      {/* DESKTOP COMPACT FLOATING CORNER BAR (libera toda el área del mapa) */}
+      <div className="hidden md:flex relative z-20 mx-4 mt-3 w-fit max-w-[calc(100%-2rem)] flex-wrap items-center gap-2.5 bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-border/60 px-3.5 py-2">
+        <div className="flex items-center gap-1.5 text-xs font-bold text-gray-900">
+          <span className="text-[#105238] font-black">{selectedRoute?.stops?.length || 0}</span>
+          <span className="text-gray-500 font-medium">paradas</span>
+        </div>
+        <div className="w-px h-4 bg-gray-200" />
+        <div className="flex items-center gap-1 text-xs font-bold text-gray-900">
+          <span className="text-[#105238] font-black">
+            {selectedRoute?.price_one_way ? `$${selectedRoute.price_one_way}` : '—'}
+          </span>
+          <span className="text-gray-500 font-medium">/p</span>
+        </div>
+        <div className="w-px h-4 bg-gray-200" />
+        <div className="flex items-center gap-1 text-xs font-bold text-gray-900">
+          <span className="text-[#105238] font-black">
+            {selectedRoute?.duracion
+              ? selectedRoute.duracion
+              : (selectedRoute?.stops?.length > 1
+                ? `${(selectedRoute.stops.length - 1) * 20} min`
+                : '—')}
+          </span>
+          <span className="text-gray-500 font-medium">{selectedRoute?.duracion ? 'duración' : 'est.'}</span>
+        </div>
+
+        {selectedRoute?.estado_viaje && (
+          <>
+            <div className="w-px h-4 bg-gray-200" />
+            <div className="flex items-center gap-2">
+              <Car className="w-3.5 h-3.5 text-[#105238] shrink-0" />
+              <span className="text-xs font-bold text-gray-800">
+                {selectedRoute.estado_viaje === 'SOLICITADO' && 'Esperando conductor'}
+                {selectedRoute.estado_viaje === 'ACEPTADO' && 'Chofer en camino'}
+                {selectedRoute.estado_viaje === 'EN_CURSO' && 'Viaje en curso'}
+                {selectedRoute.estado_viaje === 'FINALIZADO' && 'Completado'}
+                {selectedRoute.estado_viaje === 'BORRADOR' && 'Ruta guardada'}
+              </span>
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#105238] bg-[#eaf0e2] px-2 py-0.5 rounded-full">
+                {selectedRoute.estado_viaje}
+              </span>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* TARJETA DE ESTADO DE VIAJE EN MÓVIL */}
       {selectedRoute?.estado_viaje && (
-        <div className="relative z-20 mx-4 mt-2 bg-white rounded-2xl shadow-lg p-3.5 flex items-center justify-between border border-gray-100">
+        <div className="md:hidden relative z-20 mx-4 mt-2 bg-white rounded-2xl shadow-lg p-3.5 flex items-center justify-between border border-gray-100">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-emerald-50 text-[#059669] flex items-center justify-center">
               <Car className="w-4 h-4" />

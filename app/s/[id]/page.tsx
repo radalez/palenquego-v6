@@ -70,13 +70,37 @@ const ScriptInjector = ({ htmlContent }: { htmlContent: string }) => {
 export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
   const router = useRouter()
   const resolvedParams = use(params)
-  const { services, toggleFavoritePreference, userFavorites } = useAppStore()
+  const { services, fetchServices, toggleFavoritePreference, userFavorites } = useAppStore()
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [showBookingModal, setShowBookingModal] = useState(false)
   const [activeSection, setActiveSection] = useState<string>("vista-general")
   const [showDesktopShare, setShowDesktopShare] = useState(false)
   const [copiedLink, setCopiedLink] = useState(false)
   const sharePopoverRef = useRef<HTMLDivElement>(null)
+
+  const serviceId = parseInt(resolvedParams.id)
+  const service = services.find((s) => s.id === serviceId)
+  const [isLoading, setIsLoading] = useState(!service)
+
+  useEffect(() => {
+    if (service) {
+      setIsLoading(false)
+      return
+    }
+    let cancelled = false
+    const load = async () => {
+      setIsLoading(true)
+      try {
+        await fetchServices()
+      } finally {
+        if (!cancelled) setIsLoading(false)
+      }
+    }
+    load()
+    return () => {
+      cancelled = true
+    }
+  }, [serviceId, Boolean(service)])
 
   useEffect(() => {
     if (!showDesktopShare) return
@@ -88,8 +112,6 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [showDesktopShare])
-
-  const service = services.find((s) => s.id === parseInt(resolvedParams.id))
 
   const navigateToTab = (tab: string) => {
     if (typeof window !== "undefined") {
@@ -111,7 +133,16 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
     router.back()
   }
 
-  // Render not found state after all hooks
+  if (isLoading && !service) {
+    return (
+      <div className="min-h-screen bg-[#fafaf8] dark:bg-background flex flex-col items-center justify-center px-4 gap-3">
+        <div className="w-10 h-10 rounded-full border-4 border-[#105238] border-t-transparent animate-spin" />
+        <p className="text-sm font-semibold text-muted-foreground">Cargando experiencia...</p>
+      </div>
+    )
+  }
+
+  // Render not found state after loading finishes
   if (!service) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
