@@ -442,7 +442,16 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
                       <div className="flex items-center gap-1.5 min-w-0">
                         <Tag className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                         <span className="text-[11px] leading-tight text-muted-foreground">
-                          Oferta Flash no aplicable para esta fecha u hora. Tarifa regular en uso.
+                          {(() => {
+                            try {
+                              const dtFin = new Date(service.oferta_flash.fecha_fin)
+                              const hh = String(dtFin.getHours()).padStart(2, "0")
+                              const mm = String(dtFin.getMinutes()).padStart(2, "0")
+                              return `Oferta Flash válida hasta las ${hh}:${mm}. Para la hora seleccionada aplica tarifa regular.`
+                            } catch (e) {
+                              return "Oferta Flash no aplicable para esta fecha u hora. Tarifa regular en uso."
+                            }
+                          })()}
                         </span>
                       </div>
                       <Badge variant="outline" className="text-[10px] text-muted-foreground border-border shrink-0 font-bold">
@@ -638,10 +647,18 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
                       const isPillDateInFlash = (() => {
                         const of = service.oferta_flash
                         if (!of || of.cupos_disponibles <= 0) return false
+                        const now = new Date()
+                        const offerEnd = new Date(of.fecha_fin)
+                        if (now > offerEnd) return false
                         const offerStart = of.fecha_inicio ? formatToLocalIso(of.fecha_inicio) : formatToLocalIso(new Date())
-                        const offerEnd = formatToLocalIso(of.fecha_fin)
-                        return d.isoDate >= offerStart && d.isoDate <= offerEnd
+                        const offerEndIso = formatToLocalIso(of.fecha_fin)
+                        return d.isoDate >= offerStart && d.isoDate <= offerEndIso
                       })()
+
+                      // Si es la fecha actualmente seleccionada, el badge FLASH SOLO se muestra si la HORA elegida también es válida
+                      const showPillFlash = selectedDate === d.formatted
+                        ? isFlashOfferActiveForSelectedDateTime
+                        : isPillDateInFlash
 
                       return (
                         <button
@@ -654,17 +671,24 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
                             "flex flex-col items-center px-4 py-3 rounded-xl min-w-[72px] border transition-all shadow-sm shrink-0 relative",
                             selectedDate === d.formatted
                               ? "bg-primary text-primary-foreground border-primary font-semibold ring-2 ring-primary/30"
-                              : isPillDateInFlash
+                              : showPillFlash
                               ? "bg-amber-500/10 border-amber-500/40 text-amber-900 dark:text-amber-100 hover:bg-amber-500/20"
                               : "bg-card text-foreground border-border hover:bg-muted/80",
                           )}
                         >
-                          {isPillDateInFlash && (
+                          {showPillFlash && (
                             <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[9px] font-black rounded-full uppercase tracking-wider shadow-sm z-10 border border-white dark:border-gray-900 whitespace-nowrap">
                               FLASH
                             </span>
                           )}
-                          <span className={cn("text-xs font-medium uppercase", selectedDate === d.formatted ? "text-primary-foreground/90" : isPillDateInFlash ? "text-amber-700 dark:text-amber-300 font-bold" : "text-muted-foreground")}>
+                          <span className={cn(
+                            "text-xs font-medium uppercase",
+                            selectedDate === d.formatted
+                              ? "text-primary-foreground/90"
+                              : showPillFlash
+                              ? "text-amber-700 dark:text-amber-300 font-bold"
+                              : "text-muted-foreground"
+                          )}>
                             {d.day}
                           </span>
                           <span className="text-lg font-bold my-0.5">{d.date}</span>
@@ -715,19 +739,41 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
                   <div className="grid grid-cols-4 gap-2">
                     {defaultTimeSlots.map((slot) => {
                       const isSelected = selectedTime === slot.value
+                      const isSlotInFlash = (() => {
+                        const of = service.oferta_flash
+                        if (!of || of.cupos_disponibles <= 0) return false
+                        const bookingDateStr = isHotelService ? checkIn : selectedIsoDate
+                        if (!bookingDateStr) return false
+                        const [bYear, bMonth, bDay] = bookingDateStr.split("-").map(Number)
+                        const [bHour, bMinute] = slot.value.split(":").map(Number)
+                        const slotDt = new Date(bYear, (bMonth || 1) - 1, bDay || 1, bHour || 0, bMinute || 0, 0)
+                        if (isNaN(slotDt.getTime())) return false
+                        const offerStart = of.fecha_inicio ? new Date(of.fecha_inicio) : new Date(0)
+                        const offerEnd = new Date(of.fecha_fin)
+                        return slotDt >= offerStart && slotDt <= offerEnd
+                      })()
+
                       return (
                         <button
                           key={slot.value}
                           type="button"
                           onClick={() => setSelectedTime(slot.value)}
                           className={cn(
-                            "py-2.5 px-2 rounded-xl text-xs font-semibold border transition-all shadow-sm text-center cursor-pointer",
+                            "py-2.5 px-2 rounded-xl text-xs font-semibold border transition-all shadow-sm text-center cursor-pointer relative",
                             isSelected
                               ? "bg-primary text-primary-foreground border-primary ring-2 ring-primary/30"
+                              : isSlotInFlash
+                              ? "bg-amber-500/10 border-amber-500/30 text-amber-950 dark:text-amber-100 hover:bg-amber-500/20"
                               : "bg-card text-foreground border-border hover:bg-muted/80",
                           )}
                         >
                           {slot.label}
+                          {isSlotInFlash && !isSelected && (
+                            <span
+                              className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-amber-500"
+                              title="Hora con Oferta Flash disponible"
+                            />
+                          )}
                         </button>
                       )
                     })}
