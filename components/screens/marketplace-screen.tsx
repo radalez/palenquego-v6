@@ -598,19 +598,32 @@ function matchesCategory(service: Service, selectedCategory: string): boolean {
     case "hotel":
       return catName.includes("hotel") || catName.includes("hospedaj") || catId === 5
     case "restaurante":
-      return catName.includes("restauran") || catId === 1
+    case "food":
+      return (
+        catName.includes("gastro") ||
+        catName.includes("restauran") ||
+        catName.includes("comida") ||
+        catId === 1 ||
+        catId === 6
+      )
     case "surf":
       return catName.includes("surf") || catId === 7
     case "cafe":
       return catName.includes("café") || catName.includes("cafe") || catId === 10
     case "eco":
       return catName.includes("eco") || catName.includes("tour") || catId === 4 || catId === 3
-    case "food":
-      return catName.includes("gastro") || catName.includes("restauran") || catName.includes("comida") || catId === 6 || catId === 1
     case "playa":
       return catName.includes("playa") || catId === 8
-    case "spa":
-      return catName.includes("spa") || catId === 2
+    case "spa": {
+      const text = `${service.name || ""} ${service.description || ""} ${catName}`.toLowerCase()
+      return (
+        catId === 2 ||
+        text.includes("spa") ||
+        text.includes("termal") ||
+        text.includes("relax") ||
+        text.includes("zen")
+      )
+    }
     case "aventura":
       return catName.includes("aventura") || catId === 9
     case "tours":
@@ -809,7 +822,22 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
       if (cancelled) return
       const fresh = useAppStore.getState().services
       seenInCurrentBatchRef.current.clear()
+      lastAdvanceRef.current = Date.now()
       if (fresh.length > 0) {
+        let clearedAny = false
+        for (const item of fresh) {
+          if (seenIdsRef.current.has(item.id)) {
+            seenIdsRef.current.delete(item.id)
+            clearedAny = true
+          }
+        }
+        if (clearedAny && typeof window !== "undefined") {
+          try {
+            localStorage.setItem("palenque_seen_ids_v3", JSON.stringify(Array.from(seenIdsRef.current)))
+          } catch {
+            // ignore
+          }
+        }
         setCurrentBatchIds(fresh.slice(0, BATCH_SIZE).map((s) => s.id))
         setAllUnseenExhausted(false)
       } else {
@@ -907,12 +935,9 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
 
   const advanceBatchAutomatically = useCallback(async () => {
     const now = Date.now()
-    if (now - lastAdvanceRef.current < 2000 || isReloadingBatch || isLoadingFeed || allUnseenExhausted) return
-    const minRequiredSeen = Math.min(8, Math.max(1, currentBatchIds.length))
-    if (seenInCurrentBatchRef.current.size < minRequiredSeen) return
+    if (now - lastAdvanceRef.current < 1800 || isReloadingBatch || isLoadingFeed) return
     lastAdvanceRef.current = now
 
-    // Mark every card in the current batch as seen before replacing
     for (const id of currentBatchIds) {
       seenIdsRef.current.add(id)
     }
@@ -923,21 +948,28 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     const safetyTimer = setTimeout(() => setIsReloadingBatch(false), 6000)
     try {
       await fetchServices(buildUnseenCatalogQuery())
-      const fresh = useAppStore.getState().services.filter((s) => !seenIdsRef.current.has(s.id))
-      if (fresh.length > 0) {
-        setCurrentBatchIds(fresh.slice(0, BATCH_SIZE).map((s) => s.id))
+      const allReturned = useAppStore.getState().services
+      const strictlyUnseen = allReturned.filter((s) => !seenIdsRef.current.has(s.id))
+      if (strictlyUnseen.length > 0) {
+        setCurrentBatchIds(strictlyUnseen.slice(0, BATCH_SIZE).map((s) => s.id))
         setBatchNumber((prev) => prev + 1)
         setAllUnseenExhausted(false)
+      } else if (allReturned.length > 0) {
+        for (const item of allReturned) {
+          seenIdsRef.current.delete(item.id)
+        }
+        persistSeenIds()
+        setCurrentBatchIds(allReturned.slice(0, BATCH_SIZE).map((s) => s.id))
+        setBatchNumber((prev) => prev + 1)
+        setAllUnseenExhausted(true)
       } else {
-        setCurrentBatchIds([])
         setAllUnseenExhausted(true)
       }
     } finally {
       clearTimeout(safetyTimer)
-      setTimeout(() => setIsReloadingBatch(false), 300)
+      setTimeout(() => setIsReloadingBatch(false), 260)
     }
   }, [
-    allUnseenExhausted,
     buildUnseenCatalogQuery,
     currentBatchIds,
     fetchServices,
@@ -1377,19 +1409,12 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     .slice(0, 5)
 
   const filteredServices = services.filter((service) => {
-    if (selectedCategory !== "all" && !matchesCategory(service, selectedCategory)) {
+    if (filters.searchQuery && !service.name.toLowerCase().includes(filters.searchQuery.toLowerCase())) {
       return false
     }
-    if (onlyPreferred && preferredCategories.length > 0 && selectedCategory === "all") {
-      const matchesAnyPref = preferredCategories.some((pref) => matchesCategory(service, pref))
-      if (!matchesAnyPref) return false
-    }
-    const combinedSearch = searchQuery || filters.searchQuery
-    if (combinedSearch && !service.name.toLowerCase().includes(combinedSearch.toLowerCase())) {
-      return false
-    }
-    if (service.rating < filters.ratingMin) return false
-    if (service.price < filters.priceMin || service.price > filters.priceMax) return false
+    if (filters.ratingMin > 0 && service.rating < filters.ratingMin) return false
+    if (filters.priceMin > 0 && service.price < filters.priceMin) return false
+    if (filters.priceMax < 500 && service.price > filters.priceMax) return false
     return true
   })
 
@@ -1943,11 +1968,9 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
             {/* SERVICE SOCIAL FEED POSTS */}
             {isReloadingBatch || (isLoadingFeed && visibleBatchServices.length === 0) ? (
               <div className="py-16 text-center space-y-3">
-                <div className="w-10 h-10 border-4 border-[#105238] border-t-transparent rounded-full animate-spin mx-auto" />
-                <p className="text-sm font-bold text-[#105238]">
-                  {isReloadingBatch
-                    ? "Cargando las siguientes 40 experiencias nuevas..."
-                    : "Cargando experiencias nuevas para ti..."}
+                <div className="w-9 h-9 border-3 border-[#105238] border-t-transparent rounded-full animate-spin mx-auto" />
+                <p className="text-xs font-bold text-[#105238]">
+                  Descubriendo experiencias para ti...
                 </p>
               </div>
             ) : (
@@ -2577,70 +2600,73 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   )
                 })}
 
-                {/* End of Unseen Items in Filter OR Full Catalog Exhausted */}
+                {/* End of Category/Selection OR Cycle Wrap-Around Strategy Hub */}
                 {(allUnseenExhausted ||
-                  (visibleBatchServices.length <= 5 && !catalogHasMore && !isFetchingMoreCatalog)) && (
+                  !catalogHasMore ||
+                  visibleBatchServices.length < BATCH_SIZE) && (
                   <div className="bg-card border border-border rounded-3xl p-5 shadow-2xs space-y-4">
-                    {selectedCategory === "all" && !onlyPreferred && !searchQuery.trim() && allUnseenExhausted ? (
-                      <div className="space-y-3 text-center">
-                        <div className="w-12 h-12 rounded-2xl bg-[#105238] text-[#8ee01a] flex items-center justify-center mx-auto shadow-sm">
-                          <Compass className="w-6 h-6" />
-                        </div>
-                        <h3 className="font-extrabold text-base text-foreground">
-                          ¡Ya exploraste todas las experiencias nuevas!
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h3 className="font-extrabold text-sm sm:text-base text-foreground flex items-center gap-2">
+                          <Compass className="w-4 h-4 text-[#105238] shrink-0" />
+                          <span>¿Qué más te gustaría explorar hoy?</span>
                         </h3>
-                        <p className="text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
-                          ¿Quieres seguir descubriendo de forma divertida? Juega <strong>Palenque Go (Swiper)</strong>: desliza con Like lo que te guste y te avisaremos automáticamente cuando se forme un Pool para ahorrar en grupo.
+                        <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                          Descubre desde otro ángulo: explora en <strong>Palenque Go</strong> para crear o unirte a un <strong>Pool</strong> grupal, cambia de categoría o baraja el feed con un nuevo orden.
                         </p>
-                        <div className="flex flex-wrap items-center justify-center gap-2.5 pt-1">
-                          <Button
-                            type="button"
-                            onClick={() => onNavigate?.("rutas")}
-                            className="h-10 px-5 rounded-full bg-[#105238] hover:bg-[#0c3e2b] text-[#8ee01a] font-black text-xs gap-2 cursor-pointer"
-                          >
-                            <Sparkles className="w-4 h-4" />
-                            <span>Jugar Palenque Go (Swiper)</span>
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={handleRestartCycle}
-                            className="h-10 px-5 rounded-full border-[#aeb6a1] text-[#105238] hover:bg-[#eaf0e2] font-bold text-xs gap-2 cursor-pointer"
-                          >
-                            <Shuffle className="w-3.5 h-3.5" />
-                            <span>Reiniciar ciclo con nuevo orden</span>
-                          </Button>
-                        </div>
                       </div>
-                    ) : (
-                      <>
-                        <div className="flex items-center justify-between gap-2">
-                          <div>
-                            <h3 className="font-extrabold text-sm text-foreground flex items-center gap-2">
-                              <Compass className="w-4 h-4 text-[#105238]" />
-                              <span>¿A dónde quieres ir? · Recomendaciones para ti</span>
-                            </h3>
-                            <p className="text-[11px] text-muted-foreground mt-0.5">
-                              Ya viste todo en esta selección. Elige otra categoría o descubre estos destacados:
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setOnlyPreferred(false)
-                              setSelectedCategory("all")
-                              setSearchQuery("")
-                              setAllUnseenExhausted(false)
-                              setFeedSeed(Math.floor(Math.random() * 99999) + 1)
-                            }}
-                            className="text-xs font-bold text-[#105238] hover:underline shrink-0 cursor-pointer"
-                          >
-                            Ver todas
-                          </button>
-                        </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleRestartCycle}
+                        className="h-8 px-3 rounded-full border-[#aeb6a1] text-[#105238] hover:bg-[#eaf0e2] font-bold text-xs gap-1.5 shrink-0 cursor-pointer"
+                      >
+                        <Shuffle className="w-3.5 h-3.5" />
+                        <span>Nuevo orden</span>
+                      </Button>
+                    </div>
 
-                        <div className="flex flex-wrap gap-1.5">
-                          {discoveryCategories.slice(0, 6).map((cat) => {
+                    {/* Action Banner: Palenque Go (Swiper) & Pools */}
+                    <div className="p-3.5 rounded-2xl bg-[#105238] text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="space-y-0.5">
+                        <p className="text-xs font-extrabold text-[#8ee01a] flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5" /> Palenque Go & Pools en Grupo
+                        </p>
+                        <p className="text-[11px] text-white/90 leading-snug">
+                          Dale Like en <strong>Go</strong> a lo que te encante y te avisamos al crearse un Pool, o revisa los Pools activos para ahorrar.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => onNavigate?.("rutas")}
+                          className="h-8 px-3.5 rounded-full bg-[#8ee01a] hover:bg-[#8ee01a]/90 text-[#105238] font-black text-xs cursor-pointer"
+                        >
+                          Visitar Go
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => onNavigate?.("pool")}
+                          className="h-8 px-3.5 rounded-full border-white/30 bg-white/10 hover:bg-white/20 text-white font-bold text-xs cursor-pointer"
+                        >
+                          Ver Pools
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Other Categories to Start a Fresh Cycle */}
+                    <div className="space-y-2">
+                      <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                        Explorar otra categoría
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {categories
+                          .filter((c) => c.id !== selectedCategory)
+                          .map((cat) => {
                             const CatIcon = cat.icon
                             return (
                               <button
@@ -2649,6 +2675,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                 onClick={() => {
                                   setOnlyPreferred(false)
                                   setSelectedCategory(cat.id)
+                                  setSearchQuery("")
                                   setAllUnseenExhausted(false)
                                   setFeedSeed(Math.floor(Math.random() * 99999) + 1)
                                 }}
@@ -2659,71 +2686,52 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                               </button>
                             )
                           })}
-                          <button
-                            type="button"
-                            onClick={() => onNavigate?.("map-explorer")}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black bg-[#105238] text-[#8ee01a] hover:bg-[#0c3e2b] transition-colors cursor-pointer"
-                          >
-                            <MapPin className="w-3.5 h-3.5" />
-                            <span>Abrir Mapa Go</span>
-                          </button>
-                        </div>
+                      </div>
+                    </div>
 
-                        {topRatedServices.filter((ts) => !visibleBatchServices.some((os) => os.id === ts.id)).length > 0 && (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {topRatedServices
-                              .filter((ts) => !visibleBatchServices.some((os) => os.id === ts.id))
-                              .slice(0, 4)
-                              .map((ts) => (
-                                <button
-                                  key={ts.id}
-                                  type="button"
-                                  onClick={() => router.push(`/s/${ts.id}?from=marketplace`)}
-                                  className="flex items-center gap-3 p-2.5 rounded-2xl border border-border/70 hover:border-[#105238]/40 bg-[#fafaf8] dark:bg-background transition-colors text-left cursor-pointer"
-                                >
-                                  <img
-                                    src={getProxyImage(ts.image || "") || DEFAULT_STORE_COVER}
-                                    alt={ts.name}
-                                    className="w-14 h-14 rounded-xl object-cover shrink-0"
-                                    onError={(e) => {
-                                      e.currentTarget.src = DEFAULT_STORE_COVER
-                                    }}
-                                  />
-                                  <div className="min-w-0 flex-1">
-                                    <p className="font-bold text-xs text-foreground truncate">{ts.name}</p>
-                                    <p className="text-[11px] text-muted-foreground truncate">{ts.location}</p>
-                                    <div className="flex items-center justify-between mt-1">
-                                      <span className="text-xs font-black text-[#105238]">${ts.price} /p</span>
-                                      <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-[#105238]">
-                                        <Star className="w-3 h-3 fill-[#105238]" /> {ts.rating}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </button>
-                              ))}
-                          </div>
-                        )}
-                      </>
+                    {topRatedServices.filter((ts) => !visibleBatchServices.some((os) => os.id === ts.id)).length > 0 && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {topRatedServices
+                          .filter((ts) => !visibleBatchServices.some((os) => os.id === ts.id))
+                          .slice(0, 4)
+                          .map((ts) => (
+                            <button
+                              key={ts.id}
+                              type="button"
+                              onClick={() => router.push(`/s/${ts.id}?from=marketplace`)}
+                              className="flex items-center gap-3 p-2.5 rounded-2xl border border-border/70 hover:border-[#105238]/40 bg-[#fafaf8] dark:bg-background transition-colors text-left cursor-pointer"
+                            >
+                              <img
+                                src={getProxyImage(ts.image || "") || DEFAULT_STORE_COVER}
+                                alt={ts.name}
+                                className="w-14 h-14 rounded-xl object-cover shrink-0"
+                                onError={(e) => {
+                                  e.currentTarget.src = DEFAULT_STORE_COVER
+                                }}
+                              />
+                              <div className="min-w-0 flex-1">
+                                <p className="font-bold text-xs text-foreground truncate">{ts.name}</p>
+                                <p className="text-[11px] text-muted-foreground truncate">{ts.location}</p>
+                                <div className="flex items-center justify-between mt-1">
+                                  <span className="text-xs font-black text-[#105238]">${ts.price} /p</span>
+                                  <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-[#105238]">
+                                    <Star className="w-3 h-3 fill-[#105238]" /> {ts.rating}
+                                  </span>
+                                </div>
+                              </div>
+                            </button>
+                          ))}
+                      </div>
                     )}
                   </div>
                 )}
 
-                {/* Automatic 40-Item In-Place Reload Sentinel (NO scroll-to-top jump) */}
+                {/* Subtle Facebook-style Scroll Sentinel (no internal batch numbers exposed) */}
                 {!allUnseenExhausted &&
-                  visibleBatchServices.length > 0 &&
-                  (catalogHasMore ||
-                    isFetchingMoreCatalog ||
-                    orderedServices.some(
-                      (s) => !seenIdsRef.current.has(s.id) && !currentBatchIds.includes(s.id),
-                    )) && (
-                    <div ref={sentinelRef} className="py-6 flex flex-col items-center justify-center gap-2">
-                      <div className="flex items-center gap-2 text-xs font-bold text-[#105238] bg-[#eaf0e2] px-4 py-2 rounded-full shadow-2xs">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Cargando las siguientes 40 experiencias nuevas...</span>
-                      </div>
-                      <p className="text-[11px] text-muted-foreground">
-                        Bloque {batchNumber} · Mostrando {visibleBatchServices.length} experiencias no vistas
-                      </p>
+                  visibleBatchServices.length >= BATCH_SIZE &&
+                  catalogHasMore && (
+                    <div ref={sentinelRef} className="py-5 flex items-center justify-center">
+                      <div className="w-6 h-6 border-2 border-[#105238] border-t-transparent rounded-full animate-spin" />
                     </div>
                   )}
               </div>
