@@ -74,7 +74,7 @@ export const DEFAULT_STORE_COVER = "https://res.cloudinary.com/dacanh1gn/image/u
 
 // --- ESTA ES LA FUNCIÓN QUE LIMPIA TODO DE UN SOLO GOLPE ---
 
-const getProxyImage = (url: string) => {
+export const getProxyImage = (url: string) => {
 
   if (!url) return "";
 
@@ -851,6 +851,8 @@ interface AppState {
   fetchServices: (query?: string) => Promise<void>
 
   fetchMoreServices: () => Promise<void>
+
+  fetchServiceById: (id: number) => Promise<Service | null>
 
   fetchBusinesses: () => Promise<void>
 
@@ -2055,6 +2057,57 @@ export const useAppStore = create<AppState>()(
 
         }
 
+      },
+
+      fetchServiceById: async (id: number) => {
+        const existing = get().services.find((s) => s.id === id);
+        if (existing) return existing;
+        try {
+          const response = await fetch(`${API_BASE}/catalog/${id}/`);
+          if (!response.ok) return null;
+          const s = await response.json();
+          if (!s || !s.id) return null;
+          const formatted: Service = {
+            ...s,
+            id: s.id,
+            name: s.nombre || s.name || "Servicio sin nombre",
+            description: s.descripcion || s.description || "Sin descripción disponible",
+            location: s.ubicacion || s.location || "Palenque, El Salvador",
+            price: parseFloat(s.precio_base) || parseFloat(s.price) || 0,
+            image: getProxyImage(s.imagen_principal || s.imagen_url || s.image || ""),
+            allowsPool: s.permite_pool || s.allows_pool || s.allowsPool || true,
+            rating: parseFloat(s.calificacion) || s.rating || 5.0,
+            reviews: parseInt(s.numero_resenas) || s.reviews || 0,
+            recent_reviews: s.recent_reviews || [],
+            reactions_summary: s.reactions_summary || undefined,
+            businessId: s.tienda?.id || s.businessId,
+            businessName: s.tienda?.nombre_comercial || s.businessName,
+            businessAvatar: s.tienda?.logo ? getProxyImage(s.tienda.logo) : s.businessAvatar,
+            category: s.categoria?.nombre || s.category || "General",
+            spotsLeft: s.oferta_flash ? s.oferta_flash.cupos_disponibles : (s.cupos_disponibles || s.spotsLeft || 0),
+            isRemate: Boolean(s.oferta_flash || s.en_oferta || s.isRemate),
+            discount: s.oferta_flash ? s.oferta_flash.descuento_porcentaje : (s.descuento || s.discount || 0),
+            oferta_flash: s.oferta_flash || null,
+            capacityMin: s.capacidad_min || s.capacityMin,
+            capacityMax: s.capacidad_max || s.capacityMax,
+            galleryImages: s.images && s.images.length > 0
+              ? s.images.map((img: any) => getProxyImage(img.imagen || img.url || img.cloudinary_url || ""))
+              : s.galleryImages || [],
+            features: s.features && s.features.length > 0
+              ? s.features.map((f: any) => typeof f === "string" ? f : (f.nombre || f.name || ""))
+              : [],
+            linkTypes: s.link_types || s.linkTypes || [],
+            chatbotScript: s.chatbot_script || null,
+          };
+          set((state) => ({
+            services: state.services.some((item) => item.id === formatted.id)
+              ? state.services
+              : [...state.services, formatted],
+          }));
+          return formatted;
+        } catch {
+          return null;
+        }
       },
 
 

@@ -26,7 +26,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { useAppStore } from "@/lib/store"
+import { useAppStore, type Service } from "@/lib/store"
 import { BookingModal } from "@/components/booking-modal"
 import { RealReviewsSection } from "@/components/real-reviews-section"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
@@ -71,16 +71,17 @@ const ScriptInjector = ({ htmlContent }: { htmlContent: string }) => {
 export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
   const router = useRouter()
   const resolvedParams = use(params)
-  const { services, fetchServices, toggleFavoritePreference, userFavorites } = useAppStore()
+  const { services, fetchServices, fetchServiceById, toggleFavoritePreference, userFavorites } = useAppStore()
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [showBookingModal, setShowBookingModal] = useState(false)
   const [activeSection, setActiveSection] = useState<string>("vista-general")
   const [showDesktopShare, setShowDesktopShare] = useState(false)
   const [copiedLink, setCopiedLink] = useState(false)
   const sharePopoverRef = useRef<HTMLDivElement>(null)
+  const [fetchedService, setFetchedService] = useState<Service | null>(null)
 
   const serviceId = parseInt(resolvedParams.id)
-  const service = services.find((s) => s.id === serviceId)
+  const service = services.find((s) => s.id === serviceId) || fetchedService
   const [isLoading, setIsLoading] = useState(!service)
 
   useEffect(() => {
@@ -92,6 +93,11 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
     const load = async () => {
       setIsLoading(true)
       try {
+        const direct = await fetchServiceById(serviceId)
+        if (!cancelled && direct) {
+          setFetchedService(direct)
+          return
+        }
         await fetchServices()
       } finally {
         if (!cancelled) setIsLoading(false)
@@ -259,17 +265,28 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
       {/* Desktop Top Navbar */}
       <header className="hidden md:block sticky top-0 z-30 bg-white/95 dark:bg-card/95 backdrop-blur-md border-b border-border/80">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between gap-6">
-          {/* Brand */}
-          <button
-            type="button"
-            onClick={() => navigateToTab("map-explorer")}
-            className="flex items-center gap-2.5 cursor-pointer group shrink-0"
-          >
-            <img src="/icon-192.png" alt="PalenqueGo" className="w-9 h-9 rounded-xl object-contain" />
-            <span className="font-extrabold text-base text-[#105238] dark:text-[#8ee01a] tracking-tight">
-              PalenqueGo
-            </span>
-          </button>
+          {/* Brand + Volver right next to Logo */}
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              type="button"
+              onClick={() => navigateToTab("map-explorer")}
+              className="flex items-center gap-2.5 cursor-pointer group shrink-0"
+            >
+              <img src="/icon-192.png" alt="PalenqueGo" className="w-9 h-9 rounded-xl object-contain" />
+              <span className="font-extrabold text-base text-[#105238] dark:text-[#8ee01a] tracking-tight">
+                PalenqueGo
+              </span>
+            </button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleBack}
+              className="rounded-xl text-xs font-semibold gap-1 cursor-pointer border-[#aeb6a1]/70 hover:bg-[#eaf0e2] hover:text-[#105238]"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Volver
+            </Button>
+          </div>
 
           {/* Internal Section Navigation Links */}
           <nav className="flex items-center gap-5 h-full overflow-x-auto no-scrollbar">
@@ -313,15 +330,6 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
             >
               <User className="w-4 h-4 text-foreground" />
             </button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleBack}
-              className="rounded-xl text-xs font-semibold gap-1 ml-1 cursor-pointer"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Volver
-            </Button>
           </div>
         </div>
       </header>

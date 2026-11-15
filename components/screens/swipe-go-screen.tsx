@@ -742,9 +742,9 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
         <div className="hidden sm:flex h-[90px] items-center justify-center gap-6 pb-6 px-4 shrink-0 z-10 bg-gradient-to-t from-background via-background/80 to-transparent">
           <button
             onClick={() => handleSwipe("left")}
-            className="w-16 h-16 rounded-full bg-white shadow-lg flex items-center justify-center border-2 border-red-100 hover:scale-105 active:scale-95 transition-all group"
+            className="w-16 h-16 rounded-full bg-white shadow-lg flex items-center justify-center border-2 border-[#aeb6a1]/70 hover:scale-105 active:scale-95 transition-all group cursor-pointer"
           >
-            <X className="w-8 h-8 text-red-500 group-hover:text-red-600" />
+            <X className="w-8 h-8 text-[#5c6b57] group-hover:text-[#105238]" />
           </button>
           
           <button
@@ -754,7 +754,7 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
               }
               router.push(`/s/${deck[currentIndex].id}?from=rutas`)
             }}
-            className="w-12 h-12 rounded-full bg-white shadow-md flex items-center justify-center border border-gray-100 hover:scale-105 active:scale-95 transition-all text-blue-500"
+            className="w-12 h-12 rounded-full bg-[#eaf0e2] shadow-md flex items-center justify-center border border-[#105238]/30 hover:scale-105 active:scale-95 transition-all text-[#105238] cursor-pointer"
             title="Ver detalles"
           >
             <HelpCircle className="w-6 h-6" />
@@ -762,9 +762,9 @@ export function SwipeGoScreen({ onNavigate }: SwipeGoScreenProps) {
           
           <button
             onClick={() => handleSwipe("right")}
-            className="w-16 h-16 rounded-full bg-white shadow-lg flex items-center justify-center border-2 border-emerald-100 hover:scale-105 active:scale-95 transition-all group"
+            className="w-16 h-16 rounded-full bg-white shadow-lg flex items-center justify-center border-2 border-[#8ee01a] hover:scale-105 active:scale-95 transition-all group cursor-pointer"
           >
-            <Heart className="w-8 h-8 text-emerald-500 fill-emerald-100 group-hover:fill-emerald-200" />
+            <Heart className="w-8 h-8 text-[#105238] fill-[#eaf0e2] group-hover:fill-[#8ee01a]/40" />
           </button>
         </div>
       )}
@@ -1525,9 +1525,9 @@ function SwipeableServiceCard({
               onSwipe("left");
             }}
             title="Descartar"
-            className="w-[72px] h-[72px] rounded-full bg-white shadow-2xl border-2 border-red-200 flex items-center justify-center text-red-500 hover:bg-red-50 active:scale-95 transition-all group shrink-0"
+            className="w-[72px] h-[72px] rounded-full bg-white shadow-2xl border-2 border-[#aeb6a1]/70 flex items-center justify-center text-[#5c6b57] hover:bg-[#eaf0e2]/50 active:scale-95 transition-all group shrink-0"
           >
-            <X className="w-9 h-9 stroke-[2.5] text-red-500 group-hover:text-red-600" />
+            <X className="w-9 h-9 stroke-[2.5] text-[#5c6b57] group-hover:text-[#105238]" />
           </button>
 
           <button
@@ -1537,7 +1537,7 @@ function SwipeableServiceCard({
               onInfoClick();
             }}
             title="Ver detalles"
-            className="w-14 h-14 rounded-full bg-white shadow-lg border border-blue-200 flex items-center justify-center text-blue-500 hover:bg-blue-50 active:scale-95 transition-all shrink-0"
+            className="w-14 h-14 rounded-full bg-[#eaf0e2] shadow-lg border border-[#105238]/30 flex items-center justify-center text-[#105238] hover:bg-[#eaf0e2]/80 active:scale-95 transition-all shrink-0"
           >
             <HelpCircle className="w-8 h-8 stroke-[2.5]" />
           </button>
@@ -1549,9 +1549,9 @@ function SwipeableServiceCard({
               onSwipe("right");
             }}
             title="Me gusta"
-            className="w-[72px] h-[72px] rounded-full bg-white shadow-2xl border-2 border-emerald-200 flex items-center justify-center text-emerald-500 hover:bg-emerald-50 active:scale-95 transition-all group shrink-0"
+            className="w-[72px] h-[72px] rounded-full bg-white shadow-2xl border-2 border-[#8ee01a] flex items-center justify-center text-[#105238] hover:bg-[#eaf0e2]/40 active:scale-95 transition-all group shrink-0"
           >
-            <Heart className="w-9 h-9 fill-emerald-100 stroke-[2.5] text-emerald-500 group-hover:fill-emerald-200" />
+            <Heart className="w-9 h-9 fill-[#eaf0e2] stroke-[2.5] text-[#105238] group-hover:fill-[#8ee01a]/40" />
           </button>
         </div>
       </div>

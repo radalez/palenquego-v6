@@ -43,7 +43,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
-import { useAppStore, type Service, DEFAULT_STORE_COVER, API_BASE, fetchWithAuth } from "@/lib/store"
+import { useAppStore, type Service, DEFAULT_STORE_COVER, API_BASE, fetchWithAuth, getProxyImage } from "@/lib/store"
 import { BookingModal } from "@/components/booking-modal"
 import { HeaderWithMenu } from "@/components/header-with-menu"
 import { RatingModal } from "@/components/rating-modal"
@@ -422,10 +422,12 @@ function CategoryCarouselStrip({
 
 function RoutesCarouselStrip({
   routes,
+  routeType,
   onSelectRoute,
   onViewAllRoutes,
 }: {
   routes: any[]
+  routeType?: "TOUR" | "URBANO" | "INTERURBANO"
   onSelectRoute: (routeName: string) => void
   onViewAllRoutes: () => void
 }) {
@@ -434,7 +436,31 @@ function RoutesCarouselStrip({
     if (!trackRef.current) return
     trackRef.current.scrollBy({ left: dir === "right" ? 260 : -260, behavior: "smooth" })
   }
-  if (!routes || routes.length === 0) return null
+  const filteredRoutes = useMemo(() => {
+    if (!routes || routes.length === 0) return []
+    if (!routeType) return routes
+    const matches = routes.filter((r) => (r.category || r.route_type || "").toUpperCase() === routeType)
+    return matches.length > 0 ? matches : routes
+  }, [routes, routeType])
+
+  if (filteredRoutes.length === 0) return null
+
+  const badgeLabel =
+    routeType === "TOUR"
+      ? "Tours Turísticos Go"
+      : routeType === "URBANO"
+        ? "Transporte Urbano Go"
+        : routeType === "INTERURBANO"
+          ? "Transporte Interurbano Go"
+          : "Tours y Transporte Go"
+  const headingLabel =
+    routeType === "TOUR"
+      ? "Tours guiados en el mapa"
+      : routeType === "URBANO"
+        ? "Rutas urbanas en el mapa"
+        : routeType === "INTERURBANO"
+          ? "Rutas interurbanas en el mapa"
+          : "Rutas guiadas en el mapa"
 
   return (
     <div className="bg-gradient-to-br from-[#105238]/10 via-[#eaf0e2]/70 to-white dark:from-card dark:to-card border border-[#105238]/25 rounded-3xl p-4 shadow-[0_8px_24px_rgba(16,82,56,0.08)] space-y-3">
@@ -445,10 +471,10 @@ function RoutesCarouselStrip({
           </span>
           <div className="min-w-0">
             <p className="text-[10px] font-black uppercase tracking-wider text-[#105238]/80">
-              Tours y Transporte Go
+              {badgeLabel}
             </p>
             <h4 className="text-sm sm:text-base font-extrabold text-[#105238] dark:text-foreground truncate">
-              Rutas guiadas en el mapa
+              {headingLabel}
             </h4>
           </div>
         </div>
@@ -477,55 +503,56 @@ function RoutesCarouselStrip({
         </div>
       </div>
 
-      <div ref={trackRef} className="flex gap-3 overflow-x-auto scrollbar-hide snap-x pb-1">
-        {routes.slice(0, 10).map((route: any) => {
-          const thumb = route.image || route.imagen_portada || DEFAULT_STORE_COVER
+      <div ref={trackRef} className="flex items-start gap-4 overflow-x-auto scrollbar-hide snap-x py-1 px-0.5">
+        {filteredRoutes.slice(0, 12).map((route: any) => {
+          const rawThumb = route.image || route.imagen_portada || ""
+          const thumb = getProxyImage(rawThumb) || DEFAULT_STORE_COVER
           return (
-            <div
+            <button
               key={route.id}
+              type="button"
               onClick={() => onSelectRoute(route.name)}
-              className="w-44 sm:w-48 shrink-0 snap-start bg-white dark:bg-background border border-border/80 rounded-2xl overflow-hidden shadow-xs hover:shadow-md hover:border-[#105238]/40 transition-all cursor-pointer flex flex-col"
+              className="w-28 sm:w-32 shrink-0 snap-start flex flex-col items-center text-center gap-2 group cursor-pointer"
             >
-              <div className="relative h-28 bg-muted overflow-hidden">
-                <img
-                  src={thumb}
-                  alt={route.name}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.currentTarget.src = DEFAULT_STORE_COVER
-                  }}
-                />
+              <div className="relative">
+                <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-full p-[3px] bg-gradient-to-tr from-[#105238] via-[#91c44a] to-[#8ee01a] shadow-md group-hover:scale-105 transition-transform duration-200">
+                  <img
+                    src={thumb}
+                    alt={route.name}
+                    className="w-full h-full rounded-full object-cover border-2 border-white dark:border-card"
+                    onError={(e) => {
+                      e.currentTarget.src = DEFAULT_STORE_COVER
+                    }}
+                  />
+                </div>
+                <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-[#105238] text-[#8ee01a] text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm whitespace-nowrap border border-white/80">
+                  {route.price ? `$${route.price}` : "Ruta Go"}
+                </span>
+              </div>
+              <div className="space-y-0.5 pt-1 w-full">
+                <p className="text-xs font-extrabold text-foreground line-clamp-2 leading-tight group-hover:text-[#105238] transition-colors">
+                  {route.name}
+                </p>
                 {route.duration && (
-                  <span className="absolute bottom-2 left-2 bg-[#105238]/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                  <p className="text-[10px] font-semibold text-muted-foreground truncate">
                     {route.duration}
-                  </span>
+                  </p>
                 )}
               </div>
-              <div className="p-2.5 flex-1 flex flex-col justify-between gap-2">
-                <p className="text-xs font-extrabold text-foreground line-clamp-2 leading-snug">{route.name}</p>
-                <div className="flex items-center justify-between pt-1 border-t border-border/50">
-                  <span className="text-xs font-black text-[#105238]">
-                    {route.price ? `$${route.price}` : "Ruta Go"}
-                  </span>
-                  <span className="text-[10px] font-bold text-[#105238] bg-[#eaf0e2] px-2 py-0.5 rounded-full">
-                    Ver ruta
-                  </span>
-                </div>
-              </div>
-            </div>
+            </button>
           )
         })}
 
         <button
           type="button"
           onClick={onViewAllRoutes}
-          className="w-36 shrink-0 snap-start bg-[#105238] text-white rounded-2xl p-4 flex flex-col items-center justify-center gap-2.5 hover:bg-[#0c3e2b] transition-colors cursor-pointer"
+          className="w-28 shrink-0 snap-start flex flex-col items-center text-center gap-2 group cursor-pointer"
         >
-          <span className="w-10 h-10 rounded-full bg-[#8ee01a] text-[#105238] flex items-center justify-center">
-            <Compass className="w-5 h-5" />
-          </span>
-          <span className="text-xs font-black text-center leading-snug">
-            Ver todas las rutas
+          <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-full bg-[#105238] text-[#8ee01a] flex items-center justify-center shadow-md group-hover:scale-105 transition-transform border-4 border-[#eaf0e2]">
+            <Compass className="w-7 h-7" />
+          </div>
+          <span className="text-xs font-black text-[#105238] dark:text-[#8ee01a] leading-tight pt-1">
+            Ver todas en mapa
           </span>
         </button>
       </div>
@@ -646,9 +673,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   const [openTravelerCommentsId, setOpenTravelerCommentsId] = useState<string | null>(null)
   const [travelerCommentDrafts, setTravelerCommentDrafts] = useState<Record<string, string>>({})
 
-  // 40-item smart batch pagination & refs
+  // 40-item automatic infinite scroll & refs
   const BATCH_SIZE = 40
-  const [batchStart, setBatchStart] = useState(0)
+  const [visibleCount, setVisibleCount] = useState(BATCH_SIZE)
+  const lastAdvanceRef = useRef<number>(0)
   const routesTrackRef = useRef<HTMLDivElement | null>(null)
   const feedTopRef = useRef<HTMLDivElement | null>(null)
 
@@ -730,6 +758,16 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     }
   }, [services.length])
 
+  const advanceInfiniteFeed = useCallback(() => {
+    const now = Date.now()
+    if (now - lastAdvanceRef.current < 450) return
+    lastAdvanceRef.current = now
+    if (catalogHasMore) {
+      fetchMoreServices()
+    }
+    setVisibleCount((prev) => prev + BATCH_SIZE)
+  }, [catalogHasMore, fetchMoreServices])
+
   // Infinite scroll sentinel
   const sentinelRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -741,14 +779,14 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
       observerInstance.current = new IntersectionObserver(
         (entries) => {
           if (entries[0]?.isIntersecting) {
-            fetchMoreServices()
+            advanceInfiniteFeed()
           }
         },
-        { root: null, rootMargin: "800px", threshold: 0 },
+        { root: null, rootMargin: "900px", threshold: 0 },
       )
       observerInstance.current.observe(node)
     },
-    [fetchMoreServices],
+    [advanceInfiniteFeed],
   )
 
   useEffect(() => {
@@ -771,7 +809,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
       if (winScrollHeight > winClientHeight && winScrollTop + winClientHeight >= winScrollHeight - 1000) {
         reachedBottom = true
       }
-      if (reachedBottom) fetchMoreServices()
+      if (reachedBottom) advanceInfiniteFeed()
     }
     const handleScroll = () => {
       if (!ticking) {
@@ -791,7 +829,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
       clearInterval(interval)
       if (observerInstance.current) observerInstance.current.disconnect()
     }
-  }, [fetchMoreServices])
+  }, [advanceInfiniteFeed])
 
   const savePreferences = (prefs: string[]) => {
     setPreferredCategories(prefs)
@@ -1005,7 +1043,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
       .map((s) => ({
         id: s.id,
         name: s.name,
-        image: s.image || DEFAULT_STORE_COVER,
+        image: getProxyImage(s.image || "") || DEFAULT_STORE_COVER,
         location: s.location || "El Salvador",
         category: s.category || "Experiencia",
       }))
@@ -1025,7 +1063,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
             rows.slice(0, 8).map((r: any) => ({
               id: r.id,
               name: r.nombre || r.name,
-              image: r.imagen_url || r.imagen_cloudinary_url || DEFAULT_STORE_COVER,
+              image:
+                getProxyImage(
+                  r.imagen_principal || r.imagen_url || r.image || r.images?.[0]?.imagen || "",
+                ) || DEFAULT_STORE_COVER,
               location: r.tienda?.nombre_comercial || "El Salvador",
               category: r.categoria?.nombre || "Experiencia",
             })),
@@ -1265,26 +1306,36 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   )
 
   useEffect(() => {
-    setBatchStart(0)
+    setVisibleCount(BATCH_SIZE)
   }, [selectedCategory, onlyPreferred, searchQuery])
 
   const visibleBatchServices = useMemo(() => {
-    if (orderedServices.length <= BATCH_SIZE) return orderedServices
-    const slice = orderedServices.slice(batchStart, batchStart + BATCH_SIZE)
-    return slice.length > 0 ? slice : orderedServices.slice(0, BATCH_SIZE)
-  }, [orderedServices, batchStart])
+    if (orderedServices.length === 0) return []
+    if (visibleCount <= orderedServices.length) {
+      return orderedServices.slice(0, visibleCount)
+    }
+    // If all loaded services have been seen and backend has no more, seamlessly cycle with fresh order
+    if (catalogHasMore || orderedServices.length <= BATCH_SIZE) {
+      return orderedServices
+    }
+    const result = [...orderedServices]
+    let cycle = 1
+    while (result.length < visibleCount) {
+      const rotated = [
+        ...orderedServices.slice((cycle * 13) % orderedServices.length),
+        ...orderedServices.slice(0, (cycle * 13) % orderedServices.length),
+      ]
+      result.push(...rotated)
+      cycle += 1
+    }
+    return result.slice(0, visibleCount)
+  }, [orderedServices, visibleCount, catalogHasMore])
 
   const handleLoadNextBatch = async () => {
     if (catalogHasMore) {
       await fetchMoreServices()
     }
-    if (batchStart + BATCH_SIZE < orderedServices.length) {
-      setBatchStart((prev) => prev + BATCH_SIZE)
-    } else {
-      setBatchStart(0)
-      setFeedSeed(Math.floor(Math.random() * 99999))
-    }
-    feedTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+    setVisibleCount((prev) => prev + BATCH_SIZE)
   }
 
   return (
@@ -1381,8 +1432,19 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   </span>
                 </button>
 
-                {/* Real Routes Circles (up to 10) */}
-                {routes.slice(0, 10).map((route: any) => {
+                {/* Real Routes Circles (prioritize TOUR first, then URBANO/INTERURBANO) */}
+                {[...routes]
+                  .sort((a: any, b: any) => {
+                    const rank = (r: any) => {
+                      const t = (r.category || r.route_type || "").toUpperCase()
+                      if (t === "TOUR") return 0
+                      if (t === "URBANO") return 1
+                      return 2
+                    }
+                    return rank(a) - rank(b)
+                  })
+                  .slice(0, 10)
+                  .map((route: any) => {
                   const thumb = route.image || route.imagen_portada || DEFAULT_STORE_COVER
                   return (
                     <button
@@ -1728,7 +1790,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                     typeof window !== "undefined" ? `${window.location.origin}/s/${service.id}` : ""
 
                   return (
-                    <div key={service.id} className="space-y-5">
+                    <div key={`${service.id}-${serviceIdx}`} className="space-y-5">
                     <article
                       id={`service-card-${service.id}`}
                       className="bg-card border border-border rounded-3xl shadow-2xs overflow-visible scroll-mt-24"
@@ -2275,11 +2337,16 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                     {selectedCategory === "all" &&
                       (serviceIdx + 1) % 4 === 0 && (() => {
                         const carouselSlot = Math.floor((serviceIdx + 1) / 4) - 1
-                        // Every 3rd carousel shows Mapa Go Tours & Routes
-                        if (carouselSlot % 3 === 2 && routes.length > 0) {
+                        // Every 3rd carousel (starting at slot 1 -> after post 8) shows Mapa Go Tours & Routes:
+                        // Round 0: TOUR -> Round 1: URBANO -> Round 2: INTERURBANO
+                        if (carouselSlot % 3 === 1 && routes.length > 0) {
+                          const routesRound = Math.floor(carouselSlot / 3)
+                          const routeCycle: Array<"TOUR" | "URBANO" | "INTERURBANO"> = ["TOUR", "URBANO", "INTERURBANO"]
+                          const targetRouteType = routeCycle[routesRound % 3]
                           return (
                             <RoutesCarouselStrip
                               routes={routes}
+                              routeType={targetRouteType}
                               onSelectRoute={(routeName) => {
                                 useAppStore.getState().setReturnToMapRoute(routeName)
                                 onNavigate?.("map-explorer")
@@ -2372,33 +2439,19 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   </div>
                 )}
 
-                {/* Smart 40-Item Batch Refresh + Infinite Scroll Sentinel */}
+                {/* Automatic Infinite Scroll Sentinel (no manual button) */}
                 <div
-                  ref={catalogHasMore ? sentinelRef : undefined}
-                  className="py-6 flex flex-col items-center justify-center gap-3"
+                  ref={sentinelRef}
+                  className="py-6 flex flex-col items-center justify-center gap-2"
                 >
-                  {(orderedServices.length >= BATCH_SIZE || catalogHasMore) && (
-                    <Button
-                      type="button"
-                      disabled={isFetchingMoreCatalog}
-                      onClick={handleLoadNextBatch}
-                      className="rounded-full px-6 h-10 bg-[#105238] hover:bg-[#0c3e2b] text-[#8ee01a] font-black text-xs gap-2 shadow-sm cursor-pointer"
-                    >
-                      {isFetchingMoreCatalog ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>Cargando nuevas experiencias...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Shuffle className="w-3.5 h-3.5" />
-                          <span>Ver 40 experiencias nuevas</span>
-                        </>
-                      )}
-                    </Button>
+                  {(catalogHasMore || isFetchingMoreCatalog || orderedServices.length > BATCH_SIZE) && (
+                    <div className="flex items-center gap-2 text-xs font-bold text-[#105238] bg-[#eaf0e2] px-4 py-2 rounded-full">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Cargando más experiencias nuevas...</span>
+                    </div>
                   )}
                   <p className="text-[11px] text-muted-foreground">
-                    Mostrando {visibleBatchServices.length} de {orderedServices.length} experiencias cargadas
+                    Explorando {visibleBatchServices.length} experiencias
                   </p>
                 </div>
               </div>
@@ -2837,7 +2890,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                             <img
                               src={item.image || DEFAULT_STORE_COVER}
                               alt={item.name}
-                              className="w-10 h-10 rounded-xl object-cover shrink-0"
+                              className="w-10 h-10 rounded-xl object-cover shrink-0 bg-muted"
+                              onError={(e) => {
+                                e.currentTarget.src = DEFAULT_STORE_COVER
+                              }}
                             />
                             <div className="min-w-0 flex-1">
                               <p className="text-xs font-bold text-foreground truncate">{item.name}</p>
