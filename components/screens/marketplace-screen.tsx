@@ -1372,11 +1372,11 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
         onNavigate={onNavigate}
       />
 
-      {/* Main Responsive Layout: Airy Centered Social Feed + Sticky Right Sidebar on Desktop */}
-      <div className="max-w-[1160px] mx-auto w-full px-4 sm:px-8 lg:px-10 pt-5 pb-28">
-        <div className="flex flex-col lg:flex-row lg:justify-center lg:gap-12 items-start">
+      {/* Main Responsive Layout: Wider Centered Social Feed + Right Sidebar hugged near right edge on Desktop */}
+      <div className="max-w-[1380px] mx-auto w-full px-4 sm:px-6 lg:px-5 pt-5 pb-28">
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:gap-8 items-start">
           {/* LEFT / CENTER COLUMN: SOCIAL FEED */}
-          <div ref={feedTopRef} className="w-full max-w-[560px] mx-auto lg:mx-0 space-y-5">
+          <div ref={feedTopRef} className="w-full max-w-[650px] mx-auto space-y-5">
             {/* Pending Booking Banner */}
             {pendingBookings.length > 0 && (
               <div className="p-3.5 bg-[#eaf0e2] border border-[#8ee01a]/70 rounded-2xl flex items-center justify-between gap-3 shadow-2xs">
@@ -3053,23 +3053,26 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   </div>
                 </div>
 
-                <div className="bg-[#fafaf8] dark:bg-background border border-border/80 rounded-2xl p-3 space-y-1.5">
+                <div className="bg-[#fafaf8] dark:bg-background border border-border/80 rounded-2xl p-3 space-y-2">
                   <span className="text-[11px] font-bold text-foreground block">¿Cómo te sentiste?</span>
-                  <div className="flex items-center gap-2">
+                  <div className="w-full flex items-center justify-between gap-1.5 pt-1">
                     {REACTIONS.map((r) => (
                       <button
                         key={r.id}
                         type="button"
                         onClick={() => setPublishReaction((prev) => (prev === r.id ? null : r.id))}
-                        title={r.label}
+                        aria-label={r.label}
                         className={cn(
-                          "rounded-full transition-transform cursor-pointer",
+                          "group/modalreact relative rounded-full transition-transform duration-200 hover:scale-125 hover:-translate-y-1 cursor-pointer focus:outline-none",
                           publishReaction === r.id
-                            ? "scale-110 ring-2 ring-[#8ee01a] ring-offset-1"
-                            : "opacity-65 hover:opacity-100",
+                            ? "scale-110 ring-2 ring-[#8ee01a] ring-offset-2 ring-offset-white dark:ring-offset-card"
+                            : "opacity-75 hover:opacity-100",
                         )}
                       >
-                        <ReactionBadgeIcon type={r.id} size="md" />
+                        <span className="pointer-events-none opacity-0 group-hover/modalreact:opacity-100 transition-opacity duration-150 absolute -top-8 left-1/2 -translate-x-1/2 bg-[#105238] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap shadow-lg z-20">
+                          {r.label}
+                        </span>
+                        <ReactionBadgeIcon type={r.id} size="md" animated={publishReaction === r.id} animateOnHover />
                       </button>
                     ))}
                   </div>

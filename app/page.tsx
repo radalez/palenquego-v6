@@ -241,7 +241,7 @@ export default function Home() {
     <div className="min-h-screen bg-background flex w-full overflow-hidden">
       {/* Desktop Sidebar */}
       {!isDesktopSidebarCollapsed && (
-        <div className="hidden lg:block h-screen flex-shrink-0 shadow-lg relative z-20 transition-all duration-300">
+        <div className="hidden lg:block h-screen flex-shrink-0 relative z-20 transition-all duration-300">
           <DesktopSidebar 
             activeTab={activeTab} 
             onNavigate={(tab) => setActiveTab(tab as ActiveTab)} 
@@ -266,7 +266,7 @@ export default function Home() {
       )}
 
       {/* Main Content Area */}
-      <main className={`flex-1 flex flex-col relative h-screen overflow-hidden w-full ${isMapExplorer ? 'max-w-none' : 'lg:max-w-none max-w-md'} ${isDesktopSidebarCollapsed ? 'lg:pl-9' : ''} mx-auto shadow-2xl lg:shadow-none bg-background lg:border-l lg:border-border transition-all duration-200`}>
+      <main className={`flex-1 flex flex-col relative h-screen overflow-hidden w-full ${isMapExplorer ? 'max-w-none' : 'lg:max-w-none max-w-md'} ${isDesktopSidebarCollapsed ? 'lg:pl-9' : ''} mx-auto shadow-2xl lg:shadow-none bg-background transition-all duration-200`}>
         <InstallPWABanner />
 
         {/* Widget GPS flotante para choferes (solo cuando NO están en su panel) */}
