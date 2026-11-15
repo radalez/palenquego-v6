@@ -1402,6 +1402,27 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   const orderedServicesRef = useRef<Service[]>(orderedServices)
   orderedServicesRef.current = orderedServices
 
+  // Safety fallback: if currentBatchIds is empty and nothing is loading/fetching, either load unseen or mark exhausted
+  useEffect(() => {
+    if (isLoading || isReloadingBatch || isFetchingMoreCatalog || allUnseenExhausted) return
+    if (currentBatchIds.length > 0) return
+    if (orderedServices.length === 0) return
+    const unseen = orderedServices.filter((s) => !seenIdsRef.current.has(s.id))
+    if (unseen.length > 0) {
+      setCurrentBatchIds(unseen.slice(0, BATCH_SIZE).map((s) => s.id))
+    } else if (!catalogHasMore) {
+      setAllUnseenExhausted(true)
+    }
+  }, [
+    isLoading,
+    isReloadingBatch,
+    isFetchingMoreCatalog,
+    allUnseenExhausted,
+    currentBatchIds.length,
+    orderedServices,
+    catalogHasMore,
+  ])
+
   // Reset active batch when user changes filter/category/search, picking up to 40 unseen items
   useEffect(() => {
     const unseen = orderedServices.filter((s) => !seenIdsRef.current.has(s.id))
@@ -1914,7 +1935,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
             })}
 
             {/* SERVICE SOCIAL FEED POSTS */}
-            {isLoading || isReloadingBatch || (currentBatchIds.length === 0 && catalogHasMore && !allUnseenExhausted) ? (
+            {isLoading || isReloadingBatch || (currentBatchIds.length === 0 && isFetchingMoreCatalog && !allUnseenExhausted) ? (
               <div className="py-16 text-center space-y-3">
                 <div className="w-10 h-10 border-4 border-[#105238] border-t-transparent rounded-full animate-spin mx-auto" />
                 <p className="text-sm font-bold text-[#105238]">

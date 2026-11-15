@@ -1957,7 +1957,7 @@ export const useAppStore = create<AppState>()(
 
           if (!response.ok) {
 
-            set({ isFetchingMoreCatalog: false });
+            set({ isFetchingMoreCatalog: false, catalogHasMore: false, catalogNextUrl: null });
 
             return;
 
