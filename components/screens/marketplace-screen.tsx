@@ -560,6 +560,255 @@ function RoutesCarouselStrip({
   )
 }
 
+interface SmartReelStep {
+  stepBadge: string
+  title: string
+  description: string
+  image: string
+  isActionCard?: boolean
+}
+
+interface SmartReelDefinition {
+  id: string
+  badge: string
+  heading: string
+  subtitle: string
+  ctaLabel: string
+  icon: any
+  steps: SmartReelStep[]
+  onAction: () => void
+}
+
+function SmartAppReelStrip({ reel }: { reel: SmartReelDefinition }) {
+  const trackRef = useRef<HTMLDivElement | null>(null)
+  const ReelIcon = reel.icon
+
+  useEffect(() => {
+    if (reel.id === "upgrade-plan-10dias" && typeof window !== "undefined") {
+      try {
+        localStorage.setItem("palenque_upgrade_reel_shown_at", String(Date.now()))
+      } catch {
+        // ignore
+      }
+    }
+  }, [reel.id])
+
+  const scrollTrack = (dir: "left" | "right") => {
+    if (!trackRef.current) return
+    trackRef.current.scrollBy({ left: dir === "right" ? 240 : -240, behavior: "smooth" })
+  }
+
+  return (
+    <div className="bg-card border border-[#105238]/25 rounded-3xl p-4 shadow-[0_8px_24px_rgba(16,82,56,0.07)] space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="w-9 h-9 rounded-2xl bg-[#105238] text-[#8ee01a] flex items-center justify-center shadow-sm shrink-0">
+            <ReelIcon className="w-4 h-4" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-[10px] font-black uppercase tracking-wider text-[#105238] dark:text-[#8ee01a]">
+              {reel.badge}
+            </p>
+            <h4 className="text-sm sm:text-base font-extrabold text-foreground truncate">
+              {reel.heading}
+            </h4>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => scrollTrack("left")}
+            className="hidden sm:flex w-7 h-7 rounded-full bg-[#eaf0e2] border border-[#aeb6a1]/60 items-center justify-center text-[#105238] hover:bg-[#105238] hover:text-white transition-colors cursor-pointer"
+            aria-label="Anterior"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => scrollTrack("right")}
+            className="hidden sm:flex w-7 h-7 rounded-full bg-[#eaf0e2] border border-[#aeb6a1]/60 items-center justify-center text-[#105238] hover:bg-[#105238] hover:text-white transition-colors cursor-pointer"
+            aria-label="Siguiente"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={reel.onAction}
+            className="text-xs font-black bg-[#105238] text-[#8ee01a] px-3.5 py-1.5 rounded-full hover:bg-[#0c3e2b] transition-colors cursor-pointer"
+          >
+            {reel.ctaLabel}
+          </button>
+        </div>
+      </div>
+
+      <div ref={trackRef} className="flex items-stretch gap-3 overflow-x-auto scrollbar-hide snap-x py-1">
+        {reel.steps.map((step, idx) => {
+          const isLast = idx === reel.steps.length - 1 || step.isActionCard
+          return (
+            <div
+              key={`${reel.id}-step-${idx}`}
+              onClick={reel.onAction}
+              className="w-[210px] sm:w-[225px] h-[300px] sm:h-[315px] shrink-0 snap-start rounded-2xl overflow-hidden relative group border border-[#105238]/20 shadow-sm flex flex-col justify-between p-3.5 text-left cursor-pointer select-none"
+            >
+              <img
+                src={step.image || DEFAULT_STORE_COVER}
+                alt={step.title}
+                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                onError={(e) => {
+                  e.currentTarget.src = DEFAULT_STORE_COVER
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#072619] via-[#105238]/75 to-black/30" />
+
+              <div className="relative z-10 flex items-center justify-between gap-1.5">
+                <span
+                  className={cn(
+                    "text-[10px] font-black px-2.5 py-1 rounded-full shadow-xs",
+                    isLast
+                      ? "bg-[#8ee01a] text-[#105238]"
+                      : "bg-[#eaf0e2]/95 text-[#105238]",
+                  )}
+                >
+                  {step.stepBadge}
+                </span>
+                <span className="w-6 h-6 rounded-full bg-black/40 text-white text-[10px] font-bold flex items-center justify-center border border-white/20">
+                  {idx + 1}/{reel.steps.length}
+                </span>
+              </div>
+
+              <div className="relative z-10 space-y-2">
+                <h5 className="text-sm font-extrabold text-white leading-snug line-clamp-3">
+                  {step.title}
+                </h5>
+                <p className="text-[11px] text-white/85 leading-relaxed line-clamp-4">
+                  {step.description}
+                </p>
+                {isLast ? (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      reel.onAction()
+                    }}
+                    className="w-full mt-1.5 h-9 rounded-xl bg-[#8ee01a] hover:bg-[#8ee01a]/90 text-[#105238] font-black text-xs flex items-center justify-center gap-1.5 shadow-md transition-transform active:scale-95 cursor-pointer"
+                  >
+                    <span>{reel.ctaLabel}</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <div className="pt-1 flex items-center gap-1 text-[11px] font-bold text-[#8ee01a]">
+                    <span>Desliza para ver más</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function FeedIntentSurveyCard({
+  selectedIntent,
+  onSelectIntent,
+}: {
+  selectedIntent: string | null
+  onSelectIntent: (intent: "group" | "flash" | "business" | "driver") => void
+}) {
+  const options: Array<{
+    id: "group" | "flash" | "business" | "driver"
+    title: string
+    subtitle: string
+    icon: any
+  }> = [
+    {
+      id: "group",
+      title: "Viajar en grupo o familia",
+      subtitle: "Ver Pools grupales y dividir gastos",
+      icon: Users,
+    },
+    {
+      id: "flash",
+      title: "Cazar Ofertas Flash hoy",
+      subtitle: "Descuentos relámpago y Palenque Go",
+      icon: Zap,
+    },
+    {
+      id: "business",
+      title: "Tengo negocio o quiero ganar",
+      subtitle: "Plan Bronce gratis, equipos y comisiones",
+      icon: StoreIcon,
+    },
+    {
+      id: "driver",
+      title: "Soy Chofer / Tengo transporte",
+      subtitle: "Rutas, boletos QR y pasajeros en vivo",
+      icon: Compass,
+    },
+  ]
+
+  return (
+    <div className="bg-gradient-to-br from-[#105238] to-[#0b3b28] text-white rounded-3xl p-4 sm:p-5 shadow-md space-y-3.5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-0.5">
+          <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider bg-[#8ee01a] text-[#105238] px-2.5 py-0.5 rounded-full">
+            <Sparkles className="w-3 h-3" /> Personaliza tu Feed
+          </span>
+          <h4 className="text-sm sm:text-base font-extrabold text-white pt-1">
+            ¿Cuál es tu objetivo principal en PalenqueGo?
+          </h4>
+          <p className="text-[11px] text-white/80">
+            Elige una opción para adaptar tus Reels, Pools y recomendaciones en tiempo real:
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {options.map((opt) => {
+          const OptIcon = opt.icon
+          const isSelected = selectedIntent === opt.id
+          return (
+            <button
+              key={opt.id}
+              type="button"
+              onClick={() => onSelectIntent(opt.id)}
+              className={cn(
+                "flex items-center gap-3 p-3 rounded-2xl text-left transition-all border cursor-pointer",
+                isSelected
+                  ? "bg-[#8ee01a] text-[#105238] border-[#8ee01a] shadow-sm"
+                  : "bg-white/10 hover:bg-white/15 text-white border-white/15",
+              )}
+            >
+              <div
+                className={cn(
+                  "w-9 h-9 rounded-xl flex items-center justify-center shrink-0",
+                  isSelected ? "bg-[#105238] text-[#8ee01a]" : "bg-[#eaf0e2]/15 text-[#8ee01a]",
+                )}
+              >
+                <OptIcon className="w-4 h-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-extrabold truncate">{opt.title}</p>
+                <p
+                  className={cn(
+                    "text-[10px] truncate",
+                    isSelected ? "text-[#105238]/85 font-semibold" : "text-white/75",
+                  )}
+                >
+                  {opt.subtitle}
+                </p>
+              </div>
+              {isSelected && <Check className="w-4 h-4 shrink-0 text-[#105238]" />}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 interface ServiceComment {
   id: string
   author: string
@@ -718,12 +967,18 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
 
   const [activePoolTooltipId, setActivePoolTooltipId] = useState<number | null>(null)
   const observerInstance = useRef<IntersectionObserver | null>(null)
+  const [globalCatalogPool, setGlobalCatalogPool] = useState<Service[]>([])
+  const [feedSurveyIntent, setFeedSurveyIntent] = useState<"group" | "flash" | "business" | "driver" | null>(null)
+  const [canShowUpgradeReel, setCanShowUpgradeReel] = useState(false)
 
   const {
     services,
     businesses,
     routes,
     currentUser,
+    userPlan,
+    userIntentions,
+    setUserIntentions,
     toggleFavoritePreference,
     registerPoolInterest,
     userFavorites,
@@ -777,10 +1032,82 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
           seenIdsRef.current = new Set(parsedIds)
         }
       }
+
+      const savedIntent = localStorage.getItem("palenque_feed_survey_intent_v1")
+      if (savedIntent === "group" || savedIntent === "flash" || savedIntent === "business" || savedIntent === "driver") {
+        setFeedSurveyIntent(savedIntent)
+      }
+
+      // 10-day cooldown check for Plan Bronce -> Plan Oro/Platino upgrade reel
+      const lastUpgradePromoRaw = localStorage.getItem("palenque_upgrade_reel_shown_at")
+      const lastUpgradePromoMs = lastUpgradePromoRaw ? Number(lastUpgradePromoRaw) : 0
+      const tenDaysMs = 10 * 24 * 60 * 60 * 1000
+      if (!lastUpgradePromoMs || Date.now() - lastUpgradePromoMs >= tenDaysMs) {
+        setCanShowUpgradeReel(true)
+      }
     } catch {
       // ignore storage errors
     }
   }, [])
+
+  // Keep a rich cross-category pool so CategoryCarouselStrip can recommend other categories even inside a filtered category
+  useEffect(() => {
+    if (services.length > 0) {
+      setGlobalCatalogPool((prev) => {
+        const byId = new Map(prev.map((s) => [s.id, s]))
+        for (const s of services) byId.set(s.id, s)
+        return Array.from(byId.values()).slice(0, 160)
+      })
+    }
+  }, [services])
+
+  useEffect(() => {
+    let active = true
+    fetch("/api-proxy/catalog/?page_size=80&random=1")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!active || !data) return
+        const rawList = Array.isArray(data) ? data : data.results || []
+        const mapped: Service[] = rawList.map((s: any) => ({
+          ...s,
+          id: s.id,
+          name: s.nombre || s.name || "Experiencia PalenqueGo",
+          description: s.descripcion || s.description || "",
+          location: s.ubicacion || s.location || "El Salvador",
+          price: parseFloat(s.precio_base) || parseFloat(s.price) || 0,
+          image: getProxyImage(s.imagen_principal || s.imagen_url || s.image || ""),
+          rating: parseFloat(s.calificacion) || s.rating || 5.0,
+          category: s.categoria?.nombre || s.category || "General",
+          oferta_flash: s.oferta_flash || null,
+        }))
+        setGlobalCatalogPool((prev) => {
+          const byId = new Map(prev.map((item) => [item.id, item]))
+          for (const item of mapped) byId.set(item.id, item)
+          return Array.from(byId.values()).slice(0, 160)
+        })
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const handleSelectSurveyIntent = useCallback(
+    (intent: "group" | "flash" | "business" | "driver") => {
+      setFeedSurveyIntent(intent)
+      if (typeof window !== "undefined") {
+        localStorage.setItem("palenque_feed_survey_intent_v1", intent)
+      }
+      if (intent === "group") {
+        setUserIntentions({ isTraveler: true, wantsToLeadPools: true })
+      } else if (intent === "business") {
+        setUserIntentions({ isBusinessOwner: true })
+      } else if (intent === "driver") {
+        setUserIntentions({ wantsToDrive: true })
+      }
+    },
+    [setUserIntentions],
+  )
 
   // Rotate Facebook-style Publicidad Flash Ads every 6 seconds
   useEffect(() => {
@@ -1468,6 +1795,381 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     () => categories.filter((c) => c.id !== "all" && c.id !== "flash"),
     [],
   )
+
+  // Intelligent contextual prioritization of the 8 App Reels (Traveler + Business + Driver)
+  const prioritizedSmartReels = useMemo<SmartReelDefinition[]>(() => {
+    const sampleSource = globalCatalogPool.length > 0 ? globalCatalogPool : services
+    const pickImage = (index: number, fallback: string) => {
+      if (sampleSource.length > 0) {
+        const candidate = sampleSource[(index * 7 + feedSeed) % sampleSource.length]
+        if (candidate?.image) return getProxyImage(candidate.image)
+      }
+      return fallback
+    }
+
+    const hasLikedOrReacted =
+      userFavorites.length > 0 ||
+      Object.values(serviceReactions).some((r) => Boolean(r?.userReaction))
+    const isBusinessUser =
+      Boolean(currentUser?.es_aliado) ||
+      currentUser?.tipo === "ALIADO" ||
+      Boolean(userIntentions?.isBusinessOwner) ||
+      feedSurveyIntent === "business"
+    const isDriverUser =
+      Boolean(currentUser?.es_chofer) ||
+      currentUser?.tipo === "CHOFER" ||
+      Boolean(userIntentions?.wantsToDrive) ||
+      feedSurveyIntent === "driver"
+    const hasTeamConfigured = (currentUser?.reception_stores?.length ?? 0) > 1
+    const isOnBronzeFreePlan = !userPlan || userPlan === "FREE"
+
+    const openBusinessPanelOrPlans = () => {
+      const token = useAppStore.getState().accessToken
+      if (currentUser?.tipo === "ALIADO" || currentUser?.es_aliado) {
+        const url = token
+          ? `https://palenquego.com/admin/sso/?token=${token}`
+          : "https://palenquego.com/admin/"
+        if (typeof window !== "undefined") window.open(url, "_blank", "noopener,noreferrer")
+      } else {
+        onNavigate?.("planes")
+      }
+    }
+
+    const reelPools: SmartReelDefinition = {
+      id: "pools-ahorro",
+      badge: "REEL VIAJEROS · AHORRO EN GRUPO",
+      heading: "Viaja en grupo con Pools y paga menos",
+      subtitle: "Une fuerzas con otros viajeros y desbloquea tarifas grupales",
+      ctaLabel: "Ir a Pools",
+      icon: Users,
+      onAction: () => onNavigate?.("pool"),
+      steps: [
+        {
+          stepBadge: "Paso 1 · Elige tu destino",
+          title: "¿Te gustó una experiencia? No pagues tarifa completa solo",
+          description:
+            "Cuando viajas en grupo o te sumas a otros viajeros, el costo por persona baja automáticamente.",
+          image: pickImage(1, "https://images.unsplash.com/photo-1539635278303-d4002c07eae3?w=600&q=80"),
+        },
+        {
+          stepBadge: "Paso 2 · Únete o crea",
+          title: "Participa en Pools abiertos o arma el tuyo en segundos",
+          description:
+            "Revisa qué Pools tienen cupos disponibles para este fin de semana o inicia uno nuevo con tu fecha ideal.",
+          image: pickImage(2, "https://images.unsplash.com/photo-1527631746610-bca00a040d60?w=600&q=80"),
+        },
+        {
+          stepBadge: "Paso 3 · Ahorra hoy",
+          title: "Lidera un Pool o súmate a tu próxima aventura",
+          description:
+            "Entra ahora a la sección de Pools en Mis Viajes y descubre los grupos activos.",
+          image: pickImage(3, "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&q=80"),
+          isActionCard: true,
+        },
+      ],
+    }
+
+    const reelGoSwiper: SmartReelDefinition = {
+      id: "palenque-go-swiper",
+      badge: "REEL INTERACTIVO · PALENQUE GO",
+      heading: "Descubre en segundos con Palenque Go",
+      subtitle: "Desliza, guarda tus favoritos y recibe alertas de Pools",
+      ctaLabel: "Visitar Go",
+      icon: Sparkles,
+      onAction: () => onNavigate?.("rutas"),
+      steps: [
+        {
+          stepBadge: "Paso 1 · Explora rápido",
+          title: "¿No sabes a dónde ir? Juega con el descubridor visual",
+          description:
+            "En Palenque Go ves tarjetas ágiles de hoteles, tours, playas y gastronomía para decidir sin esfuerzo.",
+          image: pickImage(4, "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=600&q=80"),
+        },
+        {
+          stepBadge: "Paso 2 · Dale Like",
+          title: "Marca lo que te encanta y entrena tus recomendaciones",
+          description:
+            "Cada Like guarda la experiencia en tu radar personal para que nunca pierdas de vista ese lugar.",
+          image: pickImage(5, "https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=600&q=80"),
+        },
+        {
+          stepBadge: "Paso 3 · Alerta automática",
+          title: "Si se crea un Pool de tus Likes, te avisamos al instante",
+          description:
+            "Así aprovechas el descuento grupal apenas se abre un grupo hacia el destino que te gustó.",
+          image: pickImage(6, "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=600&q=80"),
+          isActionCard: true,
+        },
+      ],
+    }
+
+    const reelAlianzas: SmartReelDefinition = {
+      id: "alianzas-comisiones",
+      badge: "REEL INGRESOS · RED DE ALIADOS",
+      heading: "Gana dinero recomendando otros negocios",
+      subtitle: "Alíate con comercios y compartan comisiones automáticas",
+      ctaLabel: "Crear Alianza",
+      icon: StoreIcon,
+      onAction: () => onNavigate?.("safeflow"),
+      steps: [
+        {
+          stepBadge: "Paso 1 · Conecta",
+          title: "¿Aún no eres aliado de otros negocios en PalenqueGo?",
+          description:
+            "Un hotel puede aliarse con un tour o restaurante para recomendarse viajeros mutuamente.",
+          image: pickImage(7, "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=600&q=80"),
+        },
+        {
+          stepBadge: "Paso 2 · Recomienda",
+          title: "Comparte porcentajes de ganancia por cada cliente referido",
+          description:
+            "Cuando envías un viajero a un negocio aliado, Safe-Flow registra y protege tu comisión automáticamente.",
+          image: pickImage(8, "https://images.unsplash.com/photo-1521791136064-7986c2920216?w=600&q=80"),
+        },
+        {
+          stepBadge: "Paso 3 · Monetiza hoy",
+          title: "Multiplica tus ingresos con alianzas estratégicas",
+          description:
+            "Entra a Safe-Flow para conectar con comercios aliados y activar tus comisiones compartidas.",
+          image: pickImage(9, "https://images.unsplash.com/photo-1552664730-d307ca884978?w=600&q=80"),
+          isActionCard: true,
+        },
+      ],
+    }
+
+    const reelEquipo: SmartReelDefinition = {
+      id: "equipo-negocio",
+      badge: "REEL GESTIÓN · EQUIPO DE TRABAJO",
+      heading: "¿Aún no tienes un equipo en tu negocio?",
+      subtitle: "Delega recepción QR y ventas sin compartir tu clave",
+      ctaLabel: "Crear Equipo",
+      icon: Users,
+      onAction: openBusinessPanelOrPlans,
+      steps: [
+        {
+          stepBadge: "Paso 1 · Delega seguro",
+          title: "No atiendas todas las reservas y validaciones tú solo",
+          description:
+            "Agrega encargados de recepción y personal de ventas a tu negocio manteniendo el control total.",
+          image: pickImage(10, "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&q=80"),
+        },
+        {
+          stepBadge: "Paso 2 · Recepción QR",
+          title: "Tu personal valida vouchers QR y confirma llegadas en vivo",
+          description:
+            "Cada miembro accede desde su propio perfil al escáner de Recepción QR autorizado por ti.",
+          image: pickImage(11, "https://images.unsplash.com/photo-1556740749-887f6717d7e4?w=600&q=80"),
+        },
+        {
+          stepBadge: "Paso 3 · Configúralo",
+          title: "Arma tu equipo de ventas y recepción en minutos",
+          description:
+            "Abre tu Panel de Negocios y asigna a tu encargado o recepcionista hoy mismo.",
+          image: pickImage(12, "https://images.unsplash.com/photo-1600880292203-757bb62b4limits?w=600&q=80"),
+          isActionCard: true,
+        },
+      ],
+    }
+
+    const reelPlanBronce: SmartReelDefinition = {
+      id: "plan-bronce-gratis",
+      badge: "REEL NEGOCIOS · EMPIEZA GRATIS",
+      heading: "Publica tu negocio gratis con el Plan Bronce",
+      subtitle: "Recibe reservas, lanza Ofertas Flash y gestiona tu equipo",
+      ctaLabel: "Empezar con Bronce",
+      icon: Zap,
+      onAction: () => onNavigate?.("planes"),
+      steps: [
+        {
+          stepBadge: "Paso 1 · Visibilidad",
+          title: "¿Tienes un hotel, restaurante, tour o transporte?",
+          description:
+            "Conecta tu negocio frente a miles de viajeros que buscan experiencias reales todos los días.",
+          image: pickImage(13, "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&q=80"),
+        },
+        {
+          stepBadge: "Paso 2 · Herramientas",
+          title: "Ofertas Flash, vouchers QR, Pools y equipo de trabajo",
+          description:
+            "Todo incluido para que gestiones cupos, fechas, promociones con reloj y cobros seguros.",
+          image: pickImage(14, "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600&q=80"),
+        },
+        {
+          stepBadge: "Paso 3 · 100% Gratis",
+          title: "Activa hoy tu Plan Bronce sin costo de inscripción",
+          description:
+            "Empieza gratis con Bronce y crece a tu propio ritmo dentro del ecosistema PalenqueGo.",
+          image: pickImage(15, "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&q=80"),
+          isActionCard: true,
+        },
+      ],
+    }
+
+    const reelUpgradePlan: SmartReelDefinition = {
+      id: "upgrade-plan-10dias",
+      badge: "REEL SOCIOS · SIGUIENTE NIVEL",
+      heading: "Lleva tu negocio al siguiente nivel con Oro y Platino",
+      subtitle: "Más Ofertas Flash simultáneas y prioridad máxima en el feed",
+      ctaLabel: "Ver Ventajas",
+      icon: Star,
+      onAction: () => {
+        if (typeof window !== "undefined") {
+          localStorage.setItem("palenque_upgrade_reel_shown_at", String(Date.now()))
+        }
+        setCanShowUpgradeReel(false)
+        onNavigate?.("planes")
+      },
+      steps: [
+        {
+          stepBadge: "Paso 1 · Crecimiento",
+          title: "Tu negocio ya está en marcha con el Plan Bronce",
+          description:
+            "Cuando quieras escalar tus reservas, los planes Oro y Platino multiplican tu alcance comercial.",
+          image: pickImage(16, "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=600&q=80"),
+        },
+        {
+          stepBadge: "Paso 2 · Prioridad VIP",
+          title: "Más Ofertas Flash activas y destaque en publicidad del feed",
+          description:
+            "Tus promociones rotan en los bloques destacados y accedes a condiciones preferenciales en toda la red.",
+          image: pickImage(17, "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=600&q=80"),
+        },
+        {
+          stepBadge: "Paso 3 · Compara planes",
+          title: "Descubre todas las ventajas de subir de nivel",
+          description:
+            "Revisa los beneficios de Partner Oro, Platino y Pro cuando estés listo para dar el salto.",
+          image: pickImage(18, "https://images.unsplash.com/photo-1582719508461-905c673771fd?w=600&q=80"),
+          isActionCard: true,
+        },
+      ],
+    }
+
+    const reelChofer: SmartReelDefinition = {
+      id: "modo-chofer",
+      badge: "REEL MOVILIDAD · MODO CHOFER",
+      heading: "Genera ingresos con tu unidad en rutas y traslados",
+      subtitle: "Pasajeros verificados, control de asientos y GPS en vivo",
+      ctaLabel: "Panel de Chofer",
+      icon: Compass,
+      onAction: () => onNavigate?.(currentUser?.tipo === "CHOFER" ? "conductor" : "profile"),
+      steps: [
+        {
+          stepBadge: "Paso 1 · Tu Unidad",
+          title: "Conecta tu vehículo, microbús o shuttle turístico",
+          description:
+            "Atiende rutas turísticas, traslados al aeropuerto y viajes grupales dentro de la red PalenqueGo.",
+          image: pickImage(19, "https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=600&q=80"),
+        },
+        {
+          stepBadge: "Paso 2 · Control QR y GPS",
+          title: "Valida boletos QR al abordar y muestra tu ruta en vivo",
+          description:
+            "Tus pasajeros ven la ubicación de tu unidad en tiempo real y tú controlas las plazas disponibles.",
+          image: pickImage(20, "https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=600&q=80"),
+        },
+        {
+          stepBadge: "Paso 3 · Actívate",
+          title: "Configura tu perfil de Chofer y empieza a rodar",
+          description:
+            "Entra a tu consola de conductor o activa tu interés de Chofer en Mi Perfil.",
+          image: pickImage(21, "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=600&q=80"),
+          isActionCard: true,
+        },
+      ],
+    }
+
+    const reelFlashMapas: SmartReelDefinition = {
+      id: "ofertas-flash-mapas",
+      badge: "REEL PROMOCIONES · OFERTAS FLASH & MAPA",
+      heading: "Caza Ofertas Flash antes de que expire el reloj",
+      subtitle: "Descuentos directos con cupos limitados y exploración en mapa",
+      ctaLabel: "Ver Ofertas Flash",
+      icon: Zap,
+      onAction: () => {
+        setOnlyPreferred(false)
+        setSelectedCategory("flash")
+        setFeedSeed(Math.floor(Math.random() * 99999) + 1)
+      },
+      steps: [
+        {
+          stepBadge: "Paso 1 · Reloj en vivo",
+          title: "Descuentos reales por tiempo limitado en experiencias top",
+          description:
+            "Los comercios aliados lanzan cupos promocionales con ahorro directo sobre la tarifa base.",
+          image: pickImage(22, "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&q=80"),
+        },
+        {
+          stepBadge: "Paso 2 · Cupos contados",
+          title: "Asegura tus lugares antes de que se agoten",
+          description:
+            "Cada tarjeta muestra el reloj regresivo y cuántos cupos flash quedan disponibles en este instante.",
+          image: pickImage(23, "https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=600&q=80"),
+        },
+        {
+          stepBadge: "Paso 3 · Filtra en 1 clic",
+          title: "Explora todas las Ofertas Flash activas ahora mismo",
+          description:
+            "Toca aquí para filtrar únicamente las promociones relámpago vigentes hoy.",
+          image: pickImage(24, "https://images.unsplash.com/photo-1530789253388-582c481c54b0?w=600&q=80"),
+          isActionCard: true,
+        },
+      ],
+    }
+
+    const queue: SmartReelDefinition[] = []
+
+    // Dynamic ordering based on user actions, survey choice, and roles
+    if (feedSurveyIntent === "group" || hasLikedOrReacted || userIntentions?.wantsToLeadPools) {
+      queue.push(reelPools, reelGoSwiper)
+    } else if (feedSurveyIntent === "flash") {
+      queue.push(reelFlashMapas, reelGoSwiper, reelPools)
+    } else if (feedSurveyIntent === "driver" || isDriverUser) {
+      queue.push(reelChofer, reelAlianzas, reelPools)
+    } else if (feedSurveyIntent === "business" || isBusinessUser) {
+      if (!currentUser?.es_aliado && currentUser?.tipo !== "ALIADO" && isOnBronzeFreePlan) {
+        queue.push(reelPlanBronce)
+      }
+      if (!hasTeamConfigured) {
+        queue.push(reelEquipo)
+      }
+      queue.push(reelAlianzas)
+      if ((currentUser?.es_aliado || currentUser?.tipo === "ALIADO") && isOnBronzeFreePlan && canShowUpgradeReel) {
+        queue.push(reelUpgradePlan)
+      }
+    }
+
+    // Ensure every user (since anyone can be both traveler and business/ally/driver) gets a balanced rotation
+    const allCandidates = [
+      reelPools,
+      reelGoSwiper,
+      reelAlianzas,
+      reelFlashMapas,
+      ...(hasTeamConfigured ? [] : [reelEquipo]),
+      ...(isOnBronzeFreePlan ? [reelPlanBronce] : []),
+      ...(isOnBronzeFreePlan && canShowUpgradeReel ? [reelUpgradePlan] : []),
+      reelChofer,
+    ]
+    for (const candidate of allCandidates) {
+      if (!queue.some((r) => r.id === candidate.id)) {
+        queue.push(candidate)
+      }
+    }
+
+    return queue
+  }, [
+    globalCatalogPool,
+    services,
+    feedSeed,
+    userFavorites.length,
+    serviceReactions,
+    currentUser,
+    userIntentions,
+    feedSurveyIntent,
+    userPlan,
+    canShowUpgradeReel,
+    onNavigate,
+  ])
 
   const orderedServicesRef = useRef<Service[]>(orderedServices)
   orderedServicesRef.current = orderedServices
@@ -2546,56 +3248,95 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                       )}
                     </article>
 
-                    {/* Cyclic Inline Carousels every 4 posts: Categories + Mapa Go Tours/Routes */}
-                    {selectedCategory === "all" &&
-                      (serviceIdx + 1) % 4 === 0 && (() => {
-                        const carouselSlot = Math.floor((serviceIdx + 1) / 4) - 1
-                        // Every 3rd carousel (starting at slot 1 -> after post 8) shows Mapa Go Tours & Routes:
-                        // Round 0: TOUR -> Round 1: URBANO -> Round 2: INTERURBANO (cycles across batches!)
-                        if (carouselSlot % 3 === 1 && routes.length > 0) {
-                          const routesRound = (batchNumber - 1) + Math.floor(carouselSlot / 3)
-                          const routeCycle: Array<"TOUR" | "URBANO" | "INTERURBANO"> = ["TOUR", "URBANO", "INTERURBANO"]
-                          const targetRouteType = routeCycle[routesRound % 3]
-                          return (
-                            <RoutesCarouselStrip
-                              routes={routes}
-                              routeType={targetRouteType}
-                              onSelectRoute={(routeName) => {
-                                useAppStore.getState().setReturnToMapRoute(routeName)
-                                onNavigate?.("map-explorer")
-                              }}
-                              onViewAllRoutes={() => onNavigate?.("map-explorer")}
-                            />
-                          )
-                        }
-                        if (discoveryCategories.length === 0) return null
-                        const orderedCats =
-                          preferredCategories.length > 0
-                            ? [
-                                ...discoveryCategories.filter((c) => preferredCategories.includes(c.id)),
-                                ...discoveryCategories.filter((c) => !preferredCategories.includes(c.id)),
-                              ]
-                            : discoveryCategories
-                        const catOffset = carouselSlot + (feedSeed % orderedCats.length)
-                        const targetCat = orderedCats[catOffset % orderedCats.length]
-                        const catSamples = services
-                          .filter((s) => matchesCategory(s, targetCat.id) && s.id !== service.id)
-                          .slice(0, 10)
-                        if (catSamples.length === 0) return null
+                    {/* Universal Smart In-Feed Interleaving every 4 posts (works in Todo, Categories & Search!) */}
+                    {(serviceIdx + 1) % 4 === 0 && (() => {
+                      const carouselSlot = Math.floor((serviceIdx + 1) / 4) - 1
+
+                      // Slot 0 (after card 4): if user hasn't answered the 1-click intent survey yet, show Survey + Smart Reel
+                      const showSurveyHere = carouselSlot === 0 && !feedSurveyIntent
+
+                      // Pattern across slots:
+                      // Even slots (0, 2, 4...): Smart App Reel (Pools, Go, Alianzas, Equipo, Plan Bronce, Chofer, Flash)
+                      // Odd slots (1, 3, 5...): Alternate between Complementary Category Carousel and Mapa Go Routes Carousel
+                      if (carouselSlot % 2 === 0) {
+                        const reelIdx =
+                          (Math.floor(carouselSlot / 2) + (batchNumber - 1)) %
+                          Math.max(1, prioritizedSmartReels.length)
+                        const activeReel = prioritizedSmartReels[reelIdx]
                         return (
-                          <CategoryCarouselStrip
-                            categoryLabel={targetCat.label}
-                            categoryId={targetCat.id}
-                            icon={targetCat.icon}
-                            items={catSamples}
-                            onSelectCategory={(catId) => {
-                              setOnlyPreferred(false)
-                              setSelectedCategory(catId)
+                          <div className="space-y-4">
+                            {showSurveyHere && (
+                              <FeedIntentSurveyCard
+                                selectedIntent={feedSurveyIntent}
+                                onSelectIntent={handleSelectSurveyIntent}
+                              />
+                            )}
+                            {activeReel && <SmartAppReelStrip reel={activeReel} />}
+                          </div>
+                        )
+                      }
+
+                      const oddIndex = Math.floor(carouselSlot / 2)
+                      if (oddIndex % 2 === 1 && routes.length > 0) {
+                        const routesRound = (batchNumber - 1) + Math.floor(oddIndex / 2)
+                        const routeCycle: Array<"TOUR" | "URBANO" | "INTERURBANO"> = [
+                          "TOUR",
+                          "URBANO",
+                          "INTERURBANO",
+                        ]
+                        const targetRouteType = routeCycle[routesRound % 3]
+                        return (
+                          <RoutesCarouselStrip
+                            routes={routes}
+                            routeType={targetRouteType}
+                            onSelectRoute={(routeName) => {
+                              useAppStore.getState().setReturnToMapRoute(routeName)
+                              onNavigate?.("map-explorer")
                             }}
-                            onOpenService={(sid) => router.push(`/s/${sid}?from=marketplace`)}
+                            onViewAllRoutes={() => onNavigate?.("map-explorer")}
                           />
                         )
-                      })()}
+                      }
+
+                      // Complementary Category Recommendation (always recommends a category DIFFERENT from selectedCategory)
+                      const otherCats = discoveryCategories.filter((c) => c.id !== selectedCategory)
+                      if (otherCats.length === 0) return null
+                      const orderedCats =
+                        preferredCategories.length > 0
+                          ? [
+                              ...otherCats.filter((c) => preferredCategories.includes(c.id)),
+                              ...otherCats.filter((c) => !preferredCategories.includes(c.id)),
+                            ]
+                          : otherCats
+                      const catOffset = oddIndex + (feedSeed % orderedCats.length)
+                      const targetCat = orderedCats[catOffset % orderedCats.length]
+                      const candidatePool =
+                        globalCatalogPool.length > 0 ? globalCatalogPool : services
+                      const catSamples = candidatePool
+                        .filter((s) => matchesCategory(s, targetCat.id) && s.id !== service.id)
+                        .slice(0, 10)
+                      if (catSamples.length === 0) {
+                        const fallbackReel =
+                          prioritizedSmartReels[carouselSlot % Math.max(1, prioritizedSmartReels.length)]
+                        return fallbackReel ? <SmartAppReelStrip reel={fallbackReel} /> : null
+                      }
+                      return (
+                        <CategoryCarouselStrip
+                          categoryLabel={targetCat.label}
+                          categoryId={targetCat.id}
+                          icon={targetCat.icon}
+                          items={catSamples}
+                          onSelectCategory={(catId) => {
+                            setOnlyPreferred(false)
+                            setSelectedCategory(catId)
+                            setSearchQuery("")
+                            setAllUnseenExhausted(false)
+                            setFeedSeed(Math.floor(Math.random() * 99999) + 1)
+                          }}
+                          onOpenService={(sid) => router.push(`/s/${sid}?from=marketplace`)}
+                        />
+                      )
+                    })()}
                   </div>
                   )
                 })}
