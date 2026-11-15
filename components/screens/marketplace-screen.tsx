@@ -680,13 +680,16 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   const BATCH_SIZE = 40
   const [batchNumber, setBatchNumber] = useState(1)
   const [currentBatchIds, setCurrentBatchIds] = useState<number[]>([])
+  const [isLoadingFeed, setIsLoadingFeed] = useState(false)
   const [isReloadingBatch, setIsReloadingBatch] = useState(false)
   const [allUnseenExhausted, setAllUnseenExhausted] = useState(false)
+  const seenInCurrentBatchRef = useRef<Set<number>>(new Set())
   const seenIdsRef = useRef<Set<number>>(
     (() => {
       if (typeof window === "undefined") return new Set<number>()
       try {
-        const raw = localStorage.getItem("palenque_seen_experience_ids_v2")
+        localStorage.removeItem("palenque_seen_experience_ids_v2")
+        const raw = localStorage.getItem("palenque_seen_ids_v3")
         const parsed = raw ? JSON.parse(raw) : []
         return new Set<number>(Array.isArray(parsed) ? parsed : [])
       } catch {
@@ -753,7 +756,8 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
         }
       }
 
-      const savedSeen = localStorage.getItem("palenque_seen_experience_ids_v2")
+      localStorage.removeItem("palenque_seen_experience_ids_v2")
+      const savedSeen = localStorage.getItem("palenque_seen_ids_v3")
       if (savedSeen) {
         const parsedIds: number[] = JSON.parse(savedSeen)
         if (Array.isArray(parsedIds)) {
@@ -773,18 +777,54 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     return () => clearInterval(timer)
   }, [])
 
-  // Backend catalog fetch
-  useEffect(() => {
+  const buildUnseenCatalogQuery = useCallback(() => {
     const params = new URLSearchParams()
+    params.set("page_size", String(BATCH_SIZE))
+    params.set("random", "1")
     if (selectedCategory && selectedCategory !== "all") {
-      params.append("cat", selectedCategory)
+      params.set("cat", selectedCategory)
+    } else if (onlyPreferred && preferredCategories.length > 0) {
+      params.set("cats", preferredCategories.join(","))
     }
     if (searchQuery.trim()) {
-      params.append("search", searchQuery.trim())
+      params.set("search", searchQuery.trim())
     }
-    const qs = params.toString() ? `?${params.toString()}` : ""
-    fetchServices(qs)
-  }, [selectedCategory, searchQuery])
+    const seenArr = Array.from(seenIdsRef.current)
+    if (seenArr.length > 0) {
+      params.set("exclude_ids", seenArr.slice(-600).join(","))
+    }
+    return `?${params.toString()}`
+  }, [selectedCategory, onlyPreferred, preferredCategories, searchQuery])
+
+  // Single-request 40-item random unseen catalog fetch (never loops over pages)
+  useEffect(() => {
+    let cancelled = false
+    setIsLoadingFeed(true)
+    const safetyTimer = setTimeout(() => {
+      if (!cancelled) setIsLoadingFeed(false)
+    }, 6000)
+
+    fetchServices(buildUnseenCatalogQuery()).finally(() => {
+      clearTimeout(safetyTimer)
+      if (cancelled) return
+      const fresh = useAppStore.getState().services
+      seenInCurrentBatchRef.current.clear()
+      if (fresh.length > 0) {
+        setCurrentBatchIds(fresh.slice(0, BATCH_SIZE).map((s) => s.id))
+        setAllUnseenExhausted(false)
+      } else {
+        setCurrentBatchIds([])
+        setAllUnseenExhausted(true)
+      }
+      setBatchNumber(1)
+      setIsLoadingFeed(false)
+    })
+
+    return () => {
+      cancelled = true
+      clearTimeout(safetyTimer)
+    }
+  }, [buildUnseenCatalogQuery, feedSeed, fetchServices])
 
   useEffect(() => {
     fetchBusinesses()
@@ -808,7 +848,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   const persistSeenIds = useCallback(() => {
     if (typeof window === "undefined") return
     try {
-      localStorage.setItem("palenque_seen_experience_ids_v2", JSON.stringify(Array.from(seenIdsRef.current)))
+      localStorage.setItem("palenque_seen_ids_v3", JSON.stringify(Array.from(seenIdsRef.current)))
     } catch {
       // ignore quota errors
     }
@@ -816,6 +856,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
 
   const markServiceSeen = useCallback(
     (id: number) => {
+      seenInCurrentBatchRef.current.add(id)
       if (!seenIdsRef.current.has(id)) {
         seenIdsRef.current.add(id)
         persistSeenIds()
@@ -834,19 +875,21 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
           if (entry.isIntersecting) {
             const rawId = (entry.target as HTMLElement).dataset.serviceId
             const id = rawId ? Number(rawId) : NaN
-            if (!Number.isNaN(id) && !seenIdsRef.current.has(id)) {
-              seenIdsRef.current.add(id)
-              added = true
+            if (!Number.isNaN(id)) {
+              seenInCurrentBatchRef.current.add(id)
+              if (!seenIdsRef.current.has(id)) {
+                seenIdsRef.current.add(id)
+                added = true
+              }
             }
             observer.unobserve(entry.target)
           }
         }
         if (added) persistSeenIds()
       },
-      { threshold: 0.05 },
+      { threshold: 0.25 },
     )
     cardObserverRef.current = observer
-    // Observe all cards already mounted in the DOM before this effect ran
     document.querySelectorAll<HTMLElement>("[data-service-id]").forEach((el) => {
       observer.observe(el)
     })
@@ -862,17 +905,11 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     }
   }, [])
 
-  // Silently pre-fetch next backend page so next 40 unseen experiences are ready before user hits bottom
-  useEffect(() => {
-    const unseenLoaded = services.filter((s) => !seenIdsRef.current.has(s.id)).length
-    if (catalogHasMore && !isFetchingMoreCatalog && unseenLoaded < BATCH_SIZE * 2) {
-      fetchMoreServices()
-    }
-  }, [services, currentBatchIds.length, catalogHasMore, isFetchingMoreCatalog, fetchMoreServices])
-
   const advanceBatchAutomatically = useCallback(async () => {
     const now = Date.now()
-    if (now - lastAdvanceRef.current < 1400 || isReloadingBatch || allUnseenExhausted) return
+    if (now - lastAdvanceRef.current < 2000 || isReloadingBatch || isLoadingFeed || allUnseenExhausted) return
+    const minRequiredSeen = Math.min(8, Math.max(1, currentBatchIds.length))
+    if (seenInCurrentBatchRef.current.size < minRequiredSeen) return
     lastAdvanceRef.current = now
 
     // Mark every card in the current batch as seen before replacing
@@ -880,26 +917,34 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
       seenIdsRef.current.add(id)
     }
     persistSeenIds()
+    seenInCurrentBatchRef.current.clear()
 
     setIsReloadingBatch(true)
+    const safetyTimer = setTimeout(() => setIsReloadingBatch(false), 6000)
     try {
-      if (catalogHasMore) {
-        await fetchMoreServices()
-      }
-      // Compute next 40 strictly unseen from orderedServicesRef
-      const unseen = orderedServicesRef.current.filter((s) => !seenIdsRef.current.has(s.id))
-      if (unseen.length > 0) {
-        setCurrentBatchIds(unseen.slice(0, BATCH_SIZE).map((s) => s.id))
+      await fetchServices(buildUnseenCatalogQuery())
+      const fresh = useAppStore.getState().services.filter((s) => !seenIdsRef.current.has(s.id))
+      if (fresh.length > 0) {
+        setCurrentBatchIds(fresh.slice(0, BATCH_SIZE).map((s) => s.id))
         setBatchNumber((prev) => prev + 1)
         setAllUnseenExhausted(false)
-      } else if (!catalogHasMore) {
+      } else {
         setCurrentBatchIds([])
         setAllUnseenExhausted(true)
       }
     } finally {
-      setTimeout(() => setIsReloadingBatch(false), 380)
+      clearTimeout(safetyTimer)
+      setTimeout(() => setIsReloadingBatch(false), 300)
     }
-  }, [allUnseenExhausted, catalogHasMore, currentBatchIds, fetchMoreServices, isReloadingBatch, persistSeenIds])
+  }, [
+    allUnseenExhausted,
+    buildUnseenCatalogQuery,
+    currentBatchIds,
+    fetchServices,
+    isLoadingFeed,
+    isReloadingBatch,
+    persistSeenIds,
+  ])
 
   // Infinite batch-reload sentinel (triggers right at the end of the 40 cards, NO jump to top)
   const sentinelRef = useCallback(
@@ -1402,65 +1447,20 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   const orderedServicesRef = useRef<Service[]>(orderedServices)
   orderedServicesRef.current = orderedServices
 
-  // Safety fallback: if currentBatchIds is empty and nothing is loading/fetching, either load unseen or mark exhausted
+  // Sync batch IDs when orderedServices updates
   useEffect(() => {
-    if (isLoading || isReloadingBatch || isFetchingMoreCatalog || allUnseenExhausted) return
-    if (currentBatchIds.length > 0) return
+    if (isLoadingFeed || isReloadingBatch || allUnseenExhausted) return
     if (orderedServices.length === 0) return
-    const unseen = orderedServices.filter((s) => !seenIdsRef.current.has(s.id))
-    if (unseen.length > 0) {
-      setCurrentBatchIds(unseen.slice(0, BATCH_SIZE).map((s) => s.id))
-    } else if (!catalogHasMore) {
-      setAllUnseenExhausted(true)
-    }
-  }, [
-    isLoading,
-    isReloadingBatch,
-    isFetchingMoreCatalog,
-    allUnseenExhausted,
-    currentBatchIds.length,
-    orderedServices,
-    catalogHasMore,
-  ])
-
-  // Reset active batch when user changes filter/category/search, picking up to 40 unseen items
-  useEffect(() => {
-    const unseen = orderedServices.filter((s) => !seenIdsRef.current.has(s.id))
-    if (unseen.length > 0) {
-      setCurrentBatchIds(unseen.slice(0, BATCH_SIZE).map((s) => s.id))
-      setAllUnseenExhausted(false)
-    } else if (!catalogHasMore && orderedServices.length > 0) {
-      setCurrentBatchIds([])
-      setAllUnseenExhausted(true)
-    } else {
-      setCurrentBatchIds([])
-    }
-    setBatchNumber(1)
-  }, [selectedCategory, onlyPreferred, searchQuery, feedSeed])
-
-  // Populate initial batch (and top up to 40 as page 2 arrives) without replacing cards on screen
-  useEffect(() => {
-    if (isReloadingBatch || allUnseenExhausted || orderedServices.length === 0) return
     if (currentBatchIds.length === 0) {
       const unseen = orderedServices.filter((s) => !seenIdsRef.current.has(s.id))
-      if (unseen.length > 0) {
-        setCurrentBatchIds(unseen.slice(0, BATCH_SIZE).map((s) => s.id))
-      } else if (!catalogHasMore) {
-        setAllUnseenExhausted(true)
-      }
-    } else if (currentBatchIds.length < BATCH_SIZE) {
-      const extra = orderedServices
-        .filter((s) => !seenIdsRef.current.has(s.id) && !currentBatchIds.includes(s.id))
-        .slice(0, BATCH_SIZE - currentBatchIds.length)
-        .map((s) => s.id)
-      if (extra.length > 0) {
-        setCurrentBatchIds((prev) => [...prev, ...extra])
-      }
+      const pool = unseen.length > 0 ? unseen : orderedServices
+      setCurrentBatchIds(pool.slice(0, BATCH_SIZE).map((s) => s.id))
     }
-  }, [orderedServices, currentBatchIds, isReloadingBatch, allUnseenExhausted, catalogHasMore])
+  }, [orderedServices, currentBatchIds.length, isLoadingFeed, isReloadingBatch, allUnseenExhausted])
 
   const handleRestartCycle = useCallback(() => {
     seenIdsRef.current.clear()
+    seenInCurrentBatchRef.current.clear()
     persistSeenIds()
     setAllUnseenExhausted(false)
     setBatchNumber(1)
@@ -1468,10 +1468,16 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   }, [persistSeenIds])
 
   const visibleBatchServices = useMemo(() => {
-    if (currentBatchIds.length === 0) return []
-    const byId = new Map(orderedServices.map((s) => [s.id, s]))
-    return currentBatchIds.map((id) => byId.get(id)).filter((s): s is Service => Boolean(s))
-  }, [orderedServices, currentBatchIds])
+    if (currentBatchIds.length > 0) {
+      const byId = new Map(orderedServices.map((s) => [s.id, s]))
+      const mapped = currentBatchIds.map((id) => byId.get(id)).filter((s): s is Service => Boolean(s))
+      if (mapped.length > 0) return mapped
+    }
+    if (!allUnseenExhausted && orderedServices.length > 0) {
+      return orderedServices.slice(0, BATCH_SIZE)
+    }
+    return []
+  }, [orderedServices, currentBatchIds, allUnseenExhausted])
 
   return (
     <div className="flex flex-col min-h-screen bg-[#fafaf8] dark:bg-background">
@@ -1935,7 +1941,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
             })}
 
             {/* SERVICE SOCIAL FEED POSTS */}
-            {isLoading || isReloadingBatch || (currentBatchIds.length === 0 && isFetchingMoreCatalog && !allUnseenExhausted) ? (
+            {isReloadingBatch || (isLoadingFeed && visibleBatchServices.length === 0) ? (
               <div className="py-16 text-center space-y-3">
                 <div className="w-10 h-10 border-4 border-[#105238] border-t-transparent rounded-full animate-spin mx-auto" />
                 <p className="text-sm font-bold text-[#105238]">
