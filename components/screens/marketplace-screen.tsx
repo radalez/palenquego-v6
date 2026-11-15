@@ -109,6 +109,122 @@ const REACTIONS: Array<{ id: ReactionKey; label: string; icon: any }> = [
   { id: "quiero_ir", label: "Quiero ir", icon: Compass },
 ]
 
+function ReactionBadgeIcon({
+  type,
+  size = "md",
+  animated = false,
+}: {
+  type: ReactionKey
+  size?: "xs" | "sm" | "md" | "lg"
+  animated?: boolean
+}) {
+  const sizeClass =
+    size === "lg"
+      ? "w-10 h-10"
+      : size === "md"
+        ? "w-5 h-5"
+        : size === "sm"
+          ? "w-4 h-4"
+          : "w-3.5 h-3.5"
+
+  const innerSize =
+    size === "lg"
+      ? "w-6 h-6"
+      : size === "md"
+        ? "w-3.5 h-3.5"
+        : "w-2.5 h-2.5"
+
+  if (type === "trato") {
+    return (
+      <span
+        className={cn(
+          sizeClass,
+          "rounded-full bg-gradient-to-br from-[#105238] to-[#1a7a54] border border-[#8ee01a]/70 flex items-center justify-center shadow-sm shrink-0",
+        )}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          className={cn(innerSize, animated && "animate-fb-thumb")}
+        >
+          <path
+            d="M7 11v9H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3Zm2 9h7.5a2 2 0 0 0 1.94-1.52l1.2-4.8A2 2 0 0 0 17.7 11H14V6.5A2.5 2.5 0 0 0 11.5 4l-.4.02a.5.5 0 0 0-.45.38L9 11v9Z"
+            fill="#8ee01a"
+          />
+        </svg>
+      </span>
+    )
+  }
+
+  if (type === "divertido") {
+    return (
+      <span
+        className={cn(
+          sizeClass,
+          "rounded-full bg-gradient-to-br from-[#c4d551] to-[#91c44a] border border-[#105238]/30 flex items-center justify-center shadow-sm shrink-0",
+        )}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          className={cn(innerSize, animated && "animate-fb-laugh")}
+        >
+          <path
+            d="M7.5 10.5c.6-1 1.7-1 2.3 0M14.2 10.5c.6-1 1.7-1 2.3 0"
+            stroke="#105238"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+          />
+          <path
+            d="M7.5 14c1 2.5 3 3.5 4.5 3.5s3.5-1 4.5-3.5h-9Z"
+            fill="#105238"
+          />
+        </svg>
+      </span>
+    )
+  }
+
+  if (type === "fascino") {
+    return (
+      <span
+        className={cn(
+          sizeClass,
+          "rounded-full bg-gradient-to-br from-[#0f766e] to-[#105238] border border-[#8ee01a]/80 flex items-center justify-center shadow-sm shrink-0",
+        )}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          className={cn(innerSize, animated && "animate-fb-sparkle")}
+        >
+          <path
+            d="M12 2.5l2.4 5.9 6.1.6-4.6 4.1 1.4 6-5.3-3.2-5.3 3.2 1.4-6L3.5 9l6.1-.6L12 2.5Z"
+            fill="#8ee01a"
+          />
+        </svg>
+      </span>
+    )
+  }
+
+  return (
+    <span
+      className={cn(
+        sizeClass,
+        "rounded-full bg-gradient-to-br from-[#0284c7] to-[#105238] border border-[#8ee01a]/60 flex items-center justify-center shadow-sm shrink-0",
+      )}
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        className={cn(innerSize, animated && "animate-fb-compass")}
+      >
+        <circle cx="12" cy="12" r="8.5" stroke="#ffffff" strokeWidth="1.8" />
+        <path d="M15.5 8.5l-2.2 5.2-5.2 2.2 2.2-5.2 5.2-2.2Z" fill="#8ee01a" />
+      </svg>
+    </span>
+  )
+}
+
 interface ServiceComment {
   id: string
   author: string
@@ -194,6 +310,8 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
 
   // Social Feed state (reactions, inline comments, traveler posts, share popover)
   const [openReactionPickerId, setOpenReactionPickerId] = useState<number | null>(null)
+  const [justReactedServiceId, setJustReactedServiceId] = useState<number | null>(null)
+  const reactionCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [serviceReactions, setServiceReactions] = useState<Record<number, { counts: Record<ReactionKey, number>; userReaction: ReactionKey | null }>>({})
   const [openCommentsId, setOpenCommentsId] = useState<number | null>(null)
   const [serviceComments, setServiceComments] = useState<Record<number, ServiceComment[]>>({})
@@ -359,7 +477,28 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     if (prefs.length > 0) setOnlyPreferred(true)
   }
 
+  const handleReactionMouseEnter = (serviceId: number) => {
+    if (reactionCloseTimerRef.current) {
+      clearTimeout(reactionCloseTimerRef.current)
+      reactionCloseTimerRef.current = null
+    }
+    setOpenReactionPickerId(serviceId)
+  }
+
+  const handleReactionMouseLeave = () => {
+    if (reactionCloseTimerRef.current) {
+      clearTimeout(reactionCloseTimerRef.current)
+    }
+    reactionCloseTimerRef.current = setTimeout(() => {
+      setOpenReactionPickerId(null)
+    }, 220)
+  }
+
   const toggleServiceReaction = (serviceId: number, reaction: ReactionKey) => {
+    if (reactionCloseTimerRef.current) {
+      clearTimeout(reactionCloseTimerRef.current)
+      reactionCloseTimerRef.current = null
+    }
     setServiceReactions((prev) => {
       const current = prev[serviceId] || {
         counts: { trato: 0, divertido: 0, fascino: 0, quiero_ir: 0 },
@@ -382,6 +521,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
       }
       return updated
     })
+    setJustReactedServiceId(serviceId)
+    setTimeout(() => {
+      setJustReactedServiceId((curr) => (curr === serviceId ? null : curr))
+    }, 450)
     setOpenReactionPickerId(null)
   }
 
@@ -803,7 +946,6 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   {/* Quick Reaction Pills */}
                   <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-border/60">
                     {REACTIONS.map((r) => {
-                      const Icon = r.icon
                       const active = post.userReaction === r.id
                       const count = post.reactions[r.id] || 0
                       return (
@@ -812,13 +954,15 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                           type="button"
                           onClick={() => handleReactTravelerPost(post.id, r.id)}
                           className={cn(
-                            "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold transition-colors cursor-pointer",
+                            "group/react inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer",
                             active
-                              ? "bg-[#105238] text-[#8ee01a]"
-                              : "bg-muted/60 text-muted-foreground hover:bg-muted",
+                              ? "bg-[#105238] text-[#8ee01a] shadow-xs"
+                              : "bg-muted/60 text-muted-foreground hover:bg-[#eaf0e2] hover:text-[#105238]",
                           )}
                         >
-                          <Icon className="w-3.5 h-3.5" />
+                          <span className="transition-transform duration-200 group-hover/react:scale-125">
+                            <ReactionBadgeIcon type={r.id} size="sm" animated={active} />
+                          </span>
                           <span>{r.label}</span>
                           {count > 0 && <span>({count})</span>}
                         </button>
@@ -1132,12 +1276,24 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                       {/* Reactions & Comments Summary */}
                       {(totalReacts > 0 || commentsList.length > 0) && (
                         <div className="px-4 pt-2.5 flex items-center justify-between text-[11px] text-muted-foreground">
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-2">
                             {totalReacts > 0 && (
-                              <span className="inline-flex items-center gap-1 font-semibold text-[#105238]">
-                                <Sparkles className="w-3.5 h-3.5 text-[#105238]" />
-                                {totalReacts} {totalReacts === 1 ? "reacción" : "reacciones"}
-                              </span>
+                              <div className="inline-flex items-center gap-1.5 font-semibold text-[#105238]">
+                                <div className="flex items-center -space-x-1">
+                                  {REACTIONS.filter((r) => (reactState.counts[r.id] || 0) > 0).map((r) => (
+                                    <span key={r.id} className="ring-2 ring-card rounded-full">
+                                      <ReactionBadgeIcon type={r.id} size="sm" />
+                                    </span>
+                                  ))}
+                                </div>
+                                <span>
+                                  {activeReactMeta
+                                    ? totalReacts === 1
+                                      ? `Tú · ${activeReactMeta.label}`
+                                      : `Tú y ${totalReacts - 1} más`
+                                    : `${totalReacts} ${totalReacts === 1 ? "reacción" : "reacciones"}`}
+                                </span>
+                              </div>
                             )}
                           </div>
                           {commentsList.length > 0 && (
@@ -1156,47 +1312,67 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
 
                       {/* Social Action Row: Reaccionar | Comentar/Calificar | Compartir | Reservar */}
                       <div className="p-2.5 sm:px-4 sm:py-3 border-t border-border/60 mt-2 flex flex-wrap items-center gap-1.5 relative">
-                        {/* Reaction Button + Floating Picker */}
-                        <div className="relative flex-1 min-w-[95px]">
+                        {/* Reaction Button + Facebook-Style Hover Floating Picker */}
+                        <div
+                          className="relative flex-1 min-w-[95px]"
+                          onMouseEnter={() => handleReactionMouseEnter(service.id)}
+                          onMouseLeave={handleReactionMouseLeave}
+                        >
                           {openReactionPickerId === service.id && (
-                            <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-card border border-border rounded-full shadow-2xl px-2 py-1.5 flex items-center gap-1 z-40 animate-in zoom-in-95 duration-150">
-                              {REACTIONS.map((r) => {
-                                const Icon = r.icon
-                                const selected = reactState.userReaction === r.id
-                                return (
-                                  <button
-                                    key={r.id}
-                                    type="button"
-                                    onClick={() => toggleServiceReaction(service.id, r.id)}
-                                    className={cn(
-                                      "flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap transition-all cursor-pointer",
-                                      selected
-                                        ? "bg-[#105238] text-[#8ee01a]"
-                                        : "hover:bg-[#eaf0e2] text-foreground",
-                                    )}
-                                  >
-                                    <Icon className="w-3.5 h-3.5 shrink-0" />
-                                    <span>{r.label}</span>
-                                  </button>
-                                )
-                              })}
+                            <div
+                              onMouseEnter={() => handleReactionMouseEnter(service.id)}
+                              onMouseLeave={handleReactionMouseLeave}
+                              className="absolute bottom-full left-0 pb-2.5 z-40"
+                            >
+                              <div className="bg-white dark:bg-card border border-border rounded-full shadow-2xl px-2.5 py-2 flex items-center gap-2 animate-fb-tray">
+                                {REACTIONS.map((r) => {
+                                  const selected = reactState.userReaction === r.id
+                                  return (
+                                    <button
+                                      key={r.id}
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        toggleServiceReaction(service.id, r.id)
+                                      }}
+                                      className={cn(
+                                        "group/emoji relative flex flex-col items-center justify-center rounded-full transition-transform duration-200 hover:scale-135 hover:-translate-y-2.5 cursor-pointer focus:outline-none",
+                                        selected && "ring-2 ring-[#8ee01a] ring-offset-2 ring-offset-white dark:ring-offset-card",
+                                      )}
+                                      aria-label={r.label}
+                                    >
+                                      {/* Floating Facebook-style label tooltip on hover */}
+                                      <span className="pointer-events-none opacity-0 group-hover/emoji:opacity-100 transition-opacity duration-150 absolute -top-8 left-1/2 -translate-x-1/2 bg-[#105238] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap shadow-lg">
+                                        {r.label}
+                                      </span>
+                                      <ReactionBadgeIcon type={r.id} size="lg" animated />
+                                    </button>
+                                  )
+                                })}
+                              </div>
                             </div>
                           )}
                           <button
                             type="button"
-                            onClick={() =>
-                              setOpenReactionPickerId((prev) => (prev === service.id ? null : service.id))
-                            }
+                            onClick={() => {
+                              if (reactState.userReaction) {
+                                toggleServiceReaction(service.id, reactState.userReaction)
+                              } else {
+                                setOpenReactionPickerId((prev) => (prev === service.id ? null : service.id))
+                              }
+                            }}
                             className={cn(
-                              "w-full h-9 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer px-2",
+                              "w-full h-9 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer px-2",
                               activeReactMeta
-                                ? "bg-[#eaf0e2] text-[#105238]"
+                                ? "bg-[#eaf0e2] text-[#105238] ring-1 ring-[#105238]/25"
                                 : "hover:bg-muted text-muted-foreground hover:text-foreground",
                             )}
                           >
                             {activeReactMeta ? (
                               <>
-                                <activeReactMeta.icon className="w-4 h-4 shrink-0" />
+                                <span className={cn(justReactedServiceId === service.id && "animate-fb-pop")}>
+                                  <ReactionBadgeIcon type={activeReactMeta.id} size="md" />
+                                </span>
                                 <span className="truncate">{activeReactMeta.label}</span>
                               </>
                             ) : (
