@@ -742,7 +742,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
         }
       }
 
-      const savedSeen = localStorage.getItem("palenque_seen_experience_ids")
+      const savedSeen = localStorage.getItem("palenque_seen_experience_ids_v2")
       if (savedSeen) {
         const parsedIds: number[] = JSON.parse(savedSeen)
         if (Array.isArray(parsedIds)) {
@@ -797,7 +797,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   const persistSeenIds = useCallback(() => {
     if (typeof window === "undefined") return
     try {
-      localStorage.setItem("palenque_seen_experience_ids", JSON.stringify(Array.from(seenIdsRef.current)))
+      localStorage.setItem("palenque_seen_experience_ids_v2", JSON.stringify(Array.from(seenIdsRef.current)))
     } catch {
       // ignore quota errors
     }
@@ -899,7 +899,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
             advanceBatchAutomatically()
           }
         },
-        { root: null, rootMargin: "140px", threshold: 0 },
+        { root: null, rootMargin: "20px", threshold: 0.1 },
       )
       observerInstance.current.observe(node)
     },
@@ -907,44 +907,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   )
 
   useEffect(() => {
-    let ticking = false
-    const checkAndAdvance = () => {
-      const scrollables = document.querySelectorAll(".overflow-y-auto")
-      let reachedBottom = false
-      scrollables.forEach((el) => {
-        const target = el as HTMLElement
-        if (target.scrollHeight > target.clientHeight) {
-          if (target.scrollTop + target.clientHeight >= target.scrollHeight - 220) {
-            reachedBottom = true
-          }
-        }
-      })
-      const doc = document.documentElement
-      const winScrollTop = window.scrollY || doc.scrollTop || 0
-      const winClientHeight = window.innerHeight || doc.clientHeight || 0
-      const winScrollHeight = doc.scrollHeight || 0
-      if (winScrollHeight > winClientHeight && winScrollTop + winClientHeight >= winScrollHeight - 220) {
-        reachedBottom = true
-      }
-      if (reachedBottom) advanceBatchAutomatically()
-    }
-    const handleScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          checkAndAdvance()
-          ticking = false
-        })
-        ticking = true
-      }
-    }
-    window.addEventListener("scroll", handleScroll, { capture: true, passive: true })
-    document.addEventListener("scroll", handleScroll, { capture: true, passive: true })
     return () => {
-      window.removeEventListener("scroll", handleScroll, true)
-      document.removeEventListener("scroll", handleScroll, true)
       if (observerInstance.current) observerInstance.current.disconnect()
     }
-  }, [advanceBatchAutomatically])
+  }, [])
 
   const savePreferences = (prefs: string[]) => {
     setPreferredCategories(prefs)
@@ -1435,17 +1401,26 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     setBatchNumber(1)
   }, [selectedCategory, onlyPreferred, searchQuery, feedSeed])
 
-  // Populate initial batch as soon as services arrive from backend (if currentBatchIds is still empty)
+  // Populate initial batch (and top up to 40 as page 2 arrives) without replacing cards on screen
   useEffect(() => {
-    if (currentBatchIds.length === 0 && !isReloadingBatch && !allUnseenExhausted && orderedServices.length > 0) {
+    if (isReloadingBatch || allUnseenExhausted || orderedServices.length === 0) return
+    if (currentBatchIds.length === 0) {
       const unseen = orderedServices.filter((s) => !seenIdsRef.current.has(s.id))
       if (unseen.length > 0) {
         setCurrentBatchIds(unseen.slice(0, BATCH_SIZE).map((s) => s.id))
       } else if (!catalogHasMore) {
         setAllUnseenExhausted(true)
       }
+    } else if (currentBatchIds.length < BATCH_SIZE) {
+      const extra = orderedServices
+        .filter((s) => !seenIdsRef.current.has(s.id) && !currentBatchIds.includes(s.id))
+        .slice(0, BATCH_SIZE - currentBatchIds.length)
+        .map((s) => s.id)
+      if (extra.length > 0) {
+        setCurrentBatchIds((prev) => [...prev, ...extra])
+      }
     }
-  }, [orderedServices, currentBatchIds.length, isReloadingBatch, allUnseenExhausted, catalogHasMore])
+  }, [orderedServices, currentBatchIds, isReloadingBatch, allUnseenExhausted, catalogHasMore])
 
   const handleRestartCycle = useCallback(() => {
     seenIdsRef.current.clear()
@@ -1923,13 +1898,13 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
             })}
 
             {/* SERVICE SOCIAL FEED POSTS */}
-            {isLoading || isReloadingBatch ? (
+            {isLoading || isReloadingBatch || (currentBatchIds.length === 0 && catalogHasMore && !allUnseenExhausted) ? (
               <div className="py-16 text-center space-y-3">
                 <div className="w-10 h-10 border-4 border-[#105238] border-t-transparent rounded-full animate-spin mx-auto" />
                 <p className="text-sm font-bold text-[#105238]">
                   {isReloadingBatch
                     ? "Cargando las siguientes 40 experiencias nuevas..."
-                    : "Cargando experiencias..."}
+                    : "Cargando experiencias nuevas para ti..."}
                 </p>
               </div>
             ) : (
