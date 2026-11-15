@@ -277,7 +277,7 @@ export default function Home() {
         </div>
 
         {/* Screen Content */}
-        <div className={`flex-1 ${isMapExplorer ? 'h-full overflow-hidden' : 'overflow-y-auto pb-16 lg:pb-0'}`}>
+        <div className={`flex-1 ${isMapExplorer ? 'h-full overflow-hidden' : 'overflow-y-auto scrollbar-hide pb-16 lg:pb-0'}`}>
         {(activeTab === "marketplace" || activeTab === "servicios") && (
           <MarketplaceScreen
             onNavigate={(tab) => setActiveTab(tab as ActiveTab)}

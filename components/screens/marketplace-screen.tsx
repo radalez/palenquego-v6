@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import {
   Search,
@@ -33,6 +33,8 @@ import {
   Mail,
   Link2,
   MessageCircle,
+  Loader2,
+  Shuffle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -307,6 +309,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   const [preferredCategories, setPreferredCategories] = useState<string[]>([])
   const [showPreferencesModal, setShowPreferencesModal] = useState(false)
   const [onlyPreferred, setOnlyPreferred] = useState(false)
+  const [feedSeed, setFeedSeed] = useState<number>(() => Math.floor(Math.random() * 99999))
 
   // Social Feed state (reactions, inline comments, traveler posts, share popover)
   const [openReactionPickerId, setOpenReactionPickerId] = useState<number | null>(null)
@@ -634,7 +637,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   )
   const topRatedServices = [...services]
     .sort((a, b) => (b.rating || 0) - (a.rating || 0))
-    .slice(0, 4)
+    .slice(0, 5)
 
   const filteredServices = services.filter((service) => {
     if (selectedCategory !== "all" && !matchesCategory(service, selectedCategory)) {
@@ -653,6 +656,62 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     return true
   })
 
+  // Dynamic, category-interleaved ordering so the feed never feels repetitive
+  const orderedServices = useMemo(() => {
+    if (filteredServices.length <= 1) return filteredServices
+
+    const pseudoScore = (id: number) => {
+      const x = Math.sin(id * 9301 + feedSeed * 49297) * 233280
+      return x - Math.floor(x)
+    }
+
+    const buckets = new Map<string, Service[]>()
+    for (const s of filteredServices) {
+      const catKey = (s.category || s.categoria?.nombre || "general").toLowerCase().trim()
+      if (!buckets.has(catKey)) buckets.set(catKey, [])
+      buckets.get(catKey)!.push(s)
+    }
+
+    // Shuffle inside each category bucket with feedSeed, keeping flash offers near top
+    const bucketKeys = Array.from(buckets.keys()).sort((a, b) => {
+      const aPref = preferredCategories.some((p) => a.includes(p)) ? 1 : 0
+      const bPref = preferredCategories.some((p) => b.includes(p)) ? 1 : 0
+      if (aPref !== bPref) return bPref - aPref
+      return pseudoScore(a.charCodeAt(0) + a.length) - pseudoScore(b.charCodeAt(0) + b.length)
+    })
+
+    for (const key of bucketKeys) {
+      buckets.get(key)!.sort((a, b) => {
+        const aFlash = a.oferta_flash && (a.oferta_flash.cupos_disponibles ?? 0) > 0 ? 1 : 0
+        const bFlash = b.oferta_flash && (b.oferta_flash.cupos_disponibles ?? 0) > 0 ? 1 : 0
+        if (aFlash !== bFlash) return bFlash - aFlash
+        return pseudoScore(a.id) - pseudoScore(b.id)
+      })
+    }
+
+    // Interleave round-robin across categories
+    const result: Service[] = []
+    let remaining = true
+    let round = 0
+    while (remaining) {
+      remaining = false
+      for (const key of bucketKeys) {
+        const arr = buckets.get(key)!
+        if (round < arr.length) {
+          result.push(arr[round])
+          remaining = true
+        }
+      }
+      round++
+    }
+    return result
+  }, [filteredServices, feedSeed, preferredCategories])
+
+  const discoveryCategories = useMemo(
+    () => categories.filter((c) => c.id !== "all" && c.id !== "flash"),
+    [],
+  )
+
   return (
     <div className="flex flex-col min-h-screen bg-[#fafaf8] dark:bg-background">
       <HeaderWithMenu
@@ -661,11 +720,11 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
         onNavigate={onNavigate}
       />
 
-      {/* Main Responsive Layout: Feed + Sticky Right Sidebar on Desktop */}
-      <div className="max-w-6xl mx-auto w-full px-3 sm:px-4 md:px-6 pt-4 pb-28">
-        <div className="grid grid-cols-1 lg:grid-cols-12 lg:gap-7 items-start">
+      {/* Main Responsive Layout: Airy Centered Social Feed + Sticky Right Sidebar on Desktop */}
+      <div className="max-w-[1160px] mx-auto w-full px-4 sm:px-8 lg:px-10 pt-5 pb-28">
+        <div className="flex flex-col lg:flex-row lg:justify-center lg:gap-12 items-start">
           {/* LEFT / CENTER COLUMN: SOCIAL FEED */}
-          <div className="lg:col-span-8 space-y-5">
+          <div className="w-full max-w-[560px] mx-auto lg:mx-0 space-y-5">
             {/* Pending Booking Banner */}
             {pendingBookings.length > 0 && (
               <div className="p-3.5 bg-[#eaf0e2] border border-[#8ee01a]/70 rounded-2xl flex items-center justify-between gap-3 shadow-2xs">
@@ -761,15 +820,15 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
               </div>
             </div>
 
-            {/* SEARCH + PREFERENCES + CATEGORIES BAR */}
+            {/* SEARCH + PREFERENCES + SHUFFLE */}
             <div className="bg-card border border-border rounded-3xl p-4 shadow-2xs space-y-3">
               <div className="flex flex-wrap items-center gap-2">
-                <div className="relative flex-1 min-w-[200px]">
+                <div className="relative flex-1 min-w-[180px]">
                   <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
                     value={searchQuery}
                     placeholder="Buscar experiencias, tours, restaurantes..."
-                    className="pl-10 pr-10 bg-background border border-border h-11 rounded-2xl text-sm"
+                    className="pl-10 pr-10 bg-background border border-border h-10 rounded-2xl text-sm"
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                   {searchQuery && (
@@ -787,7 +846,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   type="button"
                   variant="outline"
                   onClick={() => setShowFilterPanel(true)}
-                  className="h-11 px-3.5 rounded-2xl border-border text-xs font-bold gap-1.5 cursor-pointer"
+                  className="h-10 px-3 rounded-2xl border-border text-xs font-bold gap-1.5 cursor-pointer"
                 >
                   <Filter className="w-4 h-4 text-[#105238]" />
                   <span>Filtros</span>
@@ -797,15 +856,27 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   type="button"
                   variant="outline"
                   onClick={() => setShowPreferencesModal(true)}
-                  className="h-11 px-3.5 rounded-2xl border-[#105238]/30 bg-[#eaf0e2]/60 text-[#105238] hover:bg-[#eaf0e2] text-xs font-bold gap-1.5 cursor-pointer"
+                  className="h-10 px-3 rounded-2xl border-[#105238]/30 bg-[#eaf0e2]/60 text-[#105238] hover:bg-[#eaf0e2] text-xs font-bold gap-1.5 cursor-pointer"
                 >
                   <SlidersHorizontal className="w-4 h-4" />
-                  <span>Preferencias</span>
+                  <span className="hidden sm:inline">Preferencias</span>
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setFeedSeed(Math.floor(Math.random() * 99999))}
+                  title="Mezclar orden del feed"
+                  className="h-10 px-2.5 rounded-2xl border-border text-xs font-bold gap-1 cursor-pointer"
+                >
+                  <Shuffle className="w-4 h-4 text-[#105238]" />
                 </Button>
               </div>
+            </div>
 
-              {/* Category Pills + Para ti toggle */}
-              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            {/* STICKY CATEGORY PILLS BAR (stays accessible while scrolling) */}
+            <div className="sticky top-0 z-20 bg-[#fafaf8]/95 dark:bg-background/95 backdrop-blur-md py-2 -mx-1 px-1">
+              <div className="flex gap-2 overflow-x-auto scrollbar-hide">
                 {preferredCategories.length > 0 && (
                   <button
                     type="button"
@@ -1033,7 +1104,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
               </div>
             ) : (
               <div className="space-y-5">
-                {filteredServices.map((service) => {
+                {orderedServices.map((service, serviceIdx) => {
                   const hasFlashOffer = Boolean(
                     service.oferta_flash && (service.oferta_flash.cupos_disponibles ?? 0) > 0,
                   )
@@ -1056,8 +1127,8 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                     typeof window !== "undefined" ? `${window.location.origin}/s/${service.id}` : ""
 
                   return (
+                    <div key={service.id} className="space-y-5">
                     <article
-                      key={service.id}
                       id={`service-card-${service.id}`}
                       className="bg-card border border-border rounded-3xl shadow-2xs overflow-visible scroll-mt-24"
                     >
@@ -1549,8 +1620,126 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                         </div>
                       )}
                     </article>
+
+                    {/* Inline Category Discovery Card every 5 posts so categories appear naturally as you scroll */}
+                    {selectedCategory === "all" &&
+                      (serviceIdx + 1) % 5 === 0 &&
+                      discoveryCategories.length > 0 && (() => {
+                        const catOffset = Math.floor((serviceIdx + 1) / 5 - 1 + (feedSeed % discoveryCategories.length))
+                        const targetCat = discoveryCategories[catOffset % discoveryCategories.length]
+                        const CatIcon = targetCat.icon
+                        const catSamples = services
+                          .filter((s) => matchesCategory(s, targetCat.id) && s.id !== service.id)
+                          .slice(0, 2)
+                        if (catSamples.length === 0) return null
+                        return (
+                          <div className="bg-[#eaf0e2]/55 dark:bg-card border border-[#aeb6a1]/50 rounded-3xl p-4 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="w-7 h-7 rounded-xl bg-[#105238] text-[#8ee01a] flex items-center justify-center">
+                                  <CatIcon className="w-4 h-4" />
+                                </span>
+                                <div>
+                                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#105238]/75">
+                                    Explora otra vibra
+                                  </p>
+                                  <h4 className="text-sm font-extrabold text-[#105238] dark:text-foreground">
+                                    {targetCat.label}
+                                  </h4>
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setOnlyPreferred(false)
+                                  setSelectedCategory(targetCat.id)
+                                }}
+                                className="text-xs font-bold text-[#105238] hover:underline flex items-center gap-0.5 cursor-pointer"
+                              >
+                                <span>Ver más</span>
+                                <ChevronRight className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                              {catSamples.map((cs) => (
+                                <button
+                                  key={cs.id}
+                                  type="button"
+                                  onClick={() => router.push(`/s/${cs.id}?from=marketplace`)}
+                                  className="flex items-center gap-2.5 bg-white dark:bg-background border border-border/70 rounded-2xl p-2 text-left hover:border-[#105238]/40 transition-colors cursor-pointer"
+                                >
+                                  <img
+                                    src={cs.image || DEFAULT_STORE_COVER}
+                                    alt={cs.name}
+                                    className="w-12 h-12 rounded-xl object-cover shrink-0"
+                                  />
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-xs font-bold text-foreground truncate">{cs.name}</p>
+                                    <p className="text-[11px] font-black text-[#105238]">
+                                      ${Number(cs.price || 0).toFixed(2)} <span className="font-normal text-muted-foreground">/p</span>
+                                    </p>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )
+                      })()}
+                  </div>
                   )
                 })}
+
+                {/* When filtered narrowly (e.g. 1 Flash Offer), show Más destacados below so the feed never feels empty */}
+                {orderedServices.length <= 3 && services.length > orderedServices.length && (
+                  <div className="bg-card border border-border rounded-3xl p-4 sm:p-5 shadow-2xs space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-extrabold text-sm text-foreground flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-[#105238]" />
+                        <span>Más destacados que te pueden gustar</span>
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOnlyPreferred(false)
+                          setSelectedCategory("all")
+                          setSearchQuery("")
+                        }}
+                        className="text-xs font-bold text-[#105238] hover:underline cursor-pointer"
+                      >
+                        Ver todas
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {topRatedServices
+                        .filter((ts) => !orderedServices.some((os) => os.id === ts.id))
+                        .slice(0, 4)
+                        .map((ts) => (
+                          <button
+                            key={ts.id}
+                            type="button"
+                            onClick={() => router.push(`/s/${ts.id}?from=marketplace`)}
+                            className="flex items-center gap-3 p-2.5 rounded-2xl border border-border/70 hover:border-[#105238]/40 bg-[#fafaf8] dark:bg-background transition-colors text-left cursor-pointer"
+                          >
+                            <img
+                              src={ts.image || DEFAULT_STORE_COVER}
+                              alt={ts.name}
+                              className="w-14 h-14 rounded-xl object-cover shrink-0"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <p className="font-bold text-xs text-foreground truncate">{ts.name}</p>
+                              <p className="text-[11px] text-muted-foreground truncate">{ts.location}</p>
+                              <div className="flex items-center justify-between mt-1">
+                                <span className="text-xs font-black text-[#105238]">${ts.price} /p</span>
+                                <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-[#105238]">
+                                  <Star className="w-3 h-3 fill-[#105238]" /> {ts.rating}
+                                </span>
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Pagination / Click-to-Load + Infinite Scroll Sentinel */}
                 {catalogHasMore ? (
@@ -1563,15 +1752,22 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                       variant="outline"
                       disabled={isFetchingMoreCatalog}
                       onClick={() => fetchMoreServices()}
-                      className="rounded-full px-6 h-10 border-[#105238]/40 text-[#105238] hover:bg-[#eaf0e2] font-bold text-xs cursor-pointer"
+                      className="rounded-full px-6 h-10 border-[#105238]/40 text-[#105238] hover:bg-[#eaf0e2] font-bold text-xs gap-2 cursor-pointer"
                     >
-                      {isFetchingMoreCatalog ? "Cargando más experiencias..." : "Cargar más experiencias"}
+                      {isFetchingMoreCatalog ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Cargando más experiencias...</span>
+                        </>
+                      ) : (
+                        <span>Cargar más experiencias</span>
+                      )}
                     </Button>
                   </div>
                 ) : (
-                  filteredServices.length > 0 && (
+                  orderedServices.length > 0 && (
                     <div className="py-6 text-center text-xs text-muted-foreground border-t border-border/50">
-                      Has explorado todas las experiencias disponibles ({filteredServices.length})
+                      Has explorado todas las experiencias disponibles ({orderedServices.length})
                     </div>
                   )
                 )}
@@ -1580,7 +1776,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
           </div>
 
           {/* RIGHT STICKY SIDEBAR ON DESKTOP */}
-          <aside className="hidden lg:block lg:col-span-4 sticky top-4 space-y-5">
+          <aside className="hidden lg:block lg:w-[300px] xl:w-[320px] shrink-0 lg:sticky lg:top-5 space-y-5">
             {/* Next Booking Summary */}
             {bookings.length > 0 && (
               <div className="bg-card border border-border rounded-3xl p-5 shadow-2xs space-y-3">
@@ -1653,11 +1849,11 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                 type="button"
                 onClick={() => {
                   setOnlyPreferred(false)
-                  setSelectedCategory("flash")
+                  setSelectedCategory((prev) => (prev === "flash" ? "all" : "flash"))
                 }}
                 className="w-full h-9 rounded-xl bg-[#8ee01a] hover:bg-[#8ee01a]/90 text-[#105238] font-black text-xs cursor-pointer"
               >
-                Ver promociones
+                {selectedCategory === "flash" ? "Ver todas las experiencias" : "Ver promociones"}
               </Button>
             </div>
 
@@ -1668,15 +1864,30 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   <Sparkles className="w-4 h-4 text-[#105238]" />
                   <span>Más destacados</span>
                 </h3>
-                {filteredServices.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => setShowComparisonModal(true)}
-                    className="text-xs font-bold text-[#105238] hover:underline cursor-pointer"
-                  >
-                    Comparar
-                  </button>
-                )}
+                <div className="flex items-center gap-2">
+                  {selectedCategory !== "all" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOnlyPreferred(false)
+                        setSelectedCategory("all")
+                        setSearchQuery("")
+                      }}
+                      className="text-xs font-bold text-[#105238] hover:underline cursor-pointer"
+                    >
+                      Ver todos
+                    </button>
+                  )}
+                  {filteredServices.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowComparisonModal(true)}
+                      className="text-xs font-bold text-[#105238] hover:underline cursor-pointer"
+                    >
+                      Comparar
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-2.5">

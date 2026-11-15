@@ -130,7 +130,7 @@ export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: Desk
   ]
 
   return (
-    <div className="w-72 bg-card border-r border-border h-full flex flex-col overflow-y-auto">
+    <div className="w-72 bg-card border-r border-border h-full flex flex-col overflow-y-auto scrollbar-hide">
       <div className="p-6">
         {/* Logo/Brand + Botón para ocultar menú */}
         <div className="flex items-center justify-between mb-6 pb-4 border-b border-border/60">

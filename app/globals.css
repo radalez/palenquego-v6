@@ -244,4 +244,12 @@
   .animate-fb-pop {
     animation: fb-react-pop 340ms cubic-bezier(0.22, 1, 0.36, 1);
   }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }
