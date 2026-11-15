@@ -621,7 +621,7 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
                       onClick={() => onNavigateToSettings?.("planes")}
                       className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold h-8 px-3 rounded-lg w-full sm:w-auto"
                     >
-                      Activar Tienda (Plan Gratis)
+                      Activar Tienda (Plan Bronce)
                     </Button>
                     <Button
                       size="sm"

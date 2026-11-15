@@ -1657,6 +1657,8 @@ export const useAppStore = create<AppState>()(
 
             const isChofer = Boolean(data.es_chofer || data.tipo === 'CHOFER');
 
+            const resolvedPlan = data.plan || (isAliado ? "Bronce" : undefined);
+
 
 
             let baseIntentions = get().userIntentions;
@@ -1735,11 +1737,11 @@ export const useAppStore = create<AppState>()(
 
                 es_viajero: true,
 
-                plan: data.plan || undefined,
+                plan: resolvedPlan,
 
               },
 
-              userPlan: (data.plan || "Plan Gratis") as any,
+              userPlan: (resolvedPlan || "Plan Gratis") as any,
 
               bookings: isDifferentUser ? [] : state.bookings.filter(b => b.userId === data.id || (!b.userId && b.userEmail === data.email)),
 
@@ -2307,6 +2309,10 @@ export const useAppStore = create<AppState>()(
 
 
 
+            const isAliadoLogin = Boolean(data.user.es_aliado || data.user.tipo === 'ALIADO' || data.user.plan);
+            const isChoferLogin = Boolean(data.user.es_chofer || data.user.tipo === 'CHOFER');
+            const resolvedPlanLogin = data.user.plan || (isAliadoLogin ? "Bronce" : undefined);
+
             set(state => ({ 
 
               isAuthenticated: true, 
@@ -2314,6 +2320,8 @@ export const useAppStore = create<AppState>()(
               accessToken: data.access, 
 
               refreshToken: data.refresh,
+
+              userPlan: (resolvedPlanLogin || "Plan Gratis") as any,
 
               currentUser: {
 
@@ -2331,7 +2339,15 @@ export const useAppStore = create<AppState>()(
 
                 is_ambassador: Boolean(data.user.is_ambassador),
 
-                kyc_status: data.user.kyc_status || "UNVERIFIED"
+                kyc_status: data.user.kyc_status || "UNVERIFIED",
+
+                es_aliado: isAliadoLogin,
+
+                es_chofer: isChoferLogin,
+
+                es_viajero: true,
+
+                plan: resolvedPlanLogin
 
               },
 
@@ -2399,6 +2415,10 @@ export const useAppStore = create<AppState>()(
 
 
 
+            const isAliadoLogin = Boolean(data.user.es_aliado || data.user.tipo === 'ALIADO' || data.user.plan);
+            const isChoferLogin = Boolean(data.user.es_chofer || data.user.tipo === 'CHOFER');
+            const resolvedPlanLogin = data.user.plan || (isAliadoLogin ? "Bronce" : undefined);
+
             set(state => ({ 
 
               isAuthenticated: true, 
@@ -2406,6 +2426,8 @@ export const useAppStore = create<AppState>()(
               accessToken: data.access, 
 
               refreshToken: data.refresh,
+
+              userPlan: (resolvedPlanLogin || "Plan Gratis") as any,
 
               currentUser: {
 
@@ -2423,7 +2445,15 @@ export const useAppStore = create<AppState>()(
 
                 is_ambassador: Boolean(data.user.is_ambassador),
 
-                kyc_status: data.user.kyc_status || "UNVERIFIED"
+                kyc_status: data.user.kyc_status || "UNVERIFIED",
+
+                es_aliado: isAliadoLogin,
+
+                es_chofer: isChoferLogin,
+
+                es_viajero: true,
+
+                plan: resolvedPlanLogin
 
               },
 

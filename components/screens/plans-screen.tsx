@@ -101,8 +101,16 @@ export function PlansScreen({ onBack }: PlansScreenProps) {
         {plans.map((plan) => {
           const config = getVisualConfig(plan.nombre)
           const Icon = config.icon
+          const effectiveUserPlan = (currentUser?.plan || userPlan || ((currentUser?.tipo === "ALIADO" || currentUser?.es_aliado) ? "Bronce" : "")).toLowerCase();
+          const planNameLower = plan.nombre.toLowerCase();
           const isCurrentPlan = Boolean(
-            currentUser?.plan && currentUser.plan.toLowerCase() === plan.nombre.toLowerCase()
+            effectiveUserPlan && (
+              effectiveUserPlan === planNameLower ||
+              (effectiveUserPlan.includes("bronce") && planNameLower.includes("bronce")) ||
+              (effectiveUserPlan.includes("gold") && planNameLower.includes("gold")) ||
+              (effectiveUserPlan.includes("oro") && planNameLower.includes("oro")) ||
+              (effectiveUserPlan.includes("plat") && planNameLower.includes("plat"))
+            )
           );
           const isProcessingThis = loadingPlanId === plan.id
 
@@ -176,8 +184,8 @@ export function PlansScreen({ onBack }: PlansScreenProps) {
 
               {/* CTA Button */}
               {isCurrentPlan ? (
-                <Button disabled className="w-full bg-primary/50 text-primary-foreground">
-                  Plan Actual
+                <Button disabled className="w-full bg-[#105238] text-white font-bold opacity-90 cursor-default shadow-xs border border-[#91c44a]/40">
+                  Plan Actual Activo
                 </Button>
               ) : (
                 <Button
