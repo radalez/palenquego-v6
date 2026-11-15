@@ -36,6 +36,7 @@ import {
   MessageCircle,
   Loader2,
   Shuffle,
+  Award,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -103,13 +104,14 @@ const categories = [
   { id: "tours", label: "Tours", icon: Compass },
 ]
 
-type ReactionKey = "trato" | "divertido" | "fascino" | "quiero_ir"
+type ReactionKey = "trato" | "divertido" | "fascino" | "quiero_ir" | "recomiendo"
 
 const REACTIONS: Array<{ id: ReactionKey; label: string; icon: any }> = [
   { id: "trato", label: "Me trataron bien", icon: ThumbsUp },
   { id: "divertido", label: "Me divertí", icon: Smile },
   { id: "fascino", label: "Me fascinó", icon: Sparkles },
   { id: "quiero_ir", label: "Quiero ir", icon: Compass },
+  { id: "recomiendo", label: "Lo recomiendo", icon: Award },
 ]
 
 function ReactionBadgeIcon({
@@ -141,11 +143,11 @@ function ReactionBadgeIcon({
 
   const base3D =
     size === "lg"
-      ? "relative overflow-hidden shadow-[0_8px_18px_rgba(16,82,56,0.38),inset_0_2px_4px_rgba(255,255,255,0.48),inset_0_-3px_5px_rgba(10,48,32,0.45)]"
-      : "relative overflow-hidden shadow-[0_2px_6px_rgba(16,82,56,0.28),inset_0_1px_2px_rgba(255,255,255,0.4)]"
+      ? "relative overflow-hidden shadow-[0_8px_18px_rgba(15,23,42,0.25),inset_0_2px_4px_rgba(255,255,255,0.55),inset_0_-3px_5px_rgba(0,0,0,0.28)]"
+      : "relative overflow-hidden shadow-[0_2px_6px_rgba(15,23,42,0.22),inset_0_1px_2px_rgba(255,255,255,0.45)]"
 
   const glossOverlay = (
-    <span className="pointer-events-none absolute inset-x-1 top-0.5 h-[42%] rounded-full bg-gradient-to-b from-white/45 to-transparent" />
+    <span className="pointer-events-none absolute inset-x-1 top-0.5 h-[42%] rounded-full bg-gradient-to-b from-white/55 to-transparent" />
   )
 
   if (type === "trato") {
@@ -154,7 +156,7 @@ function ReactionBadgeIcon({
         className={cn(
           sizeClass,
           base3D,
-          "rounded-full bg-gradient-to-br from-[#1b7a53] via-[#105238] to-[#083523] border border-[#8ee01a]/70 flex items-center justify-center shrink-0",
+          "rounded-full bg-gradient-to-br from-[#1b8a5a] via-[#105238] to-[#083321] border border-[#8ee01a]/75 flex items-center justify-center shrink-0",
         )}
       >
         {glossOverlay}
@@ -183,7 +185,7 @@ function ReactionBadgeIcon({
         className={cn(
           sizeClass,
           base3D,
-          "rounded-full bg-gradient-to-br from-[#a3f033] via-[#8ee01a] to-[#5da30d] border border-[#105238]/35 flex items-center justify-center shrink-0",
+          "rounded-full bg-gradient-to-br from-[#fde047] via-[#eab308] to-[#ca8a04] border border-[#fef08a] flex items-center justify-center shrink-0",
         )}
       >
         {glossOverlay}
@@ -192,20 +194,20 @@ function ReactionBadgeIcon({
           fill="none"
           className={cn(
             innerSize,
-            "relative z-10 drop-shadow-[0_1px_1px_rgba(16,82,56,0.25)]",
+            "relative z-10 drop-shadow-[0_1px_1px_rgba(0,0,0,0.2)]",
             animated && "animate-fb-laugh",
             animateOnHover && "group-hover/emoji:animate-fb-laugh",
           )}
         >
           <path
             d="M7.5 10.5c.6-1 1.7-1 2.3 0M14.2 10.5c.6-1 1.7-1 2.3 0"
-            stroke="#105238"
+            stroke="#422006"
             strokeWidth="2.3"
             strokeLinecap="round"
           />
           <path
             d="M7.5 14c1 2.5 3 3.5 4.5 3.5s3.5-1 4.5-3.5h-9Z"
-            fill="#105238"
+            fill="#422006"
           />
         </svg>
       </span>
@@ -218,7 +220,7 @@ function ReactionBadgeIcon({
         className={cn(
           sizeClass,
           base3D,
-          "rounded-full bg-gradient-to-br from-[#209668] via-[#105238] to-[#063625] border border-[#8ee01a]/85 flex items-center justify-center shrink-0",
+          "rounded-full bg-gradient-to-br from-[#2dd4bf] via-[#0d9488] to-[#115e59] border border-[#99f6e4] flex items-center justify-center shrink-0",
         )}
       >
         {glossOverlay}
@@ -227,15 +229,42 @@ function ReactionBadgeIcon({
           fill="none"
           className={cn(
             innerSize,
-            "relative z-10 drop-shadow-[0_2px_4px_rgba(142,224,26,0.45)]",
+            "relative z-10 drop-shadow-[0_2px_4px_rgba(255,255,255,0.4)]",
             animated && "animate-fb-sparkle",
             animateOnHover && "group-hover/emoji:animate-fb-sparkle",
           )}
         >
           <path
             d="M12 2.5l2.4 5.9 6.1.6-4.6 4.1 1.4 6-5.3-3.2-5.3 3.2 1.4-6L3.5 9l6.1-.6L12 2.5Z"
-            fill="#8ee01a"
+            fill="#fef08a"
           />
+        </svg>
+      </span>
+    )
+  }
+
+  if (type === "quiero_ir") {
+    return (
+      <span
+        className={cn(
+          sizeClass,
+          base3D,
+          "rounded-full bg-gradient-to-br from-[#38bdf8] via-[#0284c7] to-[#075985] border border-[#bae6fd] flex items-center justify-center shrink-0",
+        )}
+      >
+        {glossOverlay}
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          className={cn(
+            innerSize,
+            "relative z-10 drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]",
+            animated && "animate-fb-compass",
+            animateOnHover && "group-hover/emoji:animate-fb-compass",
+          )}
+        >
+          <circle cx="12" cy="12" r="8.5" stroke="#ffffff" strokeWidth="1.9" />
+          <path d="M15.5 8.5l-2.2 5.2-5.2 2.2 2.2-5.2 5.2-2.2Z" fill="#fde047" />
         </svg>
       </span>
     )
@@ -246,7 +275,7 @@ function ReactionBadgeIcon({
       className={cn(
         sizeClass,
         base3D,
-        "rounded-full bg-gradient-to-br from-[#34d399] via-[#107a55] to-[#105238] border border-[#eaf0e2]/80 flex items-center justify-center shrink-0",
+        "rounded-full bg-gradient-to-br from-[#818cf8] via-[#4f46e5] to-[#3730a3] border border-[#c7d2fe] flex items-center justify-center shrink-0",
       )}
     >
       {glossOverlay}
@@ -255,13 +284,13 @@ function ReactionBadgeIcon({
         fill="none"
         className={cn(
           innerSize,
-          "relative z-10 drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]",
-          animated && "animate-fb-compass",
-          animateOnHover && "group-hover/emoji:animate-fb-compass",
+          "relative z-10 drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]",
+          animated && "animate-fb-laugh",
+          animateOnHover && "group-hover/emoji:animate-fb-laugh",
         )}
       >
-        <circle cx="12" cy="12" r="8.5" stroke="#ffffff" strokeWidth="1.9" />
-        <path d="M15.5 8.5l-2.2 5.2-5.2 2.2 2.2-5.2 5.2-2.2Z" fill="#8ee01a" />
+        <circle cx="12" cy="9.5" r="5.5" fill="#8ee01a" />
+        <path d="M9 14l-1.5 7 4.5-2.2 4.5 2.2-1.5-7" fill="#ffffff" />
       </svg>
     </span>
   )
@@ -599,6 +628,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   const [commentDrafts, setCommentDrafts] = useState<Record<number, string>>({})
   const [commentRatings, setCommentRatings] = useState<Record<number, number>>({})
   const [openShareId, setOpenShareId] = useState<number | null>(null)
+  const shareCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [copiedServiceId, setCopiedServiceId] = useState<number | null>(null)
 
   // Traveler Post Composer Modal state (requires selecting a lived experience + rating)
@@ -789,6 +819,23 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     }, 220)
   }
 
+  const handleShareMouseEnter = (serviceId: number) => {
+    if (shareCloseTimerRef.current) {
+      clearTimeout(shareCloseTimerRef.current)
+      shareCloseTimerRef.current = null
+    }
+    setOpenShareId(serviceId)
+  }
+
+  const handleShareMouseLeave = () => {
+    if (shareCloseTimerRef.current) {
+      clearTimeout(shareCloseTimerRef.current)
+    }
+    shareCloseTimerRef.current = setTimeout(() => {
+      setOpenShareId(null)
+    }, 220)
+  }
+
   // Hydrate real backend reactions & reviews from catalog payload
   useEffect(() => {
     if (!services || services.length === 0) return
@@ -804,6 +851,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                 divertido: s.reactions_summary.counts?.divertido || 0,
                 fascino: s.reactions_summary.counts?.fascino || 0,
                 quiero_ir: s.reactions_summary.counts?.quiero_ir || 0,
+                recomiendo: s.reactions_summary.counts?.recomiendo || 0,
               },
               userReaction: (s.reactions_summary.user_reaction as ReactionKey) || null,
             }
@@ -839,7 +887,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     }
     setServiceReactions((prev) => {
       const current = prev[serviceId] || {
-        counts: { trato: 0, divertido: 0, fascino: 0, quiero_ir: 0 },
+        counts: { trato: 0, divertido: 0, fascino: 0, quiero_ir: 0, recomiendo: 0 },
         userReaction: null,
       }
       const nextCounts = { ...current.counts }
@@ -881,6 +929,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
               divertido: data.counts?.divertido || 0,
               fascino: data.counts?.fascino || 0,
               quiero_ir: data.counts?.quiero_ir || 0,
+              recomiendo: data.counts?.recomiendo || 0,
             },
             userReaction: (data.user_reaction as ReactionKey) || null,
           },
@@ -1063,6 +1112,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
         divertido: publishReaction === "divertido" ? 1 : 0,
         fascino: publishReaction === "fascino" ? 1 : 0,
         quiero_ir: publishReaction === "quiero_ir" ? 1 : 0,
+        recomiendo: publishReaction === "recomiendo" ? 1 : 0,
       },
       userReaction: publishReaction,
       comments: [],
@@ -1668,7 +1718,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   const isFav = userFavorites.some((f) => f.serviceId === service.id)
 
                   const reactState = serviceReactions[service.id] || {
-                    counts: { trato: 0, divertido: 0, fascino: 0, quiero_ir: 0 },
+                    counts: { trato: 0, divertido: 0, fascino: 0, quiero_ir: 0, recomiendo: 0 },
                     userReaction: null,
                   }
                   const totalReacts = Object.values(reactState.counts).reduce((a, b) => a + b, 0)
@@ -1967,7 +2017,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                       <span className="pointer-events-none opacity-0 group-hover/emoji:opacity-100 transition-opacity duration-150 absolute -top-8 left-1/2 -translate-x-1/2 bg-[#105238] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap shadow-lg">
                                         {r.label}
                                       </span>
-                                      <ReactionBadgeIcon type={r.id} size="lg" animateOnHover />
+                                      <ReactionBadgeIcon type={r.id} size="lg" animated />
                                     </button>
                                   )
                                 })}
@@ -2018,54 +2068,103 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                           <span>Comentar</span>
                         </button>
 
-                        {/* Compartir (Desktop Floating Pill / Mobile Native) */}
-                        <div className="relative flex-1 min-w-[85px]">
+                        {/* Compartir (Desktop Hover Floating Pill / Mobile Native) */}
+                        <div
+                          className="relative flex-1 min-w-[85px]"
+                          onMouseEnter={() => handleShareMouseEnter(service.id)}
+                          onMouseLeave={handleShareMouseLeave}
+                        >
                           {openShareId === service.id && (
-                            <div className="hidden lg:flex items-center gap-1.5 absolute bottom-full right-0 mb-2 bg-[#151b26] text-white px-2.5 py-1.5 rounded-full shadow-2xl border border-white/10 z-40 whitespace-nowrap">
-                              <a
-                                href={`https://wa.me/?text=${encodeURIComponent(`${service.name} en PalenqueGo ${shareUrl}`)}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={() => setOpenShareId(null)}
-                                className="w-8 h-8 rounded-full bg-[#25D366] flex items-center justify-center text-white"
-                                title="WhatsApp"
-                              >
-                                <MessageCircle className="w-4 h-4" />
-                              </a>
-                              <a
-                                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={() => setOpenShareId(null)}
-                                className="w-8 h-8 rounded-full bg-[#1877F2] flex items-center justify-center text-white text-xs font-black"
-                                title="Facebook"
-                              >
-                                f
-                              </a>
-                              <a
-                                href={`mailto:?subject=${encodeURIComponent(service.name)}&body=${encodeURIComponent(shareUrl)}`}
-                                onClick={() => setOpenShareId(null)}
-                                className="w-8 h-8 rounded-full bg-[#105238] flex items-center justify-center text-[#8ee01a]"
-                                title="Correo"
-                              >
-                                <Mail className="w-4 h-4" />
-                              </a>
-                              <button
-                                type="button"
-                                onClick={async () => {
-                                  await navigator.clipboard.writeText(shareUrl)
-                                  setCopiedServiceId(service.id)
-                                  setTimeout(() => setCopiedServiceId(null), 1500)
-                                }}
-                                className="w-8 h-8 rounded-full bg-[#374151] flex items-center justify-center text-white cursor-pointer"
-                                title="Copiar enlace"
-                              >
-                                {copiedServiceId === service.id ? (
-                                  <Check className="w-4 h-4 text-[#8ee01a]" />
-                                ) : (
-                                  <Link2 className="w-4 h-4" />
-                                )}
-                              </button>
+                            <div
+                              onMouseEnter={() => handleShareMouseEnter(service.id)}
+                              onMouseLeave={handleShareMouseLeave}
+                              className="hidden lg:block absolute bottom-full left-1/2 -translate-x-1/2 pb-2.5 z-40"
+                            >
+                              <div className="flex items-center gap-2 bg-white/95 dark:bg-card backdrop-blur-md px-3 py-2 rounded-full shadow-[0_12px_32px_rgba(16,82,56,0.18)] border border-[#aeb6a1]/60 whitespace-nowrap animate-in fade-in zoom-in-95 duration-150">
+                                <a
+                                  href={`https://wa.me/?text=${encodeURIComponent(`${service.name} en PalenqueGo ${shareUrl}`)}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={() => setOpenShareId(null)}
+                                  className="group/sharebtn relative w-10 h-10 rounded-full bg-[#25D366] flex items-center justify-center text-white shadow-sm transition-transform duration-200 hover:scale-125 hover:-translate-y-1.5"
+                                  aria-label="WhatsApp"
+                                >
+                                  <span className="pointer-events-none opacity-0 group-hover/sharebtn:opacity-100 transition-opacity duration-150 absolute -top-7 left-1/2 -translate-x-1/2 bg-[#105238] text-white text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap shadow">
+                                    WhatsApp
+                                  </span>
+                                  <MessageCircle className="w-5 h-5" />
+                                </a>
+                                <a
+                                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={() => setOpenShareId(null)}
+                                  className="group/sharebtn relative w-10 h-10 rounded-full bg-[#1877F2] flex items-center justify-center text-white text-base font-black shadow-sm transition-transform duration-200 hover:scale-125 hover:-translate-y-1.5"
+                                  aria-label="Facebook"
+                                >
+                                  <span className="pointer-events-none opacity-0 group-hover/sharebtn:opacity-100 transition-opacity duration-150 absolute -top-7 left-1/2 -translate-x-1/2 bg-[#105238] text-white text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap shadow">
+                                    Facebook
+                                  </span>
+                                  f
+                                </a>
+                                <a
+                                  href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`${service.name} en PalenqueGo`)}&url=${encodeURIComponent(shareUrl)}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={() => setOpenShareId(null)}
+                                  className="group/sharebtn relative w-10 h-10 rounded-full bg-[#0f172a] flex items-center justify-center text-white text-sm font-black shadow-sm transition-transform duration-200 hover:scale-125 hover:-translate-y-1.5"
+                                  aria-label="X"
+                                >
+                                  <span className="pointer-events-none opacity-0 group-hover/sharebtn:opacity-100 transition-opacity duration-150 absolute -top-7 left-1/2 -translate-x-1/2 bg-[#105238] text-white text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap shadow">
+                                    X
+                                  </span>
+                                  X
+                                </a>
+                                <a
+                                  href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={() => setOpenShareId(null)}
+                                  className="group/sharebtn relative w-10 h-10 rounded-full bg-[#0A66C2] flex items-center justify-center text-white text-sm font-black shadow-sm transition-transform duration-200 hover:scale-125 hover:-translate-y-1.5"
+                                  aria-label="LinkedIn"
+                                >
+                                  <span className="pointer-events-none opacity-0 group-hover/sharebtn:opacity-100 transition-opacity duration-150 absolute -top-7 left-1/2 -translate-x-1/2 bg-[#105238] text-white text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap shadow">
+                                    LinkedIn
+                                  </span>
+                                  in
+                                </a>
+                                <a
+                                  href={`mailto:?subject=${encodeURIComponent(service.name)}&body=${encodeURIComponent(shareUrl)}`}
+                                  onClick={() => setOpenShareId(null)}
+                                  className="group/sharebtn relative w-10 h-10 rounded-full bg-[#105238] flex items-center justify-center text-[#8ee01a] shadow-sm transition-transform duration-200 hover:scale-125 hover:-translate-y-1.5"
+                                  aria-label="Correo"
+                                >
+                                  <span className="pointer-events-none opacity-0 group-hover/sharebtn:opacity-100 transition-opacity duration-150 absolute -top-7 left-1/2 -translate-x-1/2 bg-[#105238] text-white text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap shadow">
+                                    Correo
+                                  </span>
+                                  <Mail className="w-5 h-5" />
+                                </a>
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    await navigator.clipboard.writeText(shareUrl)
+                                    setCopiedServiceId(service.id)
+                                    setTimeout(() => setCopiedServiceId(null), 1500)
+                                    setOpenShareId(null)
+                                  }}
+                                  className="group/sharebtn relative w-10 h-10 rounded-full bg-[#eaf0e2] border border-[#aeb6a1]/70 flex items-center justify-center text-[#105238] shadow-sm transition-transform duration-200 hover:scale-125 hover:-translate-y-1.5 cursor-pointer"
+                                  aria-label="Copiar enlace"
+                                >
+                                  <span className="pointer-events-none opacity-0 group-hover/sharebtn:opacity-100 transition-opacity duration-150 absolute -top-7 left-1/2 -translate-x-1/2 bg-[#105238] text-white text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap shadow">
+                                    Copiar
+                                  </span>
+                                  {copiedServiceId === service.id ? (
+                                    <Check className="w-5 h-5 text-[#105238]" />
+                                  ) : (
+                                    <Link2 className="w-5 h-5" />
+                                  )}
+                                </button>
+                              </div>
                             </div>
                           )}
                           <button
