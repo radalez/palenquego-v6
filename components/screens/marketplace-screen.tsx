@@ -682,7 +682,18 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   const [currentBatchIds, setCurrentBatchIds] = useState<number[]>([])
   const [isReloadingBatch, setIsReloadingBatch] = useState(false)
   const [allUnseenExhausted, setAllUnseenExhausted] = useState(false)
-  const seenIdsRef = useRef<Set<number>>(new Set())
+  const seenIdsRef = useRef<Set<number>>(
+    (() => {
+      if (typeof window === "undefined") return new Set<number>()
+      try {
+        const raw = localStorage.getItem("palenque_seen_experience_ids_v2")
+        const parsed = raw ? JSON.parse(raw) : []
+        return new Set<number>(Array.isArray(parsed) ? parsed : [])
+      } catch {
+        return new Set<number>()
+      }
+    })(),
+  )
   const cardObserverRef = useRef<IntersectionObserver | null>(null)
   const lastAdvanceRef = useRef<number>(0)
   const routesTrackRef = useRef<HTMLDivElement | null>(null)
@@ -816,7 +827,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   // Track individual cards as seen as soon as they enter viewport (persists across reloads & route changes)
   useEffect(() => {
     if (typeof IntersectionObserver === "undefined") return
-    cardObserverRef.current = new IntersectionObserver(
+    const observer = new IntersectionObserver(
       (entries) => {
         let added = false
         for (const entry of entries) {
@@ -827,18 +838,23 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
               seenIdsRef.current.add(id)
               added = true
             }
-            cardObserverRef.current?.unobserve(entry.target)
+            observer.unobserve(entry.target)
           }
         }
         if (added) persistSeenIds()
       },
-      { threshold: 0.2 },
+      { threshold: 0.05 },
     )
+    cardObserverRef.current = observer
+    // Observe all cards already mounted in the DOM before this effect ran
+    document.querySelectorAll<HTMLElement>("[data-service-id]").forEach((el) => {
+      observer.observe(el)
+    })
     return () => {
-      cardObserverRef.current?.disconnect()
+      observer.disconnect()
       cardObserverRef.current = null
     }
-  }, [persistSeenIds])
+  }, [persistSeenIds, currentBatchIds])
 
   const observeCardRef = useCallback((el: HTMLElement | null) => {
     if (el && cardObserverRef.current) {
