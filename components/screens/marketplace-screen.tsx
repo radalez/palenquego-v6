@@ -2963,24 +2963,24 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
           <div ref={feedTopRef} className="w-full max-w-[650px] mx-auto space-y-5">
             {/* Pending Booking Banner */}
             {pendingBookings.length > 0 && (
-              <div className="p-3.5 bg-[#eaf0e2] border border-[#8ee01a]/70 rounded-2xl flex items-center justify-between gap-3 shadow-2xs">
+              <div className="p-3.5 bg-white dark:bg-card border border-slate-200/90 dark:border-border rounded-2xl flex items-center justify-between gap-3 shadow-2xs">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-9 h-9 rounded-xl bg-[#105238] flex items-center justify-center text-[#8ee01a] shrink-0">
+                  <div className="w-9 h-9 rounded-xl bg-[#f0f2f5] flex items-center justify-center text-[#105238] shrink-0">
                     <Ticket className="w-5 h-5" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs font-bold text-[#105238]">
+                    <p className="text-xs font-bold text-slate-900 dark:text-foreground">
                       Tienes {pendingBookings.length} reserva{pendingBookings.length > 1 ? "s" : ""} pendiente
                       {pendingBookings.length > 1 ? "s" : ""} de pago
                     </p>
-                    <p className="text-[11px] text-[#105238]/80 truncate">
+                    <p className="text-[11px] text-slate-500 truncate">
                       {pendingBookings[0].service?.name || "Experiencia"} (${pendingBookings[0].totalPrice})
                     </p>
                   </div>
                 </div>
                 <Button
                   size="sm"
-                  className="bg-[#105238] hover:bg-[#0c3e2b] text-white text-xs h-8 px-3.5 rounded-xl font-bold shrink-0 cursor-pointer"
+                  className="bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-900 text-xs h-8 px-3.5 rounded-xl font-bold shrink-0 cursor-pointer border-0 shadow-none"
                   onClick={() => onNavigate?.("pool")}
                 >
                   Pagar / Ver
@@ -3049,7 +3049,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
             <div className="bg-card border border-border rounded-3xl p-4 shadow-2xs relative">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <Compass className="w-4 h-4 text-[#105238]" />
+                  <Compass className="w-4 h-4 text-slate-700 dark:text-foreground" />
                   <h2 className="text-xs font-black uppercase tracking-wider text-foreground">
                     Rutas & Destinos Go
                   </h2>
@@ -3058,23 +3058,23 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   <button
                     type="button"
                     onClick={() => routesTrackRef.current?.scrollBy({ left: -240, behavior: "smooth" })}
-                    className="hidden sm:flex w-6 h-6 rounded-full border border-border items-center justify-center text-muted-foreground hover:text-[#105238] hover:border-[#105238] transition-colors cursor-pointer"
+                    className="hidden sm:flex w-7 h-7 rounded-full bg-[#f0f2f5] hover:bg-[#e4e6eb] items-center justify-center text-slate-700 transition-colors cursor-pointer"
                     aria-label="Rutas anteriores"
                   >
-                    <ChevronLeft className="w-3.5 h-3.5" />
+                    <ChevronLeft className="w-4 h-4" />
                   </button>
                   <button
                     type="button"
                     onClick={() => routesTrackRef.current?.scrollBy({ left: 240, behavior: "smooth" })}
-                    className="hidden sm:flex w-6 h-6 rounded-full border border-border items-center justify-center text-muted-foreground hover:text-[#105238] hover:border-[#105238] transition-colors cursor-pointer"
+                    className="hidden sm:flex w-7 h-7 rounded-full bg-[#f0f2f5] hover:bg-[#e4e6eb] items-center justify-center text-slate-700 transition-colors cursor-pointer"
                     aria-label="Siguientes rutas"
                   >
-                    <ChevronRight className="w-3.5 h-3.5" />
+                    <ChevronRight className="w-4 h-4" />
                   </button>
                   <button
                     type="button"
                     onClick={() => onNavigate?.("map-explorer")}
-                    className="text-xs font-bold text-[#105238] hover:underline flex items-center gap-0.5 ml-1 cursor-pointer"
+                    className="text-xs font-bold text-slate-700 hover:text-[#105238] hover:underline flex items-center gap-0.5 ml-1 cursor-pointer"
                   >
                     <span>Abrir mapa</span>
                     <ChevronRight className="w-3.5 h-3.5" />
@@ -3089,9 +3089,9 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   onClick={() => onNavigate?.("map-explorer")}
                   className="flex flex-col items-center gap-1.5 shrink-0 w-18 group cursor-pointer"
                 >
-                  <div className="w-15 h-15 rounded-full p-0.5 bg-gradient-to-tr from-[#105238] to-[#8ee01a] shadow-xs group-hover:scale-105 transition-transform">
+                  <div className="w-15 h-15 rounded-full p-0.5 bg-slate-200 group-hover:bg-[#105238] shadow-xs group-hover:scale-105 transition-all">
                     <div className="w-full h-full rounded-full bg-[#105238] flex items-center justify-center border-2 border-white">
-                      <Compass className="w-6 h-6 text-[#8ee01a]" />
+                      <Compass className="w-6 h-6 text-white" />
                     </div>
                   </div>
                   <span className="text-[11px] font-bold text-foreground text-center leading-tight line-clamp-2">
@@ -3123,7 +3123,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                       }}
                       className="flex flex-col items-center gap-1.5 shrink-0 w-18 group cursor-pointer"
                     >
-                      <div className="w-15 h-15 rounded-full p-0.5 bg-gradient-to-tr from-[#105238] to-[#8ee01a] shadow-xs group-hover:scale-105 transition-transform">
+                      <div className="w-15 h-15 rounded-full p-0.5 bg-slate-200/90 group-hover:bg-slate-400 shadow-xs group-hover:scale-105 transition-all">
                         <img
                           src={thumb}
                           alt={route.name}
@@ -3146,10 +3146,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   onClick={() => onNavigate?.("map-explorer")}
                   className="flex flex-col items-center gap-1.5 shrink-0 w-18 group cursor-pointer"
                 >
-                  <div className="w-15 h-15 rounded-full bg-[#eaf0e2] border-2 border-[#105238]/30 flex items-center justify-center group-hover:bg-[#105238] group-hover:text-[#8ee01a] text-[#105238] transition-colors">
+                  <div className="w-15 h-15 rounded-full bg-[#f0f2f5] hover:bg-[#e4e6eb] border border-slate-200 flex items-center justify-center text-slate-700 transition-colors">
                     <ChevronRight className="w-6 h-6" />
                   </div>
-                  <span className="text-[11px] font-bold text-[#105238] text-center leading-tight">
+                  <span className="text-[11px] font-bold text-slate-700 text-center leading-tight">
                     Ver más
                   </span>
                 </button>
@@ -3164,7 +3164,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   <Input
                     value={searchQuery}
                     placeholder="Buscar experiencias, tours, restaurantes..."
-                    className="pl-10 pr-10 bg-background border border-border h-10 rounded-2xl text-sm"
+                    className="pl-10 pr-10 bg-[#f0f2f5]/70 dark:bg-background border border-transparent focus:border-slate-300 h-10 rounded-2xl text-sm"
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                   {searchQuery && (
@@ -3182,9 +3182,9 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   type="button"
                   variant="outline"
                   onClick={() => setShowFilterPanel(true)}
-                  className="h-10 px-3 rounded-2xl border-border text-xs font-bold gap-1.5 cursor-pointer"
+                  className="h-10 px-3.5 rounded-2xl border-transparent bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-800 text-xs font-bold gap-1.5 cursor-pointer shadow-none"
                 >
-                  <Filter className="w-4 h-4 text-[#105238]" />
+                  <Filter className="w-4 h-4 text-slate-700" />
                   <span>Filtros</span>
                 </Button>
 
@@ -3192,9 +3192,9 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   type="button"
                   variant="outline"
                   onClick={() => setShowPreferencesModal(true)}
-                  className="h-10 px-3 rounded-2xl border-[#105238]/30 bg-[#eaf0e2]/60 text-[#105238] hover:bg-[#eaf0e2] text-xs font-bold gap-1.5 cursor-pointer"
+                  className="h-10 px-3.5 rounded-2xl border-transparent bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-800 text-xs font-bold gap-1.5 cursor-pointer shadow-none"
                 >
-                  <SlidersHorizontal className="w-4 h-4" />
+                  <SlidersHorizontal className="w-4 h-4 text-slate-700" />
                   <span className="hidden sm:inline">Preferencias</span>
                 </Button>
 
@@ -3203,9 +3203,9 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   variant="outline"
                   onClick={handleRestartCycle}
                   title="Mezclar orden del feed"
-                  className="h-10 px-2.5 rounded-2xl border-border text-xs font-bold gap-1 cursor-pointer"
+                  className="h-10 px-3 rounded-2xl border-transparent bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-800 text-xs font-bold gap-1 cursor-pointer shadow-none"
                 >
-                  <Shuffle className="w-4 h-4 text-[#105238]" />
+                  <Shuffle className="w-4 h-4 text-slate-700" />
                 </Button>
               </div>
             </div>
@@ -3216,7 +3216,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                 <button
                   type="button"
                   onClick={() => categoriesTrackRef.current?.scrollBy({ left: -220, behavior: "smooth" })}
-                  className="hidden sm:flex w-7 h-7 rounded-full bg-white dark:bg-card border border-border/80 items-center justify-center text-[#105238] hover:bg-[#eaf0e2] transition-colors shrink-0 shadow-2xs cursor-pointer"
+                  className="hidden sm:flex w-7 h-7 rounded-full bg-white dark:bg-card border border-slate-200/90 items-center justify-center text-slate-700 hover:bg-[#f0f2f5] transition-colors shrink-0 shadow-2xs cursor-pointer"
                   aria-label="Categorías anteriores"
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -3233,8 +3233,8 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                       className={cn(
                         "flex items-center gap-1.5 px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all text-xs font-bold cursor-pointer shrink-0",
                         onlyPreferred && selectedCategory === "all"
-                          ? "bg-[#105238] text-[#8ee01a] shadow-sm"
-                          : "bg-[#eaf0e2] text-[#105238] border border-[#aeb6a1]/50",
+                          ? "bg-[#105238] text-white shadow-xs"
+                          : "bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-700",
                       )}
                     >
                       <Sparkles className="w-3.5 h-3.5" />
@@ -3250,7 +3250,6 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                     const Icon = cat.icon
                     const isActive = selectedCategory === cat.id && !(onlyPreferred && cat.id === "all")
                     const isSpecial = (cat as any).isSpecial
-                    const isPreferred = preferredCategories.includes(cat.id)
                     return (
                       <button
                         key={cat.id}
@@ -3258,17 +3257,11 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                         className={cn(
                           "flex items-center gap-1.5 px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all text-xs font-semibold cursor-pointer shrink-0",
                           isActive
-                            ? isSpecial
-                              ? "bg-[#105238] text-white shadow-md font-bold ring-2 ring-[#8ee01a]/50"
-                              : "bg-[#105238] text-white shadow-sm font-semibold"
-                            : isSpecial
-                              ? "bg-[#eaf0e2] text-[#105238] border border-[#8ee01a]/60 hover:bg-[#eaf0e2]/80 font-bold"
-                              : isPreferred
-                                ? "bg-[#eaf0e2]/60 text-[#105238] border border-[#105238]/25 hover:bg-[#eaf0e2]"
-                                : "bg-muted text-muted-foreground hover:bg-muted/80",
+                            ? "bg-[#105238] text-white shadow-xs font-bold"
+                            : "bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-700",
                         )}
                       >
-                        <Icon className={cn("w-3.5 h-3.5", isSpecial ? "text-[#8ee01a] fill-[#8ee01a]" : "")} />
+                        <Icon className={cn("w-3.5 h-3.5", isSpecial && isActive ? "text-[#8ee01a]" : "")} />
                         <span>{cat.label}</span>
                       </button>
                     )
@@ -3277,7 +3270,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                 <button
                   type="button"
                   onClick={() => categoriesTrackRef.current?.scrollBy({ left: 220, behavior: "smooth" })}
-                  className="hidden sm:flex w-7 h-7 rounded-full bg-white dark:bg-card border border-border/80 items-center justify-center text-[#105238] hover:bg-[#eaf0e2] transition-colors shrink-0 shadow-2xs cursor-pointer"
+                  className="hidden sm:flex w-7 h-7 rounded-full bg-white dark:bg-card border border-slate-200/90 items-center justify-center text-slate-700 hover:bg-[#f0f2f5] transition-colors shrink-0 shadow-2xs cursor-pointer"
                   aria-label="Más categorías"
                 >
                   <ChevronRight className="w-4 h-4" />
@@ -3291,25 +3284,25 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                 setPublishError(null)
                 setShowPublishModal(true)
               }}
-              className="bg-card border border-border rounded-3xl p-4 shadow-2xs space-y-3 cursor-pointer hover:border-[#105238]/40 transition-colors"
+              className="bg-card border border-border rounded-3xl p-4 shadow-2xs space-y-3 cursor-pointer hover:border-slate-300 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <Avatar className="w-10 h-10 border border-[#105238]/30 shrink-0">
+                <Avatar className="w-10 h-10 border border-slate-200 shrink-0">
                   <AvatarImage src={currentUser?.avatar} alt={currentUser?.name || "Viajero"} />
-                  <AvatarFallback className="bg-[#105238] text-white font-bold text-xs">
+                  <AvatarFallback className="bg-slate-200 text-slate-700 font-bold text-xs">
                     {(currentUser?.name || "PG").substring(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex-1 bg-background border border-border rounded-full px-4 py-2.5 text-xs sm:text-sm text-muted-foreground hover:bg-muted/40 transition-colors">
+                <div className="flex-1 bg-[#f0f2f5]/80 dark:bg-background border border-transparent rounded-full px-4 py-2.5 text-xs sm:text-sm text-slate-500 hover:bg-[#e4e6eb]/80 transition-colors">
                   ¿Viviste una experiencia increíble? Cuéntala y califica el lugar...
                 </div>
               </div>
-              <div className="flex items-center justify-between pt-2 border-t border-border/60 text-xs font-bold text-[#105238]">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#eaf0e2]">
-                  <Star className="w-3.5 h-3.5 fill-[#105238]" /> Calificar lugar visitado
+              <div className="flex items-center justify-between pt-2 border-t border-border/60 text-xs font-bold text-slate-700">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-800 transition-colors">
+                  <Star className="w-3.5 h-3.5 text-[#105238]" /> Calificar lugar visitado
                 </span>
-                <span className="inline-flex items-center gap-1 text-muted-foreground font-semibold">
-                  <MapPin className="w-3.5 h-3.5 text-[#105238]" /> Buscar experiencia
+                <span className="inline-flex items-center gap-1 text-slate-500 font-semibold">
+                  <MapPin className="w-3.5 h-3.5 text-slate-500" /> Buscar experiencia
                 </span>
               </div>
             </div>
@@ -3353,7 +3346,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                           post.taggedServiceId &&
                           openServiceDetailInstant(matchedSvc || post.taggedServiceId, "#resenas-reales")
                         }
-                        className="w-full flex items-center gap-3 p-2.5 rounded-2xl bg-[#eaf0e2]/65 hover:bg-[#eaf0e2] border border-[#aeb6a1]/50 transition-colors text-left cursor-pointer group/svc"
+                        className="w-full flex items-center gap-3 p-2.5 rounded-2xl bg-[#f7f8fa] hover:bg-[#f0f2f5] border border-slate-200/80 transition-colors text-left cursor-pointer group/svc"
                       >
                         <img
                           src={svcThumb}
@@ -3365,17 +3358,17 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                         />
                         <div className="min-w-0 flex-1 space-y-1">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="inline-flex items-center gap-1 text-xs font-extrabold text-[#105238] truncate">
-                              <MapPin className="w-3.5 h-3.5 shrink-0" />
+                            <span className="inline-flex items-center gap-1 text-xs font-extrabold text-slate-900 truncate">
+                              <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                               <span className="truncate">{post.taggedServiceName}</span>
                             </span>
                             {post.rating && (
-                              <span className="inline-flex items-center gap-0.5 bg-[#105238] text-[#8ee01a] px-1.5 py-0.5 rounded-full text-[10px] font-black shrink-0">
-                                <Star className="w-2.5 h-2.5 fill-[#8ee01a]" /> {post.rating}
+                              <span className="inline-flex items-center gap-0.5 bg-[#f0f2f5] text-slate-800 px-1.5 py-0.5 rounded-full text-[10px] font-black shrink-0">
+                                <Star className="w-2.5 h-2.5 fill-[#105238] text-[#105238]" /> {post.rating}
                               </span>
                             )}
                           </div>
-                          <p className="text-[11px] font-bold text-[#105238]/90 group-hover/svc:underline">
+                          <p className="text-[11px] font-bold text-slate-600 group-hover/svc:text-[#105238] group-hover/svc:underline">
                             Ver reseña en la experiencia →
                           </p>
                         </div>
@@ -3396,8 +3389,8 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                           className={cn(
                             "group/react inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer",
                             active
-                              ? "bg-[#105238] text-[#8ee01a] shadow-xs"
-                              : "bg-muted/60 text-muted-foreground hover:bg-[#eaf0e2] hover:text-[#105238]",
+                              ? "bg-[#105238] text-white shadow-xs"
+                              : "bg-[#f0f2f5] text-slate-700 hover:bg-[#e4e6eb] hover:text-slate-900",
                           )}
                         >
                           <span className="transition-transform duration-200 group-hover/react:scale-125">
@@ -3516,9 +3509,9 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                             onClick={() => service.businessId && router.push(`/b/${service.businessId}`)}
                             className="shrink-0 cursor-pointer"
                           >
-                            <Avatar className="w-11 h-11 border-2 border-[#105238]/30">
+                            <Avatar className="w-11 h-11 border border-slate-200">
                               <AvatarImage src={service.businessAvatar} alt={service.businessName || service.name} />
-                              <AvatarFallback className="bg-[#105238] text-white font-bold text-xs">
+                              <AvatarFallback className="bg-[#f0f2f5] text-slate-700 font-bold text-xs">
                                 {(service.businessName || service.name).substring(0, 2).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
@@ -3527,17 +3520,17 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                             <button
                               type="button"
                               onClick={() => service.businessId && router.push(`/b/${service.businessId}`)}
-                              className="font-bold text-sm text-foreground hover:text-[#105238] truncate block text-left cursor-pointer"
+                              className="font-bold text-sm text-foreground hover:underline truncate block text-left cursor-pointer"
                             >
                               {service.businessName || "Comercio Aliado PalenqueGo"}
                             </button>
-                            <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                            <div className="flex items-center gap-2 text-[11px] text-slate-500">
                               <span className="inline-flex items-center gap-1 truncate">
-                                <MapPin className="w-3 h-3 text-[#105238] shrink-0" />
+                                <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
                                 <span className="truncate">{service.location}</span>
                               </span>
                               <span>·</span>
-                              <span className="font-semibold text-[#105238]">
+                              <span className="font-medium text-slate-500">
                                 {service.category || service.categoria?.nombre || "Experiencia"}
                               </span>
                             </div>
@@ -3565,12 +3558,12 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                         </div>
                       </div>
 
-                      {/* Post Caption: Title + Description + Rating + "+ Info" button */}
+                      {/* Post Caption: Title + Description + Rating + Bone "+ Info" button (like Facebook's "Más información") */}
                       <div className="px-4 pb-3 space-y-1.5">
                         <div className="flex items-start justify-between gap-2">
                           <h3
                             onClick={() => openServiceDetailInstant(service)}
-                            className="font-extrabold text-base sm:text-lg text-foreground hover:text-[#105238] transition-colors cursor-pointer leading-snug"
+                            className="font-extrabold text-base sm:text-lg text-foreground hover:underline transition-colors cursor-pointer leading-snug"
                           >
                             {service.name}
                           </h3>
@@ -3578,16 +3571,16 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                             <button
                               type="button"
                               onClick={() => openServiceDetailInstant(service)}
-                              className="inline-flex items-center gap-1 bg-[#105238] hover:bg-[#0c3e2b] text-[#8ee01a] text-[11px] font-black px-2.5 py-0.5 rounded-lg transition-colors cursor-pointer"
+                              className="inline-flex items-center gap-1 bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-800 text-[11px] font-bold px-3 py-1 rounded-lg transition-colors cursor-pointer"
                               title="Ver página completa de la experiencia"
                             >
-                              <Info className="w-3 h-3" />
-                              <span>+ Info</span>
+                              <Info className="w-3 h-3 text-slate-600" />
+                              <span>Más información</span>
                             </button>
-                            <div className="flex items-center gap-1 bg-[#eaf0e2] px-2 py-0.5 rounded-lg">
-                              <Star className="w-3.5 h-3.5 fill-[#105238] text-[#105238]" />
-                              <span className="font-bold text-[#105238] text-xs">{service.rating}</span>
-                              <span className="text-[11px] text-[#105238]/80">({service.reviews})</span>
+                            <div className="flex items-center gap-1 bg-[#f0f2f5] px-2 py-1 rounded-lg">
+                              <Star className="w-3.5 h-3.5 fill-slate-700 text-slate-700" />
+                              <span className="font-bold text-slate-800 text-xs">{service.rating}</span>
+                              <span className="text-[11px] text-slate-500">({service.reviews})</span>
                             </div>
                           </div>
                         </div>
@@ -3619,13 +3612,13 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                             e.stopPropagation()
                             toggleFavoritePreference(service.id)
                           }}
-                          className="absolute top-3 right-3 w-9 h-9 rounded-full bg-card/90 backdrop-blur-sm flex items-center justify-center shadow-sm z-10 cursor-pointer"
+                          className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 hover:bg-white backdrop-blur-sm flex items-center justify-center shadow-sm z-10 cursor-pointer"
                           aria-label="Guardar en favoritos"
                         >
                           <Heart
                             className={cn(
                               "w-5 h-5 transition-colors",
-                              isFav ? "fill-[#105238] text-[#105238]" : "text-foreground",
+                              isFav ? "fill-[#105238] text-[#105238]" : "text-slate-700",
                             )}
                           />
                         </button>
@@ -3640,11 +3633,11 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                           )
                         )}
 
-                        {/* Pool Badge + Routes count */}
+                        {/* Pool Badge + Routes count (Neutral dark glass so photo isn't overwhelmed by green) */}
                         <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2 z-10">
                           <div className="flex items-center gap-1.5">
-                            <Badge className="bg-[#105238]/90 text-white backdrop-blur-sm shadow-md py-1 px-2.5 flex items-center gap-1.5">
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#8ee01a] animate-pulse shrink-0" />
+                            <Badge className="bg-black/65 hover:bg-black/75 text-white border border-white/15 backdrop-blur-md shadow-md py-1 px-2.5 flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#8ee01a] shrink-0" />
                               <span className="text-[10px] font-bold">
                                 {service.hasActivePool
                                   ? `Pool disponible · ${service.spotsLeft || 3} cupos`
@@ -3657,7 +3650,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                 e.stopPropagation()
                                 setActivePoolTooltipId(activePoolTooltipId === service.id ? null : service.id)
                               }}
-                              className="w-6 h-6 rounded-full bg-[#105238] text-[#8ee01a] flex items-center justify-center text-[11px] font-black shadow-md cursor-pointer"
+                              className="w-6 h-6 rounded-full bg-black/65 hover:bg-black/80 text-white border border-white/20 flex items-center justify-center text-[11px] font-bold shadow-md cursor-pointer"
                             >
                               ?
                             </button>
@@ -3670,9 +3663,9 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                 e.stopPropagation()
                                 setServiceForRoutes(service)
                               }}
-                              className="inline-flex items-center gap-1 text-xs font-bold bg-white/95 text-[#105238] px-2.5 py-1 rounded-full shadow-md cursor-pointer"
+                              className="inline-flex items-center gap-1 text-xs font-bold bg-white/95 text-slate-800 px-2.5 py-1 rounded-full shadow-md cursor-pointer"
                             >
-                              <MapPin className="w-3.5 h-3.5" />
+                              <MapPin className="w-3.5 h-3.5 text-[#105238]" />
                               <span>{service.routes.length} rutas</span>
                             </button>
                           )}
@@ -4319,7 +4312,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                 key={cat.id}
                                 type="button"
                                 onClick={() => handleSelectCategorySmooth(cat.id)}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-[#eaf0e2] text-[#105238] hover:bg-[#105238] hover:text-[#8ee01a] transition-colors cursor-pointer"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-[#f0f2f5] text-slate-700 hover:bg-[#e4e6eb] hover:text-slate-900 transition-colors cursor-pointer"
                               >
                                 <CatIcon className="w-3.5 h-3.5" />
                                 <span>{cat.label}</span>
@@ -4407,7 +4400,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                 <div className="space-y-2.5">
                   <div className="flex items-center justify-between px-1">
                     <h3 className="text-sm font-extrabold text-muted-foreground tracking-tight">Publicidad</h3>
-                    <span className="text-[10px] font-black uppercase tracking-wider text-[#105238] bg-[#eaf0e2] px-2 py-0.5 rounded-full">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600 bg-[#f0f2f5] px-2 py-0.5 rounded-full">
                       Destacado
                     </span>
                   </div>
@@ -4421,7 +4414,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                           key={`${ad.id}-${firstIdx}-${idx}`}
                           type="button"
                           onClick={() => openServiceDetailInstant(ad)}
-                          className="w-full flex items-center gap-3 p-2 rounded-2xl bg-card/60 hover:bg-card hover:shadow-xs border border-border/50 hover:border-[#105238]/40 transition-all text-left cursor-pointer group/ad animate-in fade-in duration-300"
+                          className="w-full flex items-center gap-3 p-2 rounded-2xl bg-card/60 hover:bg-card hover:shadow-xs border border-border/50 hover:border-slate-300 transition-all text-left cursor-pointer group/ad animate-in fade-in duration-300"
                         >
                           <div className="relative w-22 h-22 rounded-2xl overflow-hidden shrink-0 bg-muted border border-border/50">
                             <img
@@ -4432,16 +4425,16 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                 e.currentTarget.src = DEFAULT_STORE_COVER
                               }}
                             />
-                            <span className="absolute top-1.5 left-1.5 bg-[#105238] text-[#8ee01a] text-[10px] font-black px-1.5 py-0.5 rounded-full shadow-sm">
+                            <span className="absolute top-1.5 left-1.5 bg-black/70 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full shadow-sm">
                               -{discPct}%
                             </span>
                           </div>
                           <div className="min-w-0 flex-1 space-y-1">
-                            <p className="text-[13px] font-extrabold text-foreground leading-snug line-clamp-2 group-hover/ad:text-[#105238] transition-colors">
+                            <p className="text-[13px] font-extrabold text-foreground leading-snug line-clamp-2 group-hover/ad:underline transition-colors">
                               {ad.name}
                             </p>
                             <div className="flex items-baseline gap-1.5">
-                              <span className="text-sm font-black text-[#105238]">${promoP}</span>
+                              <span className="text-sm font-black text-foreground">${promoP}</span>
                               <span className="text-[11px] line-through text-muted-foreground">${baseP}</span>
                               <span className="text-[10px] text-muted-foreground">/p</span>
                             </div>
@@ -4515,10 +4508,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                    - Below it, shows EITHER Más destacados OR Tiendas Aliadas (never stacked together),
                      transitioning softly via opacity only after 30+ seconds and 2200px of scroll once scrolling stops. */}
             {primaryBooking && (
-              <div className="bg-card border border-[#8ee01a]/70 rounded-3xl p-4 shadow-2xs space-y-3">
+              <div className="bg-card border border-border rounded-3xl p-4 shadow-2xs space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="font-extrabold text-sm text-foreground flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-[#105238]" />
+                    <Calendar className="w-4 h-4 text-slate-600" />
                     <span>
                       {primaryBooking.status === "PENDIENTE" ? "Reserva pendiente" : "Mi próxima reserva"}
                     </span>
@@ -4526,12 +4519,12 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   <button
                     type="button"
                     onClick={() => onNavigate?.("pool")}
-                    className="text-xs font-bold text-[#105238] hover:underline cursor-pointer"
+                    className="text-xs font-bold text-slate-600 hover:text-slate-900 hover:underline cursor-pointer"
                   >
                     Ver todas ({userBookings.length})
                   </button>
                 </div>
-                <div className="flex items-center gap-3 bg-[#fafaf8] dark:bg-background border border-border/70 rounded-2xl p-3">
+                <div className="flex items-center gap-3 bg-[#f7f8fa] dark:bg-background border border-border/70 rounded-2xl p-3">
                   <img
                     src={primaryBooking.service?.image || DEFAULT_STORE_COVER}
                     alt={primaryBooking.service?.name || "Reserva"}
@@ -4544,7 +4537,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                     <p className="text-[11px] text-muted-foreground">
                       {primaryBooking.date} · {primaryBooking.time}
                     </p>
-                    <p className="text-[11px] font-black text-[#105238] mt-0.5">
+                    <p className="text-[11px] font-black text-foreground mt-0.5">
                       Total: ${primaryBooking.totalPrice}
                     </p>
                   </div>
@@ -4552,7 +4545,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                 <Button
                   type="button"
                   onClick={() => onNavigate?.("pool")}
-                  className="w-full h-9 rounded-xl bg-[#105238] hover:bg-[#0c3e2b] text-white font-bold text-xs cursor-pointer"
+                  className="w-full h-9 rounded-xl bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-900 font-bold text-xs cursor-pointer shadow-none border-0"
                 >
                   Ver Voucher / Pagar
                 </Button>
@@ -4785,9 +4778,9 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
         return (
           <div
             onClick={() => setLightboxServiceId(null)}
-            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 lg:p-6 animate-in fade-in duration-200"
+            className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 lg:p-6 animate-in fade-in duration-200"
           >
-            {/* TikTok-style Up / Down Floating Arrows on the Right to Step Through Feed Services */}
+            {/* TikTok/Facebook-style Neutral Up / Down Floating Arrows on the Right */}
             <div
               onClick={(e) => e.stopPropagation()}
               className="fixed right-3 sm:right-5 xl:right-8 top-1/2 -translate-y-1/2 z-[60] flex flex-col items-center gap-3"
@@ -4796,12 +4789,12 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                 type="button"
                 onClick={() => handleStepLightboxService("prev")}
                 title="Experiencia anterior (Flecha Arriba)"
-                className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#105238]/95 hover:bg-[#105238] text-[#8ee01a] border border-[#8ee01a]/50 shadow-2xl flex items-center justify-center transition-transform hover:scale-110 active:scale-95 cursor-pointer"
+                className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white/90 hover:bg-white text-slate-800 border border-black/10 shadow-2xl flex items-center justify-center transition-transform hover:scale-105 active:scale-95 cursor-pointer"
               >
                 <ArrowUp className="w-5 h-5" />
               </button>
               {currentFeedPos >= 0 && (
-                <span className="text-[10px] font-black text-white/90 bg-black/60 px-2 py-0.5 rounded-full border border-white/15">
+                <span className="text-[10px] font-bold text-white/90 bg-neutral-900/80 px-2.5 py-0.5 rounded-full border border-white/15">
                   {currentFeedPos + 1}/{visibleBatchServices.length}
                 </span>
               )}
@@ -4809,17 +4802,17 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                 type="button"
                 onClick={() => handleStepLightboxService("next")}
                 title="Siguiente experiencia (Flecha Abajo)"
-                className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#105238]/95 hover:bg-[#105238] text-[#8ee01a] border border-[#8ee01a]/50 shadow-2xl flex items-center justify-center transition-transform hover:scale-110 active:scale-95 cursor-pointer"
+                className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white/90 hover:bg-white text-slate-800 border border-black/10 shadow-2xl flex items-center justify-center transition-transform hover:scale-105 active:scale-95 cursor-pointer"
               >
                 <ArrowDown className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Main Split Lightbox Container (or Fullscreen Photo View when isLightboxPhotoFullscreen is true) */}
+            {/* Main Split Lightbox Container (Dark Neutral Obsidian + Clean White/Bone Highlights) */}
             <div
               onClick={(e) => e.stopPropagation()}
               className={cn(
-                "overflow-hidden shadow-[0_28px_90px_rgba(0,0,0,0.75)] border border-[#8ee01a]/35 bg-[#081c13] grid grid-cols-1 lg:grid-cols-12 relative transition-all duration-200",
+                "overflow-hidden shadow-[0_28px_90px_rgba(0,0,0,0.8)] border border-white/15 bg-[#141517] grid grid-cols-1 lg:grid-cols-12 relative transition-all duration-200",
                 isLightboxPhotoFullscreen
                   ? "w-[96vw] h-[94vh] max-w-none max-h-none rounded-3xl mr-12 sm:mr-16"
                   : "w-full max-w-[1120px] h-[90vh] lg:h-[85vh] max-h-[760px] rounded-[28px] sm:rounded-[32px] mr-10 sm:mr-14 lg:mr-12",
@@ -4828,7 +4821,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
               {/* LEFT COLUMN: Interactive Photo & Multi-Image Gallery Viewer */}
               <div
                 className={cn(
-                  "relative bg-[#05120c] flex flex-col justify-between overflow-hidden select-none",
+                  "relative bg-[#0c0d0e] flex flex-col justify-between overflow-hidden select-none",
                   isLightboxPhotoFullscreen
                     ? "lg:col-span-12 h-full"
                     : "lg:col-span-6 h-[38vh] sm:h-[42vh] lg:h-full",
@@ -4838,7 +4831,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                 <img
                   src={currentPhotoUrl}
                   alt=""
-                  className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-35 scale-110 pointer-events-none"
+                  className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-30 scale-110 pointer-events-none"
                 />
 
                 {/* Main Crisp Image */}
@@ -4852,14 +4845,14 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   }}
                 />
 
-                {/* Top Overlay on Image: Category/Flash + Heart Likes + Fullscreen Toggle */}
+                {/* Top Overlay on Image: Category + Photo Counter + Heart Likes + Fullscreen Toggle */}
                 <div className="absolute top-3.5 left-3.5 right-3.5 z-20 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="bg-[#105238]/95 text-[#8ee01a] border border-[#8ee01a]/40 text-[11px] font-black px-3 py-1 rounded-full shadow-md">
+                    <span className="bg-black/65 backdrop-blur-md text-white border border-white/15 text-[11px] font-bold px-3 py-1 rounded-full shadow-md">
                       {activeSvc.category || "Experiencia"}
                     </span>
                     {allPhotos.length > 1 && (
-                      <span className="bg-black/65 text-white text-[11px] font-bold px-2.5 py-1 rounded-full border border-white/20">
+                      <span className="bg-black/65 backdrop-blur-md text-white/90 text-[11px] font-semibold px-2.5 py-1 rounded-full border border-white/15">
                         Foto {safePhotoIdx + 1} de {allPhotos.length}
                       </span>
                     )}
@@ -4870,14 +4863,14 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                       type="button"
                       onClick={() => toggleFavoritePreference(activeSvc.id)}
                       className={cn(
-                        "h-9 px-3 rounded-full flex items-center gap-1.5 text-xs font-black shadow-lg border transition-all cursor-pointer",
+                        "h-9 px-3 rounded-full flex items-center gap-1.5 text-xs font-bold shadow-lg border transition-all cursor-pointer",
                         isFav
-                          ? "bg-[#8ee01a] text-[#105238] border-[#8ee01a]"
-                          : "bg-black/60 hover:bg-black/80 text-white border-white/25",
+                          ? "bg-white text-[#105238] border-white"
+                          : "bg-black/65 hover:bg-black/80 text-white border-white/20",
                       )}
                       title="Dar Me Gusta / Guardar en Mis Likes"
                     >
-                      <Heart className={cn("w-4 h-4", isFav && "fill-[#105238]")} />
+                      <Heart className={cn("w-4 h-4", isFav && "fill-[#105238] text-[#105238]")} />
                       <span>{totalLikesAndReacts > 0 ? totalLikesAndReacts : "Like"}</span>
                     </button>
 
@@ -4887,8 +4880,8 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                       className={cn(
                         "h-9 px-3 rounded-full border flex items-center gap-1.5 text-xs font-bold shadow-lg transition-colors cursor-pointer",
                         isLightboxPhotoFullscreen
-                          ? "bg-[#8ee01a] text-[#105238] border-[#8ee01a]"
-                          : "w-9 px-0 justify-center bg-black/60 hover:bg-[#105238] text-white hover:text-[#8ee01a] border-white/25",
+                          ? "bg-white text-slate-900 border-white"
+                          : "w-9 px-0 justify-center bg-black/65 hover:bg-black/85 text-white border-white/20",
                       )}
                       title={
                         isLightboxPhotoFullscreen
@@ -4922,7 +4915,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   </div>
                 </div>
 
-                {/* Left / Right Arrows for Internal Service Photos */}
+                {/* Left / Right Neutral Arrows for Internal Service Photos */}
                 {allPhotos.length > 1 && (
                   <>
                     <button
@@ -4930,7 +4923,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                       onClick={() =>
                         setLightboxPhotoIdx((prev) => (prev - 1 + allPhotos.length) % allPhotos.length)
                       }
-                      className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/65 hover:bg-[#105238] text-white hover:text-[#8ee01a] border border-white/25 flex items-center justify-center shadow-lg transition-colors cursor-pointer"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/85 hover:bg-white text-slate-800 border border-black/10 flex items-center justify-center shadow-lg transition-colors cursor-pointer"
                       aria-label="Foto anterior"
                     >
                       <ChevronLeft className="w-5 h-5" />
@@ -4938,7 +4931,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                     <button
                       type="button"
                       onClick={() => setLightboxPhotoIdx((prev) => (prev + 1) % allPhotos.length)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/65 hover:bg-[#105238] text-white hover:text-[#8ee01a] border border-white/25 flex items-center justify-center shadow-lg transition-colors cursor-pointer"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/85 hover:bg-white text-slate-800 border border-black/10 flex items-center justify-center shadow-lg transition-colors cursor-pointer"
                       aria-label="Siguiente foto"
                     >
                       <ChevronRight className="w-5 h-5" />
@@ -4946,7 +4939,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   </>
                 )}
 
-                {/* Bottom Overlay on Image: Thumbnails Strip + Pool & Routes Badges */}
+                {/* Bottom Overlay on Image: Thumbnails Strip + Subtle Pool & Routes Badges */}
                 <div className="absolute bottom-3 left-3.5 right-3.5 z-20 space-y-2">
                   {allPhotos.length > 1 && (
                     <div className="flex items-center justify-center gap-1.5 overflow-x-auto py-1">
@@ -4958,8 +4951,8 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                           className={cn(
                             "w-11 h-11 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer",
                             idx === safePhotoIdx
-                              ? "border-[#8ee01a] scale-105 shadow-md"
-                              : "border-white/30 opacity-65 hover:opacity-100",
+                              ? "border-white scale-105 shadow-md"
+                              : "border-white/30 opacity-60 hover:opacity-100",
                           )}
                         >
                           <img src={pUrl} alt="" className="w-full h-full object-cover" />
@@ -4969,8 +4962,8 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   )}
 
                   <div className="flex items-center justify-between gap-2">
-                    <span className="bg-[#105238]/95 text-white border border-[#8ee01a]/40 text-[11px] font-bold px-3 py-1 rounded-full shadow-md inline-flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-[#8ee01a] animate-pulse" />
+                    <span className="bg-black/65 backdrop-blur-md text-white border border-white/15 text-[11px] font-semibold px-3 py-1 rounded-full shadow-md inline-flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-[#8ee01a]" />
                       <span>
                         {activeSvc.hasActivePool
                           ? `Pool disponible · ${activeSvc.spotsLeft || 3} cupos`
@@ -4982,9 +4975,9 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                       <button
                         type="button"
                         onClick={() => setServiceForRoutes(activeSvc)}
-                        className="bg-white/95 text-[#105238] text-[11px] font-black px-3 py-1 rounded-full shadow-md inline-flex items-center gap-1 cursor-pointer"
+                        className="bg-white/95 text-slate-800 text-[11px] font-bold px-3 py-1 rounded-full shadow-md inline-flex items-center gap-1 cursor-pointer"
                       >
-                        <MapPin className="w-3 h-3" />
+                        <MapPin className="w-3 h-3 text-[#105238]" />
                         <span>{activeSvc.routes.length} rutas</span>
                       </button>
                     )}
@@ -4992,14 +4985,14 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                 </div>
               </div>
 
-              {/* RIGHT COLUMN: Scrollable Experience Details, Features, Reactions, Lived Reviews & Sticky Bottom Booking Bar (hidden when photo is in Fullscreen mode) */}
+              {/* RIGHT COLUMN: Sleek Dark Neutral Panel (#18191a) with White/Bone Contrast & Subtle Green Accents */}
               {!isLightboxPhotoFullscreen && (
-              <div className="lg:col-span-6 flex flex-col h-[52vh] sm:h-[48vh] lg:h-full bg-[#0c261b] text-white overflow-hidden">
+              <div className="lg:col-span-6 flex flex-col h-[52vh] sm:h-[48vh] lg:h-full bg-[#18191a] text-white overflow-hidden">
                 {/* Top Header inside Right Panel */}
-                <div className="px-5 py-4 border-b border-white/10 flex items-start justify-between gap-3 shrink-0 bg-[#091f16]">
+                <div className="px-5 py-4 border-b border-white/10 flex items-start justify-between gap-3 shrink-0 bg-[#141516]">
                   <div className="space-y-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-[#8ee01a]">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
                         EXPERIENCIA PALENQUEGO
                       </span>
                       <span className="text-white/30">·</span>
@@ -5011,7 +5004,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                             router.push(`/b/${activeSvc.businessId}`)
                           }
                         }}
-                        className="text-xs font-bold text-[#eaf0e2] hover:text-[#8ee01a] truncate cursor-pointer"
+                        className="text-xs font-bold text-white/90 hover:text-white hover:underline truncate cursor-pointer"
                       >
                         {activeSvc.businessName || "Comercio Aliado"}
                       </button>
@@ -5021,19 +5014,19 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                         setLightboxServiceId(null)
                         openServiceDetailInstant(activeSvc)
                       }}
-                      className="text-lg sm:text-xl font-black text-white hover:text-[#8ee01a] transition-colors cursor-pointer leading-snug"
+                      className="text-lg sm:text-xl font-black text-white hover:underline transition-colors cursor-pointer leading-snug"
                     >
                       {activeSvc.name}
                     </h2>
-                    <div className="flex items-center gap-3 text-xs text-white/75 flex-wrap">
+                    <div className="flex items-center gap-3 text-xs text-neutral-300 flex-wrap">
                       <span className="inline-flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5 text-[#8ee01a]" />
+                        <MapPin className="w-3.5 h-3.5 text-neutral-400" />
                         <span>{activeSvc.location}</span>
                       </span>
-                      <span className="inline-flex items-center gap-1 bg-[#105238] text-[#8ee01a] px-2 py-0.5 rounded-full font-bold text-[11px]">
-                        <Star className="w-3 h-3 fill-[#8ee01a]" />
+                      <span className="inline-flex items-center gap-1 bg-white/10 text-white px-2.5 py-0.5 rounded-full font-bold text-[11px]">
+                        <Star className="w-3 h-3 fill-white text-white" />
                         <span>{activeSvc.rating}</span>
-                        <span className="text-white/80">({activeSvc.reviews || commentsList.length})</span>
+                        <span className="text-neutral-300">({activeSvc.reviews || commentsList.length})</span>
                       </span>
                     </div>
                   </div>
@@ -5051,13 +5044,13 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                 {/* Scrollable Body */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-4">
                   {/* Card 1: Descripción & Detalles de la Experiencia */}
-                  <div className="rounded-2xl bg-white/5 border border-white/10 p-4 space-y-2">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-[#8ee01a]">
+                  <div className="rounded-2xl bg-[#242526] border border-white/10 p-4 space-y-2">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">
                       SOBRE ESTA EXPERIENCIA
                     </p>
                     <p
                       className={cn(
-                        "text-xs sm:text-sm text-white/90 leading-relaxed whitespace-pre-line",
+                        "text-xs sm:text-sm text-neutral-100 leading-relaxed whitespace-pre-line",
                         !expandLightboxDesc && "line-clamp-3",
                       )}
                     >
@@ -5068,7 +5061,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                       <button
                         type="button"
                         onClick={() => setExpandLightboxDesc((prev) => !prev)}
-                        className="text-xs font-extrabold text-[#8ee01a] hover:underline cursor-pointer"
+                        className="text-xs font-bold text-white hover:underline cursor-pointer"
                       >
                         {expandLightboxDesc ? "Ver menos ▲" : "Ver más ▼"}
                       </button>
@@ -5080,8 +5073,8 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                     (activeSvc.features && activeSvc.features.length > 0) ||
                     (activeSvc.routes && activeSvc.routes.length > 0)) && (
                     <div className="space-y-2.5">
-                      <p className="text-[11px] font-black uppercase tracking-wider text-[#8ee01a] flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5" />
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-300 flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-neutral-400" />
                         <span>Galería y Características de la Experiencia</span>
                       </p>
 
@@ -5093,10 +5086,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                               type="button"
                               onClick={() => setLightboxPhotoIdx(idx)}
                               className={cn(
-                                "rounded-2xl overflow-hidden border transition-all text-left bg-black/40 group cursor-pointer",
+                                "rounded-2xl overflow-hidden border transition-all text-left bg-[#242526] group cursor-pointer",
                                 idx === safePhotoIdx
-                                  ? "border-[#8ee01a] ring-2 ring-[#8ee01a]/40"
-                                  : "border-white/15 hover:border-white/40",
+                                  ? "border-white ring-2 ring-white/30"
+                                  : "border-white/10 hover:border-white/35",
                               )}
                             >
                               <div className="h-24 w-full overflow-hidden">
@@ -5106,9 +5099,9 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                 />
                               </div>
-                              <div className="px-2.5 py-1.5 flex items-center justify-between text-[10px] font-bold text-white/85">
+                              <div className="px-2.5 py-1.5 flex items-center justify-between text-[10px] font-bold text-neutral-200">
                                 <span>Vista #{idx + 1}</span>
-                                {idx === safePhotoIdx && <span className="text-[#8ee01a]">Activa</span>}
+                                {idx === safePhotoIdx && <span className="text-white font-extrabold">Activa</span>}
                               </div>
                             </button>
                           ))}
@@ -5120,7 +5113,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                           {activeSvc.features.map((feat, idx) => (
                             <span
                               key={idx}
-                              className="inline-flex items-center gap-1 text-[11px] font-bold bg-[#105238] text-[#eaf0e2] border border-[#8ee01a]/30 px-2.5 py-1 rounded-xl"
+                              className="inline-flex items-center gap-1 text-[11px] font-semibold bg-[#242526] text-neutral-200 border border-white/10 px-2.5 py-1 rounded-xl"
                             >
                               <Check className="w-3 h-3 text-[#8ee01a]" />
                               <span>{feat}</span>
@@ -5132,12 +5125,12 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   )}
 
                   {/* Card 3: Reacciones de Viajeros y Likes */}
-                  <div className="rounded-2xl bg-white/5 border border-white/10 p-4 space-y-3">
+                  <div className="rounded-2xl bg-[#242526] border border-white/10 p-4 space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-black uppercase tracking-wider text-[#8ee01a]">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-300">
                         REACCIONES Y LIKES DE VIAJEROS
                       </span>
-                      <span className="text-xs font-extrabold text-white/85">
+                      <span className="text-xs font-bold text-neutral-300">
                         {totalLikesAndReacts} {totalLikesAndReacts === 1 ? "interacción" : "interacciones"}
                       </span>
                     </div>
@@ -5154,8 +5147,8 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                             className={cn(
                               "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer border",
                               isSelected
-                                ? "bg-[#8ee01a] text-[#105238] border-[#8ee01a] shadow-sm"
-                                : "bg-white/10 hover:bg-white/15 text-white border-white/15",
+                                ? "bg-white text-slate-900 border-white shadow-sm"
+                                : "bg-[#3a3b3c] hover:bg-[#4e4f50] text-neutral-100 border-transparent",
                             )}
                           >
                             <ReactionBadgeIcon type={r.id} size="sm" animated={isSelected} />
@@ -5169,15 +5162,15 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
 
                   {/* Extras / Productos del Servicio con Imagen */}
                   {activeSvc.extras && activeSvc.extras.length > 0 && (
-                    <div className="rounded-2xl bg-white/5 border border-white/10 p-4 space-y-2.5">
-                      <span className="text-[11px] font-black uppercase tracking-wider text-[#8ee01a] block">
+                    <div className="rounded-2xl bg-[#242526] border border-white/10 p-4 space-y-2.5">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-300 block">
                         PRODUCTOS Y EXTRAS DEL SERVICIO ({activeSvc.extras.length})
                       </span>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         {activeSvc.extras.map((extra) => (
                           <div
                             key={extra.id}
-                            className="flex items-center gap-2.5 p-2 rounded-xl bg-black/35 border border-white/10"
+                            className="flex items-center gap-2.5 p-2 rounded-xl bg-[#18191a] border border-white/10"
                           >
                             {extra.image && (
                               <div className="w-11 h-11 rounded-lg overflow-hidden bg-white/10 shrink-0 border border-white/15">
@@ -5191,9 +5184,9 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                             <div className="min-w-0 flex-1">
                               <p className="text-xs font-bold text-white truncate">{extra.name}</p>
                               {extra.description && (
-                                <p className="text-[10px] text-white/65 line-clamp-1">{extra.description}</p>
+                                <p className="text-[10px] text-neutral-400 line-clamp-1">{extra.description}</p>
                               )}
-                              <p className="text-[11px] font-black text-[#8ee01a]">+${extra.price}</p>
+                              <p className="text-[11px] font-black text-white">+${extra.price}</p>
                             </div>
                           </div>
                         ))}
@@ -5202,15 +5195,15 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   )}
 
                   {/* Card 4: Comentarios y Experiencias Vividas */}
-                  <div className="rounded-2xl bg-white/5 border border-white/10 p-4 space-y-3">
+                  <div className="rounded-2xl bg-[#242526] border border-white/10 p-4 space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-black uppercase tracking-wider text-[#8ee01a]">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-300">
                         EXPERIENCIAS VIVIDAS Y OPINIONES ({commentsList.length})
                       </span>
                       <button
                         type="button"
                         onClick={() => setServiceToRate(activeSvc)}
-                        className="text-xs font-bold text-[#8ee01a] hover:underline cursor-pointer"
+                        className="text-xs font-bold text-white hover:underline cursor-pointer"
                       >
                         Calificar con estrellas
                       </button>
@@ -5229,13 +5222,13 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                             className={cn(
                               "w-4 h-4",
                               starVal <= (commentRatings[activeSvc.id] || 5)
-                                ? "fill-[#8ee01a] text-[#8ee01a]"
-                                : "text-white/30",
+                                ? "fill-white text-white"
+                                : "text-white/25",
                             )}
                           />
                         </button>
                       ))}
-                      <span className="text-[11px] text-white/75 ml-1">
+                      <span className="text-[11px] text-neutral-300 ml-1">
                         ({commentRatings[activeSvc.id] || 5}/5)
                       </span>
                     </div>
@@ -5249,13 +5242,13 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                         }
                         onKeyDown={(e) => e.key === "Enter" && handleAddServiceComment(activeSvc.id)}
                         placeholder="Escribe tu opinión o experiencia vivida..."
-                        className="flex-1 h-9 px-3 rounded-xl border border-white/15 bg-black/35 text-xs text-white placeholder:text-white/45 focus:outline-none focus:border-[#8ee01a]"
+                        className="flex-1 h-9 px-3 rounded-xl border border-white/15 bg-[#18191a] text-xs text-white placeholder:text-neutral-400 focus:outline-none focus:border-white/40"
                       />
                       <Button
                         type="button"
                         size="sm"
                         onClick={() => handleAddServiceComment(activeSvc.id)}
-                        className="h-9 px-3.5 rounded-xl bg-[#8ee01a] hover:bg-[#8ee01a]/90 text-[#105238] text-xs font-black cursor-pointer"
+                        className="h-9 px-3.5 rounded-xl bg-white hover:bg-neutral-200 text-slate-900 text-xs font-bold cursor-pointer"
                       >
                         Publicar
                       </Button>
@@ -5266,42 +5259,42 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                         {commentsList.map((c) => (
                           <div
                             key={c.id}
-                            className="bg-black/35 border border-white/10 rounded-xl px-3.5 py-2 text-xs"
+                            className="bg-[#18191a] border border-white/10 rounded-xl px-3.5 py-2 text-xs"
                           >
                             <div className="flex items-center justify-between">
                               <span className="font-bold text-white">{c.author}</span>
                               <div className="flex items-center gap-2">
                                 {c.rating && (
-                                  <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-[#8ee01a]">
-                                    <Star className="w-3 h-3 fill-[#8ee01a]" /> {c.rating}
+                                  <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-white">
+                                    <Star className="w-3 h-3 fill-white" /> {c.rating}
                                   </span>
                                 )}
-                                <span className="text-[10px] text-white/55">{c.createdAt}</span>
+                                <span className="text-[10px] text-neutral-400">{c.createdAt}</span>
                               </div>
                             </div>
-                            <p className="text-white/85 mt-0.5">{c.text}</p>
+                            <p className="text-neutral-200 mt-0.5">{c.text}</p>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <p className="text-xs text-white/60">
+                      <p className="text-xs text-neutral-400">
                         Sé el primero en compartir qué te pareció esta experiencia.
                       </p>
                     )}
                   </div>
                 </div>
 
-                {/* Sticky Bottom Booking Bar inside Right Panel (matching user's reference design) */}
-                <div className="px-5 py-3.5 border-t border-white/15 bg-[#091f16] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+                {/* Sticky Bottom Booking Bar inside Right Panel (Dark neutral bar + Bone "Más información" + Primary Green CTA) */}
+                <div className="px-5 py-3.5 border-t border-white/10 bg-[#141516] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
                   <div>
-                    <p className="text-[11px] text-white/70 font-medium">¿Te gustaría vivir esta experiencia?</p>
+                    <p className="text-[11px] text-neutral-400 font-medium">¿Te gustaría vivir esta experiencia?</p>
                     <div className="flex items-baseline gap-2">
                       <span className="text-sm font-black text-white">Reserva tu cupo ahora</span>
                       <span className="text-base font-black text-[#8ee01a]">
                         ${effectivePrice.toFixed(2)} /p
                       </span>
                       {hasFlash && (
-                        <span className="text-xs line-through text-white/50">${baseP.toFixed(2)}</span>
+                        <span className="text-xs line-through text-neutral-500">${baseP.toFixed(2)}</span>
                       )}
                     </div>
                   </div>
@@ -5314,17 +5307,17 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                         setLightboxServiceId(null)
                         openServiceDetailInstant(activeSvc)
                       }}
-                      className="h-10 px-3.5 rounded-2xl border-white/25 bg-white/10 hover:bg-white/20 text-white font-bold text-xs gap-1.5 cursor-pointer"
+                      className="h-10 px-3.5 rounded-2xl border-transparent bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-900 font-bold text-xs gap-1.5 cursor-pointer"
                     >
-                      <Info className="w-3.5 h-3.5 text-[#8ee01a]" />
-                      <span>+ Info</span>
+                      <Info className="w-3.5 h-3.5 text-slate-700" />
+                      <span>Más información</span>
                     </Button>
                     <Button
                       type="button"
                       onClick={() => {
                         setSelectedService(activeSvc)
                       }}
-                      className="h-10 px-5 rounded-2xl bg-[#8ee01a] hover:bg-[#8ee01a]/90 text-[#105238] font-black text-xs sm:text-sm shadow-lg cursor-pointer"
+                      className="h-10 px-5 rounded-2xl bg-[#105238] hover:bg-[#0c3e2b] text-white font-black text-xs sm:text-sm shadow-lg cursor-pointer"
                     >
                       Reservar Ahora
                     </Button>

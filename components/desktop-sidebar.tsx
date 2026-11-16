@@ -58,7 +58,7 @@ export function DesktopFloatingIconRail({
   ]
 
   return (
-    <div className="hidden lg:flex fixed left-3 top-1/2 -translate-y-1/2 z-50 flex-col items-center py-3 px-2 bg-white/95 dark:bg-card/95 backdrop-blur-md border border-[#aeb6a1]/80 shadow-[0_14px_38px_rgba(16,82,56,0.18)] rounded-3xl gap-2 animate-in fade-in duration-200 select-none">
+    <div className="hidden lg:flex fixed left-3 top-1/2 -translate-y-1/2 z-50 flex-col items-center py-3 px-2 bg-white/95 dark:bg-card/95 backdrop-blur-md border border-slate-200/90 shadow-[0_10px_30px_rgba(15,23,42,0.08)] rounded-3xl gap-2 animate-in fade-in duration-200 select-none">
       {/* 1. ARRIBA: Campanita (Notificaciones) */}
       <button
         type="button"
@@ -66,18 +66,18 @@ export function DesktopFloatingIconRail({
         className={cn(
           "group relative w-11 h-11 rounded-2xl flex items-center justify-center transition-all cursor-pointer",
           activeTab === "notificaciones" || activeTab === "notificaciones-extended"
-            ? "bg-[#105238] text-[#8ee01a] shadow-sm"
-            : "bg-[#eaf0e2]/70 hover:bg-[#105238] text-[#105238] hover:text-[#8ee01a]",
+            ? "bg-[#105238] text-white shadow-xs"
+            : "bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-700 hover:text-slate-900",
         )}
         aria-label="Notificaciones"
       >
         <Bell className="w-5 h-5" />
         {(unreadNotificationsCount ?? 0) > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#105238] text-[#8ee01a] border-2 border-white text-[10px] font-black flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#105238] text-white border-2 border-white text-[10px] font-black flex items-center justify-center">
             {unreadNotificationsCount}
           </span>
         )}
-        <span className="pointer-events-none opacity-0 group-hover:opacity-100 group-hover:translate-x-0 -translate-x-1 transition-all duration-150 absolute left-full ml-3 bg-[#105238] text-white text-xs font-extrabold px-3 py-1.5 rounded-xl whitespace-nowrap shadow-lg border border-[#8ee01a]/40 z-50">
+        <span className="pointer-events-none opacity-0 group-hover:opacity-100 group-hover:translate-x-0 -translate-x-1 transition-all duration-150 absolute left-full ml-3 bg-neutral-900/95 text-white text-xs font-bold px-3 py-1.5 rounded-xl whitespace-nowrap shadow-lg border border-white/10 z-50">
           Notificaciones{(unreadNotificationsCount ?? 0) > 0 ? ` (${unreadNotificationsCount})` : ""}
         </span>
       </button>
@@ -89,23 +89,23 @@ export function DesktopFloatingIconRail({
         className={cn(
           "group relative w-11 h-11 rounded-2xl flex items-center justify-center transition-all cursor-pointer",
           activeTab === "favoritos"
-            ? "bg-[#105238] text-[#8ee01a] shadow-sm"
-            : "bg-[#eaf0e2]/70 hover:bg-[#105238] text-[#105238] hover:text-[#8ee01a]",
+            ? "bg-[#105238] text-white shadow-xs"
+            : "bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-700 hover:text-slate-900",
         )}
         aria-label="Mis Likes"
       >
-        <Heart className="w-5 h-5 fill-current" />
+        <Heart className="w-5 h-5" />
         {likesCount > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#8ee01a] text-[#105238] border-2 border-white text-[10px] font-black flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-slate-800 text-white border-2 border-white text-[10px] font-black flex items-center justify-center">
             {likesCount}
           </span>
         )}
-        <span className="pointer-events-none opacity-0 group-hover:opacity-100 group-hover:translate-x-0 -translate-x-1 transition-all duration-150 absolute left-full ml-3 bg-[#105238] text-white text-xs font-extrabold px-3 py-1.5 rounded-xl whitespace-nowrap shadow-lg border border-[#8ee01a]/40 z-50">
+        <span className="pointer-events-none opacity-0 group-hover:opacity-100 group-hover:translate-x-0 -translate-x-1 transition-all duration-150 absolute left-full ml-3 bg-neutral-900/95 text-white text-xs font-bold px-3 py-1.5 rounded-xl whitespace-nowrap shadow-lg border border-white/10 z-50">
           Mis Likes ({likesCount})
         </span>
       </button>
 
-      <div className="w-7 h-px bg-[#aeb6a1]/60 my-0.5" />
+      <div className="w-7 h-px bg-slate-200 my-0.5" />
 
       {/* 3. ICONOS PRINCIPALES: Experiencias, Explorar, Mis Viajes, Safe-Flow, Go */}
       {mainRailTabs.map((item) => {
@@ -122,20 +122,20 @@ export function DesktopFloatingIconRail({
             className={cn(
               "group relative w-11 h-11 rounded-2xl flex items-center justify-center transition-all cursor-pointer",
               isActive
-                ? "bg-[#105238] text-[#8ee01a] shadow-md ring-2 ring-[#8ee01a]/50"
-                : "hover:bg-[#eaf0e2] text-muted-foreground hover:text-[#105238]",
+                ? "bg-[#105238] text-white shadow-sm"
+                : "hover:bg-[#f0f2f5] text-slate-600 hover:text-slate-900",
             )}
             aria-label={item.label}
           >
             <Icon className="w-5 h-5" />
-            <span className="pointer-events-none opacity-0 group-hover:opacity-100 group-hover:translate-x-0 -translate-x-1 transition-all duration-150 absolute left-full ml-3 bg-[#105238] text-white text-xs font-extrabold px-3 py-1.5 rounded-xl whitespace-nowrap shadow-lg border border-[#8ee01a]/40 z-50">
+            <span className="pointer-events-none opacity-0 group-hover:opacity-100 group-hover:translate-x-0 -translate-x-1 transition-all duration-150 absolute left-full ml-3 bg-neutral-900/95 text-white text-xs font-bold px-3 py-1.5 rounded-xl whitespace-nowrap shadow-lg border border-white/10 z-50">
               {item.label}
             </span>
           </button>
         )
       })}
 
-      <div className="w-7 h-px bg-[#aeb6a1]/60 my-0.5" />
+      <div className="w-7 h-px bg-slate-200 my-0.5" />
 
       {/* 4. ÚLTIMO: Círculo con tres puntitos + "Más" debajo para abrir todo el menú */}
       <button
@@ -144,13 +144,13 @@ export function DesktopFloatingIconRail({
         className="group relative flex flex-col items-center justify-center pt-0.5 cursor-pointer"
         aria-label="Más opciones"
       >
-        <div className="w-10 h-10 rounded-full bg-[#eaf0e2] group-hover:bg-[#105238] text-[#105238] group-hover:text-[#8ee01a] border border-[#105238]/25 flex items-center justify-center transition-all shadow-2xs">
+        <div className="w-10 h-10 rounded-full bg-[#f0f2f5] group-hover:bg-[#e4e6eb] text-slate-700 group-hover:text-slate-900 border border-slate-200/80 flex items-center justify-center transition-all">
           <MoreHorizontal className="w-5 h-5" />
         </div>
-        <span className="text-[10px] font-black text-[#105238] dark:text-[#8ee01a] leading-none mt-1">
+        <span className="text-[10px] font-bold text-slate-600 leading-none mt-1">
           Más
         </span>
-        <span className="pointer-events-none opacity-0 group-hover:opacity-100 group-hover:translate-x-0 -translate-x-1 transition-all duration-150 absolute left-full ml-3 bg-[#105238] text-white text-xs font-extrabold px-3 py-1.5 rounded-xl whitespace-nowrap shadow-lg border border-[#8ee01a]/40 z-50">
+        <span className="pointer-events-none opacity-0 group-hover:opacity-100 group-hover:translate-x-0 -translate-x-1 transition-all duration-150 absolute left-full ml-3 bg-neutral-900/95 text-white text-xs font-bold px-3 py-1.5 rounded-xl whitespace-nowrap shadow-lg border border-white/10 z-50">
           Abrir menú completo
         </span>
       </button>
@@ -388,10 +388,10 @@ export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: Desk
 
         {/* Sección de Aliado Comercial */}
         {currentUser?.tipo === "ALIADO" && (
-          <div className="mb-6 p-3.5 bg-gradient-to-br from-[#105238]/10 to-[#105238]/5 rounded-2xl border-2 border-[#105238]/30 shadow-sm">
+          <div className="mb-4 p-3 bg-[#f7f8fa] dark:bg-card rounded-2xl border border-slate-200/80">
             <div className="flex items-center justify-between mb-2 px-1">
-              <span className="text-[11px] font-black uppercase tracking-wider text-[#105238]">Modo Aliado</span>
-              <span className="text-[10px] font-black px-2 py-0.5 rounded-full uppercase bg-emerald-100 text-emerald-800">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Modo Aliado</span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase bg-[#f0f2f5] text-slate-700">
                 Comercio
               </span>
             </div>
@@ -399,10 +399,10 @@ export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: Desk
               href={useAppStore.getState().accessToken ? `https://palenquego.com/admin/sso/?token=${useAppStore.getState().accessToken}` : "https://palenquego.com/admin/"}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all font-bold text-sm shadow-sm bg-[#105238] text-white hover:bg-[#0c3e2b]"
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all font-bold text-sm bg-[#105238] text-white hover:bg-[#0c3e2b]"
             >
               <div className="flex items-center gap-2.5">
-                <Store className="w-5 h-5 text-white" />
+                <Store className="w-4 h-4 text-white" />
                 <span>Panel de Negocios</span>
               </div>
               <ChevronRight className="w-4 h-4 opacity-70" />
@@ -412,36 +412,36 @@ export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: Desk
 
         {/* Sección de Recepción (Dueños y Personal Autorizado) */}
         {(currentUser?.es_recepcion || currentUser?.es_aliado || currentUser?.tipo === "ALIADO" || (currentUser?.reception_stores?.length ?? 0) > 0) && (
-          <div className="mb-6 p-3.5 bg-[#eaf0e2]/70 dark:bg-[#105238]/15 rounded-2xl border border-[#aeb6a1]/60 shadow-2xs">
+          <div className="mb-6 p-3 bg-[#f7f8fa] dark:bg-card rounded-2xl border border-slate-200/80">
             <div className="flex items-center justify-between mb-2 px-1">
-              <span className="text-[11px] font-black uppercase tracking-wider text-[#105238] dark:text-[#8ee01a]">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                 Recepción
               </span>
-              <span className="text-[10px] font-black px-2 py-0.5 rounded-full uppercase bg-[#105238] text-[#8ee01a]">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase bg-[#f0f2f5] text-slate-700">
                 QR & Cobro
               </span>
             </div>
             <button
               onClick={() => onNavigate("recepcion")}
               className={cn(
-                "w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all font-bold text-sm shadow-xs cursor-pointer",
+                "w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all font-bold text-sm cursor-pointer",
                 activeTab === "recepcion"
-                  ? "bg-[#105238] text-white"
-                  : "bg-white dark:bg-card text-[#105238] hover:bg-[#eaf0e2]",
+                  ? "bg-[#e4e6eb] text-slate-900"
+                  : "bg-white dark:bg-card text-slate-800 hover:bg-[#f0f2f5] border border-slate-200/70",
               )}
             >
               <div className="flex items-center gap-2.5">
-                <QrCode className={cn("w-5 h-5", activeTab === "recepcion" ? "text-[#8ee01a]" : "text-[#105238]")} />
+                <QrCode className="w-4 h-4 text-[#105238]" />
                 <span>Validar QR / Recepción</span>
               </div>
-              <ChevronRight className="w-4 h-4 opacity-70" />
+              <ChevronRight className="w-4 h-4 text-slate-400" />
             </button>
           </div>
         )}
 
         {/* Main Navigation */}
         <div className="mb-6">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-2">Explorar</p>
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 px-2">Explorar</p>
           <div className="space-y-1">
             {mainTabs.map((tab) => {
               const IconComponent = tab.icon
@@ -451,11 +451,13 @@ export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: Desk
                   key={tab.id}
                   onClick={() => onNavigate(tab.id)}
                   className={cn(
-                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors font-medium text-sm",
-                    isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors text-sm cursor-pointer",
+                    isActive
+                      ? "bg-[#e4e6eb]/80 dark:bg-muted text-slate-900 dark:text-foreground font-bold"
+                      : "text-slate-700 dark:text-muted-foreground hover:bg-[#f0f2f5] dark:hover:bg-muted font-semibold"
                   )}
                 >
-                  <IconComponent className={cn("w-5 h-5", isActive ? "text-primary" : "text-muted-foreground")} />
+                  <IconComponent className={cn("w-5 h-5", isActive ? "text-[#105238]" : "text-slate-500")} />
                   {tab.label}
                 </button>
               )
