@@ -33,6 +33,7 @@ import {
   ArrowUp,
   ArrowDown,
   Maximize2,
+  Minimize2,
   Info,
   Check,
   Mail,
@@ -1229,6 +1230,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   const [serviceForRoutes, setServiceForRoutes] = useState<Service | null>(null)
   const [lightboxServiceId, setLightboxServiceId] = useState<number | null>(null)
   const [lightboxPhotoIdx, setLightboxPhotoIdx] = useState<number>(0)
+  const [isLightboxPhotoFullscreen, setIsLightboxPhotoFullscreen] = useState<boolean>(false)
   const [enrichedLightboxService, setEnrichedLightboxService] = useState<Service | null>(null)
   const [expandLightboxDesc, setExpandLightboxDesc] = useState<boolean>(false)
   const [selectedCategory, setSelectedCategory] = useState(() =>
@@ -4721,13 +4723,25 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
               </button>
             </div>
 
-            {/* Main Split Lightbox Container */}
+            {/* Main Split Lightbox Container (or Fullscreen Photo View when isLightboxPhotoFullscreen is true) */}
             <div
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-[1120px] h-[90vh] lg:h-[85vh] max-h-[760px] rounded-[28px] sm:rounded-[32px] overflow-hidden shadow-[0_28px_90px_rgba(0,0,0,0.75)] border border-[#8ee01a]/35 bg-[#081c13] grid grid-cols-1 lg:grid-cols-12 relative mr-10 sm:mr-14 lg:mr-12"
+              className={cn(
+                "overflow-hidden shadow-[0_28px_90px_rgba(0,0,0,0.75)] border border-[#8ee01a]/35 bg-[#081c13] grid grid-cols-1 lg:grid-cols-12 relative transition-all duration-200",
+                isLightboxPhotoFullscreen
+                  ? "w-[96vw] h-[94vh] max-w-none max-h-none rounded-3xl mr-12 sm:mr-16"
+                  : "w-full max-w-[1120px] h-[90vh] lg:h-[85vh] max-h-[760px] rounded-[28px] sm:rounded-[32px] mr-10 sm:mr-14 lg:mr-12",
+              )}
             >
               {/* LEFT COLUMN: Interactive Photo & Multi-Image Gallery Viewer */}
-              <div className="lg:col-span-6 relative bg-[#05120c] flex flex-col justify-between h-[38vh] sm:h-[42vh] lg:h-full overflow-hidden select-none">
+              <div
+                className={cn(
+                  "relative bg-[#05120c] flex flex-col justify-between overflow-hidden select-none",
+                  isLightboxPhotoFullscreen
+                    ? "lg:col-span-12 h-full"
+                    : "lg:col-span-6 h-[38vh] sm:h-[42vh] lg:h-full",
+                )}
+              >
                 {/* Blurred ambient background of current photo */}
                 <img
                   src={currentPhotoUrl}
@@ -4739,13 +4753,14 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                 <img
                   src={currentPhotoUrl}
                   alt={activeSvc.name}
+                  onDoubleClick={() => setIsLightboxPhotoFullscreen((prev) => !prev)}
                   className="relative z-10 w-full h-full object-contain"
                   onError={(e) => {
                     e.currentTarget.src = DEFAULT_STORE_COVER
                   }}
                 />
 
-                {/* Top Overlay on Image: Category/Flash + Heart Likes + Expand to Full Page */}
+                {/* Top Overlay on Image: Category/Flash + Heart Likes + Fullscreen Toggle */}
                 <div className="absolute top-3.5 left-3.5 right-3.5 z-20 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <span className="bg-[#105238]/95 text-[#8ee01a] border border-[#8ee01a]/40 text-[11px] font-black px-3 py-1 rounded-full shadow-md">
@@ -4776,15 +4791,42 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
 
                     <button
                       type="button"
-                      onClick={() => {
-                        setLightboxServiceId(null)
-                        openServiceDetailInstant(activeSvc)
-                      }}
-                      className="w-9 h-9 rounded-full bg-black/60 hover:bg-[#105238] text-white hover:text-[#8ee01a] border border-white/25 flex items-center justify-center shadow-lg transition-colors cursor-pointer"
-                      title="Abrir vista completa (+ Info)"
+                      onClick={() => setIsLightboxPhotoFullscreen((prev) => !prev)}
+                      className={cn(
+                        "h-9 px-3 rounded-full border flex items-center gap-1.5 text-xs font-bold shadow-lg transition-colors cursor-pointer",
+                        isLightboxPhotoFullscreen
+                          ? "bg-[#8ee01a] text-[#105238] border-[#8ee01a]"
+                          : "w-9 px-0 justify-center bg-black/60 hover:bg-[#105238] text-white hover:text-[#8ee01a] border-white/25",
+                      )}
+                      title={
+                        isLightboxPhotoFullscreen
+                          ? "Restaurar vista con detalles"
+                          : "Ver imagen en pantalla grande completa"
+                      }
                     >
-                      <Maximize2 className="w-4 h-4" />
+                      {isLightboxPhotoFullscreen ? (
+                        <>
+                          <Minimize2 className="w-4 h-4" />
+                          <span>Reducir</span>
+                        </>
+                      ) : (
+                        <Maximize2 className="w-4 h-4" />
+                      )}
                     </button>
+
+                    {isLightboxPhotoFullscreen && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsLightboxPhotoFullscreen(false)
+                          setLightboxServiceId(null)
+                        }}
+                        className="w-9 h-9 rounded-full bg-black/65 hover:bg-white/20 text-white border border-white/25 flex items-center justify-center shadow-lg transition-colors cursor-pointer"
+                        title="Cerrar"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -4858,7 +4900,8 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                 </div>
               </div>
 
-              {/* RIGHT COLUMN: Scrollable Experience Details, Features, Reactions, Lived Reviews & Sticky Bottom Booking Bar */}
+              {/* RIGHT COLUMN: Scrollable Experience Details, Features, Reactions, Lived Reviews & Sticky Bottom Booking Bar (hidden when photo is in Fullscreen mode) */}
+              {!isLightboxPhotoFullscreen && (
               <div className="lg:col-span-6 flex flex-col h-[52vh] sm:h-[48vh] lg:h-full bg-[#0c261b] text-white overflow-hidden">
                 {/* Top Header inside Right Panel */}
                 <div className="px-5 py-4 border-b border-white/10 flex items-start justify-between gap-3 shrink-0 bg-[#091f16]">
@@ -5162,6 +5205,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   </div>
                 </div>
               </div>
+              )}
             </div>
           </div>
         )
