@@ -645,14 +645,30 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
                     {service.extras.map((extra: any, idx: number) => {
                       const extraPrice = extra.precio_adicional || extra.precio || extra.price || 0
                       const extraName = extra.nombre || extra.name || "Extra adicional"
+                      const extraDesc = extra.descripcion || extra.description || ""
+                      const extraImg = extra.imagen_url || extra.imagen_cloudinary_url || extra.image || ""
 
                       return (
                         <div
                           key={idx}
-                          className="flex items-center justify-between p-4 bg-card rounded-xl border border-border hover:border-[#105238]/50 transition-all shadow-2xs"
+                          className="flex items-center justify-between p-3.5 bg-card rounded-2xl border border-border hover:border-[#105238]/50 transition-all shadow-2xs gap-3"
                         >
-                          <span className="text-foreground font-semibold text-sm">{extraName}</span>
-                          <span className="text-[#105238] font-black text-base">+${extraPrice}</span>
+                          <div className="flex items-center gap-3 min-w-0">
+                            {extraImg && (
+                              <img
+                                src={extraImg}
+                                alt={extraName}
+                                className="w-14 h-14 rounded-xl object-cover shrink-0 border border-border/60"
+                              />
+                            )}
+                            <div className="min-w-0">
+                              <span className="block text-foreground font-bold text-sm truncate">{extraName}</span>
+                              {extraDesc && (
+                                <span className="block text-xs text-muted-foreground line-clamp-1">{extraDesc}</span>
+                              )}
+                            </div>
+                          </div>
+                          <span className="text-[#105238] font-black text-base shrink-0">+${extraPrice}</span>
                         </div>
                       )
                     })}

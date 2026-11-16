@@ -2848,6 +2848,41 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     )
   }, [lightboxServiceId, enrichedLightboxService, visibleBatchServices, services, globalCatalogPool])
 
+  // Promo Video Stories from Followed Businesses (only shown in feed when a followed business has active stories)
+  const [followedStoreIdsLocal, setFollowedStoreIdsLocal] = useState<number[]>([])
+  const [activeFeedStoryItem, setActiveFeedStoryItem] = useState<{
+    businessId: number
+    businessName: string
+    businessLogo: string
+    stories: Array<{
+      id: number
+      titulo: string
+      video_cloudinary_url: string
+      thumbnail_url?: string
+      vistas?: number
+    }>
+    storyIdx: number
+  } | null>(null)
+
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("palenque_followed_stores_v1") || "[]")
+      if (Array.isArray(saved)) {
+        setFollowedStoreIdsLocal(saved.map((n) => Number(n)).filter(Boolean))
+      }
+    } catch {
+      // ignore
+    }
+  }, [businesses])
+
+  const followedBusinessesWithPromos = useMemo(() => {
+    return (businesses || []).filter((b: any) => {
+      const isFollowed = Boolean(b.is_following) || followedStoreIdsLocal.includes(Number(b.id))
+      const hasPromos = Array.isArray(b.promo_stories) && b.promo_stories.length > 0
+      return isFollowed && hasPromos
+    })
+  }, [businesses, followedStoreIdsLocal])
+
   // Silently fetch full galleryImages, features, extras, and routes when a service is opened in the Lightbox
   useEffect(() => {
     if (lightboxServiceId === null) {
@@ -2950,6 +2985,63 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                 >
                   Pagar / Ver
                 </Button>
+              </div>
+            )}
+
+            {/* Followed Businesses Video Promo Stories Strip (only visible when followed stores have active promos) */}
+            {followedBusinessesWithPromos.length > 0 && (
+              <div className="bg-card border border-border rounded-3xl p-4 shadow-2xs">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-[#105238]" />
+                    <h2 className="text-xs font-black uppercase tracking-wider text-foreground">
+                      Promos de Negocios que Sigues
+                    </h2>
+                  </div>
+                  <span className="text-[10px] font-bold text-[#105238] bg-[#eaf0e2] px-2.5 py-0.5 rounded-full">
+                    {followedBusinessesWithPromos.length} negocio{followedBusinessesWithPromos.length > 1 ? "s" : ""}
+                  </span>
+                </div>
+                <div className="flex items-center gap-4 overflow-x-auto pb-1 no-scrollbar">
+                  {followedBusinessesWithPromos.map((biz: any) => {
+                    const firstStory = biz.promo_stories[0]
+                    return (
+                      <button
+                        key={biz.id}
+                        type="button"
+                        onClick={() =>
+                          setActiveFeedStoryItem({
+                            businessId: biz.id,
+                            businessName: biz.name,
+                            businessLogo: biz.logo || biz.banner || "",
+                            stories: biz.promo_stories,
+                            storyIdx: 0,
+                          })
+                        }
+                        className="flex flex-col items-center gap-1.5 shrink-0 group cursor-pointer"
+                      >
+                        <div className="w-16 h-16 rounded-full p-[2.5px] bg-gradient-to-tr from-[#105238] via-[#8ee01a] to-[#105238] shadow-sm group-hover:scale-105 transition-transform">
+                          <div className="w-full h-full rounded-full overflow-hidden bg-black border-2 border-white relative">
+                            {firstStory?.thumbnail_url || biz.logo || biz.banner ? (
+                              <img
+                                src={firstStory?.thumbnail_url || biz.logo || biz.banner}
+                                alt={biz.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-[#105238] flex items-center justify-center text-white font-black text-xs">
+                                {biz.name?.slice(0, 2).toUpperCase()}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <span className="text-[11px] font-bold text-foreground max-w-[74px] truncate">
+                          {biz.name}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
             )}
 
@@ -5075,6 +5167,40 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                     </div>
                   </div>
 
+                  {/* Extras / Productos del Servicio con Imagen */}
+                  {activeSvc.extras && activeSvc.extras.length > 0 && (
+                    <div className="rounded-2xl bg-white/5 border border-white/10 p-4 space-y-2.5">
+                      <span className="text-[11px] font-black uppercase tracking-wider text-[#8ee01a] block">
+                        PRODUCTOS Y EXTRAS DEL SERVICIO ({activeSvc.extras.length})
+                      </span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {activeSvc.extras.map((extra) => (
+                          <div
+                            key={extra.id}
+                            className="flex items-center gap-2.5 p-2 rounded-xl bg-black/35 border border-white/10"
+                          >
+                            {extra.image && (
+                              <div className="w-11 h-11 rounded-lg overflow-hidden bg-white/10 shrink-0 border border-white/15">
+                                <img
+                                  src={extra.image}
+                                  alt={extra.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-bold text-white truncate">{extra.name}</p>
+                              {extra.description && (
+                                <p className="text-[10px] text-white/65 line-clamp-1">{extra.description}</p>
+                              )}
+                              <p className="text-[11px] font-black text-[#8ee01a]">+${extra.price}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Card 4: Comentarios y Experiencias Vividas */}
                   <div className="rounded-2xl bg-white/5 border border-white/10 p-4 space-y-3">
                     <div className="flex items-center justify-between">
@@ -5206,6 +5332,145 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                 </div>
               </div>
               )}
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* Followed Business Promo Video Story Player Modal */}
+      {activeFeedStoryItem && (() => {
+        const currentStory = activeFeedStoryItem.stories[activeFeedStoryItem.storyIdx]
+        if (!currentStory) return null
+        return (
+          <div
+            className="fixed inset-0 z-[130] bg-black/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-6"
+            onClick={() => setActiveFeedStoryItem(null)}
+          >
+            <div
+              className="relative w-full max-w-[400px] h-[82vh] max-h-[720px] bg-black rounded-3xl overflow-hidden border border-white/20 shadow-2xl flex flex-col justify-between"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Story Progress Bars */}
+              <div className="absolute top-0 inset-x-0 z-20 p-3 bg-gradient-to-b from-black/80 via-black/40 to-transparent">
+                <div className="flex gap-1.5 mb-3">
+                  {activeFeedStoryItem.stories.map((st, idx) => (
+                    <div key={st.id || idx} className="h-1 flex-1 rounded-full bg-white/30 overflow-hidden">
+                      <div
+                        className={cn(
+                          "h-full rounded-full transition-all",
+                          idx <= activeFeedStoryItem.storyIdx ? "w-full bg-[#8ee01a]" : "w-0",
+                        )}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const bId = activeFeedStoryItem.businessId
+                      setActiveFeedStoryItem(null)
+                      router.push(`/b/${bId}?from=marketplace`)
+                    }}
+                    className="flex items-center gap-2.5 text-left cursor-pointer"
+                  >
+                    <div className="w-9 h-9 rounded-full overflow-hidden border border-[#8ee01a] bg-[#105238] flex items-center justify-center text-white font-black text-xs">
+                      {activeFeedStoryItem.businessLogo ? (
+                        <img
+                          src={activeFeedStoryItem.businessLogo}
+                          alt={activeFeedStoryItem.businessName}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        activeFeedStoryItem.businessName.slice(0, 2).toUpperCase()
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-xs font-black text-white leading-tight hover:underline">
+                        {activeFeedStoryItem.businessName}
+                      </p>
+                      <p className="text-[10px] text-[#8ee01a] font-bold">
+                        {currentStory.titulo || "Promo del día"}
+                      </p>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveFeedStoryItem(null)}
+                    className="w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/80 cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Video Player */}
+              <div className="relative flex-1 bg-black flex items-center justify-center overflow-hidden">
+                <video
+                  key={currentStory.video_cloudinary_url}
+                  src={currentStory.video_cloudinary_url}
+                  poster={currentStory.thumbnail_url || undefined}
+                  controls
+                  autoPlay
+                  playsInline
+                  onEnded={() => {
+                    if (activeFeedStoryItem.storyIdx < activeFeedStoryItem.stories.length - 1) {
+                      setActiveFeedStoryItem({
+                        ...activeFeedStoryItem,
+                        storyIdx: activeFeedStoryItem.storyIdx + 1,
+                      })
+                    }
+                  }}
+                  className="w-full h-full object-contain"
+                />
+
+                {activeFeedStoryItem.storyIdx > 0 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setActiveFeedStoryItem({
+                        ...activeFeedStoryItem,
+                        storyIdx: activeFeedStoryItem.storyIdx - 1,
+                      })
+                    }
+                    className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/80 cursor-pointer"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                )}
+                {activeFeedStoryItem.storyIdx < activeFeedStoryItem.stories.length - 1 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setActiveFeedStoryItem({
+                        ...activeFeedStoryItem,
+                        storyIdx: activeFeedStoryItem.storyIdx + 1,
+                      })
+                    }
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/80 cursor-pointer"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Footer Action to Visit Store */}
+              <div className="p-3.5 bg-[#091f16] border-t border-white/15 flex items-center justify-between gap-3">
+                <span className="text-xs font-bold text-white truncate">
+                  {currentStory.titulo || activeFeedStoryItem.businessName}
+                </span>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    const bId = activeFeedStoryItem.businessId
+                    setActiveFeedStoryItem(null)
+                    router.push(`/b/${bId}?from=marketplace`)
+                  }}
+                  className="bg-[#8ee01a] hover:bg-[#8ee01a]/90 text-[#105238] font-black text-xs h-8 px-3.5 rounded-xl shrink-0 cursor-pointer"
+                >
+                  Ver Negocio
+                </Button>
+              </div>
             </div>
           </div>
         )

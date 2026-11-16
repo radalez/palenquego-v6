@@ -860,23 +860,37 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
             <div className="space-y-3">
               {service.extras?.map((extra: any) => {
                 const extraName = extra.nombre || extra.name
+                const extraDesc = extra.descripcion || extra.description || ""
                 const extraPrice = parseFloat(extra.precio_adicional || extra.price || 0)
+                const extraImg = extra.imagen_url || extra.imagen_cloudinary_url || extra.image || ""
                 const quantity = selectedExtras[extraName] || 0
                 
                 return (
                   <div
                     key={extraName}
                     className={cn(
-                      "w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all shadow-sm",
+                      "w-full flex items-center justify-between p-3.5 rounded-2xl border-2 transition-all shadow-sm gap-3",
                       quantity > 0 ? "border-primary bg-primary/5" : "border-border bg-card",
                     )}
                   >
-                    <div className="flex-1 text-left">
-                      <span className="block font-bold text-foreground">{extraName}</span>
-                      <span className="text-primary font-semibold text-sm">+${extraPrice} /u</span>
+                    <div className="flex items-center gap-3 flex-1 min-w-0 text-left">
+                      {extraImg && (
+                        <img
+                          src={extraImg}
+                          alt={extraName}
+                          className="w-14 h-14 rounded-xl object-cover shrink-0 border border-border/60"
+                        />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <span className="block font-bold text-sm text-foreground truncate">{extraName}</span>
+                        {extraDesc && (
+                          <span className="block text-[11px] text-muted-foreground line-clamp-1">{extraDesc}</span>
+                        )}
+                        <span className="text-primary font-semibold text-xs">+${extraPrice} /u</span>
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-3 bg-muted rounded-lg p-1 ml-4 border border-border">
+                    <div className="flex items-center gap-2.5 bg-muted rounded-xl p-1 border border-border shrink-0">
                       <button
                         onClick={() => updateExtraQuantity(extraName, -1)}
                         className="w-8 h-8 rounded-md bg-card flex items-center justify-center hover:bg-muted transition-colors shadow-sm"

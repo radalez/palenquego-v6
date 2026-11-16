@@ -222,7 +222,7 @@ export interface Service {
 
   capacityMax?: number
 
-  extras?: { name: string; price: number }[]
+  extras?: { id?: number; name: string; nombre?: string; description?: string; descripcion?: string; price: number; precio_adicional?: number | string; image?: string; imagen_url?: string }[]
 
   blocked_dates?: string[]
 
@@ -1899,6 +1899,17 @@ export const useAppStore = create<AppState>()(
 
               : [],
 
+            extras: Array.isArray(s.extras)
+              ? s.extras.map((ex: any) => ({
+                  ...ex,
+                  id: ex.id,
+                  name: ex.nombre || ex.name || "Extra",
+                  description: ex.descripcion || ex.description || "",
+                  price: parseFloat(ex.precio_adicional) || parseFloat(ex.price) || 0,
+                  image: getProxyImage(ex.imagen_url || ex.imagen_cloudinary_url || ex.imagen || ex.image || ""),
+                }))
+              : [],
+
             linkTypes: s.link_types || s.linkTypes || [],
 
             chatbotScript: s.chatbot_script || null,
@@ -2025,6 +2036,17 @@ export const useAppStore = create<AppState>()(
 
               : [],
 
+            extras: Array.isArray(s.extras)
+              ? s.extras.map((ex: any) => ({
+                  ...ex,
+                  id: ex.id,
+                  name: ex.nombre || ex.name || "Extra",
+                  description: ex.descripcion || ex.description || "",
+                  price: parseFloat(ex.precio_adicional) || parseFloat(ex.price) || 0,
+                  image: getProxyImage(ex.imagen_url || ex.imagen_cloudinary_url || ex.imagen || ex.image || ""),
+                }))
+              : [],
+
             linkTypes: s.link_types || s.linkTypes || [],
 
             chatbotScript: s.chatbot_script || null,
@@ -2096,6 +2118,16 @@ export const useAppStore = create<AppState>()(
             features: s.features && s.features.length > 0
               ? s.features.map((f: any) => typeof f === "string" ? f : (f.nombre || f.name || ""))
               : [],
+            extras: Array.isArray(s.extras)
+              ? s.extras.map((ex: any) => ({
+                  ...ex,
+                  id: ex.id,
+                  name: ex.nombre || ex.name || "Extra",
+                  description: ex.descripcion || ex.description || "",
+                  price: parseFloat(ex.precio_adicional) || parseFloat(ex.price) || 0,
+                  image: getProxyImage(ex.imagen_url || ex.imagen_cloudinary_url || ex.imagen || ex.image || ""),
+                }))
+              : [],
             linkTypes: s.link_types || s.linkTypes || [],
             chatbotScript: s.chatbot_script || null,
           };
@@ -2115,8 +2147,13 @@ export const useAppStore = create<AppState>()(
       fetchBusinesses: async () => {
 
         try {
+          const token = get().accessToken;
+          const headers: Record<string, string> = {};
+          if (token) {
+            headers["Authorization"] = `Bearer ${token}`;
+          }
 
-          const response = await fetch(`${API_BASE}/stores/list/`)
+          const response = await fetch(`${API_BASE}/stores/list/`, { headers })
 
           if (!response.ok) {
 
@@ -2174,7 +2211,7 @@ export const useAppStore = create<AppState>()(
 
               description: b.biografia || b.description || "",
 
-              location: b.ubicacion_gps || b.location || "El Salvador",
+              location: b.direccion || b.ubicacion_gps || b.location || "El Salvador",
 
               logo: getProxyImage(b.logo || ""),
 
@@ -2188,7 +2225,24 @@ export const useAppStore = create<AppState>()(
 
               services: b.services || [],
 
-              socialLinks: b.socialLinks || {},
+              products: Array.isArray(b.products) ? b.products : [],
+
+              promo_stories: Array.isArray(b.promo_stories) ? b.promo_stories : [],
+
+              followers_count: b.followers_count || 0,
+
+              is_following: Boolean(b.is_following),
+
+              cloudinary_cloud_name: b.cloudinary_cloud_name || "",
+
+              cloudinary_upload_preset: b.cloudinary_upload_preset || "",
+
+              aliado_id: b.aliado_id || null,
+
+              socialLinks: b.socialLinks || {
+                whatsapp: b.telefono_contacto || "",
+                phone: b.telefono_contacto || "",
+              },
 
             };
 
