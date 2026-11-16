@@ -809,6 +809,325 @@ function FeedIntentSurveyCard({
   )
 }
 
+function StoresReelStrip({
+  businesses,
+  onOpenStore,
+  onViewAllStores,
+}: {
+  businesses: any[]
+  onOpenStore: (id: number) => void
+  onViewAllStores: () => void
+}) {
+  const trackRef = useRef<HTMLDivElement | null>(null)
+  if (!businesses || businesses.length === 0) return null
+
+  const scrollTrack = (dir: "left" | "right") => {
+    trackRef.current?.scrollBy({ left: dir === "left" ? -260 : 260, behavior: "smooth" })
+  }
+
+  return (
+    <div className="bg-card border border-[#aeb6a1]/70 rounded-3xl p-4 sm:p-5 shadow-2xs space-y-3.5">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-9 h-9 rounded-2xl bg-[#105238] text-[#8ee01a] flex items-center justify-center shrink-0 shadow-xs">
+            <StoreIcon className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10px] font-black uppercase tracking-wider text-[#105238]/80 dark:text-[#8ee01a]">
+              REEL DE COMERCIOS · TIENDAS DESTACADAS
+            </p>
+            <h4 className="text-sm sm:text-base font-extrabold text-foreground truncate">
+              Conoce los negocios aliados de PalenqueGo
+            </h4>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => scrollTrack("left")}
+            className="hidden sm:flex w-7 h-7 rounded-full bg-[#eaf0e2] border border-[#aeb6a1]/60 items-center justify-center text-[#105238] hover:bg-[#105238] hover:text-white transition-colors cursor-pointer"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => scrollTrack("right")}
+            className="hidden sm:flex w-7 h-7 rounded-full bg-[#eaf0e2] border border-[#aeb6a1]/60 items-center justify-center text-[#105238] hover:bg-[#105238] hover:text-white transition-colors cursor-pointer"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={onViewAllStores}
+            className="text-xs font-black bg-[#105238] text-[#8ee01a] px-3.5 py-1.5 rounded-full hover:bg-[#0c3e2b] transition-colors cursor-pointer"
+          >
+            Ver tiendas
+          </button>
+        </div>
+      </div>
+
+      <div ref={trackRef} className="flex items-stretch gap-3 overflow-x-auto scrollbar-hide snap-x py-1">
+        {businesses.slice(0, 10).map((biz) => {
+          const cover = getProxyImage(biz.coverImage || biz.banner || biz.logo || "") || DEFAULT_STORE_COVER
+          const logo = getProxyImage(biz.logo || "") || DEFAULT_STORE_COVER
+          return (
+            <button
+              key={biz.id}
+              type="button"
+              onClick={() => onOpenStore(biz.id)}
+              className="w-[205px] sm:w-[218px] h-[285px] shrink-0 snap-start rounded-2xl overflow-hidden relative group border border-[#105238]/20 shadow-sm flex flex-col justify-between p-3.5 text-left cursor-pointer"
+            >
+              <img
+                src={cover}
+                alt={biz.name}
+                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                onError={(e) => {
+                  e.currentTarget.src = DEFAULT_STORE_COVER
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#072619] via-[#105238]/65 to-black/25" />
+
+              <div className="relative z-10 flex items-center justify-between gap-2">
+                <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-[#eaf0e2]/95 text-[#105238] truncate max-w-[130px]">
+                  {biz.category || "Comercio Aliado"}
+                </span>
+                <span className="inline-flex items-center gap-0.5 bg-[#105238]/90 text-[#8ee01a] text-[10px] font-black px-2 py-0.5 rounded-full">
+                  <Star className="w-2.5 h-2.5 fill-[#8ee01a]" /> {biz.rating || 5.0}
+                </span>
+              </div>
+
+              <div className="relative z-10 space-y-2">
+                <div className="flex items-center gap-2.5">
+                  <img
+                    src={logo}
+                    alt={biz.name}
+                    className="w-10 h-10 rounded-xl object-cover border-2 border-[#8ee01a] bg-white shrink-0 shadow-sm"
+                    onError={(e) => {
+                      e.currentTarget.src = DEFAULT_STORE_COVER
+                    }}
+                  />
+                  <div className="min-w-0">
+                    <h5 className="text-sm font-black text-white leading-tight truncate">{biz.name}</h5>
+                    <p className="text-[10px] text-white/80 truncate">{biz.location || "El Salvador"}</p>
+                  </div>
+                </div>
+                {biz.description && (
+                  <p className="text-[11px] text-white/85 line-clamp-2 leading-snug">{biz.description}</p>
+                )}
+                <div className="pt-0.5">
+                  <span className="inline-flex items-center gap-1 text-[11px] font-black bg-[#8ee01a] text-[#105238] px-3 py-1 rounded-full shadow-xs">
+                    <span>Visitar tienda</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </span>
+                </div>
+              </div>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function TravelerDestinationSurveyCard({
+  currentCraving,
+  onRequestRecommendations,
+}: {
+  currentCraving: string
+  onRequestRecommendations: (craving: string, catHint: string) => void
+}) {
+  const [customInput, setCustomInput] = useState(currentCraving || "")
+  const [selectedPreset, setSelectedPreset] = useState<{ label: string; cat: string } | null>(null)
+
+  const presets = [
+    { label: "Playa & Sol", cat: "playa" },
+    { label: "Hoteles & Estancias", cat: "hotel" },
+    { label: "Gastronomía & Café", cat: "restaurante" },
+    { label: "Relax & Spa Termal", cat: "spa" },
+    { label: "Naturaleza & Ecoturismo", cat: "eco" },
+    { label: "Aventura & Surf", cat: "aventura" },
+  ]
+
+  const handleConfirm = () => {
+    const chosenText = customInput.trim() || selectedPreset?.label || "Experiencias recomendadas"
+    const chosenCat = selectedPreset?.cat || "all"
+    onRequestRecommendations(chosenText, chosenCat)
+  }
+
+  return (
+    <div className="bg-gradient-to-br from-[#eaf0e2] via-white to-[#eaf0e2]/60 dark:from-card dark:to-card border border-[#8ee01a] rounded-3xl p-4 sm:p-5 shadow-xs space-y-3.5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-1">
+          <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider bg-[#105238] text-[#8ee01a] px-2.5 py-0.5 rounded-full">
+            <Sparkles className="w-3 h-3" /> Radar de Viajero · Según tus Likes
+          </span>
+          <h4 className="text-sm sm:text-base font-black text-[#105238] dark:text-foreground pt-0.5">
+            Vimos que te gustaron varias experiencias, ¿a dónde quieres viajar?
+          </h4>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Aún no tienes una reserva activa. Cuéntanos qué destino o plan tienes en mente y armaremos un Reel a tu medida:
+          </p>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-1.5">
+        {presets.map((p) => {
+          const active = selectedPreset?.label === p.label
+          return (
+            <button
+              key={p.label}
+              type="button"
+              onClick={() => {
+                setSelectedPreset(p)
+                setCustomInput(p.label)
+              }}
+              className={cn(
+                "px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border",
+                active
+                  ? "bg-[#105238] text-[#8ee01a] border-[#105238] shadow-xs"
+                  : "bg-white dark:bg-background text-[#105238] border-[#aeb6a1]/70 hover:bg-[#105238]/10",
+              )}
+            >
+              {p.label}
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-2">
+        <input
+          type="text"
+          value={customInput}
+          onChange={(e) => setCustomInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleConfirm()}
+          placeholder="Escribe un destino, playa, volcán, hotel o comida que te provoque..."
+          className="flex-1 h-10 px-3.5 rounded-2xl border border-[#aeb6a1] bg-white dark:bg-background text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#105238]"
+        />
+        <Button
+          type="button"
+          onClick={handleConfirm}
+          className="h-10 px-4 rounded-2xl bg-[#105238] hover:bg-[#0c3e2b] text-[#8ee01a] font-black text-xs gap-1.5 shrink-0 cursor-pointer"
+        >
+          <Sparkles className="w-3.5 h-3.5" />
+          <span>Quiero recomendaciones</span>
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function PersonalizedTasteReelStrip({
+  cravingLabel,
+  items,
+  onOpenService,
+  onResetCraving,
+}: {
+  cravingLabel: string
+  items: Service[]
+  onOpenService: (svc: Service) => void
+  onResetCraving: () => void
+}) {
+  const trackRef = useRef<HTMLDivElement | null>(null)
+  if (!items || items.length === 0) return null
+
+  const scrollTrack = (dir: "left" | "right") => {
+    trackRef.current?.scrollBy({ left: dir === "left" ? -260 : 260, behavior: "smooth" })
+  }
+
+  return (
+    <div className="bg-gradient-to-b from-[#105238]/8 via-[#eaf0e2]/45 to-card border border-[#8ee01a]/80 rounded-3xl p-4 sm:p-5 shadow-xs space-y-3.5">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-9 h-9 rounded-2xl bg-[#105238] text-[#8ee01a] flex items-center justify-center shrink-0">
+            <Heart className="w-4 h-4 fill-[#8ee01a]" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10px] font-black uppercase tracking-wider text-[#105238]">
+              BASADO EN TUS GUSTOS · SELECCIÓN PERSONALIZADA
+            </p>
+            <h4 className="text-sm sm:text-base font-extrabold text-foreground truncate">
+              Te recomendamos esto: {cravingLabel}
+            </h4>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => scrollTrack("left")}
+            className="hidden sm:flex w-7 h-7 rounded-full bg-white border border-[#aeb6a1]/60 items-center justify-center text-[#105238] hover:bg-[#105238] hover:text-white transition-colors cursor-pointer"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => scrollTrack("right")}
+            className="hidden sm:flex w-7 h-7 rounded-full bg-white border border-[#aeb6a1]/60 items-center justify-center text-[#105238] hover:bg-[#105238] hover:text-white transition-colors cursor-pointer"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={onResetCraving}
+            className="text-[11px] font-bold bg-[#eaf0e2] text-[#105238] px-3 py-1 rounded-full hover:bg-[#105238] hover:text-[#8ee01a] transition-colors cursor-pointer"
+          >
+            Cambiar destino
+          </button>
+        </div>
+      </div>
+
+      <div ref={trackRef} className="flex items-stretch gap-3 overflow-x-auto scrollbar-hide snap-x py-1">
+        {items.slice(0, 10).map((item) => {
+          const thumb = getProxyImage(item.image || "") || DEFAULT_STORE_COVER
+          return (
+            <button
+              key={`taste-${item.id}`}
+              type="button"
+              onClick={() => onOpenService(item)}
+              className="w-[210px] sm:w-[225px] h-[295px] shrink-0 snap-start rounded-2xl overflow-hidden relative group border border-[#105238]/20 shadow-sm flex flex-col justify-between p-3.5 text-left cursor-pointer"
+            >
+              <img
+                src={thumb}
+                alt={item.name}
+                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                onError={(e) => {
+                  e.currentTarget.src = DEFAULT_STORE_COVER
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#072619] via-[#105238]/60 to-black/25" />
+
+              <div className="relative z-10 flex items-center justify-between gap-1.5">
+                <span className="bg-[#8ee01a] text-[#105238] text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-xs">
+                  Para tu viaje
+                </span>
+                <span className="bg-black/50 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full border border-white/20">
+                  ${item.price} /p
+                </span>
+              </div>
+
+              <div className="relative z-10 space-y-1.5">
+                <span className="inline-block text-[10px] font-bold text-[#8ee01a]">
+                  {item.category || "Experiencia"}
+                </span>
+                <h5 className="text-sm font-black text-white leading-snug line-clamp-2">{item.name}</h5>
+                <p className="text-[11px] text-white/80 truncate flex items-center gap-1">
+                  <MapPin className="w-3 h-3 text-[#8ee01a] shrink-0" />
+                  <span className="truncate">{item.location}</span>
+                </p>
+                <div className="pt-1">
+                  <span className="inline-flex items-center gap-1 text-[11px] font-black bg-white/95 text-[#105238] px-3 py-1 rounded-full">
+                    <span>Ver experiencia</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </span>
+                </div>
+              </div>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 interface ServiceComment {
   id: string
   author: string
@@ -1003,6 +1322,9 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   )
   const [feedSurveyIntent, setFeedSurveyIntent] = useState<"group" | "flash" | "business" | "driver" | null>(null)
   const [canShowUpgradeReel, setCanShowUpgradeReel] = useState(false)
+  const [travelerCraving, setTravelerCraving] = useState<string>("")
+  const [travelerCravingCat, setTravelerCravingCat] = useState<string>("all")
+  const [hasSubmittedTravelerCraving, setHasSubmittedTravelerCraving] = useState<boolean>(false)
 
   const {
     services,
@@ -1069,6 +1391,16 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
       const savedIntent = localStorage.getItem("palenque_feed_survey_intent_v1")
       if (savedIntent === "group" || savedIntent === "flash" || savedIntent === "business" || savedIntent === "driver") {
         setFeedSurveyIntent(savedIntent)
+      }
+
+      const savedCravingRaw = localStorage.getItem("palenque_traveler_craving_v1")
+      if (savedCravingRaw) {
+        const parsedCraving = JSON.parse(savedCravingRaw)
+        if (parsedCraving?.text) {
+          setTravelerCraving(parsedCraving.text)
+          setTravelerCravingCat(parsedCraving.cat || "all")
+          setHasSubmittedTravelerCraving(true)
+        }
       }
 
       // 10-day cooldown check for Plan Bronce -> Plan Oro/Platino upgrade reel
@@ -1142,19 +1474,51 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     [setUserIntentions],
   )
 
-  // Rotate Facebook-style Publicidad Flash Ads every 6 seconds (pauses while hovering right panel)
+  const handleRequestTravelerRecommendations = useCallback((craving: string, catHint: string) => {
+    setTravelerCraving(craving)
+    setTravelerCravingCat(catHint || "all")
+    setHasSubmittedTravelerCraving(true)
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("palenque_traveler_craving_v1", JSON.stringify({ text: craving, cat: catHint || "all" }))
+      } catch {
+        // ignore
+      }
+    }
+  }, [])
+
+  const handleSelectCategorySmooth = useCallback((catId: string) => {
+    setOnlyPreferred(false)
+    setSelectedCategory(catId)
+    setSearchQuery("")
+    setAllUnseenExhausted(false)
+    setFeedSeed(Math.floor(Math.random() * 99999) + 1)
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" })
+      const scrollEl = document.querySelector(".overflow-y-auto") as HTMLElement | null
+      if (scrollEl) {
+        scrollEl.scrollTo({ top: 0, behavior: "smooth" })
+      }
+    }
+  }, [])
+
+  // Rotate Facebook-style Publicidad Flash Ads calmly every 18 seconds (pauses while hovering right panel)
   useEffect(() => {
     const timer = setInterval(() => {
       if (!isHoveringRightSidebar) {
         setAdRotationIndex((prev) => prev + 1)
       }
-    }, 6000)
+    }, 18000)
     return () => clearInterval(timer)
   }, [isHoveringRightSidebar])
 
-  // Smart Right-Sidebar Companion Alternation as the user scrolls down (with stop-to-read dwell-time protection)
+  // Calm, imperceptible Right-Sidebar Companion Alternation:
+  // NEVER switches while the user is actively scrolling! Only switches 700ms AFTER scroll stops,
+  // and only when the user has scrolled >= 2200px AND >= 30 seconds have elapsed.
   useEffect(() => {
     if (typeof window === "undefined") return
+    let settleTimer: ReturnType<typeof setTimeout> | null = null
+
     const getScrollPosition = (target?: EventTarget | null) => {
       if (target && target instanceof HTMLElement && target.scrollTop > 0) {
         return target.scrollTop
@@ -1169,18 +1533,22 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     const handleScrollCompanion = (e: Event) => {
       if (isHoveringRightSidebar) return
       const currentY = getScrollPosition(e.target)
-      const delta = Math.abs(currentY - lastCompanionScrollYRef.current)
-      const now = Date.now()
-      // Alternate companion card every ~420px of scrolling, with a 2.4s dwell-time so stopping lets the user read comfortably
-      if (delta >= 420 && now - lastCompanionSwitchAtRef.current >= 2400) {
-        lastCompanionScrollYRef.current = currentY
-        lastCompanionSwitchAtRef.current = now
-        setRightCompanionIndex((prev) => prev + 1)
-      }
+      if (settleTimer) clearTimeout(settleTimer)
+      settleTimer = setTimeout(() => {
+        if (isHoveringRightSidebar) return
+        const delta = Math.abs(currentY - lastCompanionScrollYRef.current)
+        const now = Date.now()
+        if (delta >= 2200 && now - lastCompanionSwitchAtRef.current >= 30000) {
+          lastCompanionScrollYRef.current = currentY
+          lastCompanionSwitchAtRef.current = now
+          setRightCompanionIndex((prev) => prev + 1)
+        }
+      }, 700)
     }
 
     window.addEventListener("scroll", handleScrollCompanion, { capture: true, passive: true })
     return () => {
+      if (settleTimer) clearTimeout(settleTimer)
       window.removeEventListener("scroll", handleScrollCompanion, { capture: true } as EventListenerOptions)
     }
   }, [isHoveringRightSidebar])
@@ -1197,9 +1565,12 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     if (searchQuery.trim()) {
       params.set("search", searchQuery.trim())
     }
-    const seenArr = Array.from(seenIdsRef.current)
-    if (seenArr.length > 0) {
-      params.set("exclude_ids", seenArr.slice(-600).join(","))
+    // Only send exclude_ids in the general "all" feed so clicking a specific category (e.g. Hoteles) always delivers all its items
+    if (!selectedCategory || selectedCategory === "all") {
+      const seenArr = Array.from(seenIdsRef.current)
+      if (seenArr.length > 0) {
+        params.set("exclude_ids", seenArr.slice(-600).join(","))
+      }
     }
     return `?${params.toString()}`
   }, [selectedCategory, onlyPreferred, preferredCategories, searchQuery])
@@ -1412,24 +1783,37 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     persistSeenIds()
     seenInCurrentBatchRef.current.clear()
 
+    const previousServices = useAppStore.getState().services
     setIsReloadingBatch(true)
     const safetyTimer = setTimeout(() => setIsReloadingBatch(false), 6000)
     try {
       await fetchServices(buildUnseenCatalogQuery())
-      const allReturned = useAppStore.getState().services
-      const strictlyUnseen = allReturned.filter((s) => !seenIdsRef.current.has(s.id))
+      const newlyFetched = useAppStore.getState().services
+
+      // Merge previous + newlyFetched so the feed grows downward like Facebook and NEVER shrinks above the user's scroll position
+      const mergedMap = new Map<number, Service>()
+      for (const s of previousServices) mergedMap.set(s.id, s)
+      for (const s of newlyFetched) mergedMap.set(s.id, s)
+      const mergedServices = Array.from(mergedMap.values())
+      useAppStore.setState({ services: mergedServices })
+
+      const strictlyUnseen = newlyFetched.filter((s) => !seenIdsRef.current.has(s.id) && !currentBatchIds.includes(s.id))
       if (strictlyUnseen.length > 0) {
-        setCurrentBatchIds(strictlyUnseen.slice(0, BATCH_SIZE).map((s) => s.id))
+        const nextIds = strictlyUnseen.slice(0, BATCH_SIZE).map((s) => s.id)
+        setCurrentBatchIds((prev) => Array.from(new Set([...prev, ...nextIds])))
         setBatchNumber((prev) => prev + 1)
         setAllUnseenExhausted(false)
-      } else if (allReturned.length > 0) {
-        for (const item of allReturned) {
-          seenIdsRef.current.delete(item.id)
+      } else if (newlyFetched.length > 0) {
+        const freshCycleIds = newlyFetched
+          .map((s) => s.id)
+          .filter((id) => !currentBatchIds.includes(id))
+        if (freshCycleIds.length > 0) {
+          setCurrentBatchIds((prev) => Array.from(new Set([...prev, ...freshCycleIds.slice(0, BATCH_SIZE)])))
+          setBatchNumber((prev) => prev + 1)
+          setAllUnseenExhausted(false)
+        } else {
+          setAllUnseenExhausted(true)
         }
-        persistSeenIds()
-        setCurrentBatchIds(allReturned.slice(0, BATCH_SIZE).map((s) => s.id))
-        setBatchNumber((prev) => prev + 1)
-        setAllUnseenExhausted(true)
       } else {
         setAllUnseenExhausted(true)
       }
@@ -2675,11 +3059,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                     return (
                       <button
                         key={cat.id}
-                        onClick={() => {
-                          setOnlyPreferred(false)
-                          setSelectedCategory(cat.id)
-                          setFeedSeed(Math.floor(Math.random() * 99999) + 1)
-                        }}
+                        onClick={() => handleSelectCategorySmooth(cat.id)}
                         className={cn(
                           "flex items-center gap-1.5 px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all text-xs font-semibold cursor-pointer shrink-0",
                           isActive
@@ -3459,43 +3839,140 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                       )}
                     </article>
 
-                    {/* Universal Smart In-Feed Interleaving every 4 posts (works in Todo, Categories & Search!) */}
-                    {(serviceIdx + 1) % 4 === 0 && (() => {
-                      const carouselSlot = Math.floor((serviceIdx + 1) / 4) - 1
+                    {/* Spaced & Randomized Smart In-Feed Interleaving ("de vez en cuando, no siempre y aleatorios"):
+                        Triggers every 6 posts with a seed-based offset so it feels organic and never repetitive */}
+                    {((serviceIdx + 1 + (feedSeed % 2)) % 6 === 0) && (() => {
+                      const carouselSlot = Math.floor((serviceIdx + 1 + (feedSeed % 2)) / 6) - 1
+                      const hasUserLikedAny =
+                        userFavorites.length > 0 ||
+                        Object.values(serviceReactions).some((r) => Boolean(r?.userReaction))
+                      const isTravelerWithLikesNoBooking =
+                        hasUserLikedAny && userBookings.length === 0
 
-                      // Slot 0 (after card 4): if user hasn't answered the 1-click intent survey yet, show Survey + Smart Reel
-                      const showSurveyHere = carouselSlot === 0 && !feedSurveyIntent
+                      const candidatePool =
+                        globalCatalogPool.length > 0 ? globalCatalogPool : services
 
-                      // Pattern across slots:
-                      // Even slots (0, 2, 4...): Smart App Reel (Pools, Go, Alianzas, Equipo, Plan Bronce, Chofer, Flash)
-                      // Odd slots (1, 3, 5...): Alternate between Complementary Category Carousel and Mapa Go Routes Carousel
-                      if (carouselSlot % 2 === 0) {
-                        const reelIdx =
-                          (Math.floor(carouselSlot / 2) + (batchNumber - 1)) %
-                          Math.max(1, prioritizedSmartReels.length)
-                        const activeReel = prioritizedSmartReels[reelIdx]
+                      // Build personalized taste items based on Likes + Traveler Craving
+                      const buildTasteItems = () => {
+                        const likedSet = new Set<number>(
+                          userFavorites.map((f: any) => (typeof f === "number" ? f : f.serviceId)),
+                        )
+                        const likedCats = new Set<string>()
+                        for (const s of candidatePool) {
+                          if (likedSet.has(s.id) || serviceReactions[s.id]?.userReaction) {
+                            if (s.category) likedCats.add(s.category.toLowerCase())
+                          }
+                        }
+                        const q = travelerCraving.toLowerCase().trim()
+                        const scored = candidatePool
+                          .filter((s) => s.id !== service.id)
+                          .map((s) => {
+                            let score = 0
+                            if (travelerCravingCat && travelerCravingCat !== "all" && matchesCategory(s, travelerCravingCat)) {
+                              score += 5
+                            }
+                            if (q && (s.name.toLowerCase().includes(q) || s.description?.toLowerCase().includes(q) || s.category?.toLowerCase().includes(q))) {
+                              score += 4
+                            }
+                            if (s.category && likedCats.has(s.category.toLowerCase())) {
+                              score += 3
+                            }
+                            if (likedSet.has(s.id)) {
+                              score += 2
+                            }
+                            return { s, score }
+                          })
+                          .sort((a, b) => b.score - a.score)
+                        return scored.map((x) => x.s).slice(0, 10)
+                      }
+
+                      // Slot 0: Traveler Likes-without-Booking Survey OR Personalized Taste Reel OR Intent Survey
+                      if (carouselSlot === 0) {
+                        if (hasSubmittedTravelerCraving && travelerCraving) {
+                          return (
+                            <PersonalizedTasteReelStrip
+                              cravingLabel={travelerCraving}
+                              items={buildTasteItems()}
+                              onOpenService={(svc) => openServiceDetailInstant(svc)}
+                              onResetCraving={() => setHasSubmittedTravelerCraving(false)}
+                            />
+                          )
+                        }
+                        if (isTravelerWithLikesNoBooking) {
+                          return (
+                            <TravelerDestinationSurveyCard
+                              currentCraving={travelerCraving}
+                              onRequestRecommendations={handleRequestTravelerRecommendations}
+                            />
+                          )
+                        }
+                        const firstReel =
+                          prioritizedSmartReels[(feedSeed + batchNumber) % Math.max(1, prioritizedSmartReels.length)]
                         return (
                           <div className="space-y-4">
-                            {showSurveyHere && (
+                            {!feedSurveyIntent && (
                               <FeedIntentSurveyCard
                                 selectedIntent={feedSurveyIntent}
                                 onSelectIntent={handleSelectSurveyIntent}
                               />
                             )}
-                            {activeReel && <SmartAppReelStrip reel={activeReel} />}
+                            {firstReel && <SmartAppReelStrip reel={firstReel} />}
                           </div>
                         )
                       }
 
-                      const oddIndex = Math.floor(carouselSlot / 2)
-                      if (oddIndex % 2 === 1 && routes.length > 0) {
-                        const routesRound = (batchNumber - 1) + Math.floor(oddIndex / 2)
+                      // Randomized rotation across the 5 experience discovery formats for subsequent slots:
+                      // 0 -> SmartAppReelStrip (Pools, Embajador, Go, Alianzas B2B, Equipo, Plan Bronce, Chofer)
+                      // 1 -> StoresReelStrip (Reel de Tiendas Destacadas)
+                      // 2 -> CategoryCarouselStrip (Otra categoría complementaria)
+                      // 3 -> PersonalizedTasteReelStrip / TravelerDestinationSurveyCard (si dio Like y no ha reservado)
+                      // 4 -> RoutesCarouselStrip (Rutas & Destinos Go)
+                      const kindPool: Array<"APP_REEL" | "STORES_REEL" | "CATEGORY_REEL" | "TASTE_REEL" | "ROUTES_REEL"> = [
+                        "STORES_REEL",
+                        "CATEGORY_REEL",
+                        "APP_REEL",
+                        ...(isTravelerWithLikesNoBooking || hasSubmittedTravelerCraving ? (["TASTE_REEL"] as const) : []),
+                        ...(routes.length > 0 ? (["ROUTES_REEL"] as const) : []),
+                      ]
+                      const chosenKind =
+                        kindPool[(carouselSlot + (feedSeed % kindPool.length)) % kindPool.length]
+
+                      if (chosenKind === "STORES_REEL" && businesses.length > 0) {
+                        return (
+                          <StoresReelStrip
+                            businesses={businesses}
+                            onOpenStore={(bizId) => router.push(`/b/${bizId}`)}
+                            onViewAllStores={() => onNavigate?.("businesses")}
+                          />
+                        )
+                      }
+
+                      if (chosenKind === "TASTE_REEL") {
+                        if (hasSubmittedTravelerCraving && travelerCraving) {
+                          return (
+                            <PersonalizedTasteReelStrip
+                              cravingLabel={travelerCraving}
+                              items={buildTasteItems()}
+                              onOpenService={(svc) => openServiceDetailInstant(svc)}
+                              onResetCraving={() => setHasSubmittedTravelerCraving(false)}
+                            />
+                          )
+                        }
+                        return (
+                          <TravelerDestinationSurveyCard
+                            currentCraving={travelerCraving}
+                            onRequestRecommendations={handleRequestTravelerRecommendations}
+                          />
+                        )
+                      }
+
+                      if (chosenKind === "ROUTES_REEL" && routes.length > 0) {
                         const routeCycle: Array<"TOUR" | "URBANO" | "INTERURBANO"> = [
                           "TOUR",
                           "URBANO",
                           "INTERURBANO",
                         ]
-                        const targetRouteType = routeCycle[routesRound % 3]
+                        const targetRouteType = routeCycle[(carouselSlot + feedSeed) % 3]
                         return (
                           <RoutesCarouselStrip
                             routes={routes}
@@ -3509,6 +3986,14 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                         )
                       }
 
+                      if (chosenKind === "APP_REEL") {
+                        const reelIdx =
+                          (carouselSlot + (batchNumber - 1) + (feedSeed % 5)) %
+                          Math.max(1, prioritizedSmartReels.length)
+                        const activeReel = prioritizedSmartReels[reelIdx]
+                        return activeReel ? <SmartAppReelStrip reel={activeReel} /> : null
+                      }
+
                       // Complementary Category Recommendation (always recommends a category DIFFERENT from selectedCategory)
                       const otherCats = discoveryCategories.filter((c) => c.id !== selectedCategory)
                       if (otherCats.length === 0) return null
@@ -3519,10 +4004,8 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                               ...otherCats.filter((c) => !preferredCategories.includes(c.id)),
                             ]
                           : otherCats
-                      const catOffset = oddIndex + (feedSeed % orderedCats.length)
+                      const catOffset = carouselSlot + (feedSeed % orderedCats.length)
                       const targetCat = orderedCats[catOffset % orderedCats.length]
-                      const candidatePool =
-                        globalCatalogPool.length > 0 ? globalCatalogPool : services
                       const catSamples = candidatePool
                         .filter((s) => matchesCategory(s, targetCat.id) && s.id !== service.id)
                         .slice(0, 10)
@@ -3537,13 +4020,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                           categoryId={targetCat.id}
                           icon={targetCat.icon}
                           items={catSamples}
-                          onSelectCategory={(catId) => {
-                            setOnlyPreferred(false)
-                            setSelectedCategory(catId)
-                            setSearchQuery("")
-                            setAllUnseenExhausted(false)
-                            setFeedSeed(Math.floor(Math.random() * 99999) + 1)
-                          }}
+                          onSelectCategory={handleSelectCategorySmooth}
                           onOpenService={(sid) => {
                             const matched = catSamples.find((s) => s.id === sid) || sid
                             openServiceDetailInstant(matched)
@@ -3632,13 +4109,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                               <button
                                 key={cat.id}
                                 type="button"
-                                onClick={() => {
-                                  setOnlyPreferred(false)
-                                  setSelectedCategory(cat.id)
-                                  setSearchQuery("")
-                                  setAllUnseenExhausted(false)
-                                  setFeedSeed(Math.floor(Math.random() * 99999) + 1)
-                                }}
+                                onClick={() => handleSelectCategorySmooth(cat.id)}
                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-[#eaf0e2] text-[#105238] hover:bg-[#105238] hover:text-[#8ee01a] transition-colors cursor-pointer"
                               >
                                 <CatIcon className="w-3.5 h-3.5" />
@@ -3830,226 +4301,163 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
               </div>
             )}
 
-            {/* 3. SMART SCROLL-ALTERNATING COMPANION ZONE:
-                   Alternates ONE AT A TIME as the user scrolls down (never showing Más destacados & Tiendas Aliadas together):
-                   - Más destacados
-                   - Tiendas Aliadas
-                   - Mi Reserva (if the user has a pending or upcoming booking) */}
+            {/* 3. CALM COMPANION ZONE (NO TABS, NO DIZZYING SLIDE ANIMATIONS):
+                   - Shows Reserva pendiente / Mi próxima reserva if the user has one.
+                   - Below it, shows EITHER Más destacados OR Tiendas Aliadas (never stacked together),
+                     transitioning softly via opacity only after 30+ seconds and 2200px of scroll once scrolling stops. */}
+            {primaryBooking && (
+              <div className="bg-card border border-[#8ee01a]/70 rounded-3xl p-4 shadow-2xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-extrabold text-sm text-foreground flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-[#105238]" />
+                    <span>
+                      {primaryBooking.status === "PENDIENTE" ? "Reserva pendiente" : "Mi próxima reserva"}
+                    </span>
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => onNavigate?.("pool")}
+                    className="text-xs font-bold text-[#105238] hover:underline cursor-pointer"
+                  >
+                    Ver todas ({userBookings.length})
+                  </button>
+                </div>
+                <div className="flex items-center gap-3 bg-[#fafaf8] dark:bg-background border border-border/70 rounded-2xl p-3">
+                  <img
+                    src={primaryBooking.service?.image || DEFAULT_STORE_COVER}
+                    alt={primaryBooking.service?.name || "Reserva"}
+                    className="w-12 h-12 rounded-xl object-cover shrink-0"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-xs text-foreground truncate">
+                      {primaryBooking.service?.name || "Experiencia"}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {primaryBooking.date} · {primaryBooking.time}
+                    </p>
+                    <p className="text-[11px] font-black text-[#105238] mt-0.5">
+                      Total: ${primaryBooking.totalPrice}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  onClick={() => onNavigate?.("pool")}
+                  className="w-full h-9 rounded-xl bg-[#105238] hover:bg-[#0c3e2b] text-white font-bold text-xs cursor-pointer"
+                >
+                  Ver Voucher / Pagar
+                </Button>
+              </div>
+            )}
+
             {(() => {
-              const availableCompanions: Array<{
-                key: "FEATURED" | "STORES" | "BOOKING"
-                label: string
-              }> = [{ key: "FEATURED", label: "Destacados" }]
+              const showStoresNow = businesses.length > 0 && rightCompanionIndex % 2 === 1
 
-              if (businesses.length > 0) {
-                availableCompanions.push({ key: "STORES", label: "Tiendas" })
+              if (showStoresNow) {
+                return (
+                  <div
+                    key="companion-stores"
+                    className="bg-card border border-border rounded-3xl p-4 shadow-2xs space-y-3 animate-in fade-in duration-700"
+                  >
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-extrabold text-sm text-foreground flex items-center gap-2">
+                        <StoreIcon className="w-4 h-4 text-[#105238]" />
+                        <span>Tiendas Aliadas</span>
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => onNavigate?.("businesses")}
+                        className="text-xs font-bold text-[#105238] hover:underline cursor-pointer"
+                      >
+                        Ver todas
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      {businesses.slice(0, 4).map((biz) => (
+                        <button
+                          key={biz.id}
+                          type="button"
+                          onClick={() => router.push(`/b/${biz.id}`)}
+                          className="w-full flex items-center gap-3 p-2 rounded-2xl hover:bg-muted/50 transition-colors text-left cursor-pointer"
+                        >
+                          <Avatar className="w-9 h-9 border border-[#105238]/30 shrink-0">
+                            <AvatarImage src={biz.logo} alt={biz.name} />
+                            <AvatarFallback className="bg-[#105238] text-white text-[10px] font-bold">
+                              {biz.name.substring(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-bold text-xs text-foreground truncate">{biz.name}</p>
+                            <p className="text-[11px] text-muted-foreground truncate">
+                              {biz.category || "Comercio Aliado"}
+                            </p>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )
               }
-              if (primaryBooking) {
-                availableCompanions.push({
-                  key: "BOOKING",
-                  label: primaryBooking.status === "PENDIENTE" ? "Pago Pendiente" : "Mi Reserva",
-                })
-              }
-
-              const activeCompanion =
-                availableCompanions[rightCompanionIndex % availableCompanions.length] || availableCompanions[0]
 
               return (
-                <div className="space-y-2">
-                  {/* Subtle companion indicator pills so user sees what's active & can also click directly */}
-                  {availableCompanions.length > 1 && (
-                    <div className="flex items-center justify-between px-1">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                        Explora también
-                      </span>
-                      <div className="flex items-center gap-1">
-                        {availableCompanions.map((comp, idx) => {
-                          const isCurrent = comp.key === activeCompanion.key
-                          return (
-                            <button
-                              key={comp.key}
-                              type="button"
-                              onClick={() => {
-                                lastCompanionSwitchAtRef.current = Date.now()
-                                setRightCompanionIndex(idx)
-                              }}
-                              className={cn(
-                                "px-2 py-0.5 rounded-full text-[10px] font-extrabold transition-all cursor-pointer",
-                                isCurrent
-                                  ? "bg-[#105238] text-[#8ee01a]"
-                                  : "bg-[#eaf0e2] text-[#105238]/75 hover:text-[#105238]",
-                              )}
-                            >
-                              {comp.label}
-                            </button>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* COMPANION A: Más destacados */}
-                  {activeCompanion.key === "FEATURED" && (
-                    <div
-                      key="companion-featured"
-                      className="bg-card border border-border rounded-3xl p-4 shadow-2xs space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300"
-                    >
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-extrabold text-sm text-foreground flex items-center gap-2">
-                          <Sparkles className="w-4 h-4 text-[#105238]" />
-                          <span>Más destacados</span>
-                        </h3>
-                        <div className="flex items-center gap-2">
-                          {selectedCategory !== "all" && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setOnlyPreferred(false)
-                                setSelectedCategory("all")
-                                setSearchQuery("")
-                              }}
-                              className="text-xs font-bold text-[#105238] hover:underline cursor-pointer"
-                            >
-                              Ver todos
-                            </button>
-                          )}
-                          {filteredServices.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => setShowComparisonModal(true)}
-                              className="text-xs font-bold text-[#105238] hover:underline cursor-pointer"
-                            >
-                              Comparar
-                            </button>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        {topRatedServices.slice(0, 4).map((ts) => (
-                          <button
-                            key={ts.id}
-                            type="button"
-                            onClick={() => openServiceDetailInstant(ts)}
-                            className="w-full flex items-center gap-3 p-2 rounded-2xl hover:bg-muted/50 transition-colors text-left cursor-pointer"
-                          >
-                            <img
-                              src={ts.image || DEFAULT_STORE_COVER}
-                              alt={ts.name}
-                              className="w-11 h-11 rounded-xl object-cover shrink-0"
-                            />
-                            <div className="min-w-0 flex-1">
-                              <p className="font-bold text-xs text-foreground truncate">{ts.name}</p>
-                              <p className="text-[11px] text-muted-foreground truncate">{ts.location}</p>
-                            </div>
-                            <div className="text-right shrink-0">
-                              <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-[#105238]">
-                                <Star className="w-3 h-3 fill-[#105238]" /> {ts.rating}
-                              </span>
-                              <p className="text-xs font-black text-foreground">${ts.price} /p</p>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* COMPANION B: Tiendas Aliadas */}
-                  {activeCompanion.key === "STORES" && businesses.length > 0 && (
-                    <div
-                      key="companion-stores"
-                      className="bg-card border border-border rounded-3xl p-4 shadow-2xs space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300"
-                    >
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-extrabold text-sm text-foreground flex items-center gap-2">
-                          <StoreIcon className="w-4 h-4 text-[#105238]" />
-                          <span>Tiendas Aliadas</span>
-                        </h3>
+                <div
+                  key="companion-featured"
+                  className="bg-card border border-border rounded-3xl p-4 shadow-2xs space-y-3 animate-in fade-in duration-700"
+                >
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-extrabold text-sm text-foreground flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-[#105238]" />
+                      <span>Más destacados</span>
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      {selectedCategory !== "all" && (
                         <button
                           type="button"
-                          onClick={() => onNavigate?.("businesses")}
+                          onClick={() => handleSelectCategorySmooth("all")}
                           className="text-xs font-bold text-[#105238] hover:underline cursor-pointer"
                         >
-                          Ver todas
+                          Ver todos
                         </button>
-                      </div>
-                      <div className="space-y-2">
-                        {businesses.slice(0, 4).map((biz) => (
-                          <button
-                            key={biz.id}
-                            type="button"
-                            onClick={() => router.push(`/b/${biz.id}`)}
-                            className="w-full flex items-center gap-3 p-2 rounded-2xl hover:bg-muted/50 transition-colors text-left cursor-pointer"
-                          >
-                            <Avatar className="w-9 h-9 border border-[#105238]/30 shrink-0">
-                              <AvatarImage src={biz.logo} alt={biz.name} />
-                              <AvatarFallback className="bg-[#105238] text-white text-[10px] font-bold">
-                                {biz.name.substring(0, 2).toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="min-w-0 flex-1">
-                              <p className="font-bold text-xs text-foreground truncate">{biz.name}</p>
-                              <p className="text-[11px] text-muted-foreground truncate">
-                                {biz.category || "Comercio Aliado"}
-                              </p>
-                            </div>
-                            <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* COMPANION C: Mi próxima reserva / Reserva pendiente */}
-                  {activeCompanion.key === "BOOKING" && primaryBooking && (
-                    <div
-                      key="companion-booking"
-                      className="bg-card border border-[#8ee01a]/70 rounded-3xl p-4 shadow-2xs space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300"
-                    >
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-extrabold text-sm text-foreground flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-[#105238]" />
-                          <span>
-                            {primaryBooking.status === "PENDIENTE"
-                              ? "Reserva pendiente"
-                              : "Mi próxima reserva"}
-                          </span>
-                        </h3>
+                      )}
+                      {filteredServices.length > 1 && (
                         <button
                           type="button"
-                          onClick={() => onNavigate?.("pool")}
+                          onClick={() => setShowComparisonModal(true)}
                           className="text-xs font-bold text-[#105238] hover:underline cursor-pointer"
                         >
-                          Ver todas ({userBookings.length})
+                          Comparar
                         </button>
-                      </div>
-                      <div className="flex items-center gap-3 bg-[#fafaf8] dark:bg-background border border-border/70 rounded-2xl p-3">
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    {topRatedServices.slice(0, 4).map((ts) => (
+                      <button
+                        key={ts.id}
+                        type="button"
+                        onClick={() => openServiceDetailInstant(ts)}
+                        className="w-full flex items-center gap-3 p-2 rounded-2xl hover:bg-muted/50 transition-colors text-left cursor-pointer"
+                      >
                         <img
-                          src={primaryBooking.service?.image || DEFAULT_STORE_COVER}
-                          alt={primaryBooking.service?.name || "Reserva"}
-                          className="w-12 h-12 rounded-xl object-cover shrink-0"
+                          src={ts.image || DEFAULT_STORE_COVER}
+                          alt={ts.name}
+                          className="w-11 h-11 rounded-xl object-cover shrink-0"
                         />
                         <div className="min-w-0 flex-1">
-                          <p className="font-bold text-xs text-foreground truncate">
-                            {primaryBooking.service?.name || "Experiencia"}
-                          </p>
-                          <p className="text-[11px] text-muted-foreground">
-                            {primaryBooking.date} · {primaryBooking.time}
-                          </p>
-                          <p className="text-[11px] font-black text-[#105238] mt-0.5">
-                            Total: ${primaryBooking.totalPrice}
-                          </p>
+                          <p className="font-bold text-xs text-foreground truncate">{ts.name}</p>
+                          <p className="text-[11px] text-muted-foreground truncate">{ts.location}</p>
                         </div>
-                      </div>
-                      <Button
-                        type="button"
-                        onClick={() => onNavigate?.("pool")}
-                        className="w-full h-9 rounded-xl bg-[#105238] hover:bg-[#0c3e2b] text-white font-bold text-xs cursor-pointer"
-                      >
-                        Ver Voucher / Pagar
-                      </Button>
-                    </div>
-                  )}
+                        <div className="text-right shrink-0">
+                          <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-[#105238]">
+                            <Star className="w-3 h-3 fill-[#105238]" /> {ts.rating}
+                          </span>
+                          <p className="text-xs font-black text-foreground">${ts.price} /p</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )
             })()}
