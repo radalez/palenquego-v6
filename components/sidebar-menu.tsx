@@ -27,8 +27,9 @@ export function SidebarMenu({ activeTab, onNavigate }: SidebarMenuProps) {
   ]
 
   const menuItems = [
+    { id: "marketplace", label: "Experiencias", icon: Store },
+    { id: "map-explorer", label: "Explorar (Mapa)", icon: Map },
     { id: "pool", label: "Mis Viajes", icon: Users },
-    { id: "marketplace", label: "Experiencias & Comercios", icon: Store },
     { id: "safeflow", label: "Safe-Flow (Seguridad)", icon: Shield },
     { id: "planes", label: "Planes y Membresías", icon: Crown },
     { id: "pagos-extended", label: "Métodos de Pago", icon: CreditCard },

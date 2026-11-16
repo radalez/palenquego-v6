@@ -29,7 +29,7 @@ import { cn } from "@/lib/utils"
 import { useAppStore, type Service } from "@/lib/store"
 import { BookingModal } from "@/components/booking-modal"
 import { RealReviewsSection } from "@/components/real-reviews-section"
-import { DesktopSidebar } from "@/components/desktop-sidebar"
+import { DesktopSidebar, DesktopFloatingIconRail } from "@/components/desktop-sidebar"
 import { SidebarMenu } from "@/components/sidebar-menu"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 
@@ -277,26 +277,18 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
       )}
 
       {isDesktopSidebarCollapsed && (
-        <div className="hidden lg:block fixed top-1/2 -translate-y-1/2 left-0 z-50">
-          <button
-            type="button"
-            onClick={() => setIsDesktopSidebarCollapsed(false)}
-            title="Mostrar menú de navegación"
-            className="bg-white/95 hover:bg-[#eaf0e2] text-[#105238] py-3.5 px-1.5 rounded-r-2xl shadow-xl border-r border-y border-[#aeb6a1]/80 flex flex-col items-center justify-center gap-1 transition-all active:scale-95 group hover:px-2.5 cursor-pointer"
-          >
-            <ChevronRight className="w-4 h-4 text-[#105238] group-hover:translate-x-0.5 transition-transform" />
-            <span className="text-[9px] font-black uppercase [writing-mode:vertical-lr] tracking-widest text-[#105238]">
-              Menú
-            </span>
-          </button>
-        </div>
+        <DesktopFloatingIconRail
+          activeTab="marketplace"
+          onNavigate={navigateToTab}
+          onExpand={() => setIsDesktopSidebarCollapsed(false)}
+        />
       )}
 
       <div className="lg:hidden">
         <SidebarMenu activeTab="marketplace" onNavigate={navigateToTab} />
       </div>
 
-      <main className="flex-1 min-w-0 min-h-screen bg-[#fafaf8] dark:bg-background flex flex-col pb-32 lg:pb-16">
+      <main className={cn("flex-1 min-w-0 min-h-screen bg-[#fafaf8] dark:bg-background flex flex-col pb-32 lg:pb-16", isDesktopSidebarCollapsed && "lg:pl-16")}>
       {/* Mobile Header */}
       <div className="md:hidden sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 flex items-center justify-between">
         <button

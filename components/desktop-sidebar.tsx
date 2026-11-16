@@ -1,7 +1,32 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Store, Users, QrCode, Map, Briefcase, Crown, Zap, Star, Gem, LogOut, ChevronRight, ChevronLeft, CreditCard, Bell, Shield, HelpCircle, User, Home, ShieldCheck, Truck, Download, Check } from "lucide-react"
+import { useState, useEffect, useRef } from "react"
+import {
+  Store,
+  Users,
+  QrCode,
+  Map,
+  Briefcase,
+  Crown,
+  Zap,
+  Star,
+  Gem,
+  LogOut,
+  ChevronRight,
+  ChevronLeft,
+  CreditCard,
+  Bell,
+  Shield,
+  HelpCircle,
+  User,
+  Compass,
+  ShieldCheck,
+  Truck,
+  Download,
+  Check,
+  Heart,
+  MoreHorizontal,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAppStore } from "@/lib/store"
 import { cn } from "@/lib/utils"
@@ -12,12 +37,172 @@ interface DesktopSidebarProps {
   onToggleCollapse?: () => void
 }
 
+export function DesktopFloatingIconRail({
+  activeTab,
+  onNavigate,
+  onExpand,
+}: {
+  activeTab: string
+  onNavigate: (tab: string) => void
+  onExpand: () => void
+}) {
+  const { unreadNotificationsCount, userFavorites } = useAppStore()
+  const likesCount = userFavorites?.length || 0
+
+  const mainRailTabs = [
+    { id: "marketplace", label: "Experiencias", icon: Briefcase },
+    { id: "map-explorer", label: "Explorar", icon: Compass },
+    { id: "pool", label: "Mis Viajes", icon: Users },
+    { id: "safeflow", label: "Safe-Flow", icon: ShieldCheck },
+    { id: "rutas", label: "Go", icon: Map },
+  ]
+
+  return (
+    <div className="hidden lg:flex fixed left-3 top-1/2 -translate-y-1/2 z-50 flex-col items-center py-3 px-2 bg-white/95 dark:bg-card/95 backdrop-blur-md border border-[#aeb6a1]/80 shadow-[0_14px_38px_rgba(16,82,56,0.18)] rounded-3xl gap-2 animate-in fade-in duration-200 select-none">
+      {/* 1. ARRIBA: Campanita (Notificaciones) */}
+      <button
+        type="button"
+        onClick={() => onNavigate("notificaciones")}
+        className={cn(
+          "group relative w-11 h-11 rounded-2xl flex items-center justify-center transition-all cursor-pointer",
+          activeTab === "notificaciones" || activeTab === "notificaciones-extended"
+            ? "bg-[#105238] text-[#8ee01a] shadow-sm"
+            : "bg-[#eaf0e2]/70 hover:bg-[#105238] text-[#105238] hover:text-[#8ee01a]",
+        )}
+        aria-label="Notificaciones"
+      >
+        <Bell className="w-5 h-5" />
+        {(unreadNotificationsCount ?? 0) > 0 && (
+          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#105238] text-[#8ee01a] border-2 border-white text-[10px] font-black flex items-center justify-center">
+            {unreadNotificationsCount}
+          </span>
+        )}
+        <span className="pointer-events-none opacity-0 group-hover:opacity-100 group-hover:translate-x-0 -translate-x-1 transition-all duration-150 absolute left-full ml-3 bg-[#105238] text-white text-xs font-extrabold px-3 py-1.5 rounded-xl whitespace-nowrap shadow-lg border border-[#8ee01a]/40 z-50">
+          Notificaciones{(unreadNotificationsCount ?? 0) > 0 ? ` (${unreadNotificationsCount})` : ""}
+        </span>
+      </button>
+
+      {/* 2. ARRIBA: Corazoncito (Mis Likes / Favoritos) */}
+      <button
+        type="button"
+        onClick={() => onNavigate("favoritos")}
+        className={cn(
+          "group relative w-11 h-11 rounded-2xl flex items-center justify-center transition-all cursor-pointer",
+          activeTab === "favoritos"
+            ? "bg-[#105238] text-[#8ee01a] shadow-sm"
+            : "bg-[#eaf0e2]/70 hover:bg-[#105238] text-[#105238] hover:text-[#8ee01a]",
+        )}
+        aria-label="Mis Likes"
+      >
+        <Heart className="w-5 h-5 fill-current" />
+        {likesCount > 0 && (
+          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#8ee01a] text-[#105238] border-2 border-white text-[10px] font-black flex items-center justify-center">
+            {likesCount}
+          </span>
+        )}
+        <span className="pointer-events-none opacity-0 group-hover:opacity-100 group-hover:translate-x-0 -translate-x-1 transition-all duration-150 absolute left-full ml-3 bg-[#105238] text-white text-xs font-extrabold px-3 py-1.5 rounded-xl whitespace-nowrap shadow-lg border border-[#8ee01a]/40 z-50">
+          Mis Likes ({likesCount})
+        </span>
+      </button>
+
+      <div className="w-7 h-px bg-[#aeb6a1]/60 my-0.5" />
+
+      {/* 3. ICONOS PRINCIPALES: Experiencias, Explorar, Mis Viajes, Safe-Flow, Go */}
+      {mainRailTabs.map((item) => {
+        const Icon = item.icon
+        const isActive =
+          activeTab === item.id ||
+          (item.id === "marketplace" && activeTab === "servicios") ||
+          (item.id === "rutas" && activeTab === "rutas-classic")
+        return (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => onNavigate(item.id)}
+            className={cn(
+              "group relative w-11 h-11 rounded-2xl flex items-center justify-center transition-all cursor-pointer",
+              isActive
+                ? "bg-[#105238] text-[#8ee01a] shadow-md ring-2 ring-[#8ee01a]/50"
+                : "hover:bg-[#eaf0e2] text-muted-foreground hover:text-[#105238]",
+            )}
+            aria-label={item.label}
+          >
+            <Icon className="w-5 h-5" />
+            <span className="pointer-events-none opacity-0 group-hover:opacity-100 group-hover:translate-x-0 -translate-x-1 transition-all duration-150 absolute left-full ml-3 bg-[#105238] text-white text-xs font-extrabold px-3 py-1.5 rounded-xl whitespace-nowrap shadow-lg border border-[#8ee01a]/40 z-50">
+              {item.label}
+            </span>
+          </button>
+        )
+      })}
+
+      <div className="w-7 h-px bg-[#aeb6a1]/60 my-0.5" />
+
+      {/* 4. ÚLTIMO: Círculo con tres puntitos + "Más" debajo para abrir todo el menú */}
+      <button
+        type="button"
+        onClick={onExpand}
+        className="group relative flex flex-col items-center justify-center pt-0.5 cursor-pointer"
+        aria-label="Más opciones"
+      >
+        <div className="w-10 h-10 rounded-full bg-[#eaf0e2] group-hover:bg-[#105238] text-[#105238] group-hover:text-[#8ee01a] border border-[#105238]/25 flex items-center justify-center transition-all shadow-2xs">
+          <MoreHorizontal className="w-5 h-5" />
+        </div>
+        <span className="text-[10px] font-black text-[#105238] dark:text-[#8ee01a] leading-none mt-1">
+          Más
+        </span>
+        <span className="pointer-events-none opacity-0 group-hover:opacity-100 group-hover:translate-x-0 -translate-x-1 transition-all duration-150 absolute left-full ml-3 bg-[#105238] text-white text-xs font-extrabold px-3 py-1.5 rounded-xl whitespace-nowrap shadow-lg border border-[#8ee01a]/40 z-50">
+          Abrir menú completo
+        </span>
+      </button>
+    </div>
+  )
+}
+
 export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: DesktopSidebarProps) {
   const { userPlan, logout, currentUser } = useAppStore()
   const [isMounted, setIsMounted] = useState(false)
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
   const [isStandalone, setIsStandalone] = useState(false)
   const [installed, setInstalled] = useState(false)
+  const sidebarContainerRef = useRef<HTMLDivElement | null>(null)
+  const isHoveringSidebarRef = useRef(false)
+  const lastScrollTopRef = useRef(0)
+
+  // Auto-collapse full menu into the Floating Icon Rail briefly after the user scrolls down the main page
+  useEffect(() => {
+    if (typeof window === "undefined" || !onToggleCollapse) return
+    let collapseTimer: ReturnType<typeof setTimeout> | null = null
+
+    const handlePageScroll = (e: Event) => {
+      if (isHoveringSidebarRef.current) return
+      const target = e.target as HTMLElement | null
+      if (target && sidebarContainerRef.current && sidebarContainerRef.current.contains(target)) {
+        return
+      }
+      const scrollEl =
+        target && target instanceof HTMLElement && target.scrollTop > 0
+          ? target
+          : (document.querySelector(".overflow-y-auto") as HTMLElement | null)
+      const currentY = scrollEl?.scrollTop || window.scrollY || document.documentElement.scrollTop || 0
+
+      if (currentY > 110 && currentY > lastScrollTopRef.current + 30) {
+        if (!collapseTimer) {
+          collapseTimer = setTimeout(() => {
+            if (!isHoveringSidebarRef.current) {
+              onToggleCollapse()
+            }
+          }, 850)
+        }
+      }
+      lastScrollTopRef.current = currentY
+    }
+
+    window.addEventListener("scroll", handlePageScroll, { capture: true, passive: true })
+    return () => {
+      if (collapseTimer) clearTimeout(collapseTimer)
+      window.removeEventListener("scroll", handlePageScroll, { capture: true } as EventListenerOptions)
+    }
+  }, [onToggleCollapse])
 
   useEffect(() => {
     setIsMounted(true)
@@ -113,8 +298,8 @@ export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: Desk
   ]
 
   const mainTabs = [
-    { id: "map-explorer", label: "Inicio", icon: Home },
     { id: "marketplace", label: "Experiencias", icon: Briefcase },
+    { id: "map-explorer", label: "Explorar", icon: Compass },
     { id: "pool", label: "Mis Viajes", icon: Users },
     { id: "safeflow", label: "Safe-Flow", icon: ShieldCheck },
     { id: "rutas", label: "Go", icon: Map },
@@ -130,7 +315,16 @@ export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: Desk
   ]
 
   return (
-    <div className="w-72 bg-card border-r border-border/30 h-full flex flex-col overflow-y-auto hover-scrollbar">
+    <div
+      ref={sidebarContainerRef}
+      onMouseEnter={() => {
+        isHoveringSidebarRef.current = true
+      }}
+      onMouseLeave={() => {
+        isHoveringSidebarRef.current = false
+      }}
+      className="w-72 bg-card border-r border-border/30 h-full flex flex-col overflow-y-auto hover-scrollbar"
+    >
       <div className="p-6">
         {/* Logo/Brand + Botón para ocultar menú */}
         <div className="flex items-center justify-between mb-6 pb-4 border-b border-border/60">

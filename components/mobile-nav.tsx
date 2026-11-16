@@ -1,6 +1,6 @@
 "use client"
 
-import { Home, ShieldCheck, Users, User } from "lucide-react"
+import { Briefcase, Compass, Users, User } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface MobileNavProps {
@@ -10,8 +10,8 @@ interface MobileNavProps {
 
 export function MobileNav({ activeTab, setActiveTab }: MobileNavProps) {
   const tabs = [
-    { id: "map-explorer", label: "Inicio", icon: Home },
-    { id: "safeflow", label: "Safe-Flow", icon: ShieldCheck },
+    { id: "marketplace", label: "Experiencias", icon: Briefcase },
+    { id: "map-explorer", label: "Explorar", icon: Compass },
     { id: "rutas", label: "Go", isCenter: true },
     { id: "pool", label: "Mis viajes", icon: Users },
     { id: "profile", label: "Perfil", icon: User },
@@ -30,8 +30,8 @@ export function MobileNav({ activeTab, setActiveTab }: MobileNavProps) {
 
         {tabs.map((tab) => {
           const isActive = 
+            (tab.id === "marketplace" && (activeTab === "marketplace" || activeTab === "servicios")) ||
             (tab.id === "map-explorer" && activeTab === "map-explorer") ||
-            (tab.id === "safeflow" && activeTab === "safeflow") ||
             (tab.id === "rutas" && (activeTab === "rutas" || activeTab === "rutas-classic")) ||
             (tab.id === "pool" && activeTab === "pool") ||
             (tab.id === "profile" && (activeTab === "profile" || activeTab === "billing" || activeTab === "planes" || activeTab === "pagos" || activeTab === "favoritos" || activeTab === "recomendaciones"))

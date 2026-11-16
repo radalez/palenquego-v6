@@ -1445,16 +1445,14 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
               onClick={() => {
                 if (view === 'list' && typeof window !== 'undefined' && window.innerWidth < 1024) {
                   setView('map')
-                } else if (onBack) {
-                  onBack()
                 } else {
-                  setView('map')
+                  onNavigate('marketplace')
                 }
               }}
-              className="flex items-center gap-1.5 text-xs font-black text-gray-900 hover:text-[#064e3b] transition-all py-1.5 px-3 rounded-xl bg-gray-100/90 hover:bg-emerald-50 border border-gray-200/90 shadow-2xs group"
+              className="flex items-center gap-1.5 text-xs font-black text-gray-900 hover:text-[#105238] transition-all py-1.5 px-3 rounded-xl bg-gray-100/90 hover:bg-[#eaf0e2] border border-gray-200/90 shadow-2xs group cursor-pointer"
             >
-              <ChevronLeft className="w-4 h-4 text-emerald-700 group-hover:-translate-x-0.5 transition-transform" />
-              <span className="font-extrabold tracking-tight">Inicio / Explorar</span>
+              <ChevronLeft className="w-4 h-4 text-[#105238] group-hover:-translate-x-0.5 transition-transform" />
+              <span className="font-extrabold tracking-tight">Experiencias</span>
             </button>
             <span className="text-[10px] font-black uppercase tracking-wider text-emerald-900 bg-emerald-100/80 px-2.5 py-1 rounded-full border border-emerald-300/50 shadow-2xs">
               Movilidad El Salvador

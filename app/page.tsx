@@ -33,7 +33,7 @@ import { ReceptionScreen } from "@/components/screens/reception-screen"
 import { ShareInviteModal } from "@/components/share-invite-modal"
 import { PoolPaymentModal } from "@/components/pool-payment-modal"
 import { InstallPWABanner } from "@/components/install-pwa-banner"
-import { DesktopSidebar } from "@/components/desktop-sidebar"
+import { DesktopSidebar, DesktopFloatingIconRail } from "@/components/desktop-sidebar"
 import { useAppStore } from "@/lib/store"
 import { Truck, X, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -49,6 +49,7 @@ type ActiveTab =
   | "rutas-classic"
   | "conductor"
   | "recepcion"
+  | "reception"
   | "kyc"
   | "billing"
   | "planes"
@@ -65,7 +66,7 @@ type ActiveTab =
   | "map-explorer"
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>("map-explorer")
+  const [activeTab, setActiveTab] = useState<ActiveTab>("marketplace")
 
   const isAuthenticated = useAppStore((state) => state.isAuthenticated)
   const hasCompletedOnboarding = useAppStore((state) => state.hasCompletedOnboarding)
@@ -250,23 +251,17 @@ export default function Home() {
         </div>
       )}
 
-      {/* Pestaña flotante lateral anclada en el centro vertical para que NUNCA choque con cabeceras ni títulos */}
+      {/* Barra Flotante de Iconos en Escritorio cuando el menú lateral está colapsado / al hacer scroll */}
       {isDesktopSidebarCollapsed && (
-        <div className="hidden lg:block fixed top-1/2 -translate-y-1/2 left-0 z-50">
-          <button
-            type="button"
-            onClick={() => setIsDesktopSidebarCollapsed(false)}
-            title="Mostrar menú de navegación"
-            className="bg-white/95 hover:bg-emerald-50 text-gray-700 hover:text-[#064e3b] py-3.5 px-1.5 rounded-r-2xl shadow-xl border-r border-y border-gray-200/90 flex flex-col items-center justify-center gap-1 transition-all active:scale-95 group hover:px-2.5"
-          >
-            <ChevronRight className="w-4 h-4 text-emerald-700 group-hover:translate-x-0.5 transition-transform" />
-            <span className="text-[9px] font-black uppercase [writing-mode:vertical-lr] tracking-widest text-gray-500 group-hover:text-emerald-800">Menú</span>
-          </button>
-        </div>
+        <DesktopFloatingIconRail
+          activeTab={activeTab}
+          onNavigate={(tab) => setActiveTab(tab as ActiveTab)}
+          onExpand={() => setIsDesktopSidebarCollapsed(false)}
+        />
       )}
 
       {/* Main Content Area */}
-      <main className={`flex-1 flex flex-col relative h-screen overflow-hidden w-full ${isMapExplorer ? 'max-w-none' : 'lg:max-w-none max-w-md'} ${isDesktopSidebarCollapsed ? 'lg:pl-9' : ''} mx-auto shadow-2xl lg:shadow-none bg-background transition-all duration-200`}>
+      <main className={`flex-1 flex flex-col relative h-screen overflow-hidden w-full ${isMapExplorer ? 'max-w-none' : 'lg:max-w-none max-w-md'} ${isDesktopSidebarCollapsed ? 'lg:pl-16' : ''} mx-auto shadow-2xl lg:shadow-none bg-background transition-all duration-200`}>
         <InstallPWABanner />
 
         {/* Widget GPS flotante para choferes (solo cuando NO están en su panel) */}
@@ -295,7 +290,7 @@ export default function Home() {
         {/* Vista Exploración Mapa Rutas */}
         {activeTab === "map-explorer" && (
           <ExploreMapScreen
-             onBack={() => setActiveTab("rutas")}
+             onBack={() => setActiveTab("marketplace")}
              onNavigate={(tab) => setActiveTab(tab as ActiveTab)}
              onToggleDesktopSidebar={() => setIsDesktopSidebarCollapsed(prev => !prev)}
              isDesktopSidebarCollapsed={isDesktopSidebarCollapsed}
@@ -306,7 +301,7 @@ export default function Home() {
         {activeTab === "conductor" && <DriverScreen onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />}
 
         {/* Panel de Recepción (Comercios y Personal Autorizado) */}
-        {activeTab === "recepcion" && (
+        {(activeTab === "recepcion" || activeTab === "reception") && (
           <ReceptionScreen onNavigate={(tab) => setActiveTab(tab as ActiveTab)} />
         )}
         
