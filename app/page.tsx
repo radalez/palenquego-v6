@@ -245,7 +245,10 @@ export default function Home() {
         <div className="hidden lg:block h-screen flex-shrink-0 relative z-20 transition-all duration-300">
           <DesktopSidebar 
             activeTab={activeTab} 
-            onNavigate={(tab) => setActiveTab(tab as ActiveTab)} 
+            onNavigate={(tab) => {
+              setActiveTab(tab as ActiveTab)
+              setIsDesktopSidebarCollapsed(true)
+            }} 
             onToggleCollapse={() => setIsDesktopSidebarCollapsed(true)}
           />
         </div>

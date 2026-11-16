@@ -218,11 +218,11 @@ export function LoginScreen({ onLoginSuccess, onShowRegister }: LoginScreenProps
         </svg>
 
         {/* Contenedor Principal Escritorio */}
-        <div className="relative z-20 w-full max-w-[1440px] mx-auto px-10 xl:px-16">
+        <div className="relative z-20 w-full max-w-[1440px] mx-auto px-10 xl:px-16 py-6 flex flex-col justify-center h-full">
           {/* Grid Central: Izquierda (Titular + 4 Iconos sobre los excursionistas) / Derecha (Card Login) */}
-          <div className="grid grid-cols-12 items-center gap-8">
+          <div className="grid grid-cols-12 items-center gap-8 pt-10 xl:pt-6">
             {/* Columna Izquierda: Mensaje inspiracional + 4 pilares */}
-            <div className="col-span-7 flex flex-col items-center text-center self-start -mt-12 xl:-mt-16">
+            <div className="col-span-7 flex flex-col items-center text-center self-start mt-2 xl:mt-4">
               <h1 className="text-[44px] xl:text-[54px] font-black text-[#105238] leading-[1.08] tracking-tight drop-shadow-[0_2px_12px_rgba(255,255,255,0.9)]">
                 Viaja, comparte
                 <br />

@@ -119,13 +119,15 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
   const business = businesses.find((b) => b.id === storeIdNum) as any
   const businessServices = business ? services.filter((s) => s.businessId === business.id) : []
 
+  // ESTRICTO: Solo es dueño si el usuario está autenticado, tiene rol de negocio/aliado activo,
+  // el comercio NO pertenece al seed del sistema (aliado_id === 1 / jason_admin),
+  // y el ID del usuario coincide exactamente con business.aliado_id.
   const isStoreOwner = Boolean(
-    currentUser &&
-      business &&
-      (currentUser.id === business.aliado_id ||
-        currentUser.name === business.aliado_nombre ||
-        currentUser.tipo === "ALIADO" ||
-        currentUser.es_aliado),
+    currentUser?.id &&
+      business?.aliado_id &&
+      Number(business.aliado_id) > 1 &&
+      Number(currentUser.id) === Number(business.aliado_id) &&
+      (currentUser.tipo === "ALIADO" || currentUser.es_aliado),
   )
 
   const isFreeOrBroncePlan = Boolean(
@@ -541,8 +543,8 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
 
   const internalSections = [
     { id: "vista-general", label: "Resumen", visible: true },
-    { id: "promos-historias", label: `Promos (${promoStories.length}/10)`, visible: true },
-    { id: "productos", label: `Productos (${storeProducts.length})`, visible: true },
+    { id: "promos-historias", label: "Promos", visible: true },
+    { id: "productos", label: `Productos (${storeProducts.length})`, visible: storeProducts.length > 0 || isStoreOwner },
     { id: "sobre-negocio", label: "Sobre el negocio", visible: Boolean(business.description) },
     { id: "servicios", label: `Servicios (${businessServices.length})`, visible: true },
   ].filter((sec) => sec.visible)
@@ -742,7 +744,7 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
                   </div>
                 </div>
 
-                {/* Instagram-style Action Buttons: Seguir + Mensaje + Owner Management */}
+                {/* Instagram-style Action Buttons: Seguir + Mensaje (Vista Pública Limpia) */}
                 <div className="flex flex-wrap items-center gap-2.5">
                   <button
                     type="button"
@@ -775,43 +777,57 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
                     <MessageCircle className="w-4 h-4 text-[#105238]" />
                     <span>Mensaje</span>
                   </button>
-
-                  {isStoreOwner && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActionStatusMsg(null)
-                        setShowCloudinaryConfigModal(true)
-                      }}
-                      className="h-10 px-3.5 rounded-xl bg-[#eaf0e2] hover:bg-[#105238] text-[#105238] hover:text-[#8ee01a] border border-[#aeb6a1]/70 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
-                      title="Conectar tu propio espacio de Cloudinary"
-                    >
-                      <Settings2 className="w-4 h-4" />
-                      <span>Cloudinary Propio</span>
-                    </button>
-                  )}
                 </div>
 
-                {/* Instagram-style Circular Promo Stories Row (Up to 10/day) */}
-                <div id="promos-historias" className="scroll-mt-24 pt-2 border-t border-border/60 space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-black uppercase tracking-wider text-[#105238] dark:text-[#8ee01a] flex items-center gap-1.5">
-                      <Play className="w-3.5 h-3.5 fill-current" />
-                      <span>Promociones en Video e Historias ({promoStories.length}/10 hoy)</span>
-                    </span>
-                    {isStoreOwner && promoStories.length < 10 && (
+                {/* Barra Privada Exclusiva del Dueño de ESTE Negocio */}
+                {isStoreOwner && (
+                  <div className="p-3 rounded-2xl bg-[#eaf0e2]/80 border border-[#105238]/25 flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded-full bg-[#105238] text-[#8ee01a] text-[10px] font-black uppercase">
+                        Tu Negocio
+                      </span>
+                      <span className="text-xs font-bold text-[#105238]">
+                        Gestión privada de {business.name}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
                       <button
                         type="button"
                         onClick={() => {
                           setActionStatusMsg(null)
-                          setShowUploadStoryModal(true)
+                          setShowCloudinaryConfigModal(true)
                         }}
-                        className="text-xs font-extrabold text-[#105238] hover:underline flex items-center gap-1 cursor-pointer"
+                        className="h-8 px-3 rounded-xl bg-white hover:bg-[#105238] text-[#105238] hover:text-[#8ee01a] border border-[#105238]/25 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
                       >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>Subir video promo</span>
+                        <Settings2 className="w-3.5 h-3.5" />
+                        <span>Configurar mi Cloudinary</span>
                       </button>
-                    )}
+                      {promoStories.length < 10 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActionStatusMsg(null)
+                            setShowUploadStoryModal(true)
+                          }}
+                          className="h-8 px-3 rounded-xl bg-[#105238] hover:bg-[#0c3e2b] text-[#8ee01a] font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Subir Promo ({promoStories.length}/10)</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Instagram-style Circular Promo Stories Row */}
+                <div id="promos-historias" className="scroll-mt-24 pt-2 border-t border-border/60 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-black uppercase tracking-wider text-[#105238] dark:text-[#8ee01a] flex items-center gap-1.5">
+                      <Play className="w-3.5 h-3.5 fill-current" />
+                      <span>
+                        Promociones e Historias{isStoreOwner ? ` (${promoStories.length}/10 hoy)` : ""}
+                      </span>
+                    </span>
                   </div>
 
                   <div className="flex items-start gap-4 overflow-x-auto pb-1 scrollbar-hide">
@@ -920,7 +936,8 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
                 </div>
               </div>
 
-              {/* NEW SECTION: PRODUCTOS DE LA TIENDA (con compra directa y límite de 1 producto en Plan Gratuito/Bronce) */}
+              {/* NEW SECTION: PRODUCTOS DE LA TIENDA (Solo se muestra al público cuando tiene productos, o al dueño de este negocio) */}
+              {(storeProducts.length > 0 || isStoreOwner) && (
               <div id="productos" className="scroll-mt-24 space-y-4 pt-1">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <div className="flex items-center gap-2.5">
@@ -1035,17 +1052,16 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
                 ) : (
                   <div className="bg-card border border-border rounded-2xl p-6 text-center space-y-2">
                     <p className="text-sm font-semibold text-foreground">
-                      Este comercio aún no tiene productos publicados en su vitrina.
+                      Aún no has publicado productos en la vitrina de tu negocio.
                     </p>
-                    {isStoreOwner && (
-                      <p className="text-xs text-muted-foreground">
-                        Puedes publicar tu producto con foto desde tu Cloudinary usando el botón{" "}
-                        <strong>+ Agregar Producto</strong> (1 producto incluido en Plan Gratuito/Bronce).
-                      </p>
-                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Puedes publicar tu producto con foto usando el botón{" "}
+                      <strong>+ Agregar Producto</strong> (1 producto incluido en Plan Gratuito/Bronce).
+                    </p>
                   </div>
                 )}
               </div>
+              )}
 
               {/* Description */}
               {business.description && (
