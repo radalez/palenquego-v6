@@ -161,7 +161,7 @@ function ReactionBadgeIcon({
         className={cn(
           sizeClass,
           base3D,
-          "rounded-full bg-gradient-to-br from-[#1b8a5a] via-[#105238] to-[#083321] border border-[#8ee01a]/75 flex items-center justify-center shrink-0",
+          "rounded-full bg-gradient-to-br from-[#1877F2] via-[#166fe5] to-[#0e5a9e] border border-[#60a5fa] flex items-center justify-center shrink-0",
         )}
       >
         {glossOverlay}
@@ -177,7 +177,7 @@ function ReactionBadgeIcon({
         >
           <path
             d="M7 11v9H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3Zm2 9h7.5a2 2 0 0 0 1.94-1.52l1.2-4.8A2 2 0 0 0 17.7 11H14V6.5A2.5 2.5 0 0 0 11.5 4l-.4.02a.5.5 0 0 0-.45.38L9 11v9Z"
-            fill="#8ee01a"
+            fill="#ffffff"
           />
         </svg>
       </span>
@@ -190,7 +190,7 @@ function ReactionBadgeIcon({
         className={cn(
           sizeClass,
           base3D,
-          "rounded-full bg-gradient-to-br from-[#fde047] via-[#eab308] to-[#ca8a04] border border-[#fef08a] flex items-center justify-center shrink-0",
+          "rounded-full bg-gradient-to-br from-[#fbbd23] via-[#f59e0b] to-[#d97706] border border-[#fef08a] flex items-center justify-center shrink-0",
         )}
       >
         {glossOverlay}
@@ -204,15 +204,11 @@ function ReactionBadgeIcon({
             animateOnHover && "group-hover/emoji:animate-fb-laugh",
           )}
         >
+          <circle cx="8.5" cy="9.5" r="1.5" fill="#1f2937" />
+          <circle cx="15.5" cy="9.5" r="1.5" fill="#1f2937" />
           <path
-            d="M7.5 10.5c.6-1 1.7-1 2.3 0M14.2 10.5c.6-1 1.7-1 2.3 0"
-            stroke="#422006"
-            strokeWidth="2.3"
-            strokeLinecap="round"
-          />
-          <path
-            d="M7.5 14c1 2.5 3 3.5 4.5 3.5s3.5-1 4.5-3.5h-9Z"
-            fill="#422006"
+            d="M7 13.5c1.2 2.8 3.3 4 5 4s3.8-1.2 5-4h-10Z"
+            fill="#1f2937"
           />
         </svg>
       </span>
@@ -3784,7 +3780,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                       aria-label={r.label}
                                     >
                                       {/* Floating Facebook-style label tooltip on hover */}
-                                      <span className="pointer-events-none opacity-0 group-hover/emoji:opacity-100 transition-opacity duration-150 absolute -top-8 left-1/2 -translate-x-1/2 bg-[#105238] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap shadow-lg">
+                                      <span className="pointer-events-none opacity-0 group-hover/emoji:opacity-100 transition-opacity duration-150 absolute -top-8 left-1/2 -translate-x-1/2 bg-[#1f2937] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap shadow-lg">
                                         {r.label}
                                       </span>
                                       <ReactionBadgeIcon type={r.id} size="lg" animated />
@@ -3806,7 +3802,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                             className={cn(
                               "w-full h-9 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer px-2",
                               activeReactMeta
-                                ? "bg-[#eaf0e2] text-[#105238] ring-1 ring-[#105238]/25"
+                                ? "bg-[#f0f2f5] text-slate-800"
                                 : "hover:bg-muted text-muted-foreground hover:text-foreground",
                             )}
                           >
@@ -3856,23 +3852,23 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   onClick={() => setOpenShareId(null)}
-                                  className="group/sharebtn relative w-10 h-10 rounded-full bg-[#25D366] flex items-center justify-center text-white shadow-sm transition-transform duration-200 hover:scale-125 hover:-translate-y-1.5"
+                                  className="group/sharebtn relative w-10 h-10 rounded-full bg-[#1f2937] hover:bg-[#111827] flex items-center justify-center text-white shadow-sm transition-transform duration-200 hover:scale-125 hover:-translate-y-1.5"
                                   aria-label="WhatsApp"
                                 >
-                                  <span className="pointer-events-none opacity-0 group-hover/sharebtn:opacity-100 transition-opacity duration-150 absolute -top-7 left-1/2 -translate-x-1/2 bg-[#105238] text-white text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap shadow">
+                                  <span className="pointer-events-none opacity-0 group-hover/sharebtn:opacity-100 transition-opacity duration-150 absolute -top-7 left-1/2 -translate-x-1/2 bg-[#1f2937] text-white text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap shadow">
                                     WhatsApp
                                   </span>
-                                  <MessageCircle className="w-5 h-5" />
+                                  <MessageCircle className="w-5 h-5 text-white" />
                                 </a>
                                 <a
                                   href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   onClick={() => setOpenShareId(null)}
-                                  className="group/sharebtn relative w-10 h-10 rounded-full bg-[#1877F2] flex items-center justify-center text-white text-base font-black shadow-sm transition-transform duration-200 hover:scale-125 hover:-translate-y-1.5"
+                                  className="group/sharebtn relative w-10 h-10 rounded-full bg-[#1f2937] hover:bg-[#111827] flex items-center justify-center text-white text-base font-black shadow-sm transition-transform duration-200 hover:scale-125 hover:-translate-y-1.5"
                                   aria-label="Facebook"
                                 >
-                                  <span className="pointer-events-none opacity-0 group-hover/sharebtn:opacity-100 transition-opacity duration-150 absolute -top-7 left-1/2 -translate-x-1/2 bg-[#105238] text-white text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap shadow">
+                                  <span className="pointer-events-none opacity-0 group-hover/sharebtn:opacity-100 transition-opacity duration-150 absolute -top-7 left-1/2 -translate-x-1/2 bg-[#1f2937] text-white text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap shadow">
                                     Facebook
                                   </span>
                                   f
@@ -3882,10 +3878,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   onClick={() => setOpenShareId(null)}
-                                  className="group/sharebtn relative w-10 h-10 rounded-full bg-[#0f172a] flex items-center justify-center text-white text-sm font-black shadow-sm transition-transform duration-200 hover:scale-125 hover:-translate-y-1.5"
+                                  className="group/sharebtn relative w-10 h-10 rounded-full bg-[#1f2937] hover:bg-[#111827] flex items-center justify-center text-white text-sm font-black shadow-sm transition-transform duration-200 hover:scale-125 hover:-translate-y-1.5"
                                   aria-label="X"
                                 >
-                                  <span className="pointer-events-none opacity-0 group-hover/sharebtn:opacity-100 transition-opacity duration-150 absolute -top-7 left-1/2 -translate-x-1/2 bg-[#105238] text-white text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap shadow">
+                                  <span className="pointer-events-none opacity-0 group-hover/sharebtn:opacity-100 transition-opacity duration-150 absolute -top-7 left-1/2 -translate-x-1/2 bg-[#1f2937] text-white text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap shadow">
                                     X
                                   </span>
                                   X
@@ -3895,10 +3891,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   onClick={() => setOpenShareId(null)}
-                                  className="group/sharebtn relative w-10 h-10 rounded-full bg-[#0A66C2] flex items-center justify-center text-white text-sm font-black shadow-sm transition-transform duration-200 hover:scale-125 hover:-translate-y-1.5"
+                                  className="group/sharebtn relative w-10 h-10 rounded-full bg-[#1f2937] hover:bg-[#111827] flex items-center justify-center text-white text-sm font-black shadow-sm transition-transform duration-200 hover:scale-125 hover:-translate-y-1.5"
                                   aria-label="LinkedIn"
                                 >
-                                  <span className="pointer-events-none opacity-0 group-hover/sharebtn:opacity-100 transition-opacity duration-150 absolute -top-7 left-1/2 -translate-x-1/2 bg-[#105238] text-white text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap shadow">
+                                  <span className="pointer-events-none opacity-0 group-hover/sharebtn:opacity-100 transition-opacity duration-150 absolute -top-7 left-1/2 -translate-x-1/2 bg-[#1f2937] text-white text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap shadow">
                                     LinkedIn
                                   </span>
                                   in
@@ -3906,13 +3902,13 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                 <a
                                   href={`mailto:?subject=${encodeURIComponent(service.name)}&body=${encodeURIComponent(shareUrl)}`}
                                   onClick={() => setOpenShareId(null)}
-                                  className="group/sharebtn relative w-10 h-10 rounded-full bg-[#105238] flex items-center justify-center text-[#8ee01a] shadow-sm transition-transform duration-200 hover:scale-125 hover:-translate-y-1.5"
+                                  className="group/sharebtn relative w-10 h-10 rounded-full bg-[#1f2937] hover:bg-[#111827] flex items-center justify-center text-white shadow-sm transition-transform duration-200 hover:scale-125 hover:-translate-y-1.5"
                                   aria-label="Correo"
                                 >
-                                  <span className="pointer-events-none opacity-0 group-hover/sharebtn:opacity-100 transition-opacity duration-150 absolute -top-7 left-1/2 -translate-x-1/2 bg-[#105238] text-white text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap shadow">
+                                  <span className="pointer-events-none opacity-0 group-hover/sharebtn:opacity-100 transition-opacity duration-150 absolute -top-7 left-1/2 -translate-x-1/2 bg-[#1f2937] text-white text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap shadow">
                                     Correo
                                   </span>
-                                  <Mail className="w-5 h-5" />
+                                  <Mail className="w-5 h-5 text-white" />
                                 </a>
                                 <button
                                   type="button"
@@ -3922,10 +3918,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                     setTimeout(() => setCopiedServiceId(null), 1500)
                                     setOpenShareId(null)
                                   }}
-                                  className="group/sharebtn relative w-10 h-10 rounded-full bg-[#eaf0e2] border border-[#aeb6a1]/70 flex items-center justify-center text-[#105238] shadow-sm transition-transform duration-200 hover:scale-125 hover:-translate-y-1.5 cursor-pointer"
+                                  className="group/sharebtn relative w-10 h-10 rounded-full bg-[#f0f2f5] hover:bg-[#e4e6eb] border border-slate-300 flex items-center justify-center text-slate-800 shadow-sm transition-transform duration-200 hover:scale-125 hover:-translate-y-1.5 cursor-pointer"
                                   aria-label="Copiar enlace"
                                 >
-                                  <span className="pointer-events-none opacity-0 group-hover/sharebtn:opacity-100 transition-opacity duration-150 absolute -top-7 left-1/2 -translate-x-1/2 bg-[#105238] text-white text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap shadow">
+                                  <span className="pointer-events-none opacity-0 group-hover/sharebtn:opacity-100 transition-opacity duration-150 absolute -top-7 left-1/2 -translate-x-1/2 bg-[#1f2937] text-white text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap shadow">
                                     Copiar
                                   </span>
                                   {copiedServiceId === service.id ? (
