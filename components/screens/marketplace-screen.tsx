@@ -3383,10 +3383,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                           type="button"
                           onClick={() => handleReactTravelerPost(post.id, r.id)}
                           className={cn(
-                            "group/react inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer",
+                            "group/react inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer border",
                             active
-                              ? "bg-[#105238] text-white shadow-xs"
-                              : "bg-[#f0f2f5] text-slate-700 hover:bg-[#e4e6eb] hover:text-slate-900",
+                              ? "bg-[#eaf0e2] text-[#105238] border-[#105238]/30 shadow-2xs"
+                              : "bg-[#f0f2f5] text-slate-700 hover:bg-[#e4e6eb] hover:text-slate-900 border-transparent",
                           )}
                         >
                           <span className="transition-transform duration-200 group-hover/react:scale-125">
@@ -3947,7 +3947,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                         <Button
                           type="button"
                           onClick={() => setSelectedService(service)}
-                          className="flex-1 min-w-[100px] h-9 rounded-xl bg-[#105238] hover:bg-[#0c3e2b] text-white font-bold text-xs cursor-pointer"
+                          className="flex-1 min-w-[100px] h-9 rounded-xl bg-[#eaf0e2] hover:bg-[#d8e6cb] text-[#105238] font-bold text-xs transition-colors cursor-pointer border border-[#105238]/15"
                         >
                           Reservar
                         </Button>
@@ -5611,7 +5611,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                         value={publishSearchQuery}
                         onChange={(e) => setPublishSearchQuery(e.target.value)}
                         placeholder="Escribe el nombre del lugar, restaurante, tour o hotel..."
-                        className="w-full h-10 pl-10 pr-8 rounded-2xl border border-border bg-background text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#105238]"
+                        className="w-full h-10 pl-10 pr-8 rounded-2xl border border-slate-200 dark:border-border bg-white dark:bg-card text-xs sm:text-sm focus:outline-none focus:border-slate-300 focus:ring-0"
                         autoFocus
                       />
                       {isSearchingPublish && (
@@ -5717,7 +5717,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   value={composerText}
                   onChange={(e) => setComposerText(e.target.value)}
                   placeholder="¿Qué fue lo que más te gustó? ¿Cómo estuvo la atención?"
-                  className="w-full rounded-2xl border border-border bg-background px-3.5 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#105238]"
+                  className="w-full rounded-2xl border-0 bg-white dark:bg-card px-3.5 py-2.5 text-sm resize-none focus:outline-none focus:ring-0 shadow-xs"
                 />
               </div>
 
