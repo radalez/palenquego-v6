@@ -5697,7 +5697,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                             : "opacity-75 hover:opacity-100",
                         )}
                       >
-                        <span className="pointer-events-none opacity-0 group-hover/modalreact:opacity-100 transition-opacity duration-150 absolute -top-8 left-1/2 -translate-x-1/2 bg-[#105238] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap shadow-lg z-20">
+                        <span className="pointer-events-none opacity-0 group-hover/modalreact:opacity-100 transition-opacity duration-150 absolute -top-8 left-1/2 -translate-x-1/2 bg-[#1f2937] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap shadow-lg z-20">
                           {r.label}
                         </span>
                         <ReactionBadgeIcon type={r.id} size="md" animated={publishReaction === r.id} animateOnHover />
