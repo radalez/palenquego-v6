@@ -340,7 +340,7 @@ function CategoryCarouselStrip({
           <button
             type="button"
             onClick={() => scrollTrack("left")}
-            className="hidden sm:flex w-7 h-7 rounded-full bg-white border border-[#aeb6a1]/60 items-center justify-center text-[#105238] hover:bg-[#105238] hover:text-white transition-colors cursor-pointer"
+            className="hidden sm:flex w-7 h-7 rounded-full bg-white dark:bg-card border border-slate-200/90 items-center justify-center text-slate-600 hover:bg-[#f0f2f5] hover:text-slate-900 shadow-2xs transition-all cursor-pointer"
             aria-label="Anterior"
           >
             <ChevronLeft className="w-4 h-4" />
@@ -348,7 +348,7 @@ function CategoryCarouselStrip({
           <button
             type="button"
             onClick={() => scrollTrack("right")}
-            className="hidden sm:flex w-7 h-7 rounded-full bg-white border border-[#aeb6a1]/60 items-center justify-center text-[#105238] hover:bg-[#105238] hover:text-white transition-colors cursor-pointer"
+            className="hidden sm:flex w-7 h-7 rounded-full bg-white dark:bg-card border border-slate-200/90 items-center justify-center text-slate-600 hover:bg-[#f0f2f5] hover:text-slate-900 shadow-2xs transition-all cursor-pointer"
             aria-label="Siguiente"
           >
             <ChevronRight className="w-4 h-4" />
@@ -483,14 +483,14 @@ function RoutesCarouselStrip({
           <button
             type="button"
             onClick={() => scrollTrack("left")}
-            className="hidden sm:flex w-7 h-7 rounded-full bg-white border border-[#aeb6a1]/60 items-center justify-center text-[#105238] hover:bg-[#105238] hover:text-white transition-colors cursor-pointer"
+            className="hidden sm:flex w-7 h-7 rounded-full bg-white dark:bg-card border border-slate-200/90 items-center justify-center text-slate-600 hover:bg-[#f0f2f5] hover:text-slate-900 shadow-2xs transition-all cursor-pointer"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
           <button
             type="button"
             onClick={() => scrollTrack("right")}
-            className="hidden sm:flex w-7 h-7 rounded-full bg-white border border-[#aeb6a1]/60 items-center justify-center text-[#105238] hover:bg-[#105238] hover:text-white transition-colors cursor-pointer"
+            className="hidden sm:flex w-7 h-7 rounded-full bg-white dark:bg-card border border-slate-200/90 items-center justify-center text-slate-600 hover:bg-[#f0f2f5] hover:text-slate-900 shadow-2xs transition-all cursor-pointer"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
@@ -619,7 +619,7 @@ function SmartAppReelStrip({ reel }: { reel: SmartReelDefinition }) {
           <button
             type="button"
             onClick={() => scrollTrack("left")}
-            className="hidden sm:flex w-7 h-7 rounded-full bg-[#eaf0e2] border border-[#aeb6a1]/60 items-center justify-center text-[#105238] hover:bg-[#105238] hover:text-white transition-colors cursor-pointer"
+            className="hidden sm:flex w-7 h-7 rounded-full bg-white dark:bg-card border border-slate-200/90 items-center justify-center text-slate-600 hover:bg-[#f0f2f5] hover:text-slate-900 shadow-2xs transition-all cursor-pointer"
             aria-label="Anterior"
           >
             <ChevronLeft className="w-4 h-4" />
@@ -627,7 +627,7 @@ function SmartAppReelStrip({ reel }: { reel: SmartReelDefinition }) {
           <button
             type="button"
             onClick={() => scrollTrack("right")}
-            className="hidden sm:flex w-7 h-7 rounded-full bg-[#eaf0e2] border border-[#aeb6a1]/60 items-center justify-center text-[#105238] hover:bg-[#105238] hover:text-white transition-colors cursor-pointer"
+            className="hidden sm:flex w-7 h-7 rounded-full bg-white dark:bg-card border border-slate-200/90 items-center justify-center text-slate-600 hover:bg-[#f0f2f5] hover:text-slate-900 shadow-2xs transition-all cursor-pointer"
             aria-label="Siguiente"
           >
             <ChevronRight className="w-4 h-4" />
@@ -846,14 +846,14 @@ function StoresReelStrip({
           <button
             type="button"
             onClick={() => scrollTrack("left")}
-            className="hidden sm:flex w-7 h-7 rounded-full bg-[#eaf0e2] border border-[#aeb6a1]/60 items-center justify-center text-[#105238] hover:bg-[#105238] hover:text-white transition-colors cursor-pointer"
+            className="hidden sm:flex w-7 h-7 rounded-full bg-white dark:bg-card border border-slate-200/90 items-center justify-center text-slate-600 hover:bg-[#f0f2f5] hover:text-slate-900 shadow-2xs transition-all cursor-pointer"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
           <button
             type="button"
             onClick={() => scrollTrack("right")}
-            className="hidden sm:flex w-7 h-7 rounded-full bg-[#eaf0e2] border border-[#aeb6a1]/60 items-center justify-center text-[#105238] hover:bg-[#105238] hover:text-white transition-colors cursor-pointer"
+            className="hidden sm:flex w-7 h-7 rounded-full bg-white dark:bg-card border border-slate-200/90 items-center justify-center text-slate-600 hover:bg-[#f0f2f5] hover:text-slate-900 shadow-2xs transition-all cursor-pointer"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
@@ -1055,14 +1055,14 @@ function PersonalizedTasteReelStrip({
           <button
             type="button"
             onClick={() => scrollTrack("left")}
-            className="hidden sm:flex w-7 h-7 rounded-full bg-white border border-[#aeb6a1]/60 items-center justify-center text-[#105238] hover:bg-[#105238] hover:text-white transition-colors cursor-pointer"
+            className="hidden sm:flex w-7 h-7 rounded-full bg-white dark:bg-card border border-slate-200/90 items-center justify-center text-slate-600 hover:bg-[#f0f2f5] hover:text-slate-900 shadow-2xs transition-all cursor-pointer"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
           <button
             type="button"
             onClick={() => scrollTrack("right")}
-            className="hidden sm:flex w-7 h-7 rounded-full bg-white border border-[#aeb6a1]/60 items-center justify-center text-[#105238] hover:bg-[#105238] hover:text-white transition-colors cursor-pointer"
+            className="hidden sm:flex w-7 h-7 rounded-full bg-white dark:bg-card border border-slate-200/90 items-center justify-center text-slate-600 hover:bg-[#f0f2f5] hover:text-slate-900 shadow-2xs transition-all cursor-pointer"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
@@ -3054,7 +3054,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   <button
                     type="button"
                     onClick={() => routesTrackRef.current?.scrollBy({ left: -240, behavior: "smooth" })}
-                    className="hidden sm:flex w-7 h-7 rounded-full bg-[#f0f2f5] hover:bg-[#e4e6eb] items-center justify-center text-slate-700 transition-colors cursor-pointer"
+                    className="hidden sm:flex w-7 h-7 rounded-full bg-white dark:bg-card border border-slate-200/90 items-center justify-center text-slate-600 hover:bg-[#f0f2f5] hover:text-slate-900 shadow-2xs transition-all cursor-pointer"
                     aria-label="Rutas anteriores"
                   >
                     <ChevronLeft className="w-4 h-4" />
@@ -3062,7 +3062,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   <button
                     type="button"
                     onClick={() => routesTrackRef.current?.scrollBy({ left: 240, behavior: "smooth" })}
-                    className="hidden sm:flex w-7 h-7 rounded-full bg-[#f0f2f5] hover:bg-[#e4e6eb] items-center justify-center text-slate-700 transition-colors cursor-pointer"
+                    className="hidden sm:flex w-7 h-7 rounded-full bg-white dark:bg-card border border-slate-200/90 items-center justify-center text-slate-600 hover:bg-[#f0f2f5] hover:text-slate-900 shadow-2xs transition-all cursor-pointer"
                     aria-label="Siguientes rutas"
                   >
                     <ChevronRight className="w-4 h-4" />
@@ -3212,7 +3212,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                 <button
                   type="button"
                   onClick={() => categoriesTrackRef.current?.scrollBy({ left: -220, behavior: "smooth" })}
-                  className="hidden sm:flex w-7 h-7 rounded-full bg-white dark:bg-card border border-slate-200/90 items-center justify-center text-slate-700 hover:bg-[#f0f2f5] transition-colors shrink-0 shadow-2xs cursor-pointer"
+                  className="hidden sm:flex w-7 h-7 rounded-full bg-white dark:bg-card border border-slate-200/90 items-center justify-center text-slate-600 hover:bg-[#f0f2f5] hover:text-slate-900 transition-all shrink-0 shadow-2xs cursor-pointer"
                   aria-label="Categorías anteriores"
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -3266,7 +3266,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                 <button
                   type="button"
                   onClick={() => categoriesTrackRef.current?.scrollBy({ left: 220, behavior: "smooth" })}
-                  className="hidden sm:flex w-7 h-7 rounded-full bg-white dark:bg-card border border-slate-200/90 items-center justify-center text-slate-700 hover:bg-[#f0f2f5] transition-colors shrink-0 shadow-2xs cursor-pointer"
+                  className="hidden sm:flex w-7 h-7 rounded-full bg-white dark:bg-card border border-slate-200/90 items-center justify-center text-slate-600 hover:bg-[#f0f2f5] hover:text-slate-900 transition-all shrink-0 shadow-2xs cursor-pointer"
                   aria-label="Más categorías"
                 >
                   <ChevronRight className="w-4 h-4" />
