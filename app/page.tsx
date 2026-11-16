@@ -136,7 +136,7 @@ export default function Home() {
   const [showShareModal, setShowShareModal] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [showChoferModal, setShowChoferModal] = useState(false)
-  const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false)
+  const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(true)
 
   // Mostrar modal de bienvenida explicativo únicamente a choferes con KYC sin verificar (UNVERIFIED)
   useEffect(() => {

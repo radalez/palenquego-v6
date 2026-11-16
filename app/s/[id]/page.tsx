@@ -79,7 +79,7 @@ export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
   const [activeSection, setActiveSection] = useState<string>("vista-general")
   const [showDesktopShare, setShowDesktopShare] = useState(false)
   const [copiedLink, setCopiedLink] = useState(false)
-  const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false)
+  const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(true)
   const sharePopoverRef = useRef<HTMLDivElement>(null)
 
   const serviceId = parseInt(resolvedParams.id)

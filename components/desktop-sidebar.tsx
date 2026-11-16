@@ -185,13 +185,13 @@ export function DesktopSidebar({ activeTab, onNavigate, onToggleCollapse }: Desk
           : (document.querySelector(".overflow-y-auto") as HTMLElement | null)
       const currentY = scrollEl?.scrollTop || window.scrollY || document.documentElement.scrollTop || 0
 
-      if (currentY > 110 && currentY > lastScrollTopRef.current + 30) {
+      if (currentY > lastScrollTopRef.current + 18) {
         if (!collapseTimer) {
           collapseTimer = setTimeout(() => {
             if (!isHoveringSidebarRef.current) {
               onToggleCollapse()
             }
-          }, 850)
+          }, 800)
         }
       }
       lastScrollTopRef.current = currentY
