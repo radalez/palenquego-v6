@@ -5570,7 +5570,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
             <form onSubmit={handlePublishTravelerPost} className="p-5 space-y-4 max-h-[82vh] overflow-y-auto hover-scrollbar">
               {/* Step 1: Mandatory Search & Select Lived Experience */}
               <div className="space-y-2">
-                <label className="text-xs font-extrabold text-foreground flex items-center justify-between">
+                <label className="text-sm sm:text-[15px] font-semibold text-slate-800 dark:text-foreground flex items-center justify-between">
                   <span>1. ¿Qué lugar o experiencia visitaste? *</span>
                   <span className="text-[10px] font-bold text-[#105238] bg-[#eaf0e2] px-2 py-0.5 rounded-full">
                     Requerido
@@ -5611,7 +5611,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                         value={publishSearchQuery}
                         onChange={(e) => setPublishSearchQuery(e.target.value)}
                         placeholder="Escribe el nombre del lugar, restaurante, tour o hotel..."
-                        className="w-full h-10 pl-10 pr-8 rounded-2xl border border-slate-200 dark:border-border bg-white dark:bg-card text-xs sm:text-sm focus:outline-none focus:border-slate-300 focus:ring-0"
+                        className="w-full h-11 pl-10 pr-8 rounded-2xl border border-slate-200 dark:border-border bg-white dark:bg-card text-sm sm:text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-300 focus:ring-0"
                         autoFocus
                       />
                       {isSearchingPublish && (
@@ -5660,7 +5660,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
               {/* Step 2: Star Rating + 3D Green Reaction */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                 <div className="bg-[#fafaf8] dark:bg-background border border-border/80 rounded-2xl p-3 space-y-1.5">
-                  <span className="text-[11px] font-bold text-foreground block">2. Calificación</span>
+                  <span className="text-sm font-semibold text-slate-800 dark:text-foreground block">2. Calificación</span>
                   <div className="flex items-center gap-1">
                     {[1, 2, 3, 4, 5].map((n) => (
                       <button
@@ -5682,7 +5682,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                 </div>
 
                 <div className="bg-[#fafaf8] dark:bg-background border border-border/80 rounded-2xl p-3 space-y-2">
-                  <span className="text-[11px] font-bold text-foreground block">¿Cómo te sentiste?</span>
+                  <span className="text-sm font-semibold text-slate-800 dark:text-foreground block">¿Cómo te sentiste?</span>
                   <div className="w-full flex items-center justify-between gap-1.5 pt-1">
                     {REACTIONS.map((r) => (
                       <button
@@ -5709,15 +5709,15 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
 
               {/* Step 3: Story Text (no photos for now) */}
               <div className="space-y-1.5">
-                <label className="text-xs font-extrabold text-foreground block">
+                <label className="text-sm sm:text-[15px] font-semibold text-slate-800 dark:text-foreground block">
                   3. Cuéntale a otros viajeros cómo te fue
                 </label>
                 <textarea
-                  rows={3}
+                  rows={4}
                   value={composerText}
                   onChange={(e) => setComposerText(e.target.value)}
                   placeholder="¿Qué fue lo que más te gustó? ¿Cómo estuvo la atención?"
-                  className="w-full rounded-2xl border-0 bg-white dark:bg-card px-3.5 py-2.5 text-sm resize-none focus:outline-none focus:ring-0 shadow-xs"
+                  className="w-full rounded-2xl border-0 bg-white dark:bg-card px-4 py-3 text-base sm:text-[17px] text-slate-900 placeholder:text-slate-400 resize-none focus:outline-none focus:ring-0 shadow-xs leading-relaxed"
                 />
               </div>
 
