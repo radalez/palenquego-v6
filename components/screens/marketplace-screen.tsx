@@ -960,6 +960,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   const [openTravelerCommentsId, setOpenTravelerCommentsId] = useState<string | null>(null)
   const [travelerCommentDrafts, setTravelerCommentDrafts] = useState<Record<string, string>>({})
   const [adRotationIndex, setAdRotationIndex] = useState(0)
+  const [rightCompanionIndex, setRightCompanionIndex] = useState(0)
+  const [isHoveringRightSidebar, setIsHoveringRightSidebar] = useState(false)
+  const lastCompanionScrollYRef = useRef(0)
+  const lastCompanionSwitchAtRef = useRef(0)
 
   // 40-item persistent seen-tracking reload cycle (never repeats seen items, never jumps to top)
   const BATCH_SIZE = 40
@@ -1138,13 +1142,48 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     [setUserIntentions],
   )
 
-  // Rotate Facebook-style Publicidad Flash Ads every 6 seconds
+  // Rotate Facebook-style Publicidad Flash Ads every 6 seconds (pauses while hovering right panel)
   useEffect(() => {
     const timer = setInterval(() => {
-      setAdRotationIndex((prev) => prev + 1)
+      if (!isHoveringRightSidebar) {
+        setAdRotationIndex((prev) => prev + 1)
+      }
     }, 6000)
     return () => clearInterval(timer)
-  }, [])
+  }, [isHoveringRightSidebar])
+
+  // Smart Right-Sidebar Companion Alternation as the user scrolls down (with stop-to-read dwell-time protection)
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const getScrollPosition = (target?: EventTarget | null) => {
+      if (target && target instanceof HTMLElement && target.scrollTop > 0) {
+        return target.scrollTop
+      }
+      const mainContainer = document.querySelector(".overflow-y-auto") as HTMLElement | null
+      if (mainContainer && mainContainer.scrollTop > 0) {
+        return mainContainer.scrollTop
+      }
+      return window.scrollY || document.documentElement.scrollTop || 0
+    }
+
+    const handleScrollCompanion = (e: Event) => {
+      if (isHoveringRightSidebar) return
+      const currentY = getScrollPosition(e.target)
+      const delta = Math.abs(currentY - lastCompanionScrollYRef.current)
+      const now = Date.now()
+      // Alternate companion card every ~420px of scrolling, with a 2.4s dwell-time so stopping lets the user read comfortably
+      if (delta >= 420 && now - lastCompanionSwitchAtRef.current >= 2400) {
+        lastCompanionScrollYRef.current = currentY
+        lastCompanionSwitchAtRef.current = now
+        setRightCompanionIndex((prev) => prev + 1)
+      }
+    }
+
+    window.addEventListener("scroll", handleScrollCompanion, { capture: true, passive: true })
+    return () => {
+      window.removeEventListener("scroll", handleScrollCompanion, { capture: true } as EventListenerOptions)
+    }
+  }, [isHoveringRightSidebar])
 
   const buildUnseenCatalogQuery = useCallback(() => {
     const params = new URLSearchParams()
@@ -1286,6 +1325,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     fetchBusinesses()
     fetchRoutes()
     useAppStore.getState().fetchUserLikes()
+    useAppStore.getState().fetchMyBookings?.()
   }, [])
 
   // Restore last viewed card position
@@ -1828,10 +1868,28 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     setOpenShareId((prev) => (prev === service.id ? null : service.id))
   }
 
-  const pendingBookings = bookings.filter((b) => b.status === "PENDIENTE")
-  const flashServices = services.filter(
-    (s) => s.oferta_flash && (s.oferta_flash.cupos_disponibles ?? 0) > 0,
-  )
+  const userBookings = useMemo(() => {
+    if (!currentUser) return bookings
+    return bookings.filter((b) => b.userId === currentUser.id || (!b.userId && b.userEmail === currentUser.email))
+  }, [bookings, currentUser])
+  const pendingBookings = userBookings.filter((b) => b.status === "PENDIENTE")
+  const primaryBooking = pendingBookings[0] || userBookings[0] || null
+
+  const flashServices = useMemo(() => {
+    const byId = new Map<number, Service>()
+    for (const s of globalCatalogPool) byId.set(s.id, s)
+    for (const s of services) byId.set(s.id, s)
+    const now = Date.now()
+    return Array.from(byId.values()).filter((s) => {
+      if (!s.oferta_flash || (s.oferta_flash.cupos_disponibles ?? 0) <= 0) return false
+      const expStr = (s.oferta_flash as any).fecha_expiracion || s.oferta_flash.fecha_fin
+      if (expStr) {
+        const exp = new Date(expStr).getTime()
+        if (!Number.isNaN(exp) && exp <= now) return false
+      }
+      return true
+    })
+  }, [services, globalCatalogPool])
   const topRatedServices = [...services]
     .sort((a, b) => (b.rating || 0) - (a.rating || 0))
     .slice(0, 5)
@@ -3640,58 +3698,27 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
             )}
           </div>
 
-          {/* RIGHT STICKY SIDEBAR ON DESKTOP (scrolls smoothly on hover so nothing gets cut off) */}
-          <aside className="hidden lg:block lg:w-[300px] xl:w-[320px] shrink-0 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto hover-scrollbar pr-1 space-y-4">
-            {/* Next Booking Summary */}
-            {bookings.length > 0 && (
-              <div className="bg-card border border-border rounded-3xl p-5 shadow-2xs space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-extrabold text-sm text-foreground flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-[#105238]" />
-                    <span>Mi próxima reserva</span>
-                  </h3>
-                  <button
-                    type="button"
-                    onClick={() => onNavigate?.("pool")}
-                    className="text-xs font-bold text-[#105238] hover:underline cursor-pointer"
-                  >
-                    Ver todas
-                  </button>
-                </div>
-                <div className="flex items-center gap-3 bg-[#fafaf8] border border-border/70 rounded-2xl p-3">
-                  <img
-                    src={bookings[0].service?.image || DEFAULT_STORE_COVER}
-                    alt={bookings[0].service?.name || "Reserva"}
-                    className="w-12 h-12 rounded-xl object-cover shrink-0"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="font-bold text-xs text-foreground truncate">
-                      {bookings[0].service?.name || "Experiencia"}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground">
-                      {bookings[0].date} · {bookings[0].time}
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  type="button"
-                  onClick={() => onNavigate?.("pool")}
-                  className="w-full h-9 rounded-xl bg-[#105238] hover:bg-[#0c3e2b] text-white font-bold text-xs cursor-pointer"
-                >
-                  Ver Voucher / Pagar
-                </Button>
-              </div>
-            )}
-
-            {/* Facebook-style Publicidad Zone (Rotating 10 Flash/Featured Experiences with Real Photos) */}
+          {/* RIGHT STICKY SIDEBAR ON DESKTOP:
+              1. Publicidad ALWAYS active at the top.
+              2. Ofertas Flash ONLY shown when flashServices.length > 0 (hidden completely if 0).
+              3. Smart Companion Card below that alternates ONE AT A TIME as the user scrolls down
+                 (Más destacados <-> Tiendas Aliadas <-> Mi Reserva), never stacking Más destacados & Tiendas Aliadas together,
+                 and locking steady when the user stops scrolling or hovers to inspect. */}
+          <aside
+            onMouseEnter={() => setIsHoveringRightSidebar(true)}
+            onMouseLeave={() => setIsHoveringRightSidebar(false)}
+            className="hidden lg:block lg:w-[300px] xl:w-[320px] shrink-0 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto hover-scrollbar pr-1 space-y-4"
+          >
+            {/* 1. ALWAYS ACTIVE: Facebook-style Publicidad Zone (Rotating 2 Sponsored Experiences with Real Photos) */}
             {(() => {
               const hasRealPhoto = (s: Service) =>
                 Boolean(s.image && !s.image.includes("placeholder") && s.image !== DEFAULT_STORE_COVER)
               const flashWithPhoto = flashServices.filter(hasRealPhoto)
-              const extraWithPhoto = services.filter(
+              const poolSource = globalCatalogPool.length > 0 ? globalCatalogPool : services
+              const extraWithPhoto = poolSource.filter(
                 (s) => hasRealPhoto(s) && !flashWithPhoto.some((fs) => fs.id === s.id),
               )
-              const adPool = [...flashWithPhoto, ...extraWithPhoto].slice(0, 10)
+              const adPool = [...flashWithPhoto, ...extraWithPhoto].slice(0, 12)
               if (adPool.length === 0) return null
               const firstIdx = (adRotationIndex * 2) % adPool.length
               const secondIdx = (firstIdx + 1) % adPool.length
@@ -3701,7 +3728,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   <div className="flex items-center justify-between px-1">
                     <h3 className="text-sm font-extrabold text-muted-foreground tracking-tight">Publicidad</h3>
                     <span className="text-[10px] font-black uppercase tracking-wider text-[#105238] bg-[#eaf0e2] px-2 py-0.5 rounded-full">
-                      Ofertas Flash
+                      Destacado
                     </span>
                   </div>
                   <div className="space-y-2.5">
@@ -3714,9 +3741,9 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                           key={`${ad.id}-${firstIdx}-${idx}`}
                           type="button"
                           onClick={() => openServiceDetailInstant(ad)}
-                          className="w-full flex items-center gap-3 p-2 rounded-2xl hover:bg-card hover:shadow-xs border border-transparent hover:border-border/70 transition-all text-left cursor-pointer group/ad animate-in fade-in duration-300"
+                          className="w-full flex items-center gap-3 p-2 rounded-2xl bg-card/60 hover:bg-card hover:shadow-xs border border-border/50 hover:border-[#105238]/40 transition-all text-left cursor-pointer group/ad animate-in fade-in duration-300"
                         >
-                          <div className="relative w-24 h-24 rounded-2xl overflow-hidden shrink-0 bg-muted border border-border/50">
+                          <div className="relative w-22 h-22 rounded-2xl overflow-hidden shrink-0 bg-muted border border-border/50">
                             <img
                               src={getProxyImage(ad.image || "") || DEFAULT_STORE_COVER}
                               alt={ad.name}
@@ -3739,7 +3766,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                               <span className="text-[10px] text-muted-foreground">/p</span>
                             </div>
                             <p className="text-[11px] text-muted-foreground truncate">
-                              palenquego.com · {ad.category || "Oferta Flash"}
+                              palenquego.com · {ad.category || "Experiencia"}
                             </p>
                           </div>
                         </button>
@@ -3750,158 +3777,282 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
               )
             })()}
 
-            {/* Ofertas Flash Highlight Card (Light, Airy & Refined) */}
-            <div className="bg-gradient-to-br from-[#eaf0e2]/80 via-white to-white dark:from-card dark:to-card border border-[#8ee01a]/70 rounded-3xl p-4 shadow-2xs space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="inline-flex items-center gap-1.5 text-xs font-black text-[#105238] uppercase tracking-wider">
-                  <span className="w-6 h-6 rounded-full bg-[#105238] text-[#8ee01a] flex items-center justify-center">
-                    <Zap className="w-3.5 h-3.5 fill-[#8ee01a]" />
+            {/* 2. OFERTAS FLASH: Shown ONLY if the user/catalog has active flash offers (> 0). Hidden completely when 0! */}
+            {flashServices.length > 0 && (
+              <div className="bg-gradient-to-br from-[#eaf0e2]/80 via-white to-white dark:from-card dark:to-card border border-[#8ee01a]/70 rounded-3xl p-4 shadow-2xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="inline-flex items-center gap-1.5 text-xs font-black text-[#105238] uppercase tracking-wider">
+                    <span className="w-6 h-6 rounded-full bg-[#105238] text-[#8ee01a] flex items-center justify-center">
+                      <Zap className="w-3.5 h-3.5 fill-[#8ee01a]" />
+                    </span>
+                    Ofertas Flash
                   </span>
-                  Ofertas Flash
-                </span>
-                <span className="text-[11px] font-bold bg-[#105238] text-[#8ee01a] px-2.5 py-0.5 rounded-full">
-                  {flashServices.length} activas
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Cupos limitados con descuento directo antes de que expire el reloj.
-              </p>
-              {flashServices.slice(0, 2).map((fs) => (
-                <button
-                  key={fs.id}
-                  type="button"
-                  onClick={() => openServiceDetailInstant(fs)}
-                  className="w-full text-left bg-white dark:bg-background hover:bg-[#eaf0e2]/60 border border-border/70 rounded-2xl p-2 flex items-center justify-between gap-2.5 transition-colors cursor-pointer"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <img
-                      src={getProxyImage(fs.image || "") || DEFAULT_STORE_COVER}
-                      alt={fs.name}
-                      className="w-10 h-10 rounded-xl object-cover shrink-0 border border-border/50"
-                      onError={(e) => {
-                        e.currentTarget.src = DEFAULT_STORE_COVER
-                      }}
-                    />
-                    <span className="text-xs font-bold text-foreground truncate">{fs.name}</span>
-                  </div>
-                  <span className="text-xs font-black text-[#105238] shrink-0">
-                    ${fs.oferta_flash?.precio_promocional}
+                  <span className="text-[11px] font-bold bg-[#105238] text-[#8ee01a] px-2.5 py-0.5 rounded-full">
+                    {flashServices.length} {flashServices.length === 1 ? "activa" : "activas"}
                   </span>
-                </button>
-              ))}
-              <Button
-                type="button"
-                onClick={() => {
-                  setOnlyPreferred(false)
-                  setSelectedCategory((prev) => (prev === "flash" ? "all" : "flash"))
-                }}
-                className="w-full h-9 rounded-xl bg-[#105238] hover:bg-[#0c3e2b] text-[#8ee01a] font-black text-xs cursor-pointer"
-              >
-                {selectedCategory === "flash" ? "Ver todas las experiencias" : "Ver promociones"}
-              </Button>
-            </div>
-
-            {/* Top Rated / Featured Experiences */}
-            <div className="bg-card border border-border rounded-3xl p-5 shadow-2xs space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="font-extrabold text-sm text-foreground flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-[#105238]" />
-                  <span>Más destacados</span>
-                </h3>
-                <div className="flex items-center gap-2">
-                  {selectedCategory !== "all" && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setOnlyPreferred(false)
-                        setSelectedCategory("all")
-                        setSearchQuery("")
-                      }}
-                      className="text-xs font-bold text-[#105238] hover:underline cursor-pointer"
-                    >
-                      Ver todos
-                    </button>
-                  )}
-                  {filteredServices.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => setShowComparisonModal(true)}
-                      className="text-xs font-bold text-[#105238] hover:underline cursor-pointer"
-                    >
-                      Comparar
-                    </button>
-                  )}
                 </div>
-              </div>
-
-              <div className="space-y-2.5">
-                {topRatedServices.map((ts) => (
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Cupos limitados con descuento directo antes de que expire el reloj.
+                </p>
+                {flashServices.slice(0, 2).map((fs) => (
                   <button
-                    key={ts.id}
+                    key={fs.id}
                     type="button"
-                    onClick={() => openServiceDetailInstant(ts)}
-                    className="w-full flex items-center gap-3 p-2 rounded-2xl hover:bg-muted/50 transition-colors text-left cursor-pointer"
+                    onClick={() => openServiceDetailInstant(fs)}
+                    className="w-full text-left bg-white dark:bg-background hover:bg-[#eaf0e2]/60 border border-border/70 rounded-2xl p-2 flex items-center justify-between gap-2.5 transition-colors cursor-pointer"
                   >
-                    <img
-                      src={ts.image || DEFAULT_STORE_COVER}
-                      alt={ts.name}
-                      className="w-12 h-12 rounded-xl object-cover shrink-0"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="font-bold text-xs text-foreground truncate">{ts.name}</p>
-                      <p className="text-[11px] text-muted-foreground truncate">{ts.location}</p>
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <img
+                        src={getProxyImage(fs.image || "") || DEFAULT_STORE_COVER}
+                        alt={fs.name}
+                        className="w-10 h-10 rounded-xl object-cover shrink-0 border border-border/50"
+                        onError={(e) => {
+                          e.currentTarget.src = DEFAULT_STORE_COVER
+                        }}
+                      />
+                      <span className="text-xs font-bold text-foreground truncate">{fs.name}</span>
                     </div>
-                    <div className="text-right shrink-0">
-                      <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-[#105238]">
-                        <Star className="w-3 h-3 fill-[#105238]" /> {ts.rating}
-                      </span>
-                      <p className="text-xs font-black text-foreground">${ts.price}</p>
-                    </div>
+                    <span className="text-xs font-black text-[#105238] shrink-0">
+                      ${fs.oferta_flash?.precio_promocional} /p
+                    </span>
                   </button>
                 ))}
-              </div>
-            </div>
-
-            {/* Featured Businesses */}
-            {businesses.length > 0 && (
-              <div className="bg-card border border-border rounded-3xl p-5 shadow-2xs space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-extrabold text-sm text-foreground flex items-center gap-2">
-                    <StoreIcon className="w-4 h-4 text-[#105238]" />
-                    <span>Tiendas Aliadas</span>
-                  </h3>
-                  <button
-                    type="button"
-                    onClick={() => onNavigate?.("businesses")}
-                    className="text-xs font-bold text-[#105238] hover:underline cursor-pointer"
-                  >
-                    Ver todas
-                  </button>
-                </div>
-                <div className="space-y-2">
-                  {businesses.slice(0, 4).map((biz) => (
-                    <button
-                      key={biz.id}
-                      type="button"
-                      onClick={() => router.push(`/b/${biz.id}`)}
-                      className="w-full flex items-center gap-3 p-2 rounded-2xl hover:bg-muted/50 transition-colors text-left cursor-pointer"
-                    >
-                      <Avatar className="w-9 h-9 border border-[#105238]/30 shrink-0">
-                        <AvatarImage src={biz.logo} alt={biz.name} />
-                        <AvatarFallback className="bg-[#105238] text-white text-[10px] font-bold">
-                          {biz.name.substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0 flex-1">
-                        <p className="font-bold text-xs text-foreground truncate">{biz.name}</p>
-                        <p className="text-[11px] text-muted-foreground truncate">{biz.category || "Comercio"}</p>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
-                    </button>
-                  ))}
-                </div>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setOnlyPreferred(false)
+                    setSelectedCategory((prev) => (prev === "flash" ? "all" : "flash"))
+                  }}
+                  className="w-full h-9 rounded-xl bg-[#105238] hover:bg-[#0c3e2b] text-[#8ee01a] font-black text-xs cursor-pointer"
+                >
+                  {selectedCategory === "flash" ? "Ver todas las experiencias" : "Ver promociones"}
+                </Button>
               </div>
             )}
+
+            {/* 3. SMART SCROLL-ALTERNATING COMPANION ZONE:
+                   Alternates ONE AT A TIME as the user scrolls down (never showing Más destacados & Tiendas Aliadas together):
+                   - Más destacados
+                   - Tiendas Aliadas
+                   - Mi Reserva (if the user has a pending or upcoming booking) */}
+            {(() => {
+              const availableCompanions: Array<{
+                key: "FEATURED" | "STORES" | "BOOKING"
+                label: string
+              }> = [{ key: "FEATURED", label: "Destacados" }]
+
+              if (businesses.length > 0) {
+                availableCompanions.push({ key: "STORES", label: "Tiendas" })
+              }
+              if (primaryBooking) {
+                availableCompanions.push({
+                  key: "BOOKING",
+                  label: primaryBooking.status === "PENDIENTE" ? "Pago Pendiente" : "Mi Reserva",
+                })
+              }
+
+              const activeCompanion =
+                availableCompanions[rightCompanionIndex % availableCompanions.length] || availableCompanions[0]
+
+              return (
+                <div className="space-y-2">
+                  {/* Subtle companion indicator pills so user sees what's active & can also click directly */}
+                  {availableCompanions.length > 1 && (
+                    <div className="flex items-center justify-between px-1">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        Explora también
+                      </span>
+                      <div className="flex items-center gap-1">
+                        {availableCompanions.map((comp, idx) => {
+                          const isCurrent = comp.key === activeCompanion.key
+                          return (
+                            <button
+                              key={comp.key}
+                              type="button"
+                              onClick={() => {
+                                lastCompanionSwitchAtRef.current = Date.now()
+                                setRightCompanionIndex(idx)
+                              }}
+                              className={cn(
+                                "px-2 py-0.5 rounded-full text-[10px] font-extrabold transition-all cursor-pointer",
+                                isCurrent
+                                  ? "bg-[#105238] text-[#8ee01a]"
+                                  : "bg-[#eaf0e2] text-[#105238]/75 hover:text-[#105238]",
+                              )}
+                            >
+                              {comp.label}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* COMPANION A: Más destacados */}
+                  {activeCompanion.key === "FEATURED" && (
+                    <div
+                      key="companion-featured"
+                      className="bg-card border border-border rounded-3xl p-4 shadow-2xs space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300"
+                    >
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-extrabold text-sm text-foreground flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-[#105238]" />
+                          <span>Más destacados</span>
+                        </h3>
+                        <div className="flex items-center gap-2">
+                          {selectedCategory !== "all" && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOnlyPreferred(false)
+                                setSelectedCategory("all")
+                                setSearchQuery("")
+                              }}
+                              className="text-xs font-bold text-[#105238] hover:underline cursor-pointer"
+                            >
+                              Ver todos
+                            </button>
+                          )}
+                          {filteredServices.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => setShowComparisonModal(true)}
+                              className="text-xs font-bold text-[#105238] hover:underline cursor-pointer"
+                            >
+                              Comparar
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        {topRatedServices.slice(0, 4).map((ts) => (
+                          <button
+                            key={ts.id}
+                            type="button"
+                            onClick={() => openServiceDetailInstant(ts)}
+                            className="w-full flex items-center gap-3 p-2 rounded-2xl hover:bg-muted/50 transition-colors text-left cursor-pointer"
+                          >
+                            <img
+                              src={ts.image || DEFAULT_STORE_COVER}
+                              alt={ts.name}
+                              className="w-11 h-11 rounded-xl object-cover shrink-0"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <p className="font-bold text-xs text-foreground truncate">{ts.name}</p>
+                              <p className="text-[11px] text-muted-foreground truncate">{ts.location}</p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-[#105238]">
+                                <Star className="w-3 h-3 fill-[#105238]" /> {ts.rating}
+                              </span>
+                              <p className="text-xs font-black text-foreground">${ts.price} /p</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* COMPANION B: Tiendas Aliadas */}
+                  {activeCompanion.key === "STORES" && businesses.length > 0 && (
+                    <div
+                      key="companion-stores"
+                      className="bg-card border border-border rounded-3xl p-4 shadow-2xs space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300"
+                    >
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-extrabold text-sm text-foreground flex items-center gap-2">
+                          <StoreIcon className="w-4 h-4 text-[#105238]" />
+                          <span>Tiendas Aliadas</span>
+                        </h3>
+                        <button
+                          type="button"
+                          onClick={() => onNavigate?.("businesses")}
+                          className="text-xs font-bold text-[#105238] hover:underline cursor-pointer"
+                        >
+                          Ver todas
+                        </button>
+                      </div>
+                      <div className="space-y-2">
+                        {businesses.slice(0, 4).map((biz) => (
+                          <button
+                            key={biz.id}
+                            type="button"
+                            onClick={() => router.push(`/b/${biz.id}`)}
+                            className="w-full flex items-center gap-3 p-2 rounded-2xl hover:bg-muted/50 transition-colors text-left cursor-pointer"
+                          >
+                            <Avatar className="w-9 h-9 border border-[#105238]/30 shrink-0">
+                              <AvatarImage src={biz.logo} alt={biz.name} />
+                              <AvatarFallback className="bg-[#105238] text-white text-[10px] font-bold">
+                                {biz.name.substring(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-bold text-xs text-foreground truncate">{biz.name}</p>
+                              <p className="text-[11px] text-muted-foreground truncate">
+                                {biz.category || "Comercio Aliado"}
+                              </p>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* COMPANION C: Mi próxima reserva / Reserva pendiente */}
+                  {activeCompanion.key === "BOOKING" && primaryBooking && (
+                    <div
+                      key="companion-booking"
+                      className="bg-card border border-[#8ee01a]/70 rounded-3xl p-4 shadow-2xs space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300"
+                    >
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-extrabold text-sm text-foreground flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-[#105238]" />
+                          <span>
+                            {primaryBooking.status === "PENDIENTE"
+                              ? "Reserva pendiente"
+                              : "Mi próxima reserva"}
+                          </span>
+                        </h3>
+                        <button
+                          type="button"
+                          onClick={() => onNavigate?.("pool")}
+                          className="text-xs font-bold text-[#105238] hover:underline cursor-pointer"
+                        >
+                          Ver todas ({userBookings.length})
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-3 bg-[#fafaf8] dark:bg-background border border-border/70 rounded-2xl p-3">
+                        <img
+                          src={primaryBooking.service?.image || DEFAULT_STORE_COVER}
+                          alt={primaryBooking.service?.name || "Reserva"}
+                          className="w-12 h-12 rounded-xl object-cover shrink-0"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="font-bold text-xs text-foreground truncate">
+                            {primaryBooking.service?.name || "Experiencia"}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground">
+                            {primaryBooking.date} · {primaryBooking.time}
+                          </p>
+                          <p className="text-[11px] font-black text-[#105238] mt-0.5">
+                            Total: ${primaryBooking.totalPrice}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={() => onNavigate?.("pool")}
+                        className="w-full h-9 rounded-xl bg-[#105238] hover:bg-[#0c3e2b] text-white font-bold text-xs cursor-pointer"
+                      >
+                        Ver Voucher / Pagar
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
           </aside>
         </div>
       </div>

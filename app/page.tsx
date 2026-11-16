@@ -131,7 +131,7 @@ export default function Home() {
   }, []);
 
   const [showOnboarding, setShowOnboarding] = useState(false)
-  const [authView, setAuthView] = useState<"login" | "register">("register")
+  const [authView, setAuthView] = useState<"login" | "register">("login")
   const [showShareModal, setShowShareModal] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [showChoferModal, setShowChoferModal] = useState(false)

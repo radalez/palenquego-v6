@@ -170,7 +170,7 @@ export function LoginScreen({ onLoginSuccess, onShowRegister }: LoginScreenProps
       {/* =====================================================================
           VERSIÓN ESCRITORIO (lg:flex) — HERO PANORÁMICO SIN MENÚ + LOGO + CARD
          ===================================================================== */}
-      <div className="hidden lg:flex min-h-screen w-full relative overflow-hidden bg-[#eaf0e2] select-none">
+      <div className="hidden lg:flex h-screen w-full relative overflow-hidden bg-[#eaf0e2] select-none items-center">
         {/* Imagen panorámica de fondo: Tres excursionistas contemplan el valle dorado */}
         <img
           src={DESKTOP_HERO_BG}
@@ -185,6 +185,19 @@ export function LoginScreen({ onLoginSuccess, onShowRegister }: LoginScreenProps
             bg-[radial-gradient(circle_at_28%_24%,rgba(255,255,255,0.78)_0%,rgba(255,255,255,0.35)_38%,rgba(0,0,0,0.08)_100%)]
           "
         />
+
+        {/* Top-Left Brand Logo fijo en la esquina superior izquierda (Sin barra de menú superior) */}
+        <div className="absolute top-5 left-10 xl:left-16 z-30 flex items-center">
+          <div className="inline-flex items-center gap-3 bg-white/90 backdrop-blur-md px-4 py-2 rounded-2xl shadow-[0_8px_30px_rgba(16,82,56,0.12)] border border-white">
+            <img src="/icon-192.png" alt="Palenque Go" className="w-9 h-9 object-contain" />
+            <div className="leading-tight">
+              <span className="block text-lg font-black text-[#105238] tracking-tight">Palenque Go</span>
+              <span className="block text-[11px] font-semibold text-[#105238]/75">
+                Movilidad &amp; Experiencias
+              </span>
+            </div>
+          </div>
+        </div>
 
         {/* Detalle decorativo orgánico en esquina inferior derecha (hojas verdes de marca) */}
         <svg
@@ -205,24 +218,11 @@ export function LoginScreen({ onLoginSuccess, onShowRegister }: LoginScreenProps
         </svg>
 
         {/* Contenedor Principal Escritorio */}
-        <div className="relative z-20 w-full max-w-[1440px] mx-auto px-10 xl:px-16 py-7 flex flex-col justify-between min-h-screen">
-          {/* Top-Left Brand Logo (Sin barra de menú superior) */}
-          <div className="flex items-center">
-            <div className="inline-flex items-center gap-3 bg-white/90 backdrop-blur-md px-5 py-2.5 rounded-2xl shadow-[0_8px_30px_rgba(16,82,56,0.12)] border border-white">
-              <img src="/icon-192.png" alt="Palenque Go" className="w-10 h-10 object-contain" />
-              <div className="leading-tight">
-                <span className="block text-xl font-black text-[#105238] tracking-tight">Palenque Go</span>
-                <span className="block text-[11px] font-semibold text-[#105238]/75">
-                  Movilidad &amp; Experiencias
-                </span>
-              </div>
-            </div>
-          </div>
-
+        <div className="relative z-20 w-full max-w-[1440px] mx-auto px-10 xl:px-16">
           {/* Grid Central: Izquierda (Titular + 4 Iconos sobre los excursionistas) / Derecha (Card Login) */}
-          <div className="flex-1 grid grid-cols-12 items-center gap-8 py-4">
+          <div className="grid grid-cols-12 items-center gap-8">
             {/* Columna Izquierda: Mensaje inspiracional + 4 pilares */}
-            <div className="col-span-7 flex flex-col items-center text-center self-start mt-2 xl:mt-6">
+            <div className="col-span-7 flex flex-col items-center text-center self-start -mt-12 xl:-mt-16">
               <h1 className="text-[44px] xl:text-[54px] font-black text-[#105238] leading-[1.08] tracking-tight drop-shadow-[0_2px_12px_rgba(255,255,255,0.9)]">
                 Viaja, comparte
                 <br />
