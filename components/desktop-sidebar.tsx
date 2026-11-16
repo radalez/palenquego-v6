@@ -66,12 +66,12 @@ export function DesktopFloatingIconRail({
         className={cn(
           "group relative w-11 h-11 rounded-2xl flex items-center justify-center transition-all cursor-pointer",
           activeTab === "notificaciones" || activeTab === "notificaciones-extended"
-            ? "bg-[#105238] text-white shadow-xs"
-            : "bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-700 hover:text-slate-900",
+            ? "text-[#105238] hover:bg-[#f0f2f5]"
+            : "text-slate-600 hover:text-slate-900 hover:bg-[#f0f2f5]",
         )}
         aria-label="Notificaciones"
       >
-        <Bell className="w-5 h-5" />
+        <Bell className={cn("w-5 h-5", (activeTab === "notificaciones" || activeTab === "notificaciones-extended") ? "stroke-[2.4]" : "stroke-[1.8]")} />
         {(unreadNotificationsCount ?? 0) > 0 && (
           <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#105238] text-white border-2 border-white text-[10px] font-black flex items-center justify-center">
             {unreadNotificationsCount}
@@ -89,12 +89,12 @@ export function DesktopFloatingIconRail({
         className={cn(
           "group relative w-11 h-11 rounded-2xl flex items-center justify-center transition-all cursor-pointer",
           activeTab === "favoritos"
-            ? "bg-[#105238] text-white shadow-xs"
-            : "bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-700 hover:text-slate-900",
+            ? "text-[#105238] hover:bg-[#f0f2f5]"
+            : "text-slate-600 hover:text-slate-900 hover:bg-[#f0f2f5]",
         )}
         aria-label="Mis Likes"
       >
-        <Heart className="w-5 h-5" />
+        <Heart className={cn("w-5 h-5", activeTab === "favoritos" ? "stroke-[2.4]" : "stroke-[1.8]")} />
         {likesCount > 0 && (
           <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-slate-800 text-white border-2 border-white text-[10px] font-black flex items-center justify-center">
             {likesCount}
@@ -122,12 +122,12 @@ export function DesktopFloatingIconRail({
             className={cn(
               "group relative w-11 h-11 rounded-2xl flex items-center justify-center transition-all cursor-pointer",
               isActive
-                ? "bg-[#105238] text-white shadow-sm"
-                : "hover:bg-[#f0f2f5] text-slate-600 hover:text-slate-900",
+                ? "text-[#105238] hover:bg-[#f0f2f5]"
+                : "text-slate-600 hover:text-slate-900 hover:bg-[#f0f2f5]",
             )}
             aria-label={item.label}
           >
-            <Icon className="w-5 h-5" />
+            <Icon className={cn("w-5 h-5", isActive ? "stroke-[2.4]" : "stroke-[1.8]")} />
             <span className="pointer-events-none opacity-0 group-hover:opacity-100 group-hover:translate-x-0 -translate-x-1 transition-all duration-150 absolute left-full ml-3 bg-neutral-900/95 text-white text-xs font-bold px-3 py-1.5 rounded-xl whitespace-nowrap shadow-lg border border-white/10 z-50">
               {item.label}
             </span>
