@@ -2792,16 +2792,30 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   const handleRestartCycle = useCallback(() => {
     seenIdsRef.current.clear()
     seenInCurrentBatchRef.current.clear()
+    cachedMarketplaceSession = null
     persistSeenIds()
     setAllUnseenExhausted(false)
     setBatchNumber(1)
+    setCurrentBatchIds([])
+    if ((selectedCategory === "flash" && flashServices.length === 0) || orderedServicesRef.current.length === 0) {
+      setOnlyPreferred(false)
+      setSelectedCategory("all")
+      setSearchQuery("")
+    }
     setFeedSeed(Math.floor(Math.random() * 99999) + 1)
-  }, [persistSeenIds])
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" })
+      const scrollEl = document.querySelector(".overflow-y-auto") as HTMLElement | null
+      if (scrollEl) {
+        scrollEl.scrollTo({ top: 0, behavior: "smooth" })
+      }
+    }
+  }, [persistSeenIds, selectedCategory, flashServices.length])
 
   const visibleBatchServices = useMemo(() => {
     if (currentBatchIds.length > 0) {
-      const byId = new Map(orderedServices.map((s) => [s.id, s]))
-      const mapped = currentBatchIds.map((id) => byId.get(id)).filter((s): s is Service => Boolean(s))
+      const batchSet = new Set(currentBatchIds)
+      const mapped = orderedServices.filter((s) => batchSet.has(s.id))
       if (mapped.length > 0) return mapped
     }
     if (!allUnseenExhausted && orderedServices.length > 0) {
@@ -3006,7 +3020,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setFeedSeed(Math.floor(Math.random() * 99999))}
+                  onClick={handleRestartCycle}
                   title="Mezclar orden del feed"
                   className="h-10 px-2.5 rounded-2xl border-border text-xs font-bold gap-1 cursor-pointer"
                 >
@@ -3048,7 +3062,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   )}
 
                   {[
-                    ...categories.filter((c) => c.id === "all" || c.id === "flash"),
+                    ...categories.filter((c) => c.id === "all" || (c.id === "flash" && flashServices.length > 0)),
                     ...categories.filter((c) => c.id !== "all" && c.id !== "flash" && preferredCategories.includes(c.id)),
                     ...categories.filter((c) => c.id !== "all" && c.id !== "flash" && !preferredCategories.includes(c.id)),
                   ].map((cat) => {
@@ -4102,7 +4116,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                       </p>
                       <div className="flex flex-wrap gap-1.5">
                         {categories
-                          .filter((c) => c.id !== selectedCategory)
+                          .filter((c) => c.id !== selectedCategory && (c.id !== "flash" || flashServices.length > 0))
                           .map((cat) => {
                             const CatIcon = cat.icon
                             return (
