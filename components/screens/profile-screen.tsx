@@ -530,17 +530,22 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
 
           {/* Prompt contextual para Líder Pool */}
           {userIntentions?.wantsToLeadPools && (
-            <div className="mt-3 bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="mt-3 bg-[#eaf0e2]/80 border border-[#aeb6a1]/70 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2.5 min-w-0">
-                <Users className="w-5 h-5 text-blue-600 shrink-0" />
-                <p className="text-xs text-blue-950 dark:text-blue-200 leading-snug">
+                <Users className="w-5 h-5 text-[#105238] shrink-0" />
+                <p className="text-xs text-[#105238] dark:text-[#eaf0e2] leading-snug">
                   <strong className="font-bold">Líder de Pool:</strong> Organiza grupos para tours, traslados o estancias y viaja con tarifas de descuento. ¡No requiere plan de pago!
                 </p>
               </div>
               <Button
                 size="sm"
-                onClick={() => onNavigateToSettings?.("pool")}
-                className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold h-8 px-3 rounded-lg shrink-0 w-full sm:w-auto"
+                onClick={() => {
+                  if (typeof window !== "undefined") {
+                    sessionStorage.setItem("palenque_pool_subtab", "POOLS")
+                  }
+                  onNavigateToSettings?.("pool")
+                }}
+                className="bg-[#105238] hover:bg-[#0c3e2b] text-white text-xs font-bold h-8 px-3 rounded-lg shrink-0 w-full sm:w-auto cursor-pointer"
               >
                 Ver / Crear Pool
               </Button>

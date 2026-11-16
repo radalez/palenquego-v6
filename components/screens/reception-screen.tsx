@@ -72,7 +72,16 @@ interface StaffMember {
 
 export function ReceptionScreen({ onNavigate }: ReceptionScreenProps) {
   const { currentUser, accessToken, fetchCurrentUser } = useAppStore()
-  const [subTab, setSubTab] = useState<"SCANNER" | "BOOKINGS" | "TEAM">("SCANNER")
+  const [subTab, setSubTab] = useState<"SCANNER" | "BOOKINGS" | "TEAM">(() => {
+    if (typeof window !== "undefined") {
+      const requested = sessionStorage.getItem("palenque_reception_subtab")
+      if (requested === "SCANNER" || requested === "BOOKINGS" || requested === "TEAM") {
+        sessionStorage.removeItem("palenque_reception_subtab")
+        return requested
+      }
+    }
+    return "SCANNER"
+  })
 
   // Scanner / Maquinita state
   const [qrInput, setQrInput] = useState("")

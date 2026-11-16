@@ -1938,12 +1938,17 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
 
     const reelPools: SmartReelDefinition = {
       id: "pools-ahorro",
-      badge: "REEL VIAJEROS · AHORRO EN GRUPO",
+      badge: "REEL VIAJEROS · LÍDER DE POOL",
       heading: "Viaja en grupo con Pools y paga menos",
-      subtitle: "Une fuerzas con otros viajeros y desbloquea tarifas grupales",
-      ctaLabel: "Ir a Pools",
+      subtitle: "Organiza grupos para tours, traslados o estancias con tarifas de descuento",
+      ctaLabel: "Ver / Crear Pool",
       icon: Users,
-      onAction: () => onNavigate?.("pool"),
+      onAction: () => {
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("palenque_pool_subtab", "POOLS")
+        }
+        onNavigate?.("pool")
+      },
       steps: [
         {
           stepBadge: "Paso 1 · Elige tu destino",
@@ -1954,17 +1959,61 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
         },
         {
           stepBadge: "Paso 2 · Únete o crea",
-          title: "Participa en Pools abiertos o arma el tuyo en segundos",
+          title: "Participa en Pools abiertos o arma el tuyo sin plan de pago",
           description:
             "Revisa qué Pools tienen cupos disponibles para este fin de semana o inicia uno nuevo con tu fecha ideal.",
           image: pickImage(2, "https://images.unsplash.com/photo-1527631746610-bca00a040d60?w=600&q=80"),
         },
         {
-          stepBadge: "Paso 3 · Ahorra hoy",
-          title: "Lidera un Pool o súmate a tu próxima aventura",
+          stepBadge: "Paso 3 · Ver / Crear Pool",
+          title: "Entra directo a la pestaña de Pools y gana hasta 7% como líder",
           description:
-            "Entra ahora a la sección de Pools en Mis Viajes y descubre los grupos activos.",
+            "Toca aquí para ir directo a Pools en Mis Viajes, unirte a un grupo o crear el tuyo.",
           image: pickImage(3, "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&q=80"),
+          isActionCard: true,
+        },
+      ],
+    }
+
+    const reelEmbajador: SmartReelDefinition = {
+      id: "embajador-comisiones",
+      badge: "REEL INGRESOS · EMBAJADOR PALENQUEGO",
+      heading: "Gana comisiones promocionando servicios y negocios",
+      subtitle: "Recibe dinero en efectivo por cada viajero que reserve con tus enlaces",
+      ctaLabel: (currentUser as any)?.is_ambassador ? "Mis Enlaces y Comisiones" : "Elegir Comercio",
+      icon: Sparkles,
+      onAction: () => {
+        if ((currentUser as any)?.is_ambassador) {
+          onNavigate?.("recomendaciones")
+          return
+        }
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("palenque_promoter_mode", "true")
+          sessionStorage.removeItem("palenque_b2b_mode")
+        }
+        onNavigate?.("businesses")
+      },
+      steps: [
+        {
+          stepBadge: "Paso 1 · Sé Embajador",
+          title: "¿Te gustaría ganar dinero promocionando otros negocios?",
+          description:
+            "Selecciona los hoteles, tours o restaurantes aliados que más te gusten dentro de la red.",
+          image: pickImage(25, "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=600&q=80"),
+        },
+        {
+          stepBadge: "Paso 2 · Tu Enlace Único",
+          title: "Comparte tu enlace exclusivo en redes, WhatsApp o con tus amigos",
+          description:
+            "Cada vez que un viajero reserva usando tu recomendación, el sistema registra tu comisión.",
+          image: pickImage(26, "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=600&q=80"),
+        },
+        {
+          stepBadge: "Paso 3 · Cobra Comisiones",
+          title: "Elige un comercio para promocionar o revisa tus enlaces activos",
+          description:
+            "Haz clic para ir al directorio de comercios y activar tus enlaces de embajador.",
+          image: pickImage(27, "https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=600&q=80"),
           isActionCard: true,
         },
       ],
@@ -2006,32 +2055,38 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
 
     const reelAlianzas: SmartReelDefinition = {
       id: "alianzas-comisiones",
-      badge: "REEL INGRESOS · RED DE ALIADOS",
-      heading: "Gana dinero recomendando otros negocios",
-      subtitle: "Alíate con comercios y compartan comisiones automáticas",
-      ctaLabel: "Crear Alianza",
+      badge: "REEL ALIANZAS B2B · SOCIO COMERCIAL",
+      heading: "¿Te gustaría colaborar con otros negocios como Aliado Comercial?",
+      subtitle: "Forma alianzas B2B con hoteles, tours y transporte para compartir ganancias",
+      ctaLabel: "Elegir Socio en Comercios",
       icon: StoreIcon,
-      onAction: () => onNavigate?.("safeflow"),
+      onAction: () => {
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("palenque_b2b_mode", "true")
+          sessionStorage.removeItem("palenque_promoter_mode")
+        }
+        onNavigate?.("businesses")
+      },
       steps: [
         {
-          stepBadge: "Paso 1 · Conecta",
-          title: "¿Aún no eres aliado de otros negocios en PalenqueGo?",
+          stepBadge: "Paso 1 · Alianza B2B",
+          title: "¿Aún no eres socio comercial de otros negocios en PalenqueGo?",
           description:
-            "Un hotel puede aliarse con un tour o restaurante para recomendarse viajeros mutuamente.",
+            "Un hotel puede aliarse con una agencia de tours, restaurante o transporte para ofrecer servicios combinados.",
           image: pickImage(7, "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=600&q=80"),
         },
         {
-          stepBadge: "Paso 2 · Recomienda",
-          title: "Comparte porcentajes de ganancia por cada cliente referido",
+          stepBadge: "Paso 2 · Ganancia Mutua",
+          title: "Compartan porcentajes de ganancia llevando clientes el uno al otro",
           description:
-            "Cuando envías un viajero a un negocio aliado, Safe-Flow registra y protege tu comisión automáticamente.",
+            "Acuerden comisiones por referido entre negocios aliados y crezcan juntos en toda la red.",
           image: pickImage(8, "https://images.unsplash.com/photo-1521791136064-7986c2920216?w=600&q=80"),
         },
         {
-          stepBadge: "Paso 3 · Monetiza hoy",
-          title: "Multiplica tus ingresos con alianzas estratégicas",
+          stepBadge: "Paso 3 · Elegir Socio",
+          title: "Haz clic en 'Elegir como socio comercial' en el directorio",
           description:
-            "Entra a Safe-Flow para conectar con comercios aliados y activar tus comisiones compartidas.",
+            "Te llevamos directo a Comercios con el selector de Socio Comercial activo para enviar tu propuesta.",
           image: pickImage(9, "https://images.unsplash.com/photo-1552664730-d307ca884978?w=600&q=80"),
           isActionCard: true,
         },
@@ -2040,33 +2095,38 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
 
     const reelEquipo: SmartReelDefinition = {
       id: "equipo-negocio",
-      badge: "REEL GESTIÓN · EQUIPO DE TRABAJO",
+      badge: "REEL GESTIÓN · EQUIPO DE RECEPCIÓN",
       heading: "¿Aún no tienes un equipo en tu negocio?",
-      subtitle: "Delega recepción QR y ventas sin compartir tu clave",
-      ctaLabel: "Crear Equipo",
+      subtitle: "Agrega personal en Validar QR / Recepción -> Equipo sin compartir tu clave",
+      ctaLabel: "Ir a Equipo",
       icon: Users,
-      onAction: openBusinessPanelOrPlans,
+      onAction: () => {
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("palenque_reception_subtab", "TEAM")
+        }
+        onNavigate?.("reception")
+      },
       steps: [
         {
           stepBadge: "Paso 1 · Delega seguro",
-          title: "No atiendas todas las reservas y validaciones tú solo",
+          title: "No atiendas todas las reservas y validaciones QR tú solo",
           description:
-            "Agrega encargados de recepción y personal de ventas a tu negocio manteniendo el control total.",
+            "Habilita a un empleado registrado en PalenqueGo para escanear Voucher QR y confirmar pagos en puerta.",
           image: pickImage(10, "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&q=80"),
         },
         {
-          stepBadge: "Paso 2 · Recepción QR",
-          title: "Tu personal valida vouchers QR y confirma llegadas en vivo",
+          stepBadge: "Paso 2 · Control Total",
+          title: "Tu personal valida llegadas sin acceso a tus finanzas ni configuración",
           description:
-            "Cada miembro accede desde su propio perfil al escáner de Recepción QR autorizado por ti.",
+            "Cada miembro opera desde la sección Validar QR / Recepción con los permisos que tú decidas.",
           image: pickImage(11, "https://images.unsplash.com/photo-1556740749-887f6717d7e4?w=600&q=80"),
         },
         {
-          stepBadge: "Paso 3 · Configúralo",
-          title: "Arma tu equipo de ventas y recepción en minutos",
+          stepBadge: "Paso 3 · Agregar Personal",
+          title: "Abre la pestaña Equipo en Recepción y habilita a tu personal",
           description:
-            "Abre tu Panel de Negocios y asigna a tu encargado o recepcionista hoy mismo.",
-          image: pickImage(12, "https://images.unsplash.com/photo-1600880292203-757bb62b4limits?w=600&q=80"),
+            "Toca aquí para ir directo a Recepción -> Equipo e ingresar el correo o teléfono de tu colaborador.",
+          image: pickImage(12, "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=600&q=80"),
           isActionCard: true,
         },
       ],
@@ -2222,7 +2282,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
 
     // Dynamic ordering based on user actions, survey choice, and roles
     if (feedSurveyIntent === "group" || hasLikedOrReacted || userIntentions?.wantsToLeadPools) {
-      queue.push(reelPools, reelGoSwiper)
+      queue.push(reelPools, reelEmbajador, reelGoSwiper)
     } else if (feedSurveyIntent === "flash") {
       queue.push(reelFlashMapas, reelGoSwiper, reelPools)
     } else if (feedSurveyIntent === "driver" || isDriverUser) {
@@ -2243,6 +2303,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     // Ensure every user (since anyone can be both traveler and business/ally/driver) gets a balanced rotation
     const allCandidates = [
       reelPools,
+      reelEmbajador,
       reelGoSwiper,
       reelAlianzas,
       reelFlashMapas,
@@ -3486,7 +3547,12 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                           type="button"
                           size="sm"
                           variant="outline"
-                          onClick={() => onNavigate?.("pool")}
+                          onClick={() => {
+                            if (typeof window !== "undefined") {
+                              sessionStorage.setItem("palenque_pool_subtab", "POOLS")
+                            }
+                            onNavigate?.("pool")
+                          }}
                           className="h-8 px-3.5 rounded-full border-white/30 bg-white/10 hover:bg-white/20 text-white font-bold text-xs cursor-pointer"
                         >
                           Ver Pools

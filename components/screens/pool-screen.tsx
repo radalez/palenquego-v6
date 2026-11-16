@@ -23,7 +23,16 @@ export function PoolScreen({ onOpenShare, onOpenPayment, onNavigate }: PoolScree
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [modalService, setModalService] = useState<Service | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<string>("FOR_YOU")
-  const [activeSection, setActiveSection] = useState<"BOOKINGS" | "POOLS" | "MY_ROUTES">("BOOKINGS")
+  const [activeSection, setActiveSection] = useState<"BOOKINGS" | "POOLS" | "MY_ROUTES">(() => {
+    if (typeof window !== "undefined") {
+      const requested = sessionStorage.getItem("palenque_pool_subtab")
+      if (requested === "POOLS" || requested === "BOOKINGS" || requested === "MY_ROUTES") {
+        sessionStorage.removeItem("palenque_pool_subtab")
+        return requested
+      }
+    }
+    return "BOOKINGS"
+  })
   const [isUserRoutesModalOpen, setIsUserRoutesModalOpen] = useState(false)
   const [selectedQrBooking, setSelectedQrBooking] = useState<any | null>(null)
   const [payingWompiId, setPayingWompiId] = useState<number | null>(null)
