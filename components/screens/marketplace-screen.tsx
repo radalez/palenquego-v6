@@ -30,6 +30,10 @@ import {
   Store as StoreIcon,
   ChevronLeft,
   ChevronRight,
+  ArrowUp,
+  ArrowDown,
+  Maximize2,
+  Info,
   Check,
   Mail,
   Link2,
@@ -1223,6 +1227,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   const router = useRouter()
   const [selectedService, setSelectedService] = useState<Service | null>(null)
   const [serviceForRoutes, setServiceForRoutes] = useState<Service | null>(null)
+  const [lightboxServiceId, setLightboxServiceId] = useState<number | null>(null)
+  const [lightboxPhotoIdx, setLightboxPhotoIdx] = useState<number>(0)
+  const [enrichedLightboxService, setEnrichedLightboxService] = useState<Service | null>(null)
+  const [expandLightboxDesc, setExpandLightboxDesc] = useState<boolean>(false)
   const [selectedCategory, setSelectedCategory] = useState(() =>
     cachedMarketplaceSession?.shouldRestoreOnMount ? cachedMarketplaceSession.selectedCategory : "all",
   )
@@ -2824,6 +2832,85 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     return []
   }, [orderedServices, currentBatchIds, allUnseenExhausted])
 
+  // Active service for the Interactive Experience Lightbox Modal
+  const lightboxActiveService = useMemo(() => {
+    if (lightboxServiceId === null) return null
+    if (enrichedLightboxService && enrichedLightboxService.id === lightboxServiceId) {
+      return enrichedLightboxService
+    }
+    return (
+      visibleBatchServices.find((s) => s.id === lightboxServiceId) ||
+      services.find((s) => s.id === lightboxServiceId) ||
+      globalCatalogPool.find((s) => s.id === lightboxServiceId) ||
+      null
+    )
+  }, [lightboxServiceId, enrichedLightboxService, visibleBatchServices, services, globalCatalogPool])
+
+  // Silently fetch full galleryImages, features, extras, and routes when a service is opened in the Lightbox
+  useEffect(() => {
+    if (lightboxServiceId === null) {
+      setEnrichedLightboxService(null)
+      return
+    }
+    setLightboxPhotoIdx(0)
+    setExpandLightboxDesc(false)
+    let cancelled = false
+    useAppStore
+      .getState()
+      .fetchServiceById(lightboxServiceId)
+      .then((full) => {
+        if (!cancelled && full) {
+          setEnrichedLightboxService(full)
+        }
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [lightboxServiceId])
+
+  const handleStepLightboxService = useCallback(
+    (dir: "prev" | "next") => {
+      if (lightboxServiceId === null || visibleBatchServices.length === 0) return
+      const currentIdx = visibleBatchServices.findIndex((s) => s.id === lightboxServiceId)
+      if (currentIdx === -1) {
+        setLightboxServiceId(visibleBatchServices[0].id)
+        return
+      }
+      if (dir === "next") {
+        const nextIdx = (currentIdx + 1) % visibleBatchServices.length
+        setLightboxServiceId(visibleBatchServices[nextIdx].id)
+        markServiceSeen(visibleBatchServices[nextIdx].id)
+        if (currentIdx >= visibleBatchServices.length - 3) {
+          advanceBatchAutomatically()
+        }
+      } else {
+        const prevIdx = (currentIdx - 1 + visibleBatchServices.length) % visibleBatchServices.length
+        setLightboxServiceId(visibleBatchServices[prevIdx].id)
+      }
+    },
+    [lightboxServiceId, visibleBatchServices, markServiceSeen, advanceBatchAutomatically],
+  )
+
+  useEffect(() => {
+    if (lightboxServiceId === null) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName
+      if (tag === "INPUT" || tag === "TEXTAREA") return
+      if (e.key === "Escape") {
+        setLightboxServiceId(null)
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault()
+        handleStepLightboxService("next")
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault()
+        handleStepLightboxService("prev")
+      }
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [lightboxServiceId, handleStepLightboxService])
+
   return (
     <div className="flex flex-col min-h-screen bg-[#fafaf8] dark:bg-background">
       <HeaderWithMenu
@@ -3384,7 +3471,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                         </div>
                       </div>
 
-                      {/* Post Caption: Title + Description + Rating */}
+                      {/* Post Caption: Title + Description + Rating + "+ Info" button */}
                       <div className="px-4 pb-3 space-y-1.5">
                         <div className="flex items-start justify-between gap-2">
                           <h3
@@ -3393,10 +3480,21 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                           >
                             {service.name}
                           </h3>
-                          <div className="flex items-center gap-1 bg-[#eaf0e2] px-2 py-0.5 rounded-lg shrink-0">
-                            <Star className="w-3.5 h-3.5 fill-[#105238] text-[#105238]" />
-                            <span className="font-bold text-[#105238] text-xs">{service.rating}</span>
-                            <span className="text-[11px] text-[#105238]/80">({service.reviews})</span>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => openServiceDetailInstant(service)}
+                              className="inline-flex items-center gap-1 bg-[#105238] hover:bg-[#0c3e2b] text-[#8ee01a] text-[11px] font-black px-2.5 py-0.5 rounded-lg transition-colors cursor-pointer"
+                              title="Ver página completa de la experiencia"
+                            >
+                              <Info className="w-3 h-3" />
+                              <span>+ Info</span>
+                            </button>
+                            <div className="flex items-center gap-1 bg-[#eaf0e2] px-2 py-0.5 rounded-lg">
+                              <Star className="w-3.5 h-3.5 fill-[#105238] text-[#105238]" />
+                              <span className="font-bold text-[#105238] text-xs">{service.rating}</span>
+                              <span className="text-[11px] text-[#105238]/80">({service.reviews})</span>
+                            </div>
                           </div>
                         </div>
 
@@ -3407,10 +3505,13 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                         )}
                       </div>
 
-                      {/* Post Media (isolated stacking context so inner badges never overlap the sticky category bar) */}
+                      {/* Post Media: Clicking image opens the Interactive Experience Lightbox Modal */}
                       <div
                         className="relative isolate h-60 sm:h-76 bg-muted overflow-hidden cursor-pointer"
-                        onClick={() => openServiceDetailInstant(service)}
+                        onClick={() => {
+                          markServiceSeen(service.id)
+                          setLightboxServiceId(service.id)
+                        }}
                       >
                         <img
                           src={service.image || "/placeholder.svg"}
@@ -4551,6 +4652,520 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
           </div>
         </div>
       )}
+
+      {/* =====================================================================
+          INTERACTIVE EXPERIENCE LIGHTBOX MODAL (TIKTOK + SPLIT DETAIL VIEW)
+         ===================================================================== */}
+      {lightboxActiveService && (() => {
+        const activeSvc = lightboxActiveService
+        const hasFlash = Boolean(
+          activeSvc.oferta_flash && (activeSvc.oferta_flash.cupos_disponibles ?? 0) > 0,
+        )
+        const baseP = Number(activeSvc.price) || 0
+        const flashDisc = activeSvc.oferta_flash?.descuento_porcentaje || activeSvc.discount || 0
+        const promoP = activeSvc.oferta_flash?.precio_promocional
+          ? Number(activeSvc.oferta_flash.precio_promocional)
+          : baseP * (1 - flashDisc / 100)
+        const effectivePrice = hasFlash ? promoP : baseP
+
+        const rawPhotos = [
+          activeSvc.image,
+          ...(Array.isArray(activeSvc.galleryImages) ? activeSvc.galleryImages : []),
+        ]
+          .map((img) => getProxyImage(img || ""))
+          .filter(Boolean)
+        const allPhotos = rawPhotos.length > 0 ? Array.from(new Set(rawPhotos)) : [DEFAULT_STORE_COVER]
+        const safePhotoIdx = lightboxPhotoIdx % allPhotos.length
+        const currentPhotoUrl = allPhotos[safePhotoIdx] || DEFAULT_STORE_COVER
+
+        const isFav = userFavorites.some((f: any) => (typeof f === "number" ? f : f.serviceId) === activeSvc.id)
+        const reactState = serviceReactions[activeSvc.id] || {
+          counts: { trato: 0, divertido: 0, fascino: 0, quiero_ir: 0, recomiendo: 0 },
+          userReaction: null,
+        }
+        const totalReacts = Object.values(reactState.counts).reduce((a, b) => a + b, 0)
+        const totalLikesAndReacts = totalReacts + (isFav ? 1 : 0)
+        const commentsList = serviceComments[activeSvc.id] || []
+        const currentFeedPos = visibleBatchServices.findIndex((s) => s.id === activeSvc.id)
+
+        return (
+          <div
+            onClick={() => setLightboxServiceId(null)}
+            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 lg:p-6 animate-in fade-in duration-200"
+          >
+            {/* TikTok-style Up / Down Floating Arrows on the Right to Step Through Feed Services */}
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="fixed right-3 sm:right-5 xl:right-8 top-1/2 -translate-y-1/2 z-[60] flex flex-col items-center gap-3"
+            >
+              <button
+                type="button"
+                onClick={() => handleStepLightboxService("prev")}
+                title="Experiencia anterior (Flecha Arriba)"
+                className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#105238]/95 hover:bg-[#105238] text-[#8ee01a] border border-[#8ee01a]/50 shadow-2xl flex items-center justify-center transition-transform hover:scale-110 active:scale-95 cursor-pointer"
+              >
+                <ArrowUp className="w-5 h-5" />
+              </button>
+              {currentFeedPos >= 0 && (
+                <span className="text-[10px] font-black text-white/90 bg-black/60 px-2 py-0.5 rounded-full border border-white/15">
+                  {currentFeedPos + 1}/{visibleBatchServices.length}
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => handleStepLightboxService("next")}
+                title="Siguiente experiencia (Flecha Abajo)"
+                className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#105238]/95 hover:bg-[#105238] text-[#8ee01a] border border-[#8ee01a]/50 shadow-2xl flex items-center justify-center transition-transform hover:scale-110 active:scale-95 cursor-pointer"
+              >
+                <ArrowDown className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Main Split Lightbox Container */}
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-[1120px] h-[90vh] lg:h-[85vh] max-h-[760px] rounded-[28px] sm:rounded-[32px] overflow-hidden shadow-[0_28px_90px_rgba(0,0,0,0.75)] border border-[#8ee01a]/35 bg-[#081c13] grid grid-cols-1 lg:grid-cols-12 relative mr-10 sm:mr-14 lg:mr-12"
+            >
+              {/* LEFT COLUMN: Interactive Photo & Multi-Image Gallery Viewer */}
+              <div className="lg:col-span-6 relative bg-[#05120c] flex flex-col justify-between h-[38vh] sm:h-[42vh] lg:h-full overflow-hidden select-none">
+                {/* Blurred ambient background of current photo */}
+                <img
+                  src={currentPhotoUrl}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-35 scale-110 pointer-events-none"
+                />
+
+                {/* Main Crisp Image */}
+                <img
+                  src={currentPhotoUrl}
+                  alt={activeSvc.name}
+                  className="relative z-10 w-full h-full object-contain"
+                  onError={(e) => {
+                    e.currentTarget.src = DEFAULT_STORE_COVER
+                  }}
+                />
+
+                {/* Top Overlay on Image: Category/Flash + Heart Likes + Expand to Full Page */}
+                <div className="absolute top-3.5 left-3.5 right-3.5 z-20 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="bg-[#105238]/95 text-[#8ee01a] border border-[#8ee01a]/40 text-[11px] font-black px-3 py-1 rounded-full shadow-md">
+                      {activeSvc.category || "Experiencia"}
+                    </span>
+                    {allPhotos.length > 1 && (
+                      <span className="bg-black/65 text-white text-[11px] font-bold px-2.5 py-1 rounded-full border border-white/20">
+                        Foto {safePhotoIdx + 1} de {allPhotos.length}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => toggleFavoritePreference(activeSvc.id)}
+                      className={cn(
+                        "h-9 px-3 rounded-full flex items-center gap-1.5 text-xs font-black shadow-lg border transition-all cursor-pointer",
+                        isFav
+                          ? "bg-[#8ee01a] text-[#105238] border-[#8ee01a]"
+                          : "bg-black/60 hover:bg-black/80 text-white border-white/25",
+                      )}
+                      title="Dar Me Gusta / Guardar en Mis Likes"
+                    >
+                      <Heart className={cn("w-4 h-4", isFav && "fill-[#105238]")} />
+                      <span>{totalLikesAndReacts > 0 ? totalLikesAndReacts : "Like"}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLightboxServiceId(null)
+                        openServiceDetailInstant(activeSvc)
+                      }}
+                      className="w-9 h-9 rounded-full bg-black/60 hover:bg-[#105238] text-white hover:text-[#8ee01a] border border-white/25 flex items-center justify-center shadow-lg transition-colors cursor-pointer"
+                      title="Abrir vista completa (+ Info)"
+                    >
+                      <Maximize2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Left / Right Arrows for Internal Service Photos */}
+                {allPhotos.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setLightboxPhotoIdx((prev) => (prev - 1 + allPhotos.length) % allPhotos.length)
+                      }
+                      className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/65 hover:bg-[#105238] text-white hover:text-[#8ee01a] border border-white/25 flex items-center justify-center shadow-lg transition-colors cursor-pointer"
+                      aria-label="Foto anterior"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLightboxPhotoIdx((prev) => (prev + 1) % allPhotos.length)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/65 hover:bg-[#105238] text-white hover:text-[#8ee01a] border border-white/25 flex items-center justify-center shadow-lg transition-colors cursor-pointer"
+                      aria-label="Siguiente foto"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  </>
+                )}
+
+                {/* Bottom Overlay on Image: Thumbnails Strip + Pool & Routes Badges */}
+                <div className="absolute bottom-3 left-3.5 right-3.5 z-20 space-y-2">
+                  {allPhotos.length > 1 && (
+                    <div className="flex items-center justify-center gap-1.5 overflow-x-auto py-1">
+                      {allPhotos.map((pUrl, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setLightboxPhotoIdx(idx)}
+                          className={cn(
+                            "w-11 h-11 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer",
+                            idx === safePhotoIdx
+                              ? "border-[#8ee01a] scale-105 shadow-md"
+                              : "border-white/30 opacity-65 hover:opacity-100",
+                          )}
+                        >
+                          <img src={pUrl} alt="" className="w-full h-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="bg-[#105238]/95 text-white border border-[#8ee01a]/40 text-[11px] font-bold px-3 py-1 rounded-full shadow-md inline-flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-[#8ee01a] animate-pulse" />
+                      <span>
+                        {activeSvc.hasActivePool
+                          ? `Pool disponible · ${activeSvc.spotsLeft || 3} cupos`
+                          : "Ahorra en grupo con Pool"}
+                      </span>
+                    </span>
+
+                    {activeSvc.routes && activeSvc.routes.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setServiceForRoutes(activeSvc)}
+                        className="bg-white/95 text-[#105238] text-[11px] font-black px-3 py-1 rounded-full shadow-md inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <MapPin className="w-3 h-3" />
+                        <span>{activeSvc.routes.length} rutas</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* RIGHT COLUMN: Scrollable Experience Details, Features, Reactions, Lived Reviews & Sticky Bottom Booking Bar */}
+              <div className="lg:col-span-6 flex flex-col h-[52vh] sm:h-[48vh] lg:h-full bg-[#0c261b] text-white overflow-hidden">
+                {/* Top Header inside Right Panel */}
+                <div className="px-5 py-4 border-b border-white/10 flex items-start justify-between gap-3 shrink-0 bg-[#091f16]">
+                  <div className="space-y-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-[#8ee01a]">
+                        EXPERIENCIA PALENQUEGO
+                      </span>
+                      <span className="text-white/30">·</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (activeSvc.businessId) {
+                            setLightboxServiceId(null)
+                            router.push(`/b/${activeSvc.businessId}`)
+                          }
+                        }}
+                        className="text-xs font-bold text-[#eaf0e2] hover:text-[#8ee01a] truncate cursor-pointer"
+                      >
+                        {activeSvc.businessName || "Comercio Aliado"}
+                      </button>
+                    </div>
+                    <h2
+                      onClick={() => {
+                        setLightboxServiceId(null)
+                        openServiceDetailInstant(activeSvc)
+                      }}
+                      className="text-lg sm:text-xl font-black text-white hover:text-[#8ee01a] transition-colors cursor-pointer leading-snug"
+                    >
+                      {activeSvc.name}
+                    </h2>
+                    <div className="flex items-center gap-3 text-xs text-white/75 flex-wrap">
+                      <span className="inline-flex items-center gap-1">
+                        <MapPin className="w-3.5 h-3.5 text-[#8ee01a]" />
+                        <span>{activeSvc.location}</span>
+                      </span>
+                      <span className="inline-flex items-center gap-1 bg-[#105238] text-[#8ee01a] px-2 py-0.5 rounded-full font-bold text-[11px]">
+                        <Star className="w-3 h-3 fill-[#8ee01a]" />
+                        <span>{activeSvc.rating}</span>
+                        <span className="text-white/80">({activeSvc.reviews || commentsList.length})</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setLightboxServiceId(null)}
+                    className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center shrink-0 transition-colors cursor-pointer"
+                    aria-label="Cerrar modal"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Scrollable Body */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-4">
+                  {/* Card 1: Descripción & Detalles de la Experiencia */}
+                  <div className="rounded-2xl bg-white/5 border border-white/10 p-4 space-y-2">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-[#8ee01a]">
+                      SOBRE ESTA EXPERIENCIA
+                    </p>
+                    <p
+                      className={cn(
+                        "text-xs sm:text-sm text-white/90 leading-relaxed whitespace-pre-line",
+                        !expandLightboxDesc && "line-clamp-3",
+                      )}
+                    >
+                      {activeSvc.description ||
+                        "Vive una experiencia auténtica en El Salvador con atención verificada por la red PalenqueGo."}
+                    </p>
+                    {(activeSvc.description?.length || 0) > 140 && (
+                      <button
+                        type="button"
+                        onClick={() => setExpandLightboxDesc((prev) => !prev)}
+                        className="text-xs font-extrabold text-[#8ee01a] hover:underline cursor-pointer"
+                      >
+                        {expandLightboxDesc ? "Ver menos ▲" : "Ver más ▼"}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Card 2: Galería Interna & Características Incluidas */}
+                  {(allPhotos.length > 1 ||
+                    (activeSvc.features && activeSvc.features.length > 0) ||
+                    (activeSvc.routes && activeSvc.routes.length > 0)) && (
+                    <div className="space-y-2.5">
+                      <p className="text-[11px] font-black uppercase tracking-wider text-[#8ee01a] flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Galería y Características de la Experiencia</span>
+                      </p>
+
+                      {allPhotos.length > 1 && (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                          {allPhotos.slice(0, 6).map((imgUrl, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => setLightboxPhotoIdx(idx)}
+                              className={cn(
+                                "rounded-2xl overflow-hidden border transition-all text-left bg-black/40 group cursor-pointer",
+                                idx === safePhotoIdx
+                                  ? "border-[#8ee01a] ring-2 ring-[#8ee01a]/40"
+                                  : "border-white/15 hover:border-white/40",
+                              )}
+                            >
+                              <div className="h-24 w-full overflow-hidden">
+                                <img
+                                  src={imgUrl}
+                                  alt={`${activeSvc.name} ${idx + 1}`}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                />
+                              </div>
+                              <div className="px-2.5 py-1.5 flex items-center justify-between text-[10px] font-bold text-white/85">
+                                <span>Vista #{idx + 1}</span>
+                                {idx === safePhotoIdx && <span className="text-[#8ee01a]">Activa</span>}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {activeSvc.features && activeSvc.features.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {activeSvc.features.map((feat, idx) => (
+                            <span
+                              key={idx}
+                              className="inline-flex items-center gap-1 text-[11px] font-bold bg-[#105238] text-[#eaf0e2] border border-[#8ee01a]/30 px-2.5 py-1 rounded-xl"
+                            >
+                              <Check className="w-3 h-3 text-[#8ee01a]" />
+                              <span>{feat}</span>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Card 3: Reacciones de Viajeros y Likes */}
+                  <div className="rounded-2xl bg-white/5 border border-white/10 p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-black uppercase tracking-wider text-[#8ee01a]">
+                        REACCIONES Y LIKES DE VIAJEROS
+                      </span>
+                      <span className="text-xs font-extrabold text-white/85">
+                        {totalLikesAndReacts} {totalLikesAndReacts === 1 ? "interacción" : "interacciones"}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {REACTIONS.map((r) => {
+                        const isSelected = reactState.userReaction === r.id
+                        const count = reactState.counts[r.id] || 0
+                        return (
+                          <button
+                            key={r.id}
+                            type="button"
+                            onClick={() => toggleServiceReaction(activeSvc.id, r.id)}
+                            className={cn(
+                              "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer border",
+                              isSelected
+                                ? "bg-[#8ee01a] text-[#105238] border-[#8ee01a] shadow-sm"
+                                : "bg-white/10 hover:bg-white/15 text-white border-white/15",
+                            )}
+                          >
+                            <ReactionBadgeIcon type={r.id} size="sm" animated={isSelected} />
+                            <span>{r.label}</span>
+                            {count > 0 && <span className="font-black">({count})</span>}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Card 4: Comentarios y Experiencias Vividas */}
+                  <div className="rounded-2xl bg-white/5 border border-white/10 p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-black uppercase tracking-wider text-[#8ee01a]">
+                        EXPERIENCIAS VIVIDAS Y OPINIONES ({commentsList.length})
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setServiceToRate(activeSvc)}
+                        className="text-xs font-bold text-[#8ee01a] hover:underline cursor-pointer"
+                      >
+                        Calificar con estrellas
+                      </button>
+                    </div>
+
+                    {/* Inline Star Selector + Comment Input */}
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 3, 4, 5].map((starVal) => (
+                        <button
+                          key={starVal}
+                          type="button"
+                          onClick={() => setCommentRatings((prev) => ({ ...prev, [activeSvc.id]: starVal }))}
+                          className="cursor-pointer"
+                        >
+                          <Star
+                            className={cn(
+                              "w-4 h-4",
+                              starVal <= (commentRatings[activeSvc.id] || 5)
+                                ? "fill-[#8ee01a] text-[#8ee01a]"
+                                : "text-white/30",
+                            )}
+                          />
+                        </button>
+                      ))}
+                      <span className="text-[11px] text-white/75 ml-1">
+                        ({commentRatings[activeSvc.id] || 5}/5)
+                      </span>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={commentDrafts[activeSvc.id] || ""}
+                        onChange={(e) =>
+                          setCommentDrafts((prev) => ({ ...prev, [activeSvc.id]: e.target.value }))
+                        }
+                        onKeyDown={(e) => e.key === "Enter" && handleAddServiceComment(activeSvc.id)}
+                        placeholder="Escribe tu opinión o experiencia vivida..."
+                        className="flex-1 h-9 px-3 rounded-xl border border-white/15 bg-black/35 text-xs text-white placeholder:text-white/45 focus:outline-none focus:border-[#8ee01a]"
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => handleAddServiceComment(activeSvc.id)}
+                        className="h-9 px-3.5 rounded-xl bg-[#8ee01a] hover:bg-[#8ee01a]/90 text-[#105238] text-xs font-black cursor-pointer"
+                      >
+                        Publicar
+                      </Button>
+                    </div>
+
+                    {commentsList.length > 0 ? (
+                      <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
+                        {commentsList.map((c) => (
+                          <div
+                            key={c.id}
+                            className="bg-black/35 border border-white/10 rounded-xl px-3.5 py-2 text-xs"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-white">{c.author}</span>
+                              <div className="flex items-center gap-2">
+                                {c.rating && (
+                                  <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-[#8ee01a]">
+                                    <Star className="w-3 h-3 fill-[#8ee01a]" /> {c.rating}
+                                  </span>
+                                )}
+                                <span className="text-[10px] text-white/55">{c.createdAt}</span>
+                              </div>
+                            </div>
+                            <p className="text-white/85 mt-0.5">{c.text}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-white/60">
+                        Sé el primero en compartir qué te pareció esta experiencia.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Sticky Bottom Booking Bar inside Right Panel (matching user's reference design) */}
+                <div className="px-5 py-3.5 border-t border-white/15 bg-[#091f16] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+                  <div>
+                    <p className="text-[11px] text-white/70 font-medium">¿Te gustaría vivir esta experiencia?</p>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-sm font-black text-white">Reserva tu cupo ahora</span>
+                      <span className="text-base font-black text-[#8ee01a]">
+                        ${effectivePrice.toFixed(2)} /p
+                      </span>
+                      {hasFlash && (
+                        <span className="text-xs line-through text-white/50">${baseP.toFixed(2)}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setLightboxServiceId(null)
+                        openServiceDetailInstant(activeSvc)
+                      }}
+                      className="h-10 px-3.5 rounded-2xl border-white/25 bg-white/10 hover:bg-white/20 text-white font-bold text-xs gap-1.5 cursor-pointer"
+                    >
+                      <Info className="w-3.5 h-3.5 text-[#8ee01a]" />
+                      <span>+ Info</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        setSelectedService(activeSvc)
+                      }}
+                      className="h-10 px-5 rounded-2xl bg-[#8ee01a] hover:bg-[#8ee01a]/90 text-[#105238] font-black text-xs sm:text-sm shadow-lg cursor-pointer"
+                    >
+                      Reservar Ahora
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Existing Modals Preserved */}
       {selectedService && <BookingModal service={selectedService} onClose={() => setSelectedService(null)} />}
