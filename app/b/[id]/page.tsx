@@ -24,6 +24,8 @@ import { cn } from "@/lib/utils"
 import { useAppStore, DEFAULT_STORE_COVER } from "@/lib/store"
 import { BookingModal } from "@/components/booking-modal"
 import { RealReviewsSection } from "@/components/real-reviews-section"
+import { DesktopSidebar, DesktopFloatingIconRail } from "@/components/desktop-sidebar"
+import { SidebarMenu } from "@/components/sidebar-menu"
 
 interface BusinessDetailPageProps {
   params: Promise<{ id: string }>
@@ -42,6 +44,7 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
   const [resolvedAddress, setResolvedAddress] = useState<string>("")
   const [showDesktopShare, setShowDesktopShare] = useState(false)
   const [copiedLink, setCopiedLink] = useState(false)
+  const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(true)
   const sharePopoverRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -214,7 +217,31 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
   const mapsUrl = lat && lng ? `https://www.google.com/maps/search/?api=1&query=${lat},${lng}` : null
 
   return (
-    <main className="min-h-screen bg-[#fafaf8] dark:bg-background flex flex-col pb-32 lg:pb-16">
+    <div className="min-h-screen bg-[#fafaf8] dark:bg-background flex w-full">
+      {/* Desktop Left Sidebar / Floating Icon Rail so Store pages always have the PalenqueGo menu */}
+      {!isDesktopSidebarCollapsed && (
+        <div className="hidden lg:block h-screen sticky top-0 shrink-0 z-30">
+          <DesktopSidebar
+            activeTab="marketplace"
+            onNavigate={navigateToTab}
+            onToggleCollapse={() => setIsDesktopSidebarCollapsed(true)}
+          />
+        </div>
+      )}
+
+      {isDesktopSidebarCollapsed && (
+        <DesktopFloatingIconRail
+          activeTab="marketplace"
+          onNavigate={navigateToTab}
+          onExpand={() => setIsDesktopSidebarCollapsed(false)}
+        />
+      )}
+
+      <div className="lg:hidden">
+        <SidebarMenu activeTab="marketplace" onNavigate={navigateToTab} />
+      </div>
+
+      <main className={cn("flex-1 min-w-0 min-h-screen bg-[#fafaf8] dark:bg-background flex flex-col pb-32 lg:pb-16", isDesktopSidebarCollapsed && "lg:pl-16")}>
       {/* Mobile Header */}
       <div className="md:hidden sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border px-4 py-3 flex items-center justify-between">
         <button
@@ -528,9 +555,9 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
                 </button>
                 <button
                   onClick={handleCall}
-                  className="w-full flex items-center justify-center gap-2 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold shadow-xs transition-all active:scale-[0.99] cursor-pointer text-sm"
+                  className="w-full flex items-center justify-center gap-2 h-12 bg-[#eaf0e2] hover:bg-[#dfe8d4] text-[#105238] border border-[#aeb6a1]/70 rounded-2xl font-bold shadow-xs transition-all active:scale-[0.99] cursor-pointer text-sm"
                 >
-                  <Phone className="w-5 h-5" />
+                  <Phone className="w-5 h-5 text-[#105238]" />
                   <span>Llamar</span>
                 </button>
               </div>
@@ -633,9 +660,9 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
           </button>
           <button
             onClick={handleCall}
-            className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-semibold transition-colors shadow-lg"
+            className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#eaf0e2] hover:bg-[#dfe8d4] text-[#105238] border border-[#aeb6a1]/70 rounded-full font-semibold transition-colors shadow-lg"
           >
-            <Phone className="w-5 h-5" />
+            <Phone className="w-5 h-5 text-[#105238]" />
             Llamar
           </button>
           <button
@@ -652,6 +679,7 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
       {showBookingModal && selectedService && (
         <BookingModal service={selectedService} onClose={() => setShowBookingModal(false)} />
       )}
-    </main>
+      </main>
+    </div>
   )
 }

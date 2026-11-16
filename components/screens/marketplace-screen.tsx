@@ -80,7 +80,7 @@ function FlashCountdown({ fechaFin }: { fechaFin: string }) {
   if (isExpired) return null
 
   return (
-    <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 bg-[#105238]/95 backdrop-blur-md text-white border border-[#8ee01a]/60 px-2.5 py-0.5 rounded-full shadow-lg">
+    <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 bg-[#105238]/95 backdrop-blur-md text-white border border-[#8ee01a]/60 px-2.5 py-0.5 rounded-full shadow-lg">
       <Zap className="w-3.5 h-3.5 text-[#8ee01a] fill-[#8ee01a] animate-pulse shrink-0" />
       <span className="text-[11px] font-black font-mono tracking-wider leading-none text-white">
         {timeLeft || "00:00:00"}
@@ -3016,7 +3016,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
             </div>
 
             {/* STICKY CATEGORY PILLS BAR (with preferred categories first + scroll arrows) */}
-            <div className="sticky top-0 z-20 bg-[#fafaf8]/95 dark:bg-background/95 backdrop-blur-md py-2 -mx-1 px-1">
+            <div className="sticky top-0 z-30 bg-[#fafaf8]/95 dark:bg-background/95 backdrop-blur-md py-2 -mx-1 px-1">
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
@@ -3393,9 +3393,9 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                         )}
                       </div>
 
-                      {/* Post Media */}
+                      {/* Post Media (isolated stacking context so inner badges never overlap the sticky category bar) */}
                       <div
-                        className="relative h-60 sm:h-76 bg-muted overflow-hidden cursor-pointer"
+                        className="relative isolate h-60 sm:h-76 bg-muted overflow-hidden cursor-pointer"
                         onClick={() => openServiceDetailInstant(service)}
                       >
                         <img
@@ -3410,7 +3410,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                             e.stopPropagation()
                             toggleFavoritePreference(service.id)
                           }}
-                          className="absolute top-3 right-3 w-9 h-9 rounded-full bg-card/90 backdrop-blur-sm flex items-center justify-center shadow-sm z-20 cursor-pointer"
+                          className="absolute top-3 right-3 w-9 h-9 rounded-full bg-card/90 backdrop-blur-sm flex items-center justify-center shadow-sm z-10 cursor-pointer"
                           aria-label="Guardar en favoritos"
                         >
                           <Heart
@@ -3425,14 +3425,14 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                           <FlashCountdown fechaFin={service.oferta_flash.fecha_fin} />
                         ) : (
                           service.isRemate && (
-                            <Badge className="absolute top-3 left-3 bg-[#105238] text-[#8ee01a] text-xs font-bold shadow-md z-20">
+                            <Badge className="absolute top-3 left-3 bg-[#105238] text-[#8ee01a] text-xs font-bold shadow-md z-10">
                               <Flame className="w-3 h-3 mr-1" />-{service.discount}%
                             </Badge>
                           )
                         )}
 
                         {/* Pool Badge + Routes count */}
-                        <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2 z-20">
+                        <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2 z-10">
                           <div className="flex items-center gap-1.5">
                             <Badge className="bg-[#105238]/90 text-white backdrop-blur-sm shadow-md py-1 px-2.5 flex items-center gap-1.5">
                               <span className="w-1.5 h-1.5 rounded-full bg-[#8ee01a] animate-pulse shrink-0" />
