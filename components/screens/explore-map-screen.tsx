@@ -1073,13 +1073,29 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
 
     return (
       <div className="flex flex-col gap-2 shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <h3 className="text-sm font-black text-gray-900 tracking-tight">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+            {isTourCategory && (
+              <span className="w-6 h-6 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+                <Camera className="w-3.5 h-3.5" />
+              </span>
+            )}
+            <h3 className="text-sm font-black text-gray-900 tracking-tight truncate">
               {sectionTitle}
             </h3>
+            {isUrbanCategory ? (
+              <span className="inline-flex items-center gap-1 bg-[#f7fee7] text-lime-800 border border-lime-200 px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0">
+                <Building2 className="w-3 h-3" />
+                <span>Muévete en la ciudad</span>
+              </span>
+            ) : !isTourCategory ? (
+              <span className="inline-flex items-center gap-1 bg-[#ecfdf5] text-[#064e3b] border border-emerald-200 px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0">
+                <Bus className="w-3 h-3" />
+                <span>Viaja entre ciudades</span>
+              </span>
+            ) : null}
             {activeCount > 0 && (
-              <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-md ${
+              <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-md shrink-0 ${
                 isTourCategory 
                   ? 'bg-amber-100 text-amber-800' 
                   : isInterurbanCategory 
@@ -1094,7 +1110,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
             <button 
               type="button"
               onClick={handleViewAll} 
-              className="w-6 h-6 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition-colors"
+              className="w-6 h-6 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition-colors shrink-0"
               title="Ver todas en lista"
             >
               <ChevronRight className="w-3.5 h-3.5" />
@@ -1557,15 +1573,14 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
                 </div>
               )}
 
-              {/* Sección: Descubre Palenque (3 Cards) */}
-              <div className="flex flex-col gap-2 shrink-0">
+              {/* Sección: Descubre Palenque */}
+              <div className="flex flex-col gap-1 shrink-0">
                 <div>
                   <h2 className="text-base font-black text-gray-900 tracking-tight leading-none">
                     Descubre <span className="text-[#16a34a]">Palenque</span>
                   </h2>
                   <p className="text-[11px] text-gray-400 font-medium mt-0.5">Servicios de movilidad y turismo</p>
                 </div>
-                {renderQuickActions()}
               </div>
 
               {/* Sección: Destinos para Explorar */}
@@ -2388,7 +2403,6 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
               {/* Contenido Completo del Sheet cuando está Expandido */}
               {isSheetExpanded && (
                 <div className="flex flex-col gap-3.5 mt-2 animate-in fade-in duration-200">
-                  {renderQuickActions()}
                   {renderFeaturedDestinations()}
                   {renderPromoSliderBanner()}
                 </div>
