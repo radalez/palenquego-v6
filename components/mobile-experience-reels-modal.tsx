@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useRef, useEffect } from "react"
+import React, { useState, useRef } from "react"
 import {
   ArrowDown,
   ArrowUp,
@@ -76,16 +76,11 @@ export function MobileExperienceReelsModal({
   const [showDetailsSheet, setShowDetailsSheet] = useState(false)
   const [isCleanMediaMode, setIsCleanMediaMode] = useState(false)
   const [expandDesc, setExpandDesc] = useState(false)
-  const [isHorizontalImage, setIsHorizontalImage] = useState(false)
 
   // Touch swipe support for horizontal photos & vertical feed stepping
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
 
   const currentPhotoUrl = allPhotos[safePhotoIdx] || defaultCover
-
-  useEffect(() => {
-    setIsHorizontalImage(false)
-  }, [currentPhotoUrl])
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (showDetailsSheet) return
@@ -130,12 +125,8 @@ export function MobileExperienceReelsModal({
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         className={cn(
-          "relative w-full bg-[#090a0c] overflow-hidden transition-all duration-300 ease-out flex flex-col items-center",
-          showDetailsSheet
-            ? "h-[34dvh] shrink-0 justify-center"
-            : isHorizontalImage
-              ? "flex-1 h-full justify-start pt-16"
-              : "flex-1 h-full justify-center",
+          "relative w-full bg-[#090a0c] overflow-hidden transition-all duration-300 ease-out flex items-center justify-center",
+          showDetailsSheet ? "h-[34dvh] shrink-0" : "flex-1 h-full",
         )}
       >
         {/* Ambient blurred backdrop so horizontal & vertical photos both look cinematic */}
@@ -145,23 +136,14 @@ export function MobileExperienceReelsModal({
           className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-35 scale-110 pointer-events-none"
         />
 
-        {/* Crisp Full Image (horizontal sits higher up; vertical fills naturally) */}
+        {/* Crisp Full Image (always centered cleanly for both horizontal & vertical photos) */}
         <img
           src={currentPhotoUrl}
           alt={service.name}
-          onLoad={(e) => {
-            const { naturalWidth, naturalHeight } = e.currentTarget
-            if (naturalWidth > 0 && naturalHeight > 0) {
-              setIsHorizontalImage(naturalWidth > naturalHeight * 1.1)
-            }
-          }}
           onClick={() => {
             if (!showDetailsSheet) setIsCleanMediaMode((prev) => !prev)
           }}
-          className={cn(
-            "relative z-10 w-full object-contain",
-            isHorizontalImage && !showDetailsSheet ? "max-h-[54dvh]" : "h-full",
-          )}
+          className="relative z-10 w-full h-full object-contain"
           onError={(e) => {
             e.currentTarget.src = defaultCover
           }}
