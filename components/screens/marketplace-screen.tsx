@@ -1235,6 +1235,8 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   const [searchQuery, setSearchQuery] = useState(() =>
     cachedMarketplaceSession?.shouldRestoreOnMount ? cachedMarketplaceSession.searchQuery : "",
   )
+  const [showStickySearch, setShowStickySearch] = useState(true)
+  const lastScrollYRef = useRef(0)
   const [serviceToRate, setServiceToRate] = useState<Service | null>(null)
   const [showFilterPanel, setShowFilterPanel] = useState(false)
   const [showComparisonModal, setShowComparisonModal] = useState(false)
@@ -1558,6 +1560,59 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
       window.removeEventListener("scroll", handleScrollCompanion, { capture: true } as EventListenerOptions)
     }
   }, [isHoveringRightSidebar])
+
+  // Reverse-scroll smart header: Hide search bar when scrolling down, reveal smoothly when scrolling up slightly
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    const getScrollY = (target?: EventTarget | null) => {
+      if (target && target instanceof HTMLElement && target.scrollTop > 0) {
+        return target.scrollTop
+      }
+      const mainContainer = document.querySelector(".overflow-y-auto") as HTMLElement | null
+      if (mainContainer && mainContainer.scrollTop > 0) {
+        return mainContainer.scrollTop
+      }
+      return window.scrollY || document.documentElement.scrollTop || 0
+    }
+
+    const handleScrollHeader = (e: Event) => {
+      // Don't collapse if an input inside sticky search is focused
+      const activeEl = document.activeElement
+      if (activeEl && activeEl.tagName === "INPUT" && activeEl.closest(".sticky-search-container")) {
+        setShowStickySearch(true)
+        return
+      }
+
+      const currentY = getScrollY(e.target)
+      const lastY = lastScrollYRef.current
+
+      // When near the top of the feed, always keep search bar visible
+      if (currentY <= 120) {
+        setShowStickySearch(true)
+        lastScrollYRef.current = currentY
+        return
+      }
+
+      const diff = currentY - lastY
+
+      // Scrolled down by more than 8px -> hide search bar
+      if (diff > 8) {
+        setShowStickySearch(false)
+        lastScrollYRef.current = currentY
+      }
+      // Scrolled up by more than 8px -> reveal search bar smoothly
+      else if (diff < -8) {
+        setShowStickySearch(true)
+        lastScrollYRef.current = currentY
+      }
+    }
+
+    window.addEventListener("scroll", handleScrollHeader, { capture: true, passive: true })
+    return () => {
+      window.removeEventListener("scroll", handleScrollHeader, { capture: true } as EventListenerOptions)
+    }
+  }, [])
 
   const buildUnseenCatalogQuery = useCallback(() => {
     const params = new URLSearchParams()
@@ -3152,125 +3207,137 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
               </div>
             </div>
 
-            {/* SEARCH + PREFERENCES + SHUFFLE */}
-            <div className="bg-card border border-border rounded-3xl p-4 shadow-2xs space-y-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="relative flex-1 min-w-[180px]">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    value={searchQuery}
-                    placeholder="Buscar experiencias, tours, restaurantes..."
-                    className="pl-10 pr-10 bg-[#f0f2f5]/70 dark:bg-background border border-transparent focus:border-slate-300 h-10 rounded-2xl text-sm"
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                  {searchQuery && (
-                    <button
-                      type="button"
-                      onClick={() => setSearchQuery("")}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowFilterPanel(true)}
-                  className="h-10 px-3.5 rounded-2xl border-transparent bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-800 text-xs font-bold gap-1.5 cursor-pointer shadow-none"
-                >
-                  <Filter className="w-4 h-4 text-slate-700" />
-                  <span>Filtros</span>
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowPreferencesModal(true)}
-                  className="h-10 px-3.5 rounded-2xl border-transparent bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-800 text-xs font-bold gap-1.5 cursor-pointer shadow-none"
-                >
-                  <SlidersHorizontal className="w-4 h-4 text-slate-700" />
-                  <span className="hidden sm:inline">Preferencias</span>
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleRestartCycle}
-                  title="Mezclar orden del feed"
-                  className="h-10 px-3 rounded-2xl border-transparent bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-800 text-xs font-bold gap-1 cursor-pointer shadow-none"
-                >
-                  <Shuffle className="w-4 h-4 text-slate-700" />
-                </Button>
-              </div>
-            </div>
-
-            {/* STICKY CATEGORY PILLS BAR (with preferred categories first + scroll arrows) */}
-            <div className="sticky top-0 z-30 bg-[#fafaf8]/95 dark:bg-background/95 backdrop-blur-md py-2 -mx-1 px-1">
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => categoriesTrackRef.current?.scrollBy({ left: -220, behavior: "smooth" })}
-                  className="hidden sm:flex w-7 h-7 rounded-full bg-white dark:bg-card border border-slate-200/90 items-center justify-center text-slate-600 hover:bg-[#f0f2f5] hover:text-slate-900 transition-all shrink-0 shadow-2xs cursor-pointer"
-                  aria-label="Categorías anteriores"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <div ref={categoriesTrackRef} className="flex-1 flex gap-2 overflow-x-auto scrollbar-hide">
-                  {preferredCategories.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedCategory("all")
-                        setOnlyPreferred((prev) => !prev)
-                        setFeedSeed(Math.floor(Math.random() * 99999) + 1)
-                      }}
-                      className={cn(
-                        "flex items-center gap-1.5 px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all text-xs font-bold cursor-pointer shrink-0 border",
-                        onlyPreferred && selectedCategory === "all"
-                          ? "bg-[#f8faf7] text-[#105238] border-[#105238] shadow-xs"
-                          : "bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-700 border-transparent",
+            {/* STICKY HEADER: COLLAPSIBLE SEARCH BAR (REVEALS ON SCROLL UP) + STICKY CATEGORIES */}
+            <div className="sticky top-0 z-30 bg-[#fafaf8]/95 dark:bg-background/95 backdrop-blur-md -mx-1 px-1 transition-all duration-300">
+              {/* COLLAPSIBLE SEARCH ROW */}
+              <div
+                className={cn(
+                  "sticky-search-container transition-all duration-300 ease-out overflow-hidden",
+                  showStickySearch
+                    ? "max-h-28 opacity-100 pt-2 pb-1.5 translate-y-0"
+                    : "max-h-0 opacity-0 py-0 -translate-y-2 pointer-events-none"
+                )}
+              >
+                <div className="bg-card border border-border rounded-3xl p-3 sm:p-3.5 shadow-2xs">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="relative flex-1 min-w-[180px]">
+                      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        value={searchQuery}
+                        placeholder="Buscar experiencias, tours, restaurantes..."
+                        className="pl-10 pr-10 bg-[#f0f2f5]/70 dark:bg-background border border-transparent focus:border-slate-300 h-10 rounded-2xl text-sm"
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                      />
+                      {searchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => setSearchQuery("")}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
                       )}
-                    >
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>Para ti ({preferredCategories.length})</span>
-                    </button>
-                  )}
+                    </div>
 
-                  {[
-                    ...categories.filter((c) => c.id === "all" || (c.id === "flash" && flashServices.length > 0)),
-                    ...categories.filter((c) => c.id !== "all" && c.id !== "flash" && preferredCategories.includes(c.id)),
-                    ...categories.filter((c) => c.id !== "all" && c.id !== "flash" && !preferredCategories.includes(c.id)),
-                  ].map((cat) => {
-                    const Icon = cat.icon
-                    const isActive = selectedCategory === cat.id && !(onlyPreferred && cat.id === "all")
-                    const isSpecial = (cat as any).isSpecial
-                    return (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowFilterPanel(true)}
+                      className="h-10 px-3.5 rounded-2xl border-transparent bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-800 text-xs font-bold gap-1.5 cursor-pointer shadow-none"
+                    >
+                      <Filter className="w-4 h-4 text-slate-700" />
+                      <span>Filtros</span>
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowPreferencesModal(true)}
+                      className="h-10 px-3.5 rounded-2xl border-transparent bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-800 text-xs font-bold gap-1.5 cursor-pointer shadow-none"
+                    >
+                      <SlidersHorizontal className="w-4 h-4 text-slate-700" />
+                      <span className="hidden sm:inline">Preferencias</span>
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleRestartCycle}
+                      title="Mezclar orden del feed"
+                      className="h-10 px-3 rounded-2xl border-transparent bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-800 text-xs font-bold gap-1 cursor-pointer shadow-none"
+                    >
+                      <Shuffle className="w-4 h-4 text-slate-700" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* STICKY CATEGORY PILLS BAR (with preferred categories first + scroll arrows) */}
+              <div className="py-2">
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => categoriesTrackRef.current?.scrollBy({ left: -220, behavior: "smooth" })}
+                    className="hidden sm:flex w-7 h-7 rounded-full bg-white dark:bg-card border border-slate-200/90 items-center justify-center text-slate-600 hover:bg-[#f0f2f5] hover:text-slate-900 transition-all shrink-0 shadow-2xs cursor-pointer"
+                    aria-label="Categorías anteriores"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <div ref={categoriesTrackRef} className="flex-1 flex gap-2 overflow-x-auto scrollbar-hide">
+                    {preferredCategories.length > 0 && (
                       <button
-                        key={cat.id}
-                        onClick={() => handleSelectCategorySmooth(cat.id)}
+                        type="button"
+                        onClick={() => {
+                          setSelectedCategory("all")
+                          setOnlyPreferred((prev) => !prev)
+                          setFeedSeed(Math.floor(Math.random() * 99999) + 1)
+                        }}
                         className={cn(
                           "flex items-center gap-1.5 px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all text-xs font-bold cursor-pointer shrink-0 border",
-                          isActive
+                          onlyPreferred && selectedCategory === "all"
                             ? "bg-[#f8faf7] text-[#105238] border-[#105238] shadow-xs"
                             : "bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-700 border-transparent",
                         )}
                       >
-                        <Icon className={cn("w-3.5 h-3.5", isActive ? "text-[#105238]" : (isSpecial ? "text-amber-500" : "text-slate-600"))} />
-                        <span>{cat.label}</span>
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Para ti ({preferredCategories.length})</span>
                       </button>
-                    )
-                  })}
+                    )}
+
+                    {[
+                      ...categories.filter((c) => c.id === "all" || (c.id === "flash" && flashServices.length > 0)),
+                      ...categories.filter((c) => c.id !== "all" && c.id !== "flash" && preferredCategories.includes(c.id)),
+                      ...categories.filter((c) => c.id !== "all" && c.id !== "flash" && !preferredCategories.includes(c.id)),
+                    ].map((cat) => {
+                      const Icon = cat.icon
+                      const isActive = selectedCategory === cat.id && !(onlyPreferred && cat.id === "all")
+                      const isSpecial = (cat as any).isSpecial
+                      return (
+                        <button
+                          key={cat.id}
+                          onClick={() => handleSelectCategorySmooth(cat.id)}
+                          className={cn(
+                            "flex items-center gap-1.5 px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all text-xs font-bold cursor-pointer shrink-0 border",
+                            isActive
+                              ? "bg-[#f8faf7] text-[#105238] border-[#105238] shadow-xs"
+                              : "bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-700 border-transparent",
+                          )}
+                        >
+                          <Icon className={cn("w-3.5 h-3.5", isActive ? "text-[#105238]" : (isSpecial ? "text-amber-500" : "text-slate-600"))} />
+                          <span>{cat.label}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => categoriesTrackRef.current?.scrollBy({ left: 220, behavior: "smooth" })}
+                    className="hidden sm:flex w-7 h-7 rounded-full bg-white dark:bg-card border border-slate-200/90 items-center justify-center text-slate-600 hover:bg-[#f0f2f5] hover:text-slate-900 transition-all shrink-0 shadow-2xs cursor-pointer"
+                    aria-label="Más categorías"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => categoriesTrackRef.current?.scrollBy({ left: 220, behavior: "smooth" })}
-                  className="hidden sm:flex w-7 h-7 rounded-full bg-white dark:bg-card border border-slate-200/90 items-center justify-center text-slate-600 hover:bg-[#f0f2f5] hover:text-slate-900 transition-all shrink-0 shadow-2xs cursor-pointer"
-                  aria-label="Más categorías"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
               </div>
             </div>
 
