@@ -112,9 +112,9 @@ const categories = [
   { id: "tours", label: "Tours", icon: Compass },
 ]
 
-type ReactionKey = "trato" | "divertido" | "fascino" | "quiero_ir" | "recomiendo"
+export type ReactionKey = "trato" | "divertido" | "fascino" | "quiero_ir" | "recomiendo"
 
-const REACTIONS: Array<{ id: ReactionKey; label: string; icon: any }> = [
+export const REACTIONS: Array<{ id: ReactionKey; label: string; icon: any }> = [
   { id: "trato", label: "Me trataron bien", icon: ThumbsUp },
   { id: "divertido", label: "Me divertí", icon: Smile },
   { id: "fascino", label: "Me fascinó", icon: Sparkles },
@@ -122,7 +122,7 @@ const REACTIONS: Array<{ id: ReactionKey; label: string; icon: any }> = [
   { id: "recomiendo", label: "Lo recomiendo", icon: Award },
 ]
 
-function ReactionBadgeIcon({
+export function ReactionBadgeIcon({
   type,
   size = "md",
   animateOnHover = false,

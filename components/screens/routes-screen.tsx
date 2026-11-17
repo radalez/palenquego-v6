@@ -1,13 +1,12 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import {
   MapPin,
   Navigation2,
   Clock,
   Users,
   X,
-  Truck,
   Ticket,
   ShoppingCart,
   Search,
@@ -23,7 +22,9 @@ import {
   ChevronRight,
   Check,
   Maximize2,
+  ThumbsUp,
 } from "lucide-react"
+import { REACTIONS, ReactionBadgeIcon, type ReactionKey } from "./marketplace-screen"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -122,13 +123,17 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
   const [toastText, setToastText] = useState<string | null>(null)
 
   // Reacciones y comentarios locales por ruta (persistidos en localStorage)
-  const [likedRouteIds, setLikedRouteIds] = useState<Record<number, boolean>>({})
+  const [userReactions, setUserReactions] = useState<Record<number, ReactionKey | null>>({})
+  const [justReactedRouteId, setJustReactedRouteId] = useState<number | null>(null)
+  const [openReactionPickerId, setOpenReactionPickerId] = useState<number | null>(null)
+  const reactionCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [openCommentsRouteId, setOpenCommentsRouteId] = useState<number | null>(null)
   const [routeComments, setRouteComments] = useState<Record<number, RouteCommentItem[]>>({})
 
   useEffect(() => {
     try {
-      const savedLikes = localStorage.getItem(ROUTE_REACTIONS_KEY)
-      if (savedLikes) setLikedRouteIds(JSON.parse(savedLikes))
+      const savedReacts = localStorage.getItem(ROUTE_REACTIONS_KEY)
+      if (savedReacts) setUserReactions(JSON.parse(savedReacts))
       const savedComments = localStorage.getItem(ROUTE_COMMENTS_KEY)
       if (savedComments) setRouteComments(JSON.parse(savedComments))
     } catch {
@@ -136,14 +141,41 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
     }
   }, [])
 
+  // Mantener la barra de navegación móvil detrás del backdrop cuando el foco 3D de comentarios está activo
+  useEffect(() => {
+    if (typeof document === "undefined") return
+    document.body.classList.toggle("comments-spotlight-open", openCommentsRouteId !== null)
+    return () => {
+      document.body.classList.remove("comments-spotlight-open")
+    }
+  }, [openCommentsRouteId])
+
   const showQuickToast = (msg: string) => {
     setToastText(msg)
     setTimeout(() => setToastText(null), 2600)
   }
 
-  const toggleLikeRoute = (routeId: number) => {
-    setLikedRouteIds((prev) => {
-      const next = { ...prev, [routeId]: !prev[routeId] }
+  const handleReactionMouseEnter = (routeId: number) => {
+    if (reactionCloseTimerRef.current) {
+      clearTimeout(reactionCloseTimerRef.current)
+      reactionCloseTimerRef.current = null
+    }
+    setOpenReactionPickerId(routeId)
+  }
+
+  const handleReactionMouseLeave = () => {
+    reactionCloseTimerRef.current = setTimeout(() => {
+      setOpenReactionPickerId(null)
+    }, 180)
+  }
+
+  const toggleRouteReaction = (routeId: number, reaction: ReactionKey) => {
+    setOpenReactionPickerId(null)
+    setJustReactedRouteId(routeId)
+    setTimeout(() => setJustReactedRouteId((prev) => (prev === routeId ? null : prev)), 500)
+    setUserReactions((prev) => {
+      const nextVal = prev[routeId] === reaction ? null : reaction
+      const next = { ...prev, [routeId]: nextVal }
       try {
         localStorage.setItem(ROUTE_REACTIONS_KEY, JSON.stringify(next))
       } catch {
@@ -881,15 +913,40 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
               </div>
             </div>
 
+            {/* Backdrop global blur cuando una tarjeta tiene los comentarios en foco 3D */}
+            {openCommentsRouteId !== null && (
+              <div
+                id="routes-comments-soft-backdrop"
+                onClick={() => setOpenCommentsRouteId(null)}
+                onWheel={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                }}
+                className="fixed inset-0 w-screen h-screen bg-black/45 backdrop-blur-xs z-30 animate-in fade-in duration-150"
+              />
+            )}
+
             {/* FEED CARDS */}
             {filteredRoutes.map((route) => (
               <RouteFeedCard
                 key={route.id}
                 route={route}
-                isLiked={Boolean(likedRouteIds[route.id])}
+                userReaction={userReactions[route.id] || null}
+                isJustReacted={justReactedRouteId === route.id}
+                isReactionPickerOpen={openReactionPickerId === route.id}
+                isCommentsOpen={openCommentsRouteId === route.id}
                 comments={routeComments[route.id] || []}
                 currentUser={currentUser}
-                onToggleLike={() => toggleLikeRoute(route.id)}
+                onReactionMouseEnter={() => handleReactionMouseEnter(route.id)}
+                onReactionMouseLeave={handleReactionMouseLeave}
+                onTogglePicker={() =>
+                  setOpenReactionPickerId((prev) => (prev === route.id ? null : route.id))
+                }
+                onSelectReaction={(r) => toggleRouteReaction(route.id, r)}
+                onToggleComments={() =>
+                  setOpenCommentsRouteId((prev) => (prev === route.id ? null : route.id))
+                }
+                onCloseComments={() => setOpenCommentsRouteId(null)}
                 onAddComment={(text, rating) => addRouteComment(route.id, text, rating)}
                 onTrack={() => handleStartTracking(route)}
                 onServices={() => handleViewServices(route)}
@@ -1130,10 +1187,18 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
 // ─── Experiencias-style Route Post Card ───────────────────────────────────────
 function RouteFeedCard({
   route,
-  isLiked,
+  userReaction,
+  isJustReacted,
+  isReactionPickerOpen,
+  isCommentsOpen,
   comments,
   currentUser,
-  onToggleLike,
+  onReactionMouseEnter,
+  onReactionMouseLeave,
+  onTogglePicker,
+  onSelectReaction,
+  onToggleComments,
+  onCloseComments,
   onAddComment,
   onTrack,
   onServices,
@@ -1141,10 +1206,18 @@ function RouteFeedCard({
   onShare,
 }: {
   route: Route
-  isLiked: boolean
+  userReaction: ReactionKey | null
+  isJustReacted: boolean
+  isReactionPickerOpen: boolean
+  isCommentsOpen: boolean
   comments: RouteCommentItem[]
   currentUser: any
-  onToggleLike: () => void
+  onReactionMouseEnter: () => void
+  onReactionMouseLeave: () => void
+  onTogglePicker: () => void
+  onSelectReaction: (r: ReactionKey) => void
+  onToggleComments: () => void
+  onCloseComments: () => void
   onAddComment: (text: string, rating: number) => void
   onTrack: () => void
   onServices: () => void
@@ -1154,9 +1227,11 @@ function RouteFeedCard({
   const r = route as any
   const hasGPS = Boolean(r.is_active && r.unit_lat && r.unit_lng)
   const [showMoreInfo, setShowMoreInfo] = useState(false)
-  const [showComments, setShowComments] = useState(false)
   const [commentText, setCommentText] = useState("")
   const [commentRating, setCommentRating] = useState(5)
+  const cardRef = useRef<HTMLElement>(null)
+  const headerRef = useRef<HTMLDivElement>(null)
+  const footerRef = useRef<HTMLDivElement>(null)
 
   const coverUrl = getRouteImageUrl(route)
   const stops = route.stops || []
@@ -1175,6 +1250,33 @@ function RouteFeedCard({
       : "5.0"
 
   const priceNum = Number(route.price_one_way || 0)
+  const activeReactMeta = userReaction ? REACTIONS.find((rx) => rx.id === userReaction) : null
+
+  // Alinear suavemente arriba al abrir comentarios en foco 3D
+  useEffect(() => {
+    if (isCommentsOpen && cardRef.current) {
+      setTimeout(() => {
+        cardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+      }, 60)
+    }
+  }, [isCommentsOpen])
+
+  // Bloquear wheel en cabecera y composer fijos cuando los comentarios están en foco 3D
+  useEffect(() => {
+    if (!isCommentsOpen) return
+    const stopWheel = (e: WheelEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+    const hdr = headerRef.current
+    const ftr = footerRef.current
+    hdr?.addEventListener("wheel", stopWheel, { passive: false })
+    ftr?.addEventListener("wheel", stopWheel, { passive: false })
+    return () => {
+      hdr?.removeEventListener("wheel", stopWheel)
+      ftr?.removeEventListener("wheel", stopWheel)
+    }
+  }, [isCommentsOpen])
 
   const handleSubmitComment = () => {
     if (!commentText.trim()) return
@@ -1184,13 +1286,23 @@ function RouteFeedCard({
 
   return (
     <article
+      ref={cardRef}
       className={cn(
-        "bg-white dark:bg-card border border-border/80 rounded-3xl shadow-2xs overflow-hidden transition-all duration-200 hover:shadow-md",
-        r.user_has_ticket && "ring-2 ring-[#105238]/30"
+        "bg-white dark:bg-card border border-border/80 rounded-3xl transition-all duration-300 scroll-mt-2",
+        isCommentsOpen
+          ? "relative z-40 scale-[1.02] shadow-[0_25px_60px_-10px_rgba(0,0,0,0.35)] ring-2 ring-black/10 dark:ring-white/10 h-[calc(100vh-18px)] sm:h-[calc(100dvh-18px)] max-h-[calc(100vh-18px)] sm:max-h-[calc(100dvh-18px)] flex flex-col overflow-hidden"
+          : "relative z-10 shadow-2xs overflow-hidden hover:shadow-md",
+        r.user_has_ticket && !isCommentsOpen && "ring-2 ring-[#105238]/30"
       )}
     >
-      {/* 1. CABECERA ESTILO EXPERIENCIAS */}
-      <div className="px-4 pt-4 pb-2.5 flex items-start justify-between gap-3">
+      {/* 1. CABECERA FIJA ESTILO EXPERIENCIAS */}
+      <div
+        ref={headerRef}
+        className={cn(
+          "px-4 pt-4 pb-2.5 flex items-start justify-between gap-3 bg-white dark:bg-card",
+          isCommentsOpen && "shrink-0 border-b border-border/40 z-10"
+        )}
+      >
         <div className="flex items-center gap-3 min-w-0">
           <div className="relative w-11 h-11 rounded-full overflow-hidden border border-border/70 bg-[#eaf0e2] shrink-0">
             <img
@@ -1227,233 +1339,304 @@ function RouteFeedCard({
           </div>
         </div>
 
-        <div className="text-right shrink-0">
-          <div className="flex items-baseline justify-end gap-0.5">
-            <span className="text-base font-black text-foreground">
-              {priceNum > 0 ? `$${priceNum.toFixed(2)}` : "Gratis"}
-            </span>
-            {priceNum > 0 && <span className="text-[11px] font-semibold text-muted-foreground">/p</span>}
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="text-right">
+            <div className="flex items-baseline justify-end gap-0.5">
+              <span className="text-base font-black text-foreground">
+                {priceNum > 0 ? `$${priceNum.toFixed(2)}` : "Gratis"}
+              </span>
+              {priceNum > 0 && <span className="text-[11px] font-semibold text-muted-foreground">/p</span>}
+            </div>
+            {route.unit_capacity ? (
+              <span className="text-[10px] font-bold text-[#105238] bg-[#eaf0e2] px-2 py-0.5 rounded-full inline-flex items-center gap-1 mt-0.5">
+                <Users className="w-2.5 h-2.5" />
+                {route.unit_capacity} PAX
+              </span>
+            ) : null}
           </div>
-          {route.unit_capacity ? (
-            <span className="text-[10px] font-bold text-[#105238] bg-[#eaf0e2] px-2 py-0.5 rounded-full inline-flex items-center gap-1 mt-0.5">
-              <Users className="w-2.5 h-2.5" />
-              {route.unit_capacity} PAX
-            </span>
-          ) : null}
-        </div>
-      </div>
 
-      {/* 2. DESCRIPCIÓN Y PARADAS EXPANDIBLES */}
-      <div className="px-4 pb-3 space-y-2">
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <p className="text-[13px] text-foreground/85 font-medium truncate flex-1 min-w-[180px]">
-            {stopsSummary}
-          </p>
-          <div className="flex items-center gap-2 shrink-0">
+          {isCommentsOpen && (
             <button
               type="button"
-              onClick={() => setShowMoreInfo((v) => !v)}
-              className="inline-flex items-center gap-1 text-xs font-bold text-[#105238] bg-[#eaf0e2]/80 hover:bg-[#eaf0e2] px-2.5 py-1 rounded-full transition-colors cursor-pointer"
+              onClick={onCloseComments}
+              className="w-8 h-8 rounded-full bg-[#f0f2f5] hover:bg-gray-200 text-gray-700 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+              aria-label="Cerrar comentarios"
             >
-              <Info className="w-3.5 h-3.5" />
-              {showMoreInfo ? "Ocultar detalles" : "Más información"}
+              <X className="w-4 h-4" />
             </button>
-            <span className="inline-flex items-center gap-1 text-xs font-bold text-foreground bg-[#f0f2f5] dark:bg-muted px-2 py-1 rounded-full">
-              <Star className="w-3.5 h-3.5 fill-[#105238] text-[#105238]" />
-              {avgRating} <span className="text-muted-foreground font-normal">({comments.length})</span>
-            </span>
-          </div>
+          )}
         </div>
+      </div>
 
-        {r.descripcion && (
-          <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{r.descripcion}</p>
+      {/* 2. CUERPO CENTRAL (con scroll interno cuando los comentarios están abiertos) */}
+      <div
+        className={cn(
+          isCommentsOpen ? "flex-1 overflow-y-auto scrollbar-hide overscroll-contain min-h-0" : ""
         )}
-
-        {/* Detalles expandibles: Paradas + Unidad/Chofer */}
-        {showMoreInfo && (
-          <div className="mt-2 p-3.5 rounded-2xl bg-[#f7f9f5] dark:bg-muted/40 border border-[#eaf0e2] dark:border-border space-y-3 animate-in fade-in duration-150">
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
-              <div className="bg-white dark:bg-card p-2.5 rounded-xl border border-border/50">
-                <span className="text-[10px] font-bold uppercase text-muted-foreground block">Conductor</span>
-                <span className="font-bold text-foreground truncate block">{route.driver_name || "Por asignar"}</span>
-              </div>
-              <div className="bg-white dark:bg-card p-2.5 rounded-xl border border-border/50">
-                <span className="text-[10px] font-bold uppercase text-muted-foreground block">Vehículo / Placa</span>
-                <span className="font-bold text-foreground truncate block">
-                  {route.unit_license_plate || route.unit_name || "Oficial"}
-                </span>
-              </div>
-              <div className="bg-white dark:bg-card p-2.5 rounded-xl border border-border/50 col-span-2 sm:col-span-1">
-                <span className="text-[10px] font-bold uppercase text-muted-foreground block">Estado GPS</span>
-                <span className={cn("font-bold block", hasGPS ? "text-[#105238]" : "text-muted-foreground")}>
-                  {hasGPS ? "En vivo ●" : "Sin señal"}
-                </span>
-              </div>
+      >
+        {/* DESCRIPCIÓN Y PARADAS EXPANDIBLES */}
+        <div className={cn("px-4 pb-3 space-y-2", isCommentsOpen && "pt-2.5")}>
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <p className="text-[13px] text-foreground/85 font-medium truncate flex-1 min-w-[180px]">
+              {stopsSummary}
+            </p>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowMoreInfo((v) => !v)}
+                className="inline-flex items-center gap-1 text-xs font-bold text-[#105238] bg-[#eaf0e2]/80 hover:bg-[#eaf0e2] px-2.5 py-1 rounded-full transition-colors cursor-pointer"
+              >
+                <Info className="w-3.5 h-3.5" />
+                {showMoreInfo ? "Ocultar detalles" : "Más información"}
+              </button>
+              <span className="inline-flex items-center gap-1 text-xs font-bold text-foreground bg-[#f0f2f5] dark:bg-muted px-2 py-1 rounded-full">
+                <Star className="w-3.5 h-3.5 fill-[#105238] text-[#105238]" />
+                {avgRating} <span className="text-muted-foreground font-normal">({comments.length})</span>
+              </span>
             </div>
+          </div>
 
-            {stops.length > 0 && (
-              <div className="space-y-1.5">
-                <p className="text-[11px] font-extrabold uppercase tracking-wider text-[#105238]">
-                  Paradas del recorrido
-                </p>
-                <div className="space-y-1.5">
-                  {stops.map((stop, idx) => (
-                    <div key={stop.id || idx} className="flex items-center gap-2.5 text-xs">
-                      <span className="w-5 h-5 rounded-full bg-[#105238] text-[#8ee01a] font-black text-[10px] flex items-center justify-center shrink-0">
-                        {stop.order || idx + 1}
-                      </span>
-                      <span className="font-semibold text-foreground truncate flex-1">
-                        {stop.name || `Parada ${idx + 1}`}
-                      </span>
-                      {stop.minutes_from_start ? (
-                        <span className="text-[11px] text-muted-foreground shrink-0">
-                          <Clock className="w-3 h-3 inline mr-0.5" />
-                          {stop.minutes_from_start}m
-                        </span>
-                      ) : null}
-                    </div>
-                  ))}
+          {r.descripcion && (
+            <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{r.descripcion}</p>
+          )}
+
+          {showMoreInfo && (
+            <div className="mt-2 p-3.5 rounded-2xl bg-[#f7f9f5] dark:bg-muted/40 border border-[#eaf0e2] dark:border-border space-y-3 animate-in fade-in duration-150">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                <div className="bg-white dark:bg-card p-2.5 rounded-xl border border-border/50">
+                  <span className="text-[10px] font-bold uppercase text-muted-foreground block">Conductor</span>
+                  <span className="font-bold text-foreground truncate block">{route.driver_name || "Por asignar"}</span>
+                </div>
+                <div className="bg-white dark:bg-card p-2.5 rounded-xl border border-border/50">
+                  <span className="text-[10px] font-bold uppercase text-muted-foreground block">Vehículo / Placa</span>
+                  <span className="font-bold text-foreground truncate block">
+                    {route.unit_license_plate || route.unit_name || "Oficial"}
+                  </span>
+                </div>
+                <div className="bg-white dark:bg-card p-2.5 rounded-xl border border-border/50 col-span-2 sm:col-span-1">
+                  <span className="text-[10px] font-bold uppercase text-muted-foreground block">Estado GPS</span>
+                  <span className={cn("font-bold block", hasGPS ? "text-[#105238]" : "text-muted-foreground")}>
+                    {hasGPS ? "En vivo ●" : "Sin señal"}
+                  </span>
                 </div>
               </div>
-            )}
-          </div>
-        )}
-      </div>
 
-      {/* 3. IMAGEN DE LA RUTA (Click abre el mapa completo igual que el lightbox de Experiencias) */}
-      <div className="px-4">
-        <div
-          onClick={onTrack}
-          className="relative h-[260px] sm:h-[310px] w-full rounded-2xl overflow-hidden bg-muted cursor-pointer group border border-border/50"
-          title="Haz clic para abrir el mapa completo y rastrear esta ruta"
-        >
-          <img
-            src={coverUrl}
-            alt={route.name}
-            className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
-            onError={handleImageFallback}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/20 pointer-events-none" />
-
-          {/* Badges superiores */}
-          <div className="absolute top-3 left-3 flex items-center gap-1.5">
-            <span className="bg-black/65 backdrop-blur-md text-white text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
-              <MapPin className="w-3 h-3 text-[#8ee01a]" />
-              {stops.length} paradas
-            </span>
-            {hasGPS && (
-              <span className="bg-[#105238]/90 backdrop-blur-md text-[#8ee01a] text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#8ee01a] animate-pulse" />
-                En vivo
-              </span>
-            )}
-          </div>
-
-          {/* Botón corazón rápido */}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              onToggleLike()
-            }}
-            className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 hover:bg-white text-foreground flex items-center justify-center shadow-md transition-transform active:scale-90 cursor-pointer"
-            aria-label="Me gusta esta ruta"
-          >
-            <Heart className={cn("w-4 h-4", isLiked ? "fill-[#105238] text-[#105238]" : "text-gray-700")} />
-          </button>
-
-          {/* Indicador inferior derecho para abrir el mapa completo */}
-          <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2">
-            <span className="text-white text-xs font-bold drop-shadow-sm truncate">
-              {r.duracion || `${Math.max(1, stops.length - 1) * 20} min estimados`}
-            </span>
-            <span className="bg-white/95 hover:bg-white text-[#105238] text-xs font-extrabold px-3 py-1.5 rounded-full shadow-lg inline-flex items-center gap-1.5 shrink-0">
-              <Maximize2 className="w-3.5 h-3.5" />
-              Ver mapa completo
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* 4. BARRA DE ACCIONES SOCIALES + RASTREAR / BOLETO */}
-      <div className="px-4 py-3 flex items-center justify-between gap-1.5 flex-wrap sm:flex-nowrap">
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={onToggleLike}
-            className={cn(
-              "px-2.5 py-2 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer",
-              isLiked
-                ? "bg-[#eaf0e2] text-[#105238]"
-                : "text-muted-foreground hover:bg-[#f0f2f5] hover:text-foreground"
-            )}
-          >
-            <Heart className={cn("w-4 h-4", isLiked && "fill-[#105238] text-[#105238]")} />
-            <span>{isLiked ? "Te gusta" : "Reaccionar"}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setShowComments((v) => !v)}
-            className={cn(
-              "px-2.5 py-2 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer",
-              showComments
-                ? "bg-[#eaf0e2] text-[#105238]"
-                : "text-muted-foreground hover:bg-[#f0f2f5] hover:text-foreground"
-            )}
-          >
-            <MessageCircle className="w-4 h-4" />
-            <span>Comentar{comments.length > 0 ? ` (${comments.length})` : ""}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={onShare}
-            className="px-2.5 py-2 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 text-muted-foreground hover:bg-[#f0f2f5] hover:text-foreground transition-colors cursor-pointer"
-          >
-            <Share2 className="w-4 h-4" />
-            <span className="hidden sm:inline">Compartir</span>
-          </button>
+              {stops.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-[11px] font-extrabold uppercase tracking-wider text-[#105238]">
+                    Paradas del recorrido
+                  </p>
+                  <div className="space-y-1.5">
+                    {stops.map((stop, idx) => (
+                      <div key={stop.id || idx} className="flex items-center gap-2.5 text-xs">
+                        <span className="w-5 h-5 rounded-full bg-[#105238] text-[#8ee01a] font-black text-[10px] flex items-center justify-center shrink-0">
+                          {stop.order || idx + 1}
+                        </span>
+                        <span className="font-semibold text-foreground truncate flex-1">
+                          {stop.name || `Parada ${idx + 1}`}
+                        </span>
+                        {stop.minutes_from_start ? (
+                          <span className="text-[11px] text-muted-foreground shrink-0">
+                            <Clock className="w-3 h-3 inline mr-0.5" />
+                            {stop.minutes_from_start}m
+                          </span>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        <div className="flex items-center gap-1.5 ml-auto">
-          <Button
-            type="button"
-            size="sm"
-            onClick={onServices}
-            variant="ghost"
-            className="h-9 px-2.5 rounded-xl text-xs font-bold text-muted-foreground hover:text-[#105238] hover:bg-[#eaf0e2]/70 cursor-pointer"
-          >
-            Servicios
-          </Button>
-          <Button
-            type="button"
-            size="sm"
+        {/* IMAGEN DE LA RUTA (Click abre el mapa completo igual que el lightbox de Experiencias) */}
+        <div className="px-4">
+          <div
             onClick={onTrack}
-            className="h-9 px-3.5 rounded-xl bg-[#eaf0e2] hover:bg-[#105238] text-[#105238] hover:text-white font-bold text-xs gap-1.5 border-0 shadow-none transition-colors cursor-pointer"
+            className="relative h-[260px] sm:h-[310px] w-full rounded-2xl overflow-hidden bg-muted cursor-pointer group border border-border/50"
+            title="Haz clic para abrir el mapa completo y rastrear esta ruta"
           >
-            <Navigation2 className="w-3.5 h-3.5" />
-            Rastrear
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            onClick={onBuy}
-            className="h-9 px-3.5 rounded-xl bg-[#105238] hover:bg-[#0c3e2b] text-white font-bold text-xs gap-1.5 shadow-2xs cursor-pointer"
-          >
-            <Ticket className="w-3.5 h-3.5 text-[#8ee01a]" />
-            Boleto
-          </Button>
-        </div>
-      </div>
+            <img
+              src={coverUrl}
+              alt={route.name}
+              className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
+              onError={handleImageFallback}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/20 pointer-events-none" />
 
-      {/* 5. SECCIÓN DE COMENTARIOS Y CALIFICACIÓN INLINE */}
-      {showComments && (
-        <div className="border-t border-border/60 bg-[#fafaf8] dark:bg-muted/20 p-4 space-y-3 animate-in fade-in duration-150">
-          {/* Lista de comentarios */}
-          {comments.length > 0 ? (
-            <div className="space-y-2.5 max-h-52 overflow-y-auto pr-1">
-              {comments.map((c) => (
+            <div className="absolute top-3 left-3 flex items-center gap-1.5">
+              <span className="bg-black/65 backdrop-blur-md text-white text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
+                <MapPin className="w-3 h-3 text-[#8ee01a]" />
+                {stops.length} paradas
+              </span>
+              {hasGPS && (
+                <span className="bg-[#105238]/90 backdrop-blur-md text-[#8ee01a] text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#8ee01a] animate-pulse" />
+                  En vivo
+                </span>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                onSelectReaction("recomiendo")
+              }}
+              className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 hover:bg-white text-foreground flex items-center justify-center shadow-md transition-transform active:scale-90 cursor-pointer"
+              aria-label="Recomendar esta ruta"
+            >
+              <Heart className={cn("w-4 h-4", userReaction ? "fill-[#105238] text-[#105238]" : "text-gray-700")} />
+            </button>
+
+            <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2">
+              <span className="text-white text-xs font-bold drop-shadow-sm truncate">
+                {r.duracion || `${Math.max(1, stops.length - 1) * 20} min estimados`}
+              </span>
+              <span className="bg-white/95 hover:bg-white text-[#105238] text-xs font-extrabold px-3 py-1.5 rounded-full shadow-lg inline-flex items-center gap-1.5 shrink-0">
+                <Maximize2 className="w-3.5 h-3.5" />
+                Ver mapa completo
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* BARRA DE ACCIONES SOCIALES CON PICKER 3D ESTILO EXPERIENCIAS */}
+        <div className="px-4 py-3 flex items-center justify-between gap-1.5 flex-wrap sm:flex-nowrap relative">
+          <div className="flex items-center gap-1">
+            {/* Reaccionar + Tray flotante con "Me trataron bien", "Me divertí", "Me fascinó", "Quiero ir", "Lo recomiendo" */}
+            <div
+              className="relative"
+              onMouseEnter={onReactionMouseEnter}
+              onMouseLeave={onReactionMouseLeave}
+            >
+              {isReactionPickerOpen && (
+                <div
+                  onMouseEnter={onReactionMouseEnter}
+                  onMouseLeave={onReactionMouseLeave}
+                  className="absolute bottom-full left-0 pb-2.5 z-50"
+                >
+                  <div className="bg-white dark:bg-card border border-border rounded-full shadow-2xl px-2.5 py-2 flex items-center gap-2 animate-fb-tray">
+                    {REACTIONS.map((rx) => {
+                      const selected = userReaction === rx.id
+                      return (
+                        <button
+                          key={rx.id}
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onSelectReaction(rx.id)
+                          }}
+                          className={cn(
+                            "group/emoji relative flex flex-col items-center justify-center rounded-full transition-transform duration-200 hover:scale-135 hover:-translate-y-2.5 cursor-pointer focus:outline-none",
+                            selected && "ring-2 ring-[#8ee01a] ring-offset-2 ring-offset-white dark:ring-offset-card"
+                          )}
+                          aria-label={rx.label}
+                        >
+                          <span className="pointer-events-none opacity-0 group-hover/emoji:opacity-100 transition-opacity duration-150 absolute -top-8 left-1/2 -translate-x-1/2 bg-[#1f2937] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap shadow-lg">
+                            {rx.label}
+                          </span>
+                          <ReactionBadgeIcon type={rx.id} size="lg" animated />
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (userReaction) {
+                    onSelectReaction(userReaction)
+                  } else {
+                    onTogglePicker()
+                  }
+                }}
+                className={cn(
+                  "h-9 px-2.5 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all cursor-pointer",
+                  activeReactMeta
+                    ? "bg-[#f0f2f5] text-slate-800"
+                    : "text-muted-foreground hover:bg-[#f0f2f5] hover:text-foreground"
+                )}
+              >
+                {activeReactMeta ? (
+                  <>
+                    <span className={cn(isJustReacted && "animate-fb-pop")}>
+                      <ReactionBadgeIcon type={activeReactMeta.id} size="md" />
+                    </span>
+                    <span className="truncate max-w-[110px]">{activeReactMeta.label}</span>
+                  </>
+                ) : (
+                  <>
+                    <ThumbsUp className="w-4 h-4 shrink-0" />
+                    <span>Reaccionar</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={onToggleComments}
+              className={cn(
+                "h-9 px-2.5 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer",
+                isCommentsOpen
+                  ? "bg-[#eaf0e2] text-[#105238]"
+                  : "text-muted-foreground hover:bg-[#f0f2f5] hover:text-foreground"
+              )}
+            >
+              <MessageCircle className="w-4 h-4" />
+              <span>Comentar{comments.length > 0 ? ` (${comments.length})` : ""}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={onShare}
+              className="h-9 px-2.5 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 text-muted-foreground hover:bg-[#f0f2f5] hover:text-foreground transition-colors cursor-pointer"
+            >
+              <Share2 className="w-4 h-4" />
+              <span className="hidden sm:inline">Compartir</span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-1.5 ml-auto">
+            <Button
+              type="button"
+              size="sm"
+              onClick={onServices}
+              variant="ghost"
+              className="h-9 px-2.5 rounded-xl text-xs font-bold text-muted-foreground hover:text-[#105238] hover:bg-[#eaf0e2]/70 cursor-pointer"
+            >
+              Servicios
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={onTrack}
+              className="h-9 px-3.5 rounded-xl bg-[#eaf0e2] hover:bg-[#105238] text-[#105238] hover:text-white font-bold text-xs gap-1.5 border-0 shadow-none transition-colors cursor-pointer"
+            >
+              <Navigation2 className="w-3.5 h-3.5" />
+              Rastrear
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={onBuy}
+              className="h-9 px-3.5 rounded-xl bg-[#105238] hover:bg-[#0c3e2b] text-white font-bold text-xs gap-1.5 shadow-2xs cursor-pointer"
+            >
+              <Ticket className="w-3.5 h-3.5 text-[#8ee01a]" />
+              Boleto
+            </Button>
+          </div>
+        </div>
+
+        {/* LISTA DE COMENTARIOS DENTRO DEL CUERPO CON SCROLL */}
+        {isCommentsOpen && (
+          <div className="border-t border-border/50 px-4 py-3 space-y-2.5 bg-[#fafaf8]/60 dark:bg-muted/10">
+            {comments.length > 0 ? (
+              comments.map((c) => (
                 <div key={c.id} className="flex items-start gap-2.5">
                   <div className="w-7 h-7 rounded-full bg-[#105238] text-white text-[10px] font-black flex items-center justify-center shrink-0 overflow-hidden">
                     {c.userAvatar ? (
@@ -1481,18 +1664,26 @@ function RouteFeedCard({
                     <span className="text-[10px] text-muted-foreground">{c.createdAt}</span>
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-xs text-muted-foreground text-center py-1">
-              Sé el primero en opinar sobre esta ruta.
-            </p>
-          )}
+              ))
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-3">
+                Sé el primero en opinar y calificar esta ruta.
+              </p>
+            )}
+          </div>
+        )}
+      </div>
 
-          {/* Fila unificada: Avatar + Plantillas + Estrellas */}
-          <div className="flex items-center justify-between gap-1.5 overflow-x-auto scrollbar-hide py-0.5 flex-nowrap">
-            <div className="flex items-center gap-1.5 shrink-0 flex-nowrap">
-              <div className="w-7 h-7 rounded-full bg-[#105238] text-white text-[10px] font-black flex items-center justify-center shrink-0 overflow-hidden">
+      {/* 3. BARRA DE COMENTARIOS FIJA ABAJO (FOCO 3D) */}
+      {isCommentsOpen && (
+        <div
+          ref={footerRef}
+          className="shrink-0 border-t border-border/50 bg-[#fafaf8] dark:bg-[#1e1e1e] p-3 rounded-b-3xl z-10 space-y-2"
+        >
+          {/* Fila unificada en 1 línea: Avatar + 3 plantillas + 5 estrellas completas */}
+          <div className="flex items-center justify-between gap-1 overflow-x-auto scrollbar-hide py-0.5 flex-nowrap w-full">
+            <div className="flex items-center gap-1 shrink-0 flex-nowrap">
+              <div className="w-7 h-7 rounded-full bg-[#105238] text-white text-[10px] font-black flex items-center justify-center shrink-0 overflow-hidden ring-1 ring-black/10">
                 {(currentUser as any)?.avatar ? (
                   <img src={(currentUser as any).avatar} alt="Tú" className="w-full h-full object-cover" />
                 ) : (
@@ -1504,14 +1695,14 @@ function RouteFeedCard({
                   key={tpl}
                   type="button"
                   onClick={() => setCommentText(tpl)}
-                  className="px-2 py-0.5 rounded-full bg-white dark:bg-card border border-border text-[10px] font-bold text-foreground/80 hover:border-[#105238] hover:text-[#105238] whitespace-nowrap shrink-0 cursor-pointer"
+                  className="px-2 py-0.5 rounded-full bg-white dark:bg-card border border-border text-[10px] font-bold text-foreground/80 hover:border-[#105238] hover:text-[#105238] whitespace-nowrap shrink-0 shadow-2xs cursor-pointer"
                 >
                   {tpl}
                 </button>
               ))}
             </div>
 
-            <div className="flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-white dark:bg-card border border-border shrink-0 ml-auto">
+            <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-white dark:bg-card border border-border shrink-0 ml-auto flex-nowrap">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
                   key={star}
@@ -1528,34 +1719,38 @@ function RouteFeedCard({
                   />
                 </button>
               ))}
-              <span className="text-[10px] font-bold text-[#105238] ml-1">{commentRating}/5</span>
+              <span className="text-[10px] font-bold text-[#105238] ml-0.5">{commentRating}/5</span>
             </div>
           </div>
 
-          {/* Input de comentario */}
-          <div className="flex items-center gap-2 bg-white dark:bg-card border border-border rounded-2xl px-3 py-1.5">
-            <input
-              type="text"
+          {/* Textarea compacta 1 línea auto-expandible + botón enviar verde */}
+          <div className="flex items-end gap-2 bg-white dark:bg-card border border-border rounded-2xl px-3 py-2">
+            <textarea
+              rows={1}
               value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
+              onChange={(e) => {
+                setCommentText(e.target.value)
+                e.target.style.height = "auto"
+                e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`
+              }}
               onKeyDown={(e) => {
-                if (e.key === "Enter") {
+                if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault()
                   handleSubmitComment()
                 }
               }}
               placeholder="Comparte tu experiencia, opina, califica..."
-              className="flex-1 bg-transparent text-xs outline-none text-foreground placeholder:text-muted-foreground"
+              className="flex-1 bg-transparent text-xs outline-none resize-none min-h-[22px] max-h-[120px] leading-relaxed text-foreground placeholder:text-muted-foreground"
             />
             <button
               type="button"
               disabled={!commentText.trim()}
               onClick={handleSubmitComment}
               className={cn(
-                "p-1.5 rounded-full transition-colors cursor-pointer",
+                "p-1.5 rounded-full transition-all cursor-pointer shrink-0",
                 commentText.trim()
-                  ? "text-[#105238] hover:bg-[#f0f2f5]"
-                  : "text-gray-300 cursor-not-allowed"
+                  ? "text-[#105238] dark:text-[#8ee01a] hover:bg-[#f0f2f5] dark:hover:bg-white/10 active:scale-95 bg-transparent"
+                  : "text-neutral-400/50 bg-transparent cursor-not-allowed"
               )}
               aria-label="Publicar comentario"
             >
