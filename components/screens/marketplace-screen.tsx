@@ -4089,11 +4089,11 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                       <div
                         data-card-header="true"
                         className={cn(
-                          "p-3.5 sm:p-4 flex items-center justify-between gap-3 shrink-0 bg-card select-none",
+                          "p-3.5 sm:p-4 flex items-start sm:items-center justify-between gap-3 shrink-0 bg-card select-none",
                           openCommentsId === service.id && "border-b border-border/40 z-10",
                         )}
                       >
-                        <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
                           <button
                             type="button"
                             onClick={() => service.businessId && router.push(`/b/${service.businessId}`)}
@@ -4106,21 +4106,21 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                               </AvatarFallback>
                             </Avatar>
                           </button>
-                          <div className="min-w-0">
+                          <div className="flex-1 min-w-0">
                             <button
                               type="button"
                               onClick={() => service.businessId && router.push(`/b/${service.businessId}`)}
-                              className="font-bold text-sm text-foreground hover:underline truncate block text-left cursor-pointer"
+                              className="font-bold text-sm text-foreground hover:underline block w-full text-left cursor-pointer leading-snug break-words whitespace-normal"
                             >
                               {service.businessName || "Comercio Aliado PalenqueGo"}
                             </button>
-                            <div className="flex items-center gap-2 text-[11px] text-slate-500">
-                              <span className="inline-flex items-center gap-1 truncate">
+                            <div className="flex items-center gap-1.5 text-[11px] text-slate-500 min-w-0 mt-0.5">
+                              <span className="inline-flex items-center gap-1 min-w-0 truncate">
                                 <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
                                 <span className="truncate">{service.location}</span>
                               </span>
-                              <span>·</span>
-                              <span className="font-medium text-slate-500">
+                              <span className="shrink-0">·</span>
+                              <span className="font-medium text-slate-500 shrink-0">
                                 {service.category || service.categoria?.nombre || "Experiencia"}
                               </span>
                             </div>
@@ -4174,10 +4174,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                       >
                         {/* Post Caption: Title + Description + Rating + Bone "+ Info" button (like Facebook's "Más información") */}
                       <div className="px-4 pb-3 space-y-1.5">
-                        <div className="flex items-start justify-between gap-2">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                           <h3
                             onClick={() => openServiceDetailInstant(service)}
-                            className="font-extrabold text-base sm:text-lg text-foreground hover:underline transition-colors cursor-pointer leading-snug"
+                            className="font-extrabold text-base sm:text-lg text-foreground hover:underline transition-colors cursor-pointer leading-snug break-words min-w-0"
                           >
                             {service.name}
                           </h3>
