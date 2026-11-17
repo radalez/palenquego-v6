@@ -2565,7 +2565,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
   // PANTALLA 3 — DETALLE DE RUTA
   // ─────────────────────────────────────────────
   return (
-    <div className="relative w-full h-full flex flex-col bg-background overflow-hidden">
+    <div className={`relative h-full flex flex-col bg-background overflow-hidden ${isDesktopSidebarCollapsed ? 'w-full lg:-ml-16 lg:w-[calc(100%+4rem)]' : 'w-full'}`}>
 
       {/* MAPA — fondo completo */}
       <div className="absolute inset-0 z-0">
@@ -2667,7 +2667,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
       </div>
 
       {/* DESKTOP COMPACT FLOATING CORNER BAR (libera toda el área del mapa) */}
-      <div className="hidden md:flex relative z-20 mx-4 mt-3 w-fit max-w-[calc(100%-2rem)] flex-wrap items-center gap-2.5 bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-border/60 px-3.5 py-2">
+      <div className={`hidden md:flex relative z-20 mr-4 mt-3 ${isDesktopSidebarCollapsed ? 'ml-4 lg:ml-[88px]' : 'ml-4'} w-fit max-w-[calc(100%-2rem)] flex-wrap items-center gap-2.5 bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-border/60 px-3.5 py-2`}>
         <div className="flex items-center gap-1.5 text-xs font-bold text-gray-900">
           <span className="text-[#105238] font-black">{selectedRoute?.stops?.length || 0}</span>
           <span className="text-gray-500 font-medium">paradas</span>
