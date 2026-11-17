@@ -1843,12 +1843,50 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
         {/* En Mobile: Visible solo si view === 'map' */}
         {/* ═════════════════════════════════════════════════════════════ */}
         <div className={`relative flex-1 h-full w-full overflow-hidden z-0 min-h-[220px] ${view === 'list' ? 'hidden lg:block' : 'block'}`}>
+          {mapPickMode && (
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 w-[92%] max-w-md pointer-events-auto animate-in fade-in slide-in-from-top-3 duration-200">
+              <div className="bg-[#105238] text-white rounded-2xl px-4 py-2.5 shadow-2xl border border-[#8ee01a]/40 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="w-8 h-8 rounded-full bg-[#8ee01a] text-[#105238] flex items-center justify-center shrink-0 shadow-sm animate-pulse">
+                    <MapPin className="w-4 h-4" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#8ee01a]">
+                      {mapPickMode === 'origin' ? 'Seleccionando Origen' : 'Seleccionando Destino'}
+                    </p>
+                    <p className="text-xs font-bold text-white truncate">
+                      {mapPickMode === 'origin'
+                        ? 'Toca en el mapa para fijar tu punto de partida'
+                        : 'Toca en el mapa para fijar tu destino'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMapPickMode(null)
+                    setIsUserRoutesModalOpen(true)
+                  }}
+                  className="px-2.5 py-1 rounded-xl bg-white/15 hover:bg-white/25 text-white text-[11px] font-bold shrink-0 cursor-pointer transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          )}
           {isLoaded ? (
             <GoogleMap 
               mapContainerStyle={containerStyle} 
               center={mapCenter} 
               zoom={mapZoom}
-              options={{ disableDefaultUI: true, zoomControl: false, styles: MAP_STYLES }}
+              options={{
+                disableDefaultUI: true,
+                zoomControl: false,
+                styles: MAP_STYLES,
+                draggableCursor: mapPickMode
+                  ? `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='36' viewBox='0 0 32 36'><path d='M16 1C8.82 1 3 6.82 3 14c0 9.75 13 21 13 21s13-11.25 13-21c0-7.18-5.82-13-13-13z' fill='%23105238' stroke='white' stroke-width='2.5'/><circle cx='16' cy='14' r='5' fill='%238ee01a'/></svg>") 16 34, crosshair`
+                  : undefined,
+              }}
               onLoad={(map) => { mapRef.current = map }}
               onZoomChanged={() => {
                 if (mapRef.current) {
@@ -2466,6 +2504,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
             setView('detail')
           }}
           onStartMapPickMode={(mode, center) => {
+            setView('map')
             setMapPickMode(mode)
             if (center && mapRef.current) {
               mapRef.current.panTo(center)
