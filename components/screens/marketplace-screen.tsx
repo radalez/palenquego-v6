@@ -3975,12 +3975,23 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                       data-service-id={service.id}
                       className="space-y-5"
                     >
+                    {/* Soft Backdrop: rest of the page in blur */}
+                    {openCommentsId === service.id && (
+                      <div
+                        className="fixed inset-0 bg-black/40 backdrop-blur-xs z-30 transition-opacity animate-in fade-in duration-200"
+                        onClick={() => {
+                          setOpenCommentsId(null)
+                          setCommentPickerMode(null)
+                        }}
+                      />
+                    )}
+
                     <article
                       id={`service-card-${service.id}`}
                       className={cn(
                         "bg-card border border-border rounded-3xl overflow-visible scroll-mt-24 transition-all duration-200",
                         openCommentsId === service.id
-                          ? "ring-1 ring-[#105238]/30 shadow-md"
+                          ? "relative z-40 shadow-[0_25px_60px_-10px_rgba(0,0,0,0.35)] ring-2 ring-black/10 dark:ring-white/10 scale-[1.01]"
                           : "shadow-2xs",
                       )}
                     >
@@ -4654,7 +4665,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                     handleAddServiceComment(service.id)
                                   }
                                 }}
-                                placeholder={`Comenta u opina sobre tu experiencia en ${service.name}... (si ya fuiste, qué tal fue o si te gustaría ir)`}
+                                placeholder="Comparte tu experiencia, opina, califica..."
                                 className="w-full bg-transparent border-0 focus:outline-none focus:ring-0 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground resize-none p-0 min-h-[44px] max-h-24 leading-relaxed"
                                 rows={2}
                               />
