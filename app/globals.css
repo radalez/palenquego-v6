@@ -297,3 +297,10 @@ body.explore-hide-mobile-nav .mobile-bottom-nav {
   opacity: 0 !important;
   pointer-events: none !important;
 }
+
+/* Full-bleed desktop map & header in Route Detail view without the left 64px padding strip */
+@media (min-width: 1024px) {
+  body.explore-detail-full-bleed main.explore-main-shell {
+    padding-left: 0 !important;
+  }
+}
