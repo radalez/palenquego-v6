@@ -3290,25 +3290,11 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [openCommentsId])
 
-  // Lock background scroll and prevent wheel movement on header/composer/backdrop when comments spotlight is active
+  // Prevent wheel movement on header/composer/backdrop when comments spotlight is active
   useEffect(() => {
     if (openCommentsId === null) return
 
     const cardEl = document.getElementById(`service-card-${openCommentsId}`)
-    const scrollContainer = (cardEl?.closest(".overflow-y-auto") || document.querySelector("main .overflow-y-auto")) as HTMLElement | null
-
-    const prevOverflow = scrollContainer ? scrollContainer.style.overflowY : ""
-    const prevBodyOverflow = document.body.style.overflowY
-
-    // Lock scrolling on container after smooth scroll alignment settles
-    const timer = setTimeout(() => {
-      if (scrollContainer) {
-        scrollContainer.style.overflowY = "hidden"
-      } else {
-        document.body.style.overflowY = "hidden"
-      }
-    }, 280)
-
     const preventScroll = (e: WheelEvent) => {
       e.preventDefault()
       e.stopPropagation()
@@ -3323,11 +3309,6 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     backdropEl?.addEventListener("wheel", preventScroll as any, { passive: false })
 
     return () => {
-      clearTimeout(timer)
-      if (scrollContainer) {
-        scrollContainer.style.overflowY = prevOverflow
-      }
-      document.body.style.overflowY = prevBodyOverflow
       headerEl?.removeEventListener("wheel", preventScroll as any)
       footerEl?.removeEventListener("wheel", preventScroll as any)
       backdropEl?.removeEventListener("wheel", preventScroll as any)
@@ -3342,18 +3323,9 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
         setTimeout(() => {
           const el = document.getElementById(`service-card-${serviceId}`)
           if (el) {
-            const rect = el.getBoundingClientRect()
-            const scrollContainer = el.closest(".overflow-y-auto")
-            if (scrollContainer) {
-              const containerRect = scrollContainer.getBoundingClientRect()
-              const target = scrollContainer.scrollTop + (rect.top - containerRect.top) - 8
-              scrollContainer.scrollTo({ top: Math.max(0, target), behavior: "smooth" })
-            } else {
-              const targetY = window.scrollY + rect.top - 8
-              window.scrollTo({ top: Math.max(0, targetY), behavior: "smooth" })
-            }
+            el.scrollIntoView({ behavior: "smooth", block: "start" })
           }
-        }, 60)
+        }, 50)
       }
       return isOpening ? serviceId : null
     })
@@ -4061,10 +4033,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                     <article
                       id={`service-card-${service.id}`}
                       className={cn(
-                        "bg-card border border-border rounded-3xl transition-all duration-200 scroll-mt-24",
+                        "bg-card border border-border rounded-3xl transition-all duration-200",
                         openCommentsId === service.id
-                          ? "relative z-40 shadow-[0_25px_60px_-10px_rgba(0,0,0,0.35)] ring-2 ring-black/10 dark:ring-white/10 scale-[1.02] h-[calc(100vh-18px)] sm:h-[calc(100dvh-18px)] max-h-[calc(100vh-18px)] sm:max-h-[calc(100dvh-18px)] flex flex-col overflow-hidden"
-                          : "shadow-2xs overflow-visible",
+                          ? "relative z-40 shadow-[0_25px_60px_-10px_rgba(0,0,0,0.35)] ring-2 ring-black/10 dark:ring-white/10 scale-[1.02] h-[calc(100vh-18px)] sm:h-[calc(100dvh-18px)] max-h-[calc(100vh-18px)] sm:max-h-[calc(100dvh-18px)] flex flex-col overflow-hidden scroll-mt-2"
+                          : "shadow-2xs overflow-visible scroll-mt-24",
                       )}
                     >
                       {/* Post Header: Business + Location + Price (Fixed at top of card, max 4-5px from top edge of screen) */}
@@ -4629,9 +4601,9 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                         >
                           {/* Facebook-style Bone Composer Box focused on Tourism Experience Rating & Opinions */}
                           <div className="bg-[#f0f2f5] dark:bg-[#3a3b3c] rounded-2xl p-2.5 sm:p-3 border-0 relative shadow-2xs space-y-2">
-                            {/* Single Unified Header Row: User Avatar + Quick Intent Chips + Star Rating (Guaranteed 1 single line, no wrapping) */}
-                            <div className="flex items-center justify-between gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide py-0.5 flex-nowrap w-full">
-                              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 flex-nowrap">
+                            {/* Single Unified Header Row: User Avatar + Quick Intent Chips + Star Rating (Guaranteed 1 single line, no wrapping, all 5 stars visible) */}
+                            <div className="flex items-center justify-between gap-1 overflow-x-auto scrollbar-hide py-0.5 flex-nowrap w-full">
+                              <div className="flex items-center gap-1 shrink-0 flex-nowrap">
                                 {currentUser?.avatar ? (
                                   <img
                                     src={currentUser.avatar}
@@ -4662,46 +4634,41 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                         }
                                       })
                                     }}
-                                    className="px-2.5 py-1 rounded-full bg-white/80 hover:bg-white dark:bg-black/20 dark:hover:bg-black/40 border border-black/5 text-[10px] font-semibold text-slate-700 dark:text-slate-300 transition-colors whitespace-nowrap cursor-pointer shadow-2xs shrink-0"
+                                    className="px-2 py-0.5 rounded-full bg-white/80 hover:bg-white dark:bg-black/20 dark:hover:bg-black/40 border border-black/5 text-[10px] font-semibold text-slate-700 dark:text-slate-300 transition-colors whitespace-nowrap cursor-pointer shadow-2xs shrink-0"
                                   >
                                     {pill.label}
                                   </button>
                                 ))}
                               </div>
 
-                              {/* Star Rating on the Right (Same line!) */}
-                              <div className="flex items-center gap-1 shrink-0 ml-auto flex-nowrap">
-                                <span className="text-[11px] text-muted-foreground font-medium hidden md:inline">
-                                  Calificar:
+                              {/* Star Rating on the Right (Same line, 100% visible without clipping) */}
+                              <div className="flex items-center gap-0.5 bg-white/90 dark:bg-[#242526] px-1.5 py-0.5 rounded-full border border-black/5 shadow-2xs shrink-0 ml-auto">
+                                {[1, 2, 3, 4, 5].map((starVal) => (
+                                  <button
+                                    key={starVal}
+                                    type="button"
+                                    onClick={() =>
+                                      setCommentRatings((prev) => ({
+                                        ...prev,
+                                        [service.id]: starVal,
+                                      }))
+                                    }
+                                    className="cursor-pointer hover:scale-110 transition-transform p-0.5"
+                                    title={`${starVal} estrellas`}
+                                  >
+                                    <Star
+                                      className={cn(
+                                        "w-3.5 h-3.5",
+                                        starVal <= currentRating
+                                          ? "fill-[#105238] text-[#105238] dark:fill-[#8ee01a] dark:text-[#8ee01a]"
+                                          : "text-muted-foreground/35",
+                                      )}
+                                    />
+                                  </button>
+                                ))}
+                                <span className="text-[10px] font-bold text-foreground ml-1">
+                                  {currentRating}/5
                                 </span>
-                                <div className="flex items-center gap-0.5 bg-white/90 dark:bg-[#242526] px-2 py-0.5 rounded-full border border-black/5 shadow-2xs shrink-0">
-                                  {[1, 2, 3, 4, 5].map((starVal) => (
-                                    <button
-                                      key={starVal}
-                                      type="button"
-                                      onClick={() =>
-                                        setCommentRatings((prev) => ({
-                                          ...prev,
-                                          [service.id]: starVal,
-                                        }))
-                                      }
-                                      className="cursor-pointer hover:scale-110 transition-transform p-0.5"
-                                      title={`${starVal} estrellas`}
-                                    >
-                                      <Star
-                                        className={cn(
-                                          "w-3.5 h-3.5",
-                                          starVal <= currentRating
-                                            ? "fill-[#105238] text-[#105238] dark:fill-[#8ee01a] dark:text-[#8ee01a]"
-                                            : "text-muted-foreground/35",
-                                        )}
-                                      />
-                                    </button>
-                                  ))}
-                                  <span className="text-[10px] font-bold text-foreground ml-1">
-                                    {currentRating}/5
-                                  </span>
-                                </div>
                               </div>
                             </div>
 
@@ -4864,10 +4831,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                     onClick={() => handleAddServiceComment(service.id)}
                                     disabled={!hasSendableContent}
                                     className={cn(
-                                      "w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer",
+                                      "w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer",
                                       hasSendableContent
-                                        ? "bg-[#105238] hover:bg-[#0c402b] text-white shadow-xs"
-                                        : "text-neutral-400 bg-transparent cursor-not-allowed",
+                                        ? "text-[#105238] dark:text-[#8ee01a] hover:bg-[#f0f2f5] dark:hover:bg-white/10 active:scale-95"
+                                        : "text-neutral-400/50 bg-transparent cursor-not-allowed",
                                     )}
                                     aria-label="Enviar"
                                   >
