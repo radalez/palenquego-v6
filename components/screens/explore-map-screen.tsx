@@ -2103,7 +2103,11 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
           </div>
 
           {/* BOTÓN FLOTANTE INFERIOR: EXPLORAR ESTA ZONA */}
-          <div className="absolute bottom-32 lg:bottom-6 left-0 right-0 z-20 flex items-center justify-center pointer-events-none px-4">
+          <div
+            className={`absolute left-0 right-0 z-20 flex items-center justify-center pointer-events-none px-4 transition-all duration-300 ${
+              isSheetExpanded ? "bottom-32 lg:bottom-6" : "bottom-[68px] lg:bottom-6"
+            }`}
+          >
             <button
               type="button"
               onClick={handleExploreCurrentZone}
@@ -2115,7 +2119,11 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
           </div>
 
           {/* BOTÓN FLOTANTE INFERIOR: BRÚJULA RE-CENTRADORA */}
-          <div className="absolute bottom-32 lg:bottom-6 right-4 z-20 pointer-events-auto">
+          <div
+            className={`absolute right-4 z-20 pointer-events-auto transition-all duration-300 ${
+              isSheetExpanded ? "bottom-32 lg:bottom-6" : "bottom-[68px] lg:bottom-6"
+            }`}
+          >
             <button
               type="button"
               onClick={handleUseCurrentLocation}
