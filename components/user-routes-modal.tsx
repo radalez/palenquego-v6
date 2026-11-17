@@ -532,14 +532,14 @@ export function UserRoutesModal({
           </button>
           <button
             onClick={() => setActiveTab('create')}
-            className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+            className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1 ${
               activeTab === 'create'
                 ? 'bg-white text-[#064e3b] shadow-xs'
                 : 'text-gray-500 hover:text-gray-800'
             }`}
           >
-            <Plus className="w-3.5 h-3.5 text-[#059669]" />
-            + Pedir Viaje
+            <Plus className="w-4 h-4 text-[#059669]" />
+            Pedir Viaje
           </button>
 
           {currentUser?.tipo === 'CHOFER' && (
@@ -1157,7 +1157,7 @@ export function UserRoutesModal({
                   className="w-full bg-[#064e3b] hover:bg-[#043324] text-white font-bold text-xs h-12 rounded-xl shadow-lg flex items-center justify-center gap-2 active:scale-[0.99] transition-all"
                 >
                   <Car className="w-4 h-4 text-[#a3e635]" />
-                  {isSubmitting ? "Solicitando..." : `🚖 Pedir Viaje Urbano (${tripType === 'IDA_Y_VUELTA' ? 'Ida y Vuelta' : 'Solo Ida'} · $${offeredPrice})`}
+                  {isSubmitting ? "Solicitando..." : `Pedir Viaje Urbano (${tripType === 'IDA_Y_VUELTA' ? 'Ida y Vuelta' : 'Solo Ida'} · $${offeredPrice})`}
                 </Button>
 
                 <Button
