@@ -42,6 +42,7 @@ import {
   Loader2,
   Shuffle,
   Award,
+  Flag,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -1132,10 +1133,71 @@ function PersonalizedTasteReelStrip({
 interface ServiceComment {
   id: string
   author: string
+  authorAvatar?: string
   text: string
   rating?: number
   createdAt: string
+  location?: string
+  flag?: string
 }
+
+const TRAVEL_EMOJIS = [
+  {
+    category: "Playa y Naturaleza",
+    emojis: ["🌴", "🏖️", "🌊", "🌋", "🌅", "⛰️", "🌲", "🌞", "🌺", "🐚", "🐬", "🐢"],
+  },
+  {
+    category: "Aventura y Rutas",
+    emojis: ["✈️", "🚗", "🎒", "🥾", "🏄", "🛶", "🚴", "🧭", "🗺️", "🎫", "🏕️", "📸"],
+  },
+  {
+    category: "Gastronomía y Brindis",
+    emojis: ["☕", "🍕", "🍹", "🌮", "🍔", "🥑", "🥥", "🍍", "🍻", "🥂", "🍽️", "🍦"],
+  },
+  {
+    category: "Estancia y Vibes",
+    emojis: ["🏨", "⛺", "🌙", "⭐", "🔥", "❤️", "👍", "✨", "🎉", "🕶️", "💯", "🙌"],
+  },
+]
+
+const TRAVELER_COUNTRIES = [
+  { code: "SV", flag: "🇸🇻", name: "El Salvador" },
+  { code: "US", flag: "🇺🇸", name: "Estados Unidos" },
+  { code: "GT", flag: "🇬🇹", name: "Guatemala" },
+  { code: "HN", flag: "🇭🇳", name: "Honduras" },
+  { code: "NI", flag: "🇳🇮", name: "Nicaragua" },
+  { code: "CR", flag: "🇨🇷", name: "Costa Rica" },
+  { code: "PA", flag: "🇵🇦", name: "Panamá" },
+  { code: "MX", flag: "🇲🇽", name: "México" },
+  { code: "CA", flag: "🇨🇦", name: "Canadá" },
+  { code: "CO", flag: "🇨🇴", name: "Colombia" },
+  { code: "ES", flag: "🇪🇸", name: "España" },
+  { code: "DE", flag: "🇩🇪", name: "Alemania" },
+  { code: "FR", flag: "🇫🇷", name: "Francia" },
+  { code: "IT", flag: "🇮🇹", name: "Italia" },
+  { code: "GB", flag: "🇬🇧", name: "Reino Unido" },
+  { code: "AR", flag: "🇦🇷", name: "Argentina" },
+  { code: "CL", flag: "🇨🇱", name: "Chile" },
+  { code: "PE", flag: "🇵🇪", name: "Perú" },
+  { code: "BR", flag: "🇧🇷", name: "Brasil" },
+]
+
+const POPULAR_TRAVEL_LOCATIONS = [
+  "Playa El Tunco",
+  "San Salvador",
+  "Lago de Coatepeque",
+  "Santa Ana",
+  "Ruta de las Flores",
+  "Suchitoto",
+  "Playa El Zonte",
+  "Volcán de Santa Ana",
+  "La Palma",
+  "Puerto de La Libertad",
+  "Playa Las Flores",
+  "Apaneca",
+  "Juayúa",
+  "El Cuco",
+]
 
 interface TravelerPost {
   id: string
@@ -1279,6 +1341,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   const [serviceComments, setServiceComments] = useState<Record<number, ServiceComment[]>>({})
   const [commentDrafts, setCommentDrafts] = useState<Record<number, string>>({})
   const [commentRatings, setCommentRatings] = useState<Record<number, number>>({})
+  const [commentLocations, setCommentLocations] = useState<Record<number, string>>({})
+  const [commentCountries, setCommentCountries] = useState<Record<number, { code: string; flag: string; name: string }>>({})
+  const [commentPickerMode, setCommentPickerMode] = useState<"emojis" | "location" | "country" | null>(null)
+  const [customCommentLocation, setCustomCommentLocation] = useState("")
   const [openShareId, setOpenShareId] = useState<number | null>(null)
   const shareCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [copiedServiceId, setCopiedServiceId] = useState<number | null>(null)
@@ -2104,17 +2170,26 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
 
   const handleAddServiceComment = async (serviceId: number) => {
     const text = (commentDrafts[serviceId] || "").trim()
-    if (!text) return
+    const loc = commentLocations[serviceId] || undefined
+    const country = commentCountries[serviceId]
+    const flagStr = country ? `${country.flag} ${country.name}` : undefined
+
+    if (!text && !loc) return
     const rating = commentRatings[serviceId] || 5
 
     try {
       const res = await fetchWithAuth(`${API_BASE}/catalog/${serviceId}/reviews/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ calificacion: rating, comentario: text }),
+        body: JSON.stringify({
+          calificacion: rating,
+          comentario: text,
+          ubicacion: loc,
+          pais: country?.name,
+        }),
       })
       if (res.status === 401) {
-        alert("Inicia sesión para publicar tu reseña y calificación con estrellas.")
+        alert("Inicia sesión para publicar tu reseña y comentario.")
         return
       }
       if (res.ok) {
@@ -2123,15 +2198,35 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
         const savedComment: ServiceComment = {
           id: String(r?.id || Date.now()),
           author: r?.autor_nombre || currentUser?.name || "Viajero PalenqueGo",
+          authorAvatar: currentUser?.avatar || undefined,
           text: r?.comentario || text,
           rating: r?.calificacion || rating,
+          location: loc,
+          flag: flagStr,
           createdAt: "Ahora",
         }
-        setServiceComments((prev) => ({
-          ...prev,
-          [serviceId]: [savedComment, ...(prev[serviceId] || [])],
-        }))
+        setServiceComments((prev) => {
+          const updated = {
+            ...prev,
+            [serviceId]: [savedComment, ...(prev[serviceId] || [])],
+          }
+          if (typeof window !== "undefined") {
+            localStorage.setItem("palenque_service_comments", JSON.stringify(updated))
+          }
+          return updated
+        })
         setCommentDrafts((prev) => ({ ...prev, [serviceId]: "" }))
+        setCommentLocations((prev) => {
+          const next = { ...prev }
+          delete next[serviceId]
+          return next
+        })
+        setCommentCountries((prev) => {
+          const next = { ...prev }
+          delete next[serviceId]
+          return next
+        })
+        setCommentPickerMode(null)
         return
       }
     } catch {
@@ -2141,8 +2236,11 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     const newComment: ServiceComment = {
       id: `${Date.now()}`,
       author: currentUser?.name || "Viajero PalenqueGo",
+      authorAvatar: currentUser?.avatar || undefined,
       text,
       rating,
+      location: loc,
+      flag: flagStr,
       createdAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     }
     setServiceComments((prev) => {
@@ -2153,6 +2251,17 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
       return updated
     })
     setCommentDrafts((prev) => ({ ...prev, [serviceId]: "" }))
+    setCommentLocations((prev) => {
+      const next = { ...prev }
+      delete next[serviceId]
+      return next
+    })
+    setCommentCountries((prev) => {
+      const next = { ...prev }
+      delete next[serviceId]
+      return next
+    })
+    setCommentPickerMode(null)
   }
 
   // Live search for lived experiences inside the Publish Modal
@@ -2973,6 +3082,30 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
       null
     )
   }, [lightboxServiceId, enrichedLightboxService, visibleBatchServices, services, globalCatalogPool])
+
+  // Active service for the Elevated 3D Spotlight Comments Modal
+  const activeCommentService = useMemo(() => {
+    if (openCommentsId === null) return null
+    return (
+      visibleBatchServices.find((s) => s.id === openCommentsId) ||
+      services.find((s) => s.id === openCommentsId) ||
+      globalCatalogPool.find((s) => s.id === openCommentsId) ||
+      null
+    )
+  }, [openCommentsId, visibleBatchServices, services, globalCatalogPool])
+
+  // Escape key handler to close comments spotlight
+  useEffect(() => {
+    if (openCommentsId === null) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setOpenCommentsId(null)
+        setCommentPickerMode(null)
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [openCommentsId])
 
   // Promo Video Stories from Followed Businesses (only shown in feed when a followed business has active stories)
   const [followedStoreIdsLocal, setFollowedStoreIdsLocal] = useState<number[]>([])
@@ -4118,89 +4251,6 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                           Reservar
                         </Button>
                       </div>
-
-                      {/* Inline Comments & Rating Drawer */}
-                      {openCommentsId === service.id && (
-                        <div className="px-4 pb-4 pt-2 border-t border-border/60 bg-muted/20 space-y-3">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-foreground">
-                              Opiniones y calificación
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => setServiceToRate(service)}
-                              className="text-xs font-bold text-[#105238] hover:underline cursor-pointer"
-                            >
-                              Calificar con estrellas
-                            </button>
-                          </div>
-
-                          {/* Star selector for inline comment */}
-                          <div className="flex items-center gap-1">
-                            {[1, 2, 3, 4, 5].map((starVal) => (
-                              <button
-                                key={starVal}
-                                type="button"
-                                onClick={() => setCommentRatings((prev) => ({ ...prev, [service.id]: starVal }))}
-                                className="cursor-pointer"
-                              >
-                                <Star
-                                  className={cn(
-                                    "w-4 h-4",
-                                    starVal <= (commentRatings[service.id] || 5)
-                                      ? "fill-[#105238] text-[#105238]"
-                                      : "text-muted-foreground",
-                                  )}
-                                />
-                              </button>
-                            ))}
-                            <span className="text-[11px] text-muted-foreground ml-1.5">
-                              ({commentRatings[service.id] || 5}/5)
-                            </span>
-                          </div>
-
-                          <div className="flex gap-2">
-                            <input
-                              type="text"
-                              value={commentDrafts[service.id] || ""}
-                              onChange={(e) =>
-                                setCommentDrafts((prev) => ({ ...prev, [service.id]: e.target.value }))
-                              }
-                              placeholder="Cuenta cómo te fue o pregunta sobre esta experiencia..."
-                              className="flex-1 h-9 px-3 rounded-xl border border-border bg-background text-xs"
-                            />
-                            <Button
-                              type="button"
-                              size="sm"
-                              onClick={() => handleAddServiceComment(service.id)}
-                              className="h-9 px-3.5 rounded-xl bg-[#105238] text-white text-xs font-bold cursor-pointer"
-                            >
-                              Publicar
-                            </Button>
-                          </div>
-
-                          {commentsList.length > 0 && (
-                            <div className="space-y-2 max-h-48 overflow-y-auto">
-                              {commentsList.map((c) => (
-                                <div key={c.id} className="bg-card border border-border/60 rounded-2xl px-3.5 py-2 text-xs">
-                                  <div className="flex items-center justify-between">
-                                    <span className="font-bold text-foreground">{c.author}</span>
-                                    <div className="flex items-center gap-2">
-                                      {c.rating && (
-                                        <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-[#105238]">
-                                          <Star className="w-3 h-3 fill-[#105238]" /> {c.rating}
-                                        </span>
-                                      )}
-                                      <span className="text-[10px] text-muted-foreground">{c.createdAt}</span>
-                                    </div>
-                                  </div>
-                                  <p className="text-foreground/90 mt-0.5">{c.text}</p>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
                     </article>
 
                     {/* Spaced & Randomized Smart In-Feed Interleaving ("de vez en cuando, no siempre y aleatorios"):
@@ -5626,6 +5676,486 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                 >
                   Ver Negocio
                 </Button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* ELEVATED 3D SPOTLIGHT COMMENTS MODAL (FACEBOOK STYLE + BLURRED BACKDROP) */}
+      {openCommentsId !== null && activeCommentService && (() => {
+        const commentsList = serviceComments[activeCommentService.id] || []
+        const draftText = commentDrafts[activeCommentService.id] || ""
+        const currentRating = commentRatings[activeCommentService.id] || 5
+        const currentLoc = commentLocations[activeCommentService.id]
+        const currentCountry = commentCountries[activeCommentService.id]
+
+        const serviceImg = activeCommentService.image || DEFAULT_STORE_COVER
+        const serviceTitle =
+          typeof activeCommentService.name === "object"
+            ? (activeCommentService.name as any).nombre
+            : activeCommentService.name
+        const storeName =
+          (activeCommentService as any).store?.name ||
+          (activeCommentService as any).tienda?.nombre_comercial ||
+          activeCommentService.businessName ||
+          activeCommentService.location ||
+          "PalenqueGo"
+
+        return (
+          <div
+            className="fixed inset-0 z-50 bg-black/65 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setOpenCommentsId(null)
+                setCommentPickerMode(null)
+              }
+            }}
+          >
+            <div
+              className="relative w-full max-w-lg bg-white dark:bg-[#242526] rounded-3xl shadow-[0_30px_70px_-15px_rgba(0,0,0,0.55),0_12px_28px_-10px_rgba(0,0,0,0.35),0_0_0_1px_rgba(255,255,255,0.2)] overflow-hidden flex flex-col max-h-[88vh] transform scale-100 transition-all duration-200 animate-in zoom-in-95 before:absolute before:inset-x-0 before:top-0 before:h-[2px] before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header: Service Info + Close */}
+              <div className="flex items-center justify-between p-3.5 sm:p-4 border-b border-border/50 bg-white/70 dark:bg-[#242526]/70 backdrop-blur-xs">
+                <div className="flex items-center gap-3 min-w-0">
+                  <img
+                    src={getProxyImage(serviceImg)}
+                    alt={serviceTitle}
+                    className="w-12 h-12 rounded-2xl object-cover shrink-0 shadow-2xs border border-border/40"
+                    onError={(e) => {
+                      ;(e.target as HTMLImageElement).src = DEFAULT_STORE_COVER
+                    }}
+                  />
+                  <div className="min-w-0">
+                    <h3 className="font-bold text-sm sm:text-base text-foreground truncate leading-tight">
+                      {serviceTitle}
+                    </h3>
+                    <p className="text-xs text-muted-foreground truncate flex items-center gap-1.5 mt-0.5">
+                      <span>{storeName}</span>
+                      <span>·</span>
+                      <span className="inline-flex items-center gap-0.5 text-[#105238] dark:text-[#8ee01a] font-bold">
+                        <Star className="w-3 h-3 fill-[#105238] dark:fill-[#8ee01a]" />
+                        {activeCommentService.rating || 5}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpenCommentsId(null)
+                    setCommentPickerMode(null)
+                  }}
+                  className="w-8 h-8 rounded-full bg-muted/80 hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                  aria-label="Cerrar comentarios"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Comments Feed Area */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[140px] max-h-[46vh]">
+                {commentsList.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center px-4">
+                    <div className="w-12 h-12 rounded-full bg-[#eaf0e2] text-[#105238] flex items-center justify-center mb-2.5">
+                      <MessageSquare className="w-6 h-6" />
+                    </div>
+                    <p className="font-bold text-sm text-foreground">
+                      Sé la primera persona en comentar
+                    </p>
+                    <p className="text-xs text-muted-foreground max-w-xs mt-1">
+                      Comparte tu experiencia, cómo te atendieron o qué le recomiendas a otros viajeros.
+                    </p>
+                  </div>
+                ) : (
+                  commentsList.map((c) => (
+                    <div key={c.id} className="flex gap-2.5 items-start">
+                      {c.authorAvatar ? (
+                        <img
+                          src={c.authorAvatar}
+                          alt={c.author}
+                          className="w-8 h-8 rounded-full object-cover shrink-0 ring-1 ring-border/50"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-[#105238] text-white flex items-center justify-center text-xs font-bold shrink-0">
+                          {c.author ? c.author.charAt(0).toUpperCase() : "V"}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="bg-[#f0f2f5] dark:bg-[#3a3b3c] rounded-2xl px-3.5 py-2.5 space-y-1">
+                          <div className="flex flex-wrap items-center gap-1.5 justify-between">
+                            <span className="font-bold text-xs text-foreground truncate max-w-[160px]">
+                              {c.author}
+                            </span>
+                            <div className="flex items-center gap-1.5 shrink-0 text-[10px] text-muted-foreground">
+                              {c.rating && (
+                                <span className="inline-flex items-center gap-0.5 font-bold text-[#105238] dark:text-[#8ee01a]">
+                                  <Star className="w-3 h-3 fill-[#105238] dark:fill-[#8ee01a]" />
+                                  {c.rating}
+                                </span>
+                              )}
+                              <span>{c.createdAt}</span>
+                            </div>
+                          </div>
+
+                          {(c.location || c.flag) && (
+                            <div className="flex flex-wrap items-center gap-1 pt-0.5">
+                              {c.flag && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-white/70 dark:bg-black/25 px-2 py-0.5 rounded-full border border-black/5 dark:border-white/5 text-foreground/80">
+                                  {c.flag}
+                                </span>
+                              )}
+                              {c.location && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-white/70 dark:bg-black/25 px-2 py-0.5 rounded-full border border-black/5 dark:border-white/5 text-foreground/80">
+                                  <MapPin className="w-2.5 h-2.5 text-[#FA383E]" />
+                                  {c.location}
+                                </span>
+                              )}
+                            </div>
+                          )}
+
+                          <p className="text-xs sm:text-sm text-foreground/90 whitespace-pre-wrap break-words leading-relaxed pt-0.5">
+                            {c.text}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Composer Box (Facebook Bone Pill Style + Traveler colored icons) */}
+              <div className="p-3.5 border-t border-border/40 bg-white/60 dark:bg-[#242526]/60 flex gap-2.5 items-start">
+                {currentUser?.avatar ? (
+                  <div className="relative shrink-0">
+                    <img
+                      src={currentUser.avatar}
+                      alt={currentUser.name || "Usuario"}
+                      className="w-9 h-9 rounded-full object-cover ring-2 ring-white dark:ring-neutral-800 shadow-xs"
+                    />
+                    <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-white dark:bg-[#242526] flex items-center justify-center shadow-xs">
+                      <span className="w-2 h-2 rounded-full bg-[#105238]"></span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-[#105238] text-white flex items-center justify-center font-bold text-xs shrink-0 ring-2 ring-white dark:ring-neutral-800 shadow-xs">
+                    {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : "V"}
+                  </div>
+                )}
+
+                <div className="flex-1 bg-[#f0f2f5] dark:bg-[#3a3b3c] rounded-2xl p-2.5 transition-all space-y-2 border-0">
+                  {/* Active Metadata Chips Row (Country Flag, Location, Star Rating) */}
+                  {(currentLoc || currentCountry || currentRating) && (
+                    <div className="flex flex-wrap items-center gap-1.5 pb-1">
+                      {currentCountry && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-white dark:bg-[#242526] px-2.5 py-0.5 rounded-full border border-black/5 text-foreground shadow-2xs">
+                          <span>{currentCountry.flag}</span>
+                          <span>{currentCountry.name}</span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setCommentCountries((prev) => {
+                                const next = { ...prev }
+                                delete next[activeCommentService.id]
+                                return next
+                              })
+                            }
+                            className="text-muted-foreground hover:text-foreground ml-0.5 cursor-pointer"
+                          >
+                            ✕
+                          </button>
+                        </span>
+                      )}
+                      {currentLoc && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-white dark:bg-[#242526] px-2.5 py-0.5 rounded-full border border-black/5 text-foreground shadow-2xs">
+                          <MapPin className="w-3 h-3 text-[#FA383E]" />
+                          <span>{currentLoc}</span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setCommentLocations((prev) => {
+                                const next = { ...prev }
+                                delete next[activeCommentService.id]
+                                return next
+                              })
+                            }
+                            className="text-muted-foreground hover:text-foreground ml-0.5 cursor-pointer"
+                          >
+                            ✕
+                          </button>
+                        </span>
+                      )}
+                      {/* Interactive Stars Selector */}
+                      <div className="inline-flex items-center gap-0.5 bg-white dark:bg-[#242526] px-2 py-0.5 rounded-full border border-black/5 shadow-2xs ml-auto">
+                        {[1, 2, 3, 4, 5].map((starVal) => (
+                          <button
+                            key={starVal}
+                            type="button"
+                            onClick={() =>
+                              setCommentRatings((prev) => ({
+                                ...prev,
+                                [activeCommentService.id]: starVal,
+                              }))
+                            }
+                            className="cursor-pointer"
+                            title={`${starVal} estrellas`}
+                          >
+                            <Star
+                              className={cn(
+                                "w-3.5 h-3.5",
+                                starVal <= currentRating
+                                  ? "fill-[#105238] text-[#105238] dark:fill-[#8ee01a] dark:text-[#8ee01a]"
+                                  : "text-muted-foreground/35",
+                              )}
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Clean text input (No border circle, bone background) */}
+                  <textarea
+                    value={draftText}
+                    onChange={(e) =>
+                      setCommentDrafts((prev) => ({
+                        ...prev,
+                        [activeCommentService.id]: e.target.value,
+                      }))
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault()
+                        handleAddServiceComment(activeCommentService.id)
+                      }
+                    }}
+                    placeholder={`Comentar como ${currentUser?.name || "viajero"}...`}
+                    className="w-full bg-transparent border-0 focus:outline-none focus:ring-0 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground/80 resize-none min-h-[44px] max-h-28 p-0"
+                    rows={2}
+                  />
+
+                  {/* Action Icons Toolbar (Facebook colors: Location Red, Flag Blue, Smile Yellow) */}
+                  <div className="flex items-center justify-between pt-1 border-t border-black/5 dark:border-white/5">
+                    <div className="flex items-center gap-1">
+                      {/* 1. Ubicación (MapPin - Coral/Red #FA383E) */}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setCommentPickerMode((prev) =>
+                            prev === "location" ? null : "location",
+                          )
+                        }
+                        className={cn(
+                          "p-1.5 rounded-full transition-colors cursor-pointer flex items-center justify-center",
+                          commentPickerMode === "location"
+                            ? "bg-[#FA383E]/15 text-[#FA383E]"
+                            : "text-[#FA383E] hover:bg-black/5 dark:hover:bg-white/10",
+                        )}
+                        title="Marcar ubicación de viaje"
+                      >
+                        <MapPin className="w-4 h-4" />
+                      </button>
+
+                      {/* 2. Bandera de País (Flag - Royal Blue #1877F2) */}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setCommentPickerMode((prev) =>
+                            prev === "country" ? null : "country",
+                          )
+                        }
+                        className={cn(
+                          "p-1.5 rounded-full transition-colors cursor-pointer flex items-center justify-center",
+                          commentPickerMode === "country"
+                            ? "bg-[#1877F2]/15 text-[#1877F2]"
+                            : "text-[#1877F2] hover:bg-black/5 dark:hover:bg-white/10",
+                        )}
+                        title="País de origen del viajero"
+                      >
+                        <Flag className="w-4 h-4" />
+                      </button>
+
+                      {/* 3. Emojis Viajeros (Smile - Golden Yellow #F7B125) */}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setCommentPickerMode((prev) =>
+                            prev === "emojis" ? null : "emojis",
+                          )
+                        }
+                        className={cn(
+                          "p-1.5 rounded-full transition-colors cursor-pointer flex items-center justify-center",
+                          commentPickerMode === "emojis"
+                            ? "bg-[#F7B125]/20 text-[#D99B00]"
+                            : "text-[#F7B125] hover:bg-black/5 dark:hover:bg-white/10",
+                        )}
+                        title="Emojis de viajeros"
+                      >
+                        <Smile className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Send Button */}
+                    <button
+                      type="button"
+                      onClick={() => handleAddServiceComment(activeCommentService.id)}
+                      disabled={!draftText.trim() && !currentLoc}
+                      className={cn(
+                        "h-8 px-3.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer",
+                        draftText.trim() || currentLoc
+                          ? "bg-[#105238] hover:bg-[#0c402b] text-white shadow-xs"
+                          : "bg-muted text-muted-foreground/40 cursor-not-allowed",
+                      )}
+                    >
+                      <span>Publicar</span>
+                      <Send className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  {/* Drawers: Emojis, Countries, or Location Picker */}
+                  {commentPickerMode === "emojis" && (
+                    <div className="mt-2 p-2.5 bg-white dark:bg-[#242526] rounded-2xl border border-border/60 shadow-lg max-h-52 overflow-y-auto space-y-2 animate-in fade-in duration-150">
+                      <div className="flex items-center justify-between pb-1 border-b border-border/40 text-[11px] font-bold text-muted-foreground">
+                        <span>EMOJIS DE VIAJEROS</span>
+                        <button
+                          type="button"
+                          onClick={() => setCommentPickerMode(null)}
+                          className="text-xs hover:text-foreground cursor-pointer"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      {TRAVEL_EMOJIS.map((group) => (
+                        <div key={group.category} className="space-y-1">
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
+                            {group.category}
+                          </span>
+                          <div className="grid grid-cols-6 sm:grid-cols-8 gap-1">
+                            {group.emojis.map((emoji) => (
+                              <button
+                                key={emoji}
+                                type="button"
+                                onClick={() => {
+                                  setCommentDrafts((prev) => ({
+                                    ...prev,
+                                    [activeCommentService.id]:
+                                      (prev[activeCommentService.id] || "") + emoji,
+                                  }))
+                                }}
+                                className="w-8 h-8 rounded-lg hover:bg-muted/80 text-lg flex items-center justify-center transition-transform hover:scale-125 cursor-pointer"
+                              >
+                                {emoji}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {commentPickerMode === "country" && (
+                    <div className="mt-2 p-2.5 bg-white dark:bg-[#242526] rounded-2xl border border-border/60 shadow-lg max-h-52 overflow-y-auto space-y-1.5 animate-in fade-in duration-150">
+                      <div className="flex items-center justify-between pb-1 border-b border-border/40 text-[11px] font-bold text-muted-foreground">
+                        <span>PAÍS DEL VIAJERO</span>
+                        <button
+                          type="button"
+                          onClick={() => setCommentPickerMode(null)}
+                          className="text-xs hover:text-foreground cursor-pointer"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1.5 pt-1">
+                        {TRAVELER_COUNTRIES.map((ct) => (
+                          <button
+                            key={ct.code}
+                            type="button"
+                            onClick={() => {
+                              setCommentCountries((prev) => ({
+                                ...prev,
+                                [activeCommentService.id]: ct,
+                              }))
+                              setCommentPickerMode(null)
+                            }}
+                            className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-muted text-xs text-left cursor-pointer transition-colors"
+                          >
+                            <span className="text-base">{ct.flag}</span>
+                            <span className="truncate font-medium">{ct.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {commentPickerMode === "location" && (
+                    <div className="mt-2 p-2.5 bg-white dark:bg-[#242526] rounded-2xl border border-border/60 shadow-lg max-h-52 overflow-y-auto space-y-2 animate-in fade-in duration-150">
+                      <div className="flex items-center justify-between pb-1 border-b border-border/40 text-[11px] font-bold text-muted-foreground">
+                        <span>¿DESDE DÓNDE ESCRIBES?</span>
+                        <button
+                          type="button"
+                          onClick={() => setCommentPickerMode(null)}
+                          className="text-xs hover:text-foreground cursor-pointer"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <input
+                          type="text"
+                          value={customCommentLocation}
+                          onChange={(e) => setCustomCommentLocation(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && customCommentLocation.trim()) {
+                              setCommentLocations((prev) => ({
+                                ...prev,
+                                [activeCommentService.id]: customCommentLocation.trim(),
+                              }))
+                              setCustomCommentLocation("")
+                              setCommentPickerMode(null)
+                            }
+                          }}
+                          placeholder="Escribe un lugar o playa..."
+                          className="flex-1 h-8 px-2.5 rounded-xl border border-border bg-background text-xs"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (customCommentLocation.trim()) {
+                              setCommentLocations((prev) => ({
+                                ...prev,
+                                [activeCommentService.id]: customCommentLocation.trim(),
+                              }))
+                              setCustomCommentLocation("")
+                              setCommentPickerMode(null)
+                            }
+                          }}
+                          className="h-8 px-2.5 rounded-xl bg-[#105238] text-white font-bold text-xs cursor-pointer"
+                        >
+                          Fijar
+                        </button>
+                      </div>
+                      <div className="flex flex-wrap gap-1 pt-1">
+                        {POPULAR_TRAVEL_LOCATIONS.map((loc) => (
+                          <button
+                            key={loc}
+                            type="button"
+                            onClick={() => {
+                              setCommentLocations((prev) => ({
+                                ...prev,
+                                [activeCommentService.id]: loc,
+                              }))
+                              setCommentPickerMode(null)
+                            }}
+                            className="px-2 py-1 rounded-lg bg-muted/80 hover:bg-[#eaf0e2] hover:text-[#105238] text-[11px] font-medium transition-colors cursor-pointer"
+                          >
+                            📍 {loc}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
