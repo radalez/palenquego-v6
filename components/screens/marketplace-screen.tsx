@@ -3290,6 +3290,50 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [openCommentsId])
 
+  // Lock background scroll and prevent wheel movement on header/composer/backdrop when comments spotlight is active
+  useEffect(() => {
+    if (openCommentsId === null) return
+
+    const cardEl = document.getElementById(`service-card-${openCommentsId}`)
+    const scrollContainer = (cardEl?.closest(".overflow-y-auto") || document.querySelector("main .overflow-y-auto")) as HTMLElement | null
+
+    const prevOverflow = scrollContainer ? scrollContainer.style.overflowY : ""
+    const prevBodyOverflow = document.body.style.overflowY
+
+    // Lock scrolling on container after smooth scroll alignment settles
+    const timer = setTimeout(() => {
+      if (scrollContainer) {
+        scrollContainer.style.overflowY = "hidden"
+      } else {
+        document.body.style.overflowY = "hidden"
+      }
+    }, 280)
+
+    const preventScroll = (e: WheelEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+
+    const headerEl = cardEl?.querySelector("[data-card-header='true']")
+    const footerEl = cardEl?.querySelector("[data-card-footer='true']")
+    const backdropEl = document.getElementById("comments-soft-backdrop")
+
+    headerEl?.addEventListener("wheel", preventScroll as any, { passive: false })
+    footerEl?.addEventListener("wheel", preventScroll as any, { passive: false })
+    backdropEl?.addEventListener("wheel", preventScroll as any, { passive: false })
+
+    return () => {
+      clearTimeout(timer)
+      if (scrollContainer) {
+        scrollContainer.style.overflowY = prevOverflow
+      }
+      document.body.style.overflowY = prevBodyOverflow
+      headerEl?.removeEventListener("wheel", preventScroll as any)
+      footerEl?.removeEventListener("wheel", preventScroll as any)
+      backdropEl?.removeEventListener("wheel", preventScroll as any)
+    }
+  }, [openCommentsId])
+
   // Toggle comments and smoothly bring card to the top of the feed
   const handleToggleComments = useCallback((serviceId: number) => {
     setOpenCommentsId((prev) => {
@@ -3970,7 +4014,18 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                 </p>
               </div>
             ) : (
-              <div className="space-y-5">
+              <div className="space-y-5 relative">
+                {/* Soft Backdrop: rest of the page in blur, covers 100% of the screen down to the bottom floor */}
+                {openCommentsId !== null && (
+                  <div
+                    id="comments-soft-backdrop"
+                    className="fixed inset-0 w-screen h-screen bg-black/45 backdrop-blur-xs z-30 transition-opacity animate-in fade-in duration-200"
+                    onClick={() => {
+                      setOpenCommentsId(null)
+                      setCommentPickerMode(null)
+                    }}
+                  />
+                )}
                 {visibleBatchServices.map((service, serviceIdx) => {
                   const hasFlashOffer = Boolean(
                     service.oferta_flash && (service.oferta_flash.cupos_disponibles ?? 0) > 0,
@@ -3998,32 +4053,25 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                       key={`${service.id}-${serviceIdx}`}
                       ref={observeCardRef}
                       data-service-id={service.id}
-                      className="space-y-5"
+                      className={cn(
+                        "space-y-5",
+                        openCommentsId === service.id ? "relative z-40" : "relative z-10",
+                      )}
                     >
-                    {/* Soft Backdrop: rest of the page in blur */}
-                    {openCommentsId === service.id && (
-                      <div
-                        className="fixed inset-0 bg-black/40 backdrop-blur-xs z-30 transition-opacity animate-in fade-in duration-200"
-                        onClick={() => {
-                          setOpenCommentsId(null)
-                          setCommentPickerMode(null)
-                        }}
-                      />
-                    )}
-
                     <article
                       id={`service-card-${service.id}`}
                       className={cn(
                         "bg-card border border-border rounded-3xl transition-all duration-200 scroll-mt-24",
                         openCommentsId === service.id
-                          ? "relative z-40 shadow-[0_25px_60px_-10px_rgba(0,0,0,0.35)] ring-2 ring-black/10 dark:ring-white/10 scale-[1.02] max-h-[85vh] sm:max-h-[88vh] flex flex-col overflow-hidden"
+                          ? "relative z-40 shadow-[0_25px_60px_-10px_rgba(0,0,0,0.35)] ring-2 ring-black/10 dark:ring-white/10 scale-[1.02] h-[calc(100vh-18px)] sm:h-[calc(100dvh-18px)] max-h-[calc(100vh-18px)] sm:max-h-[calc(100dvh-18px)] flex flex-col overflow-hidden"
                           : "shadow-2xs overflow-visible",
                       )}
                     >
                       {/* Post Header: Business + Location + Price (Fixed at top of card, max 4-5px from top edge of screen) */}
                       <div
+                        data-card-header="true"
                         className={cn(
-                          "p-3.5 sm:p-4 flex items-center justify-between gap-3 shrink-0 bg-card",
+                          "p-3.5 sm:p-4 flex items-center justify-between gap-3 shrink-0 bg-card select-none",
                           openCommentsId === service.id && "border-b border-border/40 z-10",
                         )}
                       >
@@ -4575,7 +4623,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                       const hasSendableContent = Boolean(draftText.trim() || currentLoc)
 
                       return (
-                        <div className="shrink-0 border-t border-border/50 bg-[#fafaf8] dark:bg-[#1e1e1e] p-3 rounded-b-3xl z-10 animate-in fade-in duration-150">
+                        <div
+                          data-card-footer="true"
+                          className="shrink-0 border-t border-border/50 bg-[#fafaf8] dark:bg-[#1e1e1e] p-3 rounded-b-3xl z-10 animate-in fade-in duration-150"
+                        >
                           {/* Facebook-style Bone Composer Box focused on Tourism Experience Rating & Opinions */}
                           <div className="bg-[#f0f2f5] dark:bg-[#3a3b3c] rounded-2xl p-3 border-0 relative shadow-2xs space-y-2.5">
                             {/* Header: Title + Star Rating */}
