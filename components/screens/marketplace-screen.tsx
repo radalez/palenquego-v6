@@ -1424,6 +1424,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   const [stickySearchHeight, setStickySearchHeight] = useState(68)
   const [isMobileSearchFocused, setIsMobileSearchFocused] = useState(false)
   const [isMobileInlineSearchOpen, setIsMobileInlineSearchOpen] = useState(false)
+  const [isMobileInlineInputFocused, setIsMobileInlineInputFocused] = useState(false)
   const isMobileInlineSearchOpenRef = useRef(false)
   const mobileInlineSearchScrollStartRef = useRef(0)
   const [serviceToRate, setServiceToRate] = useState<Service | null>(null)
@@ -1889,14 +1890,15 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
       const currentY = getScrollY()
       const lastY = lastScrollYRef.current
 
-      // If mobile inline search is open and user scrolls down significantly (> 140px), return to categories
+      // If mobile inline search is open and user scrolls down enough (~2 swipes / > 280px), return to categories
       if (
         isMobileViewport &&
         isMobileInlineSearchOpenRef.current &&
-        currentY > mobileInlineSearchScrollStartRef.current + 140
+        currentY > mobileInlineSearchScrollStartRef.current + 280
       ) {
         isMobileInlineSearchOpenRef.current = false
         setIsMobileInlineSearchOpen(false)
+        setIsMobileInlineInputFocused(false)
         if (activeEl && activeEl instanceof HTMLElement && activeEl.closest(".mobile-inline-search")) {
           activeEl.blur()
         }
@@ -3819,38 +3821,82 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
               {/* STICKY CATEGORY PILLS BAR (with preferred categories first + scroll arrows + mobile inline search swap) */}
               <div className="py-2">
                 {isMobileInlineSearchOpen && (
-                  <div className="mobile-inline-search flex sm:hidden items-center gap-2 w-full animate-in fade-in duration-150">
-                    <div className="relative flex-1 min-w-0">
-                      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        autoFocus
-                        value={searchQuery}
-                        placeholder="Buscar experiencias, tours, restaurantes..."
-                        className="pl-10 pr-9 bg-white dark:bg-card border border-slate-200/90 dark:border-border focus:border-slate-300 focus-visible:ring-0 focus:outline-none h-9 rounded-full text-xs shadow-2xs"
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                      />
-                      {searchQuery && (
-                        <button
+                  <div className="mobile-inline-search flex sm:hidden w-full animate-in fade-in duration-150">
+                    <div className="bg-card border border-border rounded-3xl p-2 shadow-2xs w-full">
+                      <div className="flex flex-nowrap items-center gap-1.5">
+                        <div className="relative flex-1 min-w-0">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Input
+                            value={searchQuery}
+                            placeholder="Buscar experiencias, tours, restaurantes..."
+                            className="pl-9 pr-9 bg-[#f0f2f5]/70 dark:bg-background border border-slate-200/80 dark:border-border focus:border-slate-300 focus-visible:border-slate-300 focus-visible:ring-0 focus:outline-none h-9 rounded-2xl text-xs"
+                            onFocus={() => setIsMobileInlineInputFocused(true)}
+                            onBlur={() => setTimeout(() => setIsMobileInlineInputFocused(false), 150)}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                          />
+                          {(searchQuery || isMobileInlineInputFocused) && (
+                            <button
+                              type="button"
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => {
+                                if (searchQuery) {
+                                  setSearchQuery("")
+                                } else {
+                                  setIsMobileInlineInputFocused(false)
+                                  if (document.activeElement instanceof HTMLElement) {
+                                    document.activeElement.blur()
+                                  }
+                                }
+                              }}
+                              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                              aria-label={searchQuery ? "Limpiar búsqueda" : "Volver a iconos"}
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+
+                        <Button
                           type="button"
-                          onClick={() => setSearchQuery("")}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
-                          aria-label="Limpiar búsqueda"
+                          variant="outline"
+                          onClick={() => setShowFilterPanel(true)}
+                          className={cn(
+                            "h-9 w-9 p-0 rounded-2xl border-transparent bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-800 text-xs font-bold cursor-pointer shadow-none shrink-0",
+                            isMobileInlineInputFocused ? "hidden" : "inline-flex",
+                          )}
+                          aria-label="Filtros"
                         >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      )}
+                          <Filter className="w-4 h-4 text-slate-700" />
+                        </Button>
+
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setShowPreferencesModal(true)}
+                          className={cn(
+                            "h-9 w-9 p-0 rounded-2xl border-transparent bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-800 text-xs font-bold cursor-pointer shadow-none shrink-0",
+                            isMobileInlineInputFocused ? "hidden" : "inline-flex",
+                          )}
+                          aria-label="Preferencias"
+                        >
+                          <SlidersHorizontal className="w-4 h-4 text-slate-700" />
+                        </Button>
+
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleRestartCycle}
+                          title="Mezclar orden del feed"
+                          className={cn(
+                            "h-9 w-9 p-0 rounded-2xl border-transparent bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-800 text-xs font-bold cursor-pointer shadow-none shrink-0",
+                            isMobileInlineInputFocused ? "hidden" : "inline-flex",
+                          )}
+                          aria-label="Mezclar orden del feed"
+                        >
+                          <Shuffle className="w-4 h-4 text-slate-700" />
+                        </Button>
+                      </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        isMobileInlineSearchOpenRef.current = false
-                        setIsMobileInlineSearchOpen(false)
-                      }}
-                      className="w-9 h-9 rounded-full bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-700 flex items-center justify-center shrink-0 cursor-pointer transition-colors border border-slate-200/70"
-                      aria-label="Volver a categorías"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
                   </div>
                 )}
 
