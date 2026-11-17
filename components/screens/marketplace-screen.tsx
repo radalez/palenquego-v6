@@ -1946,15 +1946,28 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
       if (!cancelled) setIsLoadingFeed(false)
     }, 6000)
 
+    const previousServices = useAppStore.getState().services
+
     fetchServices(buildUnseenCatalogQuery()).finally(() => {
       clearTimeout(safetyTimer)
       if (cancelled) return
-      const fresh = useAppStore.getState().services
+      const newlyFetched = useAppStore.getState().services
       seenInCurrentBatchRef.current.clear()
       lastAdvanceRef.current = Date.now()
-      if (fresh.length > 0) {
+
+      // Merge previous + newlyFetched so visible cards are NEVER wiped out from underneath the user!
+      if (previousServices.length > 0 && newlyFetched.length > 0) {
+        const mergedMap = new Map<number, Service>()
+        for (const s of previousServices) mergedMap.set(s.id, s)
+        for (const s of newlyFetched) mergedMap.set(s.id, s)
+        const mergedServices = Array.from(mergedMap.values())
+        useAppStore.setState({ services: mergedServices })
+      }
+
+      const activeStoreServices = useAppStore.getState().services
+      if (activeStoreServices.length > 0) {
         let clearedAny = false
-        for (const item of fresh) {
+        for (const item of activeStoreServices) {
           if (seenIdsRef.current.has(item.id)) {
             seenIdsRef.current.delete(item.id)
             clearedAny = true
@@ -1967,10 +1980,15 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
             // ignore
           }
         }
-        setCurrentBatchIds(fresh.slice(0, BATCH_SIZE).map((s) => s.id))
+        // ONLY initialize currentBatchIds if it's currently empty!
+        // If the user already has cards on screen, keep them stable!
+        setCurrentBatchIds((prev) => {
+          if (prev.length > 0) return prev
+          return activeStoreServices.slice(0, BATCH_SIZE).map((s) => s.id)
+        })
         setAllUnseenExhausted(false)
       } else {
-        setCurrentBatchIds([])
+        setCurrentBatchIds((prev) => (prev.length > 0 ? prev : []))
         setAllUnseenExhausted(true)
       }
       setBatchNumber(1)
@@ -3241,16 +3259,29 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     if (effectiveSearchQuery) {
       return orderedServices
     }
+    let list: Service[] = []
     if (currentBatchIds.length > 0) {
       const batchSet = new Set(currentBatchIds)
       const mapped = orderedServices.filter((s) => batchSet.has(s.id))
-      if (mapped.length > 0) return mapped
+      if (mapped.length > 0) list = mapped
     }
-    if (!allUnseenExhausted && orderedServices.length > 0) {
-      return orderedServices.slice(0, BATCH_SIZE)
+    if (list.length === 0 && !allUnseenExhausted && orderedServices.length > 0) {
+      list = orderedServices.slice(0, BATCH_SIZE)
     }
-    return []
-  }, [orderedServices, currentBatchIds, allUnseenExhausted, effectiveSearchQuery])
+
+    // GUARANTEE: If comments are open for a service, that service MUST be present in visibleBatchServices!
+    if (openCommentsId !== null && !list.some((s) => s.id === openCommentsId)) {
+      const openSvc =
+        orderedServices.find((s) => s.id === openCommentsId) ||
+        services.find((s) => s.id === openCommentsId) ||
+        globalCatalogPool.find((s) => s.id === openCommentsId)
+      if (openSvc) {
+        list = [openSvc, ...list]
+      }
+    }
+
+    return list
+  }, [orderedServices, currentBatchIds, allUnseenExhausted, effectiveSearchQuery, openCommentsId, services, globalCatalogPool])
 
   // Active service for the Interactive Experience Lightbox Modal
   const lightboxActiveService = useMemo(() => {
@@ -3320,6 +3351,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     setOpenCommentsId((prev) => {
       const isOpening = prev !== serviceId
       if (isOpening) {
+        setCurrentBatchIds((current) => {
+          if (current.includes(serviceId)) return current
+          return [serviceId, ...current]
+        })
         setTimeout(() => {
           const el = document.getElementById(`service-card-${serviceId}`)
           if (el) {
@@ -4833,8 +4868,8 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                     className={cn(
                                       "w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer",
                                       hasSendableContent
-                                        ? "text-[#105238] dark:text-[#8ee01a] hover:bg-[#f0f2f5] dark:hover:bg-white/10 active:scale-95"
-                                        : "text-neutral-400/50 bg-transparent cursor-not-allowed",
+                                        ? "text-[#105238] dark:text-[#8ee01a] bg-transparent hover:bg-[#f0f2f5] dark:hover:bg-white/10 active:scale-95 shadow-none border-0"
+                                        : "text-neutral-400/50 bg-transparent cursor-not-allowed shadow-none border-0",
                                     )}
                                     aria-label="Enviar"
                                   >

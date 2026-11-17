@@ -67,6 +67,7 @@ type ActiveTab =
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("marketplace")
+  const [isHydrated, setIsHydrated] = useState(false)
 
   const isAuthenticated = useAppStore((state) => state.isAuthenticated)
   const hasCompletedOnboarding = useAppStore((state) => state.hasCompletedOnboarding)
@@ -74,6 +75,11 @@ export default function Home() {
   const completeOnboarding = useAppStore((state) => state.completeOnboarding)
   const currentUser = useAppStore((state) => state.currentUser)
   const fetchCurrentUser = useAppStore((state) => state.fetchCurrentUser)
+
+  // Hidratación segura para evitar parpadeos de la pantalla de inicio de sesión
+  useEffect(() => {
+    setIsHydrated(true)
+  }, [])
 
   // Refrescar perfil y estado KYC en tiempo real desde el backend
   useEffect(() => {
@@ -206,6 +212,14 @@ export default function Home() {
   const handleOpenPayment = (pool: any) => {
     setSelectedPoolForPayment(pool)
     setShowPaymentModal(true)
+  }
+
+  if (!isHydrated) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-8 h-8 border-3 border-[#105238] border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
   }
 
   if (!isAuthenticated) {
