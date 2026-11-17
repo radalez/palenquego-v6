@@ -56,6 +56,7 @@ import { HeaderWithMenu } from "@/components/header-with-menu"
 import { RatingModal } from "@/components/rating-modal"
 import { AdvancedFilterPanel, type FilterOptions } from "@/components/advanced-filter-panel"
 import { PriceComparisonModal } from "@/components/price-comparison-modal"
+import { MobileExperienceReelsModal } from "@/components/mobile-experience-reels-modal"
 
 function FlashCountdown({ fechaFin }: { fechaFin: string }) {
   const [timeLeft, setTimeLeft] = useState<string>("")
@@ -6089,10 +6090,48 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
         const currentFeedPos = visibleBatchServices.findIndex((s) => s.id === activeSvc.id)
 
         return (
-          <div
-            onClick={() => setLightboxServiceId(null)}
-            className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 lg:p-6 animate-in fade-in duration-200"
-          >
+          <>
+            {/* MOBILE-ONLY: Full-Screen 100dvh TikTok/Reels Experience Lightbox */}
+            <MobileExperienceReelsModal
+              service={activeSvc}
+              allPhotos={allPhotos}
+              safePhotoIdx={safePhotoIdx}
+              setPhotoIdx={setLightboxPhotoIdx}
+              isFav={isFav}
+              totalLikesAndReacts={totalLikesAndReacts}
+              commentsCount={commentsList.length}
+              currentFeedPos={currentFeedPos}
+              totalFeedCount={visibleBatchServices.length}
+              hasFlash={hasFlash}
+              basePrice={baseP}
+              effectivePrice={effectivePrice}
+              defaultCover={DEFAULT_STORE_COVER}
+              reactions={REACTIONS}
+              reactState={reactState}
+              renderReactionIcon={(type, animated) => (
+                <ReactionBadgeIcon type={type as any} size="sm" animated={animated} />
+              )}
+              onClose={() => setLightboxServiceId(null)}
+              onStepService={handleStepLightboxService}
+              onToggleFavorite={toggleFavoritePreference}
+              onToggleReaction={(id, rId) => toggleServiceReaction(id, rId as any)}
+              onOpenFullDetail={(svc) => {
+                setLightboxServiceId(null)
+                openServiceDetailInstant(svc)
+              }}
+              onOpenBusiness={(businessId) => {
+                setLightboxServiceId(null)
+                router.push(`/b/${businessId}`)
+              }}
+              onOpenRoutes={(svc) => setServiceForRoutes(svc)}
+              onOpenBooking={(svc) => setSelectedService(svc)}
+            />
+
+            {/* DESKTOP / TABLET (sm:+): Existing Split Lightbox 100% Untouched */}
+            <div
+              onClick={() => setLightboxServiceId(null)}
+              className="hidden sm:flex fixed inset-0 z-50 bg-black/85 backdrop-blur-md items-center justify-center p-2 sm:p-4 lg:p-6 animate-in fade-in duration-200"
+            >
             {/* TikTok/Facebook-style Neutral Up / Down Floating Arrows on the Right */}
             <div
               onClick={(e) => e.stopPropagation()}
@@ -6640,6 +6679,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
               )}
             </div>
           </div>
+          </>
         )
       })()}
 
