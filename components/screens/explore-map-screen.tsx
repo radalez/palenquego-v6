@@ -2824,24 +2824,19 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
         )}
       </div>
 
-      {/* DESKTOP ONLY: Circulito "Ver más" + Circulito tres puntos (cuando está colapsado) o Card flotante a la derecha */}
+      {/* DESKTOP ONLY: Botón circular tres puntos con tooltip oscuro "Ver más" al hacer hover, o Card flotante a la derecha */}
       {!isSheetExpanded ? (
-        <div className="hidden lg:flex items-center gap-2.5 absolute bottom-6 right-6 z-30 animate-in fade-in duration-200">
+        <div className="hidden lg:flex items-center absolute bottom-6 right-6 z-30 animate-in fade-in duration-200">
           <button
             type="button"
             onClick={() => setIsSheetExpanded(true)}
-            className="h-11 px-4 rounded-full bg-white hover:bg-[#eaf0e2] text-[#105238] border border-gray-200/90 shadow-xl font-bold text-xs flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-          >
-            <span>Ver más</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsSheetExpanded(true)}
-            className="w-11 h-11 rounded-full bg-[#105238] hover:bg-[#0c3e2b] text-[#8ee01a] border border-white/20 shadow-xl flex items-center justify-center transition-all active:scale-95 cursor-pointer"
-            title="Ver detalles de la ruta"
-            aria-label="Ver detalles de la ruta"
+            className="group relative w-11 h-11 rounded-full bg-[#105238] hover:bg-[#0c3e2b] text-[#8ee01a] border border-white/20 shadow-xl flex items-center justify-center transition-all active:scale-95 cursor-pointer"
+            aria-label="Ver más"
           >
             <MoreHorizontal className="w-5 h-5" />
+            <span className="pointer-events-none opacity-0 group-hover:opacity-100 group-hover:translate-x-0 translate-x-1 transition-all duration-150 absolute right-full mr-3 bg-neutral-900/95 text-white text-xs font-bold px-3 py-1.5 rounded-xl whitespace-nowrap shadow-lg border border-white/10 z-50">
+              Ver más
+            </span>
           </button>
         </div>
       ) : (
