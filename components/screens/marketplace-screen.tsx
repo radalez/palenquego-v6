@@ -1236,7 +1236,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     cachedMarketplaceSession?.shouldRestoreOnMount ? cachedMarketplaceSession.searchQuery : "",
   )
   const [showStickySearch, setShowStickySearch] = useState(true)
+  const showStickySearchRef = useRef(true)
   const lastScrollYRef = useRef(0)
+  const stickySearchRowRef = useRef<HTMLDivElement | null>(null)
+  const [stickySearchHeight, setStickySearchHeight] = useState(68)
   const [serviceToRate, setServiceToRate] = useState<Service | null>(null)
   const [showFilterPanel, setShowFilterPanel] = useState(false)
   const [showComparisonModal, setShowComparisonModal] = useState(false)
@@ -1565,6 +1568,20 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   useEffect(() => {
     if (typeof window === "undefined") return
 
+    const updateH = () => {
+      if (stickySearchRowRef.current) {
+        const h = stickySearchRowRef.current.offsetHeight
+        if (h > 20) setStickySearchHeight(h)
+      }
+    }
+    updateH()
+    window.addEventListener("resize", updateH)
+    return () => window.removeEventListener("resize", updateH)
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
     const getScrollY = (target?: EventTarget | null) => {
       if (target && target instanceof HTMLElement && target.scrollTop > 0) {
         return target.scrollTop
@@ -1580,7 +1597,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
       // Don't collapse if an input inside sticky search is focused
       const activeEl = document.activeElement
       if (activeEl && activeEl.tagName === "INPUT" && activeEl.closest(".sticky-search-container")) {
-        setShowStickySearch(true)
+        if (!showStickySearchRef.current) {
+          showStickySearchRef.current = true
+          setShowStickySearch(true)
+        }
         return
       }
 
@@ -1588,22 +1608,31 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
       const lastY = lastScrollYRef.current
 
       // When near the top of the feed, always keep search bar visible
-      if (currentY <= 120) {
-        setShowStickySearch(true)
+      if (currentY <= 70) {
+        if (!showStickySearchRef.current) {
+          showStickySearchRef.current = true
+          setShowStickySearch(true)
+        }
         lastScrollYRef.current = currentY
         return
       }
 
       const diff = currentY - lastY
 
-      // Scrolled down by more than 8px -> hide search bar
-      if (diff > 8) {
-        setShowStickySearch(false)
+      // Scrolled down by more than 16px -> hide search bar
+      if (diff > 16) {
+        if (showStickySearchRef.current) {
+          showStickySearchRef.current = false
+          setShowStickySearch(false)
+        }
         lastScrollYRef.current = currentY
       }
-      // Scrolled up by more than 8px -> reveal search bar smoothly
-      else if (diff < -8) {
-        setShowStickySearch(true)
+      // Scrolled up by more than 16px -> reveal search bar smoothly
+      else if (diff < -16) {
+        if (!showStickySearchRef.current) {
+          showStickySearchRef.current = true
+          setShowStickySearch(true)
+        }
         lastScrollYRef.current = currentY
       }
     }
@@ -3208,14 +3237,18 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
             </div>
 
             {/* STICKY HEADER: COLLAPSIBLE SEARCH BAR (REVEALS ON SCROLL UP) + STICKY CATEGORIES */}
-            <div className="sticky top-0 z-30 bg-[#fafaf8]/95 dark:bg-background/95 backdrop-blur-md -mx-1 px-1 transition-all duration-300">
+            <div
+              className="sticky top-0 z-30 bg-[#fafaf8]/95 dark:bg-background/95 backdrop-blur-md -mx-1 px-1 transition-transform duration-300 ease-out will-change-transform"
+              style={{
+                transform: showStickySearch ? "translateY(0)" : `translateY(-${stickySearchHeight}px)`,
+              }}
+            >
               {/* COLLAPSIBLE SEARCH ROW */}
               <div
+                ref={stickySearchRowRef}
                 className={cn(
-                  "sticky-search-container transition-all duration-300 ease-out overflow-hidden",
-                  showStickySearch
-                    ? "max-h-28 opacity-100 pt-2 pb-1.5 translate-y-0"
-                    : "max-h-0 opacity-0 py-0 -translate-y-2 pointer-events-none"
+                  "sticky-search-container pt-2 pb-1.5 transition-opacity duration-200",
+                  showStickySearch ? "opacity-100" : "opacity-0 pointer-events-none"
                 )}
               >
                 <div className="bg-card border border-border rounded-3xl p-3 sm:p-3.5 shadow-2xs">
