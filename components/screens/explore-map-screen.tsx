@@ -1464,9 +1464,9 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
         {/* Desktop (lg:): Siempre visible (w-[420px] xl:w-[450px] 2xl:w-[480px]) */}
         {/* Mobile: Visible solo si view === 'list' (w-full h-full) */}
         {/* ═════════════════════════════════════════════════════════════ */}
-        <aside className={`${view === 'list' ? 'flex w-full' : 'hidden lg:flex'} lg:w-[420px] xl:w-[450px] 2xl:w-[480px] h-full flex-col bg-white border-r border-gray-200 shrink-0 z-20 shadow-xl overflow-y-auto p-4 gap-3.5 custom-scrollbar`}>
+        <aside className={`${view === 'list' ? 'flex w-full' : 'hidden lg:flex'} lg:w-[420px] xl:w-[450px] 2xl:w-[480px] h-full flex-col bg-white border-r border-gray-200 shrink-0 z-20 shadow-xl overflow-y-auto px-4 pb-4 pt-0 gap-3.5 custom-scrollbar`}>
           {/* Fila Superior: Breadcrumb y Badge Movilidad El Salvador (INMUTABLE Y PERMANENTE) */}
-          <div className="flex items-center justify-between shrink-0">
+          <div className="flex items-center justify-between shrink-0 pt-4">
             <button
               onClick={() => {
                 if (view === 'list' && typeof window !== 'undefined' && window.innerWidth < 1024) {
@@ -1680,7 +1680,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
               </div>
 
               {/* Buscador Rápido de Rutas (Sticky justo debajo de los tabs al hacer scroll) */}
-              <div className="sticky top-[58px] z-20 bg-white pt-1 pb-2 -mx-4 px-4 shrink-0">
+              <div className="sticky top-[54px] z-20 bg-white pt-1 pb-2 -mx-4 px-4 shrink-0">
                 <div className="relative">
                   <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                   <Input
