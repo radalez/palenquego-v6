@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   description: "Recomendación de experiencia",
 }
 
-export default function Page({ params }: { params: { id: string } }) {
-  return <RecommendationPage params={params} />
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params
+  return <RecommendationPage params={resolvedParams} />
 }

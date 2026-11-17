@@ -4621,8 +4621,20 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                 </div>
                               </div>
 
-                              {/* Traveler Intent Quick Chips: "si fue, o si le gustaria ir..." */}
-                              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-0.5">
+                              {/* User Avatar Thumbnail (First on left) + Traveler Intent Quick Chips (To the right on same line) */}
+                              <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-0.5">
+                                {currentUser?.avatar ? (
+                                  <img
+                                    src={currentUser.avatar}
+                                    alt={currentUser.name || "Usuario"}
+                                    className="w-7 h-7 rounded-full object-cover ring-1 ring-black/10 shrink-0"
+                                  />
+                                ) : (
+                                  <div className="w-7 h-7 rounded-full bg-[#105238] text-white flex items-center justify-center font-bold text-[10px] shrink-0 ring-1 ring-black/10">
+                                    {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : "M"}
+                                  </div>
+                                )}
+
                                 {[
                                   { label: "🌴 Ya visité este lugar", prefix: "¡Ya visité este lugar y lo recomiendo! " },
                                   { label: "✨ Me gustaría ir", prefix: "¡Me encantaría ir pronto! " },
@@ -4641,69 +4653,57 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                         }
                                       })
                                     }}
-                                    className="px-2.5 py-0.5 rounded-full bg-white/80 hover:bg-white dark:bg-black/20 dark:hover:bg-black/40 border border-black/5 text-[10px] font-semibold text-slate-700 dark:text-slate-300 transition-colors whitespace-nowrap cursor-pointer shadow-2xs"
+                                    className="px-2.5 py-1 rounded-full bg-white/80 hover:bg-white dark:bg-black/20 dark:hover:bg-black/40 border border-black/5 text-[10px] font-semibold text-slate-700 dark:text-slate-300 transition-colors whitespace-nowrap cursor-pointer shadow-2xs shrink-0"
                                   >
                                     {pill.label}
                                   </button>
                                 ))}
                               </div>
 
-                              {/* User Avatar + Active Badges (Flag & Location) */}
-                              <div className="flex items-center gap-2 flex-wrap pt-0.5">
-                                {currentUser?.avatar ? (
-                                  <img
-                                    src={currentUser.avatar}
-                                    alt={currentUser.name || "Usuario"}
-                                    className="w-6 h-6 rounded-full object-cover ring-1 ring-black/10 shrink-0"
-                                  />
-                                ) : (
-                                  <div className="w-6 h-6 rounded-full bg-[#105238] text-white flex items-center justify-center font-bold text-[9px] shrink-0 ring-1 ring-black/10">
-                                    {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : "V"}
-                                  </div>
-                                )}
+                              {/* Active Badges (Flag & Location, if selected) */}
+                              {(currentCountry || currentLoc) && (
+                                <div className="flex items-center gap-2 flex-wrap pt-0.5">
+                                  {currentCountry && (
+                                    <span className="inline-flex items-center gap-1.5 bg-white dark:bg-[#242526] pl-1 pr-2 py-0.5 rounded-full border border-black/5 text-foreground shadow-2xs">
+                                      <RoundFlagIcon code={currentCountry.code} className="w-4 h-4" />
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          setCommentCountries((prev) => {
+                                            const next = { ...prev }
+                                            delete next[service.id]
+                                            return next
+                                          })
+                                        }
+                                        className="text-muted-foreground hover:text-foreground text-xs leading-none cursor-pointer"
+                                        title="Quitar bandera"
+                                      >
+                                        ✕
+                                      </button>
+                                    </span>
+                                  )}
 
-                                {/* Active Country Flag Badge: Round 3D Flag only, NO bulky country text! */}
-                                {currentCountry && (
-                                  <span className="inline-flex items-center gap-1.5 bg-white dark:bg-[#242526] pl-1 pr-2 py-0.5 rounded-full border border-black/5 text-foreground shadow-2xs">
-                                    <RoundFlagIcon code={currentCountry.code} className="w-4 h-4" />
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        setCommentCountries((prev) => {
-                                          const next = { ...prev }
-                                          delete next[service.id]
-                                          return next
-                                        })
-                                      }
-                                      className="text-muted-foreground hover:text-foreground text-xs leading-none cursor-pointer"
-                                      title="Quitar bandera"
-                                    >
-                                      ✕
-                                    </button>
-                                  </span>
-                                )}
-
-                                {/* Active Location Badge */}
-                                {currentLoc && (
-                                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-white dark:bg-[#242526] px-2 py-0.5 rounded-full border border-black/5 text-foreground shadow-2xs">
-                                    <MapPin className="w-3 h-3 text-slate-500" />
-                                    <span className="truncate max-w-[140px]">{currentLoc}</span>
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        setCommentLocations((prev) => {
-                                          const next = { ...prev }
-                                          delete next[service.id]
-                                          return next
-                                        })
-                                      }
-                                      className="text-muted-foreground hover:text-foreground ml-0.5 cursor-pointer"
-                                    >
-                                      ✕
-                                    </button>
-                                  </span>
-                                )}
-                              </div>
+                                  {currentLoc && (
+                                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-white dark:bg-[#242526] px-2 py-0.5 rounded-full border border-black/5 text-foreground shadow-2xs">
+                                      <MapPin className="w-3 h-3 text-slate-500" />
+                                      <span className="truncate max-w-[140px]">{currentLoc}</span>
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          setCommentLocations((prev) => {
+                                            const next = { ...prev }
+                                            delete next[service.id]
+                                            return next
+                                          })
+                                        }
+                                        className="text-muted-foreground hover:text-foreground ml-0.5 cursor-pointer"
+                                      >
+                                        ✕
+                                      </button>
+                                    </span>
+                                  )}
+                                </div>
+                              )}
 
                               {/* Input Textarea (Clean, No border, focused on Tourism Experience) */}
                               <textarea
