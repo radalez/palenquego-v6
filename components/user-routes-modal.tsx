@@ -97,6 +97,10 @@ export function UserRoutesModal({
   const [isSearchingDest, setIsSearchingDest] = useState(false)
   const [isOriginFocused, setIsOriginFocused] = useState(false)
   const [isDestFocused, setIsDestFocused] = useState(false)
+  const skipOriginSearchRef = useRef(false)
+  const skipDestSearchRef = useRef(false)
+  const originInputRef = useRef<HTMLInputElement>(null)
+  const destInputRef = useRef<HTMLInputElement>(null)
 
   // Estados de contraoferta del chofer
   const [activeCounterOfferId, setActiveCounterOfferId] = useState<number | null>(null)
@@ -154,6 +158,10 @@ export function UserRoutesModal({
   // Sincronizar coordenadas seleccionadas desde el mapa exterior si se pasan
   useEffect(() => {
     if (currentPickedOrigin) {
+      skipOriginSearchRef.current = true
+      setIsOriginFocused(false)
+      setShowOriginSuggestions(false)
+      setOriginSuggestions([])
       setOriginName(currentPickedOrigin.name)
       setOriginLat(currentPickedOrigin.lat)
       setOriginLng(currentPickedOrigin.lng)
@@ -162,6 +170,10 @@ export function UserRoutesModal({
 
   useEffect(() => {
     if (currentPickedDestination) {
+      skipDestSearchRef.current = true
+      setIsDestFocused(false)
+      setShowDestSuggestions(false)
+      setDestSuggestions([])
       setDestName(currentPickedDestination.name)
       setDestLat(currentPickedDestination.lat)
       setDestLng(currentPickedDestination.lng)
@@ -170,12 +182,18 @@ export function UserRoutesModal({
 
   // Autocompletado en vivo para ORIGEN
   useEffect(() => {
-    if (!originName || originName.length < 3 || !isOriginFocused) {
-      setOriginSuggestions([])
+    if (skipOriginSearchRef.current || !originName || originName.length < 3 || !isOriginFocused) {
+      if (!isOriginFocused) {
+        setShowOriginSuggestions(false)
+      }
+      if (!originName || originName.length < 3) {
+        setOriginSuggestions([])
+      }
       return
     }
 
     const timer = setTimeout(() => {
+      if (skipOriginSearchRef.current) return
       if (typeof window !== 'undefined' && (window as any).google?.maps?.places?.AutocompleteService) {
         setIsSearchingOrigin(true)
         try {
@@ -189,6 +207,7 @@ export function UserRoutesModal({
             },
             (predictions: any, status: string) => {
               setIsSearchingOrigin(false)
+              if (skipOriginSearchRef.current) return
               if (status === (window as any).google.maps.places.PlacesServiceStatus.OK && predictions) {
                 setOriginSuggestions(
                   predictions.slice(0, 5).map((p: any) => ({
@@ -212,16 +231,22 @@ export function UserRoutesModal({
     }, 280)
 
     return () => clearTimeout(timer)
-  }, [originName, isOriginFocused, originLat, originLng])
+  }, [originName, isOriginFocused])
 
   // Autocompletado en vivo para DESTINO
   useEffect(() => {
-    if (!destName || destName.length < 3 || !isDestFocused) {
-      setDestSuggestions([])
+    if (skipDestSearchRef.current || !destName || destName.length < 3 || !isDestFocused) {
+      if (!isDestFocused) {
+        setShowDestSuggestions(false)
+      }
+      if (!destName || destName.length < 3) {
+        setDestSuggestions([])
+      }
       return
     }
 
     const timer = setTimeout(() => {
+      if (skipDestSearchRef.current) return
       if (typeof window !== 'undefined' && (window as any).google?.maps?.places?.AutocompleteService) {
         setIsSearchingDest(true)
         try {
@@ -235,6 +260,7 @@ export function UserRoutesModal({
             },
             (predictions: any, status: string) => {
               setIsSearchingDest(false)
+              if (skipDestSearchRef.current) return
               if (status === (window as any).google.maps.places.PlacesServiceStatus.OK && predictions) {
                 setDestSuggestions(
                   predictions.slice(0, 5).map((p: any) => ({
@@ -258,19 +284,23 @@ export function UserRoutesModal({
     }, 280)
 
     return () => clearTimeout(timer)
-  }, [destName, isDestFocused, originLat, originLng])
+  }, [destName, isDestFocused])
 
   // Selección de sugerencia de Origen
   const handleSelectOriginSuggestion = (item: any) => {
-    setOriginName(item.main_text || item.description)
+    skipOriginSearchRef.current = true
+    setIsOriginFocused(false)
     setShowOriginSuggestions(false)
     setOriginSuggestions([])
+    setOriginName(item.main_text || item.description)
+    originInputRef.current?.blur()
 
     if (typeof window !== 'undefined' && (window as any).google?.maps?.Geocoder) {
       const geocoder = new (window as any).google.maps.Geocoder()
       geocoder.geocode({ placeId: item.place_id }, (results: any, status: string) => {
         if (status === 'OK' && results && results[0]) {
           const loc = results[0].geometry.location
+          skipOriginSearchRef.current = true
           setOriginLat(loc.lat())
           setOriginLng(loc.lng())
           if (results[0].formatted_address) {
@@ -283,15 +313,19 @@ export function UserRoutesModal({
 
   // Selección de sugerencia de Destino
   const handleSelectDestSuggestion = (item: any) => {
-    setDestName(item.main_text || item.description)
+    skipDestSearchRef.current = true
+    setIsDestFocused(false)
     setShowDestSuggestions(false)
     setDestSuggestions([])
+    setDestName(item.main_text || item.description)
+    destInputRef.current?.blur()
 
     if (typeof window !== 'undefined' && (window as any).google?.maps?.Geocoder) {
       const geocoder = new (window as any).google.maps.Geocoder()
       geocoder.geocode({ placeId: item.place_id }, (results: any, status: string) => {
         if (status === 'OK' && results && results[0]) {
           const loc = results[0].geometry.location
+          skipDestSearchRef.current = true
           setDestLat(loc.lat())
           setDestLng(loc.lng())
           if (results[0].formatted_address) {
@@ -309,6 +343,10 @@ export function UserRoutesModal({
         async (pos) => {
           const lat = pos.coords.latitude
           const lng = pos.coords.longitude
+          skipOriginSearchRef.current = true
+          setIsOriginFocused(false)
+          setShowOriginSuggestions(false)
+          setOriginSuggestions([])
           setOriginLat(lat)
           setOriginLng(lng)
 
@@ -891,14 +929,22 @@ export function UserRoutesModal({
 
                 <div className="relative">
                   <Input
+                    ref={originInputRef}
                     type="text"
                     value={originName}
-                    onChange={(e) => setOriginName(e.target.value)}
+                    onChange={(e) => {
+                      skipOriginSearchRef.current = false
+                      setIsOriginFocused(true)
+                      setOriginName(e.target.value)
+                    }}
                     onFocus={() => {
                       setIsOriginFocused(true)
                       if (originSuggestions.length > 0) setShowOriginSuggestions(true)
                     }}
-                    onBlur={() => setTimeout(() => setShowOriginSuggestions(false), 200)}
+                    onBlur={() => setTimeout(() => {
+                      setIsOriginFocused(false)
+                      setShowOriginSuggestions(false)
+                    }, 180)}
                     placeholder="Dirección o punto de partida..."
                     className={`rounded-xl text-xs h-10 bg-white ${onStartMapPickMode ? (isSearchingOrigin ? "pr-16" : "pr-11") : "pr-8"}`}
                   />
@@ -971,14 +1017,22 @@ export function UserRoutesModal({
 
                 <div className="relative">
                   <Input
+                    ref={destInputRef}
                     type="text"
                     value={destName}
-                    onChange={(e) => setDestName(e.target.value)}
+                    onChange={(e) => {
+                      skipDestSearchRef.current = false
+                      setIsDestFocused(true)
+                      setDestName(e.target.value)
+                    }}
                     onFocus={() => {
                       setIsDestFocused(true)
                       if (destSuggestions.length > 0) setShowDestSuggestions(true)
                     }}
-                    onBlur={() => setTimeout(() => setShowDestSuggestions(false), 200)}
+                    onBlur={() => setTimeout(() => {
+                      setIsDestFocused(false)
+                      setShowDestSuggestions(false)
+                    }, 180)}
                     placeholder="¿A dónde vas? (Ej: Plaza Centro, Metrocentro, etc.)"
                     className={`rounded-xl text-xs h-10 bg-white ${onStartMapPickMode ? (isSearchingDest ? "pr-16" : "pr-11") : "pr-8"}`}
                   />
