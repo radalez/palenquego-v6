@@ -286,3 +286,14 @@ body.comments-spotlight-open .mobile-bottom-nav {
   z-index: 10 !important;
   pointer-events: none !important;
 }
+
+/* Hide mobile bottom nav in Map Explorer when bottom sheet is collapsed ("Ocultar") for maximum map visibility */
+.mobile-bottom-nav {
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+body.explore-hide-mobile-nav .mobile-bottom-nav {
+  transform: translateY(120%) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}

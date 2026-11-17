@@ -348,6 +348,16 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
     }
   }, [fetchMyUserRoutes, fetchRequestedTrips, fetchHomeSlides, currentUser?.tipo])
 
+  // Ocultar el menú inferior móvil cuando el usuario oculta el panel "Descubre Palenque" en vista Mapa
+  useEffect(() => {
+    if (typeof document === "undefined") return
+    const shouldHideNav = view === 'map' && !isSheetExpanded
+    document.body.classList.toggle("explore-hide-mobile-nav", shouldHideNav)
+    return () => {
+      document.body.classList.remove("explore-hide-mobile-nav")
+    }
+  }, [view, isSheetExpanded])
+
   const handleMapClick = async (e: google.maps.MapMouseEvent) => {
     if (!mapPickMode || !e.latLng) return
     const lat = e.latLng.lat()
@@ -2359,10 +2369,10 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
           {/* ═════════════════════════════════════════════════════════════ */}
           {view === 'map' && (
             <div 
-              className={`lg:hidden absolute bottom-16 left-0 right-0 z-30 bg-white shadow-2xl border-t border-gray-200 transition-all duration-300 ease-out flex flex-col ${
+              className={`lg:hidden absolute left-0 right-0 z-30 bg-white shadow-2xl border-t border-gray-200 transition-all duration-300 ease-out flex flex-col ${
                 isSheetExpanded 
-                  ? 'max-h-[55vh] rounded-t-[28px] overflow-y-auto px-4 pt-2.5 pb-6' 
-                  : 'h-14 rounded-t-2xl overflow-hidden px-4 py-2 cursor-pointer'
+                  ? 'bottom-16 max-h-[55vh] rounded-t-[28px] overflow-y-auto px-4 pt-2.5 pb-6' 
+                  : 'bottom-0 h-14 rounded-t-2xl overflow-hidden px-4 py-2 cursor-pointer'
               }`}
             >
               {/* Barra Handle / Toggle */}
@@ -2505,6 +2515,7 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
           }}
           onStartMapPickMode={(mode, center) => {
             setView('map')
+            setIsSheetExpanded(false)
             setMapPickMode(mode)
             if (center && mapRef.current) {
               mapRef.current.panTo(center)
