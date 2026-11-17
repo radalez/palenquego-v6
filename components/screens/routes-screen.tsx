@@ -531,22 +531,23 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
                   </button>
                 </div>
 
-                {/* Right-side vertical floating action rail (igual que Experiencias móvil) */}
-                <div className="absolute right-3 bottom-32 z-20 flex flex-col items-center gap-3">
+                {/* Right-side vertical floating action rail (TikTok touch target size) */}
+                <div className="absolute right-3 bottom-32 z-20 flex flex-col items-center gap-3.5">
                   <button
                     type="button"
                     onClick={() => trackedRoute && toggleRouteReaction(trackedRoute.id, "recomiendo")}
                     className="flex flex-col items-center gap-1 cursor-pointer"
                     aria-label="Recomendar ruta"
                   >
-                    <span className="w-10 h-10 rounded-full bg-white/95 text-slate-900 flex items-center justify-center shadow-lg">
+                    <span className="w-12 h-12 rounded-full bg-white/95 text-slate-900 flex items-center justify-center shadow-xl active:scale-90 transition-transform">
                       <Heart
                         className={cn(
-                          "w-5 h-5",
+                          "w-6 h-6",
                           isTrackedLiked ? "fill-[#105238] text-[#105238]" : "text-slate-800"
                         )}
                       />
                     </span>
+                    <span className="text-[11px] font-bold text-white drop-shadow">Like</span>
                   </button>
 
                   <button
@@ -555,31 +556,31 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
                     className="flex flex-col items-center gap-1 cursor-pointer"
                     aria-label="Ver info"
                   >
-                    <span className="w-10 h-10 rounded-full bg-black/65 backdrop-blur-md text-white border border-white/20 flex items-center justify-center shadow-lg">
-                      <Info className="w-4 h-4" />
+                    <span className="w-12 h-12 rounded-full bg-black/70 backdrop-blur-md text-white border border-white/25 flex items-center justify-center shadow-xl active:scale-90 transition-transform">
+                      <Info className="w-5 h-5" />
                     </span>
-                    <span className="text-[10px] font-bold text-white drop-shadow">Ver info</span>
+                    <span className="text-[11px] font-bold text-white drop-shadow">Ver info</span>
                   </button>
 
                   {totalNav > 1 && (
-                    <>
+                    <div className="flex flex-col items-center gap-2.5 pt-0.5">
                       <button
                         type="button"
                         onClick={goPrevRoute}
-                        className="w-10 h-10 rounded-full bg-white/95 text-slate-900 flex items-center justify-center shadow-lg active:scale-95 cursor-pointer"
+                        className="w-12 h-12 rounded-full bg-white/95 text-slate-900 flex items-center justify-center shadow-xl active:scale-90 transition-transform cursor-pointer"
                         aria-label="Ruta anterior"
                       >
-                        <ArrowUp className="w-4 h-4" />
+                        <ArrowUp className="w-5 h-5" />
                       </button>
                       <button
                         type="button"
                         onClick={goNextRoute}
-                        className="w-10 h-10 rounded-full bg-[#105238] text-[#8ee01a] border border-white/20 flex items-center justify-center shadow-lg active:scale-95 cursor-pointer"
+                        className="w-12 h-12 rounded-full bg-[#105238] text-[#8ee01a] border border-white/25 flex items-center justify-center shadow-xl active:scale-90 transition-transform cursor-pointer"
                         aria-label="Siguiente ruta"
                       >
-                        <ArrowDown className="w-4 h-4" />
+                        <ArrowDown className="w-5 h-5" />
                       </button>
-                    </>
+                    </div>
                   )}
                 </div>
 

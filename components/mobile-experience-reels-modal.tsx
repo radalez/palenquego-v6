@@ -192,25 +192,25 @@ export function MobileExperienceReelsModal({
 
         {/* RIGHT-SIDE FLOATING REELS ACTION RAIL (TikTok Style: Like, Ver Info, Up/Down Arrows) */}
         {!showDetailsSheet && !isCleanMediaMode && (
-          <div className="absolute right-2.5 bottom-44 z-30 flex flex-col items-center gap-3">
+          <div className="absolute right-3 bottom-44 z-30 flex flex-col items-center gap-3.5">
             {/* Like Button */}
             <button
               type="button"
               onClick={() => onToggleFavorite(service.id)}
-              className="flex flex-col items-center gap-0.5 cursor-pointer group"
+              className="flex flex-col items-center gap-1 cursor-pointer group"
               aria-label="Me gusta"
             >
               <span
                 className={cn(
-                  "w-11 h-11 rounded-full flex items-center justify-center border shadow-xl transition-transform active:scale-90",
+                  "w-12 h-12 rounded-full flex items-center justify-center border shadow-xl transition-transform active:scale-90",
                   isFav
                     ? "bg-white text-[#105238] border-white"
-                    : "bg-black/60 backdrop-blur-md text-white border-white/20",
+                    : "bg-black/70 backdrop-blur-md text-white border-white/25",
                 )}
               >
-                <Heart className={cn("w-5 h-5", isFav && "fill-[#105238] text-[#105238]")} />
+                <Heart className={cn("w-6 h-6", isFav && "fill-[#105238] text-[#105238]")} />
               </span>
-              <span className="text-[10px] font-bold text-white drop-shadow">
+              <span className="text-[11px] font-bold text-white drop-shadow">
                 {totalLikesAndReacts > 0 ? totalLikesAndReacts : "Like"}
               </span>
             </button>
@@ -219,32 +219,32 @@ export function MobileExperienceReelsModal({
             <button
               type="button"
               onClick={() => setShowDetailsSheet(true)}
-              className="flex flex-col items-center gap-0.5 cursor-pointer"
+              className="flex flex-col items-center gap-1 cursor-pointer"
               aria-label="Ver info"
             >
-              <span className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-md text-white border border-white/20 flex items-center justify-center shadow-xl transition-transform active:scale-90">
+              <span className="w-12 h-12 rounded-full bg-black/70 backdrop-blur-md text-white border border-white/25 flex items-center justify-center shadow-xl transition-transform active:scale-90">
                 <Info className="w-5 h-5" />
               </span>
-              <span className="text-[10px] font-bold text-white drop-shadow">Ver info</span>
+              <span className="text-[11px] font-bold text-white drop-shadow">Ver info</span>
             </button>
 
             {/* Feed Up / Down Navigation Arrows */}
-            <div className="flex flex-col items-center gap-2 pt-1">
+            <div className="flex flex-col items-center gap-2.5 pt-0.5">
               <button
                 type="button"
                 onClick={() => onStepService("prev")}
-                className="w-10 h-10 rounded-full bg-white/90 text-slate-900 border border-black/10 flex items-center justify-center shadow-xl active:scale-90 cursor-pointer"
+                className="w-12 h-12 rounded-full bg-white/95 text-slate-900 border border-black/10 flex items-center justify-center shadow-xl active:scale-90 transition-transform cursor-pointer"
                 aria-label="Anterior experiencia"
               >
-                <ArrowUp className="w-4 h-4" />
+                <ArrowUp className="w-5 h-5" />
               </button>
               <button
                 type="button"
                 onClick={() => onStepService("next")}
-                className="w-10 h-10 rounded-full bg-[#105238] text-[#8ee01a] border border-white/20 flex items-center justify-center shadow-xl active:scale-90 cursor-pointer"
+                className="w-12 h-12 rounded-full bg-[#105238] text-[#8ee01a] border border-white/25 flex items-center justify-center shadow-xl active:scale-90 transition-transform cursor-pointer"
                 aria-label="Siguiente experiencia"
               >
-                <ArrowDown className="w-4 h-4" />
+                <ArrowDown className="w-5 h-5" />
               </button>
             </div>
           </div>
