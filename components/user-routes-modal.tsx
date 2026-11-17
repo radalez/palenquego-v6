@@ -900,10 +900,32 @@ export function UserRoutesModal({
                     }}
                     onBlur={() => setTimeout(() => setShowOriginSuggestions(false), 200)}
                     placeholder="Dirección o punto de partida..."
-                    className="rounded-xl text-xs h-10 bg-white pr-8"
+                    className={`rounded-xl text-xs h-10 bg-white ${onStartMapPickMode ? (isSearchingOrigin ? "pr-16" : "pr-11") : "pr-8"}`}
                   />
                   {isSearchingOrigin && (
-                    <Loader2 className="w-3.5 h-3.5 text-gray-400 animate-spin absolute right-2.5 top-1/2 -translate-y-1/2" />
+                    <Loader2
+                      className={`w-3.5 h-3.5 text-gray-400 animate-spin absolute top-1/2 -translate-y-1/2 ${
+                        onStartMapPickMode ? "right-10" : "right-2.5"
+                      }`}
+                    />
+                  )}
+                  {onStartMapPickMode && (
+                    <div className="absolute right-1.5 top-1/2 -translate-y-1/2 group/mappin z-10">
+                      <span className="hidden sm:block pointer-events-none opacity-0 group-hover/mappin:opacity-100 transition-opacity duration-150 absolute -top-8 right-0 bg-[#1f2937] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap shadow-lg z-40">
+                        Elegir en mapa
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onStartMapPickMode('origin', { lat: originLat, lng: originLng })
+                          onClose()
+                        }}
+                        className="w-7 h-7 rounded-full bg-[#eaf0e2] hover:bg-[#105238] text-[#105238] hover:text-white flex items-center justify-center transition-colors cursor-pointer shadow-2xs"
+                        aria-label="Elegir origen en el mapa"
+                      >
+                        <MapPin className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   )}
 
                   {/* Dropdown de Sugerencias de Origen */}
@@ -931,19 +953,6 @@ export function UserRoutesModal({
                     </div>
                   )}
                 </div>
-
-                {onStartMapPickMode && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onStartMapPickMode('origin', { lat: originLat, lng: originLng })
-                      onClose()
-                    }}
-                    className="text-[11px] font-semibold text-gray-500 hover:text-gray-800 flex items-center gap-1"
-                  >
-                    📍 Marcar punto de origen en el mapa
-                  </button>
-                )}
               </div>
 
               {/* Destino con Autocompletado */}
@@ -971,10 +980,32 @@ export function UserRoutesModal({
                     }}
                     onBlur={() => setTimeout(() => setShowDestSuggestions(false), 200)}
                     placeholder="¿A dónde vas? (Ej: Plaza Centro, Metrocentro, etc.)"
-                    className="rounded-xl text-xs h-10 bg-white pr-8"
+                    className={`rounded-xl text-xs h-10 bg-white ${onStartMapPickMode ? (isSearchingDest ? "pr-16" : "pr-11") : "pr-8"}`}
                   />
                   {isSearchingDest && (
-                    <Loader2 className="w-3.5 h-3.5 text-gray-400 animate-spin absolute right-2.5 top-1/2 -translate-y-1/2" />
+                    <Loader2
+                      className={`w-3.5 h-3.5 text-gray-400 animate-spin absolute top-1/2 -translate-y-1/2 ${
+                        onStartMapPickMode ? "right-10" : "right-2.5"
+                      }`}
+                    />
+                  )}
+                  {onStartMapPickMode && (
+                    <div className="absolute right-1.5 top-1/2 -translate-y-1/2 group/mappin z-10">
+                      <span className="hidden sm:block pointer-events-none opacity-0 group-hover/mappin:opacity-100 transition-opacity duration-150 absolute -top-8 right-0 bg-[#1f2937] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap shadow-lg z-40">
+                        Elegir en mapa
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onStartMapPickMode('destination', { lat: originLat, lng: originLng })
+                          onClose()
+                        }}
+                        className="w-7 h-7 rounded-full bg-[#eaf0e2] hover:bg-[#105238] text-[#105238] hover:text-white flex items-center justify-center transition-colors cursor-pointer shadow-2xs"
+                        aria-label="Elegir destino en el mapa"
+                      >
+                        <MapPin className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   )}
 
                   {/* Dropdown de Sugerencias de Destino */}
@@ -1002,19 +1033,6 @@ export function UserRoutesModal({
                     </div>
                   )}
                 </div>
-
-                {onStartMapPickMode && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onStartMapPickMode('destination', { lat: originLat, lng: originLng })
-                      onClose()
-                    }}
-                    className="text-[11px] font-semibold text-gray-500 hover:text-gray-800 flex items-center gap-1"
-                  >
-                    📍 Marcar destino en el mapa
-                  </button>
-                )}
               </div>
 
               {/* TIPO DE VIAJE (SOLO IDA vs IDA Y RETORNO) */}
