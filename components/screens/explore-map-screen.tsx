@@ -2824,17 +2824,32 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
         )}
       </div>
 
-      {/* DESKTOP ONLY: Botón circular tres puntos con tooltip oscuro "Ver más" al hacer hover, o Card flotante a la derecha */}
+      {/* DESKTOP ONLY: Arriba a la derecha "Iniciar ruta" siempre visible + círculo tres puntos con tooltip "Ver más", o Card flotante */}
       {!isSheetExpanded ? (
-        <div className="hidden lg:flex items-center absolute bottom-6 right-6 z-30 animate-in fade-in duration-200">
+        <div className="hidden lg:flex items-center gap-2.5 absolute top-[78px] right-4 z-30 animate-in fade-in duration-200">
+          <Button
+            type="button"
+            onClick={() => {
+              if (selectedRoute) {
+                useAppStore.getState().setRouteSearchQuery(selectedRoute.name);
+                useAppStore.getState().setReturnToMapRoute(selectedRoute.name);
+              }
+              onNavigate('rutas-classic')
+            }}
+            className="h-10 px-4 rounded-full bg-[#105238] hover:bg-[#0c3e2b] text-white font-bold text-xs shadow-xl border border-white/15 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+          >
+            <Navigation2 className="w-3.5 h-3.5 text-[#8ee01a]" />
+            <span>Iniciar ruta</span>
+          </Button>
+
           <button
             type="button"
             onClick={() => setIsSheetExpanded(true)}
-            className="group relative w-11 h-11 rounded-full bg-[#105238] hover:bg-[#0c3e2b] text-[#8ee01a] border border-white/20 shadow-xl flex items-center justify-center transition-all active:scale-95 cursor-pointer"
+            className="group relative w-10 h-10 rounded-full bg-white/95 hover:bg-[#eaf0e2] text-[#105238] border border-gray-200/90 shadow-xl flex items-center justify-center transition-all active:scale-95 cursor-pointer"
             aria-label="Ver más"
           >
             <MoreHorizontal className="w-5 h-5" />
-            <span className="pointer-events-none opacity-0 group-hover:opacity-100 group-hover:translate-x-0 translate-x-1 transition-all duration-150 absolute right-full mr-3 bg-neutral-900/95 text-white text-xs font-bold px-3 py-1.5 rounded-xl whitespace-nowrap shadow-lg border border-white/10 z-50">
+            <span className="pointer-events-none opacity-0 group-hover:opacity-100 group-hover:translate-y-0 -translate-y-1 transition-all duration-150 absolute top-full mt-2 right-0 bg-neutral-900/95 text-white text-xs font-bold px-3 py-1.5 rounded-xl whitespace-nowrap shadow-lg border border-white/10 z-50">
               Ver más
             </span>
           </button>
