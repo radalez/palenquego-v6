@@ -3280,9 +3280,6 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   // Escape key handler when comments spotlight is open
   useEffect(() => {
     if (openCommentsId === null) return
-    const originalOverflow = document.body.style.overflow
-    document.body.style.overflow = "hidden"
-
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setOpenCommentsId(null)
@@ -3290,15 +3287,32 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
       }
     }
     window.addEventListener("keydown", handleKeyDown)
-    return () => {
-      document.body.style.overflow = originalOverflow
-      window.removeEventListener("keydown", handleKeyDown)
-    }
+    return () => window.removeEventListener("keydown", handleKeyDown)
   }, [openCommentsId])
 
-  // Toggle comments
+  // Toggle comments and smoothly bring card to the top of the feed
   const handleToggleComments = useCallback((serviceId: number) => {
-    setOpenCommentsId((prev) => (prev === serviceId ? null : serviceId))
+    setOpenCommentsId((prev) => {
+      const isOpening = prev !== serviceId
+      if (isOpening) {
+        setTimeout(() => {
+          const el = document.getElementById(`service-card-${serviceId}`)
+          if (el) {
+            const rect = el.getBoundingClientRect()
+            const scrollContainer = el.closest(".overflow-y-auto")
+            if (scrollContainer) {
+              const containerRect = scrollContainer.getBoundingClientRect()
+              const target = scrollContainer.scrollTop + (rect.top - containerRect.top) - 8
+              scrollContainer.scrollTo({ top: Math.max(0, target), behavior: "smooth" })
+            } else {
+              const targetY = window.scrollY + rect.top - 8
+              window.scrollTo({ top: Math.max(0, targetY), behavior: "smooth" })
+            }
+          }
+        }, 60)
+      }
+      return isOpening ? serviceId : null
+    })
   }, [])
 
   // Promo Video Stories from Followed Businesses (only shown in feed when a followed business has active stories)
@@ -3997,18 +4011,13 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                       />
                     )}
 
-                    {/* Placeholder in feed to keep scroll position intact when card elevates to fixed modal */}
-                    {openCommentsId === service.id && (
-                      <div className="w-full h-[520px] rounded-3xl opacity-0 pointer-events-none" aria-hidden="true" />
-                    )}
-
                     <article
                       id={`service-card-${service.id}`}
                       className={cn(
-                        "bg-card border border-border rounded-3xl transition-all duration-200",
+                        "bg-card border border-border rounded-3xl transition-all duration-200 scroll-mt-24",
                         openCommentsId === service.id
-                          ? "fixed top-1 sm:top-1.5 inset-x-2 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-40 w-[calc(100%-1rem)] sm:w-full sm:max-w-xl md:max-w-2xl h-[calc(100vh-10px)] sm:h-[calc(100vh-14px)] flex flex-col overflow-hidden shadow-[0_25px_60px_-10px_rgba(0,0,0,0.45)] ring-2 ring-black/10 dark:ring-white/10 animate-in fade-in zoom-in-[0.99] duration-150"
-                          : "relative shadow-2xs overflow-visible scroll-mt-24",
+                          ? "relative z-40 shadow-[0_25px_60px_-10px_rgba(0,0,0,0.35)] ring-2 ring-black/10 dark:ring-white/10 scale-[1.02] max-h-[85vh] sm:max-h-[88vh] flex flex-col overflow-hidden"
+                          : "shadow-2xs overflow-visible",
                       )}
                     >
                       {/* Post Header: Business + Location + Price (Fixed at top of card, max 4-5px from top edge of screen) */}
