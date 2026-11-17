@@ -4628,52 +4628,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                           className="shrink-0 border-t border-border/50 bg-[#fafaf8] dark:bg-[#1e1e1e] p-3 rounded-b-3xl z-10 animate-in fade-in duration-150"
                         >
                           {/* Facebook-style Bone Composer Box focused on Tourism Experience Rating & Opinions */}
-                          <div className="bg-[#f0f2f5] dark:bg-[#3a3b3c] rounded-2xl p-3 border-0 relative shadow-2xs space-y-2.5">
-                            {/* Header: Title + Star Rating */}
-                            <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-black/5 dark:border-white/5 flex-wrap">
-                              <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
-                                <MessageSquare className="w-3.5 h-3.5 text-[#105238] dark:text-[#8ee01a]" />
-                                <span>Opiniones y calificación de la experiencia</span>
-                              </div>
-
-                                {/* Star Rating on the Right */}
-                                <div className="flex items-center gap-1">
-                                  <span className="text-[11px] text-muted-foreground font-medium hidden sm:inline">
-                                    Calificar:
-                                  </span>
-                                  <div className="flex items-center gap-0.5 bg-white/90 dark:bg-[#242526] px-2 py-0.5 rounded-full border border-black/5 shadow-2xs">
-                                    {[1, 2, 3, 4, 5].map((starVal) => (
-                                      <button
-                                        key={starVal}
-                                        type="button"
-                                        onClick={() =>
-                                          setCommentRatings((prev) => ({
-                                            ...prev,
-                                            [service.id]: starVal,
-                                          }))
-                                        }
-                                        className="cursor-pointer hover:scale-110 transition-transform"
-                                        title={`${starVal} estrellas`}
-                                      >
-                                        <Star
-                                          className={cn(
-                                            "w-3.5 h-3.5",
-                                            starVal <= currentRating
-                                              ? "fill-[#105238] text-[#105238] dark:fill-[#8ee01a] dark:text-[#8ee01a]"
-                                              : "text-muted-foreground/35",
-                                          )}
-                                        />
-                                      </button>
-                                    ))}
-                                    <span className="text-[10px] font-bold text-foreground ml-1">
-                                      {currentRating}/5
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* User Avatar Thumbnail (First on left) + Traveler Intent Quick Chips (To the right on same line) */}
-                              <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-0.5">
+                          <div className="bg-[#f0f2f5] dark:bg-[#3a3b3c] rounded-2xl p-2.5 sm:p-3 border-0 relative shadow-2xs space-y-2">
+                            {/* Single Unified Header Row: User Avatar + Quick Intent Chips + Star Rating (Guaranteed 1 single line, no wrapping) */}
+                            <div className="flex items-center justify-between gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide py-0.5 flex-nowrap w-full">
+                              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 flex-nowrap">
                                 {currentUser?.avatar ? (
                                   <img
                                     src={currentUser.avatar}
@@ -4710,6 +4668,42 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                   </button>
                                 ))}
                               </div>
+
+                              {/* Star Rating on the Right (Same line!) */}
+                              <div className="flex items-center gap-1 shrink-0 ml-auto flex-nowrap">
+                                <span className="text-[11px] text-muted-foreground font-medium hidden md:inline">
+                                  Calificar:
+                                </span>
+                                <div className="flex items-center gap-0.5 bg-white/90 dark:bg-[#242526] px-2 py-0.5 rounded-full border border-black/5 shadow-2xs shrink-0">
+                                  {[1, 2, 3, 4, 5].map((starVal) => (
+                                    <button
+                                      key={starVal}
+                                      type="button"
+                                      onClick={() =>
+                                        setCommentRatings((prev) => ({
+                                          ...prev,
+                                          [service.id]: starVal,
+                                        }))
+                                      }
+                                      className="cursor-pointer hover:scale-110 transition-transform p-0.5"
+                                      title={`${starVal} estrellas`}
+                                    >
+                                      <Star
+                                        className={cn(
+                                          "w-3.5 h-3.5",
+                                          starVal <= currentRating
+                                            ? "fill-[#105238] text-[#105238] dark:fill-[#8ee01a] dark:text-[#8ee01a]"
+                                            : "text-muted-foreground/35",
+                                        )}
+                                      />
+                                    </button>
+                                  ))}
+                                  <span className="text-[10px] font-bold text-foreground ml-1">
+                                    {currentRating}/5
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
 
                               {/* Active Badges (Flag & Location, if selected) */}
                               {(currentCountry || currentLoc) && (
@@ -4756,15 +4750,23 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                 </div>
                               )}
 
-                              {/* Input Textarea (Clean, No border, focused on Tourism Experience) */}
+                              {/* Input Textarea (Single-line initial height, auto-expanding as user types) */}
                               <textarea
+                                ref={(el) => {
+                                  if (el) {
+                                    el.style.height = "auto"
+                                    el.style.height = el.value ? `${Math.min(el.scrollHeight, 120)}px` : "22px"
+                                  }
+                                }}
                                 value={draftText}
-                                onChange={(e) =>
+                                onChange={(e) => {
+                                  e.target.style.height = "auto"
+                                  e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`
                                   setCommentDrafts((prev) => ({
                                     ...prev,
                                     [service.id]: e.target.value,
                                   }))
-                                }
+                                }}
                                 onKeyDown={(e) => {
                                   if (e.key === "Enter" && !e.shiftKey) {
                                     e.preventDefault()
@@ -4772,8 +4774,8 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                   }
                                 }}
                                 placeholder="Comparte tu experiencia, opina, califica..."
-                                className="w-full bg-transparent border-0 focus:outline-none focus:ring-0 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground resize-none p-0 min-h-[44px] max-h-24 leading-relaxed"
-                                rows={2}
+                                className="w-full bg-transparent border-0 focus:outline-none focus:ring-0 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground resize-none p-0 min-h-[22px] max-h-28 leading-snug overflow-y-auto"
+                                rows={1}
                               />
 
                               {/* Bottom Action Bar: Subtle Gray Icons + Black Tooltips + Send Icon Button */}
