@@ -1461,6 +1461,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   const [flagSearchQuery, setFlagSearchQuery] = useState("")
   const [flagContinent, setFlagContinent] = useState<string>("Todas")
   const [flagCarouselPage, setFlagCarouselPage] = useState(0)
+  const flagContinentTrackRef = useRef<HTMLDivElement | null>(null)
 
   const [emojiSearchQuery, setEmojiSearchQuery] = useState("")
   const [emojiCategory, setEmojiCategory] = useState<string>("todo")
@@ -3974,129 +3975,104 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                       data-service-id={service.id}
                       className="space-y-5"
                     >
-                    {/* Soft Backdrop when this card's comments are in focus */}
-                    {openCommentsId === service.id && (
-                      <div
-                        className="fixed inset-0 bg-black/40 backdrop-blur-xs z-30 transition-opacity animate-in fade-in duration-200"
-                        onClick={() => {
-                          setOpenCommentsId(null)
-                          setCommentPickerMode(null)
-                        }}
-                      />
-                    )}
-
                     <article
                       id={`service-card-${service.id}`}
                       className={cn(
                         "bg-card border border-border rounded-3xl overflow-visible scroll-mt-24 transition-all duration-200",
                         openCommentsId === service.id
-                          ? "relative z-40 shadow-[0_25px_60px_-10px_rgba(0,0,0,0.35)] ring-2 ring-black/10 dark:ring-white/10 scale-[1.01]"
+                          ? "ring-1 ring-[#105238]/30 shadow-md"
                           : "shadow-2xs",
                       )}
                     >
-                      {/* Post Header & Caption: Sticky when comments are open so the user NEVER loses context on scroll! */}
-                      <div
-                        className={cn(
-                          "transition-all duration-200",
-                          openCommentsId === service.id &&
-                            "sticky z-30 bg-card/98 backdrop-blur-md rounded-t-3xl border-b border-border/40 shadow-xs",
-                        )}
-                        style={
-                          openCommentsId === service.id
-                            ? { top: showStickySearch ? `${stickySearchHeight + 6}px` : "8px" }
-                            : undefined
-                        }
-                      >
-                        {/* Post Header: Business + Location + Price */}
-                        <div className="p-4 flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-3 min-w-0">
+                      {/* Post Header: Business + Location + Price */}
+                      <div className="p-4 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <button
+                            type="button"
+                            onClick={() => service.businessId && router.push(`/b/${service.businessId}`)}
+                            className="shrink-0 cursor-pointer"
+                          >
+                            <Avatar className="w-11 h-11 border border-slate-200">
+                              <AvatarImage src={service.businessAvatar} alt={service.businessName || service.name} />
+                              <AvatarFallback className="bg-[#f0f2f5] text-slate-700 font-bold text-xs">
+                                {(service.businessName || service.name).substring(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                          </button>
+                          <div className="min-w-0">
                             <button
                               type="button"
                               onClick={() => service.businessId && router.push(`/b/${service.businessId}`)}
-                              className="shrink-0 cursor-pointer"
+                              className="font-bold text-sm text-foreground hover:underline truncate block text-left cursor-pointer"
                             >
-                              <Avatar className="w-11 h-11 border border-slate-200">
-                                <AvatarImage src={service.businessAvatar} alt={service.businessName || service.name} />
-                                <AvatarFallback className="bg-[#f0f2f5] text-slate-700 font-bold text-xs">
-                                  {(service.businessName || service.name).substring(0, 2).toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
+                              {service.businessName || "Comercio Aliado PalenqueGo"}
                             </button>
-                            <div className="min-w-0">
-                              <button
-                                type="button"
-                                onClick={() => service.businessId && router.push(`/b/${service.businessId}`)}
-                                className="font-bold text-sm text-foreground hover:underline truncate block text-left cursor-pointer"
-                              >
-                                {service.businessName || "Comercio Aliado PalenqueGo"}
-                              </button>
-                              <div className="flex items-center gap-2 text-[11px] text-slate-500">
-                                <span className="inline-flex items-center gap-1 truncate">
-                                  <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-                                  <span className="truncate">{service.location}</span>
-                                </span>
-                                <span>·</span>
-                                <span className="font-medium text-slate-500">
-                                  {service.category || service.categoria?.nombre || "Experiencia"}
-                                </span>
-                              </div>
+                            <div className="flex items-center gap-2 text-[11px] text-slate-500">
+                              <span className="inline-flex items-center gap-1 truncate">
+                                <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                                <span className="truncate">{service.location}</span>
+                              </span>
+                              <span>·</span>
+                              <span className="font-medium text-slate-500">
+                                {service.category || service.categoria?.nombre || "Experiencia"}
+                              </span>
                             </div>
-                          </div>
-
-                          {/* Price Pill */}
-                          <div className="text-right shrink-0">
-                            {hasFlashOffer ? (
-                              <div>
-                                <span className="text-[11px] line-through text-muted-foreground mr-1.5">
-                                  ${basePrice.toFixed(2)}
-                                </span>
-                                <span className="text-lg font-black text-[#105238] dark:text-[#8ee01a]">
-                                  ${flashPrice.toFixed(2)}
-                                </span>
-                                <span className="text-[11px] text-muted-foreground font-semibold"> /p</span>
-                              </div>
-                            ) : (
-                              <div>
-                                <span className="text-lg font-black text-foreground">${basePrice.toFixed(2)}</span>
-                                <span className="text-[11px] text-muted-foreground font-semibold"> /p</span>
-                              </div>
-                            )}
                           </div>
                         </div>
 
-                        {/* Post Caption: Title + Description + Rating + Bone "+ Info" button (like Facebook's "Más información") */}
-                        <div className="px-4 pb-3 space-y-1.5">
-                          <div className="flex items-start justify-between gap-2">
-                            <h3
-                              onClick={() => openServiceDetailInstant(service)}
-                              className="font-extrabold text-base sm:text-lg text-foreground hover:underline transition-colors cursor-pointer leading-snug"
-                            >
-                              {service.name}
-                            </h3>
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              <button
-                                type="button"
-                                onClick={() => openServiceDetailInstant(service)}
-                                className="inline-flex items-center gap-1 bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-800 text-[11px] font-bold px-3 py-1 rounded-lg transition-colors cursor-pointer"
-                                title="Ver página completa de la experiencia"
-                              >
-                                <Info className="w-3 h-3 text-slate-600" />
-                                <span>Más información</span>
-                              </button>
-                              <div className="flex items-center gap-1 bg-[#f0f2f5] px-2 py-1 rounded-lg">
-                                <Star className="w-3.5 h-3.5 fill-slate-700 text-slate-700" />
-                                <span className="font-bold text-slate-800 text-xs">{service.rating}</span>
-                                <span className="text-[11px] text-slate-500">({service.reviews})</span>
-                              </div>
+                        {/* Price Pill */}
+                        <div className="text-right shrink-0">
+                          {hasFlashOffer ? (
+                            <div>
+                              <span className="text-[11px] line-through text-muted-foreground mr-1.5">
+                                ${basePrice.toFixed(2)}
+                              </span>
+                              <span className="text-lg font-black text-[#105238] dark:text-[#8ee01a]">
+                                ${flashPrice.toFixed(2)}
+                              </span>
+                              <span className="text-[11px] text-muted-foreground font-semibold"> /p</span>
                             </div>
-                          </div>
-
-                          {service.description && (
-                            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 leading-relaxed">
-                              {service.description}
-                            </p>
+                          ) : (
+                            <div>
+                              <span className="text-lg font-black text-foreground">${basePrice.toFixed(2)}</span>
+                              <span className="text-[11px] text-muted-foreground font-semibold"> /p</span>
+                            </div>
                           )}
                         </div>
+                      </div>
+
+                      {/* Post Caption: Title + Description + Rating + Bone "+ Info" button (like Facebook's "Más información") */}
+                      <div className="px-4 pb-3 space-y-1.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <h3
+                            onClick={() => openServiceDetailInstant(service)}
+                            className="font-extrabold text-base sm:text-lg text-foreground hover:underline transition-colors cursor-pointer leading-snug"
+                          >
+                            {service.name}
+                          </h3>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => openServiceDetailInstant(service)}
+                              className="inline-flex items-center gap-1 bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-800 text-[11px] font-bold px-3 py-1 rounded-lg transition-colors cursor-pointer"
+                              title="Ver página completa de la experiencia"
+                            >
+                              <Info className="w-3 h-3 text-slate-600" />
+                              <span>Más información</span>
+                            </button>
+                            <div className="flex items-center gap-1 bg-[#f0f2f5] px-2 py-1 rounded-lg">
+                              <Star className="w-3.5 h-3.5 fill-slate-700 text-slate-700" />
+                              <span className="font-bold text-slate-800 text-xs">{service.rating}</span>
+                              <span className="text-[11px] text-slate-500">({service.reviews})</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {service.description && (
+                          <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                            {service.description}
+                          </p>
+                        )}
                       </div>
 
                       {/* Post Media: Clicking image opens the Interactive Experience Lightbox Modal */}
@@ -4534,98 +4510,136 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                               </div>
                             )}
 
-                            {/* Facebook Bone Composer Box */}
-                            <div className="bg-[#f0f2f5] dark:bg-[#3a3b3c] rounded-2xl p-3 border-0 relative shadow-2xs space-y-2">
-                              {/* Top Bar inside Box: Avatar + Selected Badges + Stars */}
-                              <div className="flex items-center justify-between gap-2 flex-wrap">
-                                <div className="flex items-center gap-2 min-w-0">
-                                  {currentUser?.avatar ? (
-                                    <img
-                                      src={currentUser.avatar}
-                                      alt={currentUser.name || "Usuario"}
-                                      className="w-7 h-7 rounded-full object-cover ring-1 ring-black/10 shrink-0"
-                                    />
-                                  ) : (
-                                    <div className="w-7 h-7 rounded-full bg-[#105238] text-white flex items-center justify-center font-bold text-[10px] shrink-0 ring-1 ring-black/10">
-                                      {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : "V"}
-                                    </div>
-                                  )}
-
-                                  {/* Active Country Flag Badge: Round 3D Flag only, NO bulky country text! */}
-                                  {currentCountry && (
-                                    <span className="inline-flex items-center gap-1.5 bg-white dark:bg-[#242526] pl-1 pr-2 py-0.5 rounded-full border border-black/5 text-foreground shadow-2xs">
-                                      <RoundFlagIcon code={currentCountry.code} className="w-5 h-5" />
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          setCommentCountries((prev) => {
-                                            const next = { ...prev }
-                                            delete next[service.id]
-                                            return next
-                                          })
-                                        }
-                                        className="text-muted-foreground hover:text-foreground text-xs leading-none cursor-pointer"
-                                        title="Quitar bandera"
-                                      >
-                                        ✕
-                                      </button>
-                                    </span>
-                                  )}
-
-                                  {/* Active Location Badge */}
-                                  {currentLoc && (
-                                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-white dark:bg-[#242526] px-2 py-0.5 rounded-full border border-black/5 text-foreground shadow-2xs">
-                                      <MapPin className="w-3 h-3 text-slate-500" />
-                                      <span className="truncate max-w-[120px]">{currentLoc}</span>
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          setCommentLocations((prev) => {
-                                            const next = { ...prev }
-                                            delete next[service.id]
-                                            return next
-                                          })
-                                        }
-                                        className="text-muted-foreground hover:text-foreground ml-0.5 cursor-pointer"
-                                      >
-                                        ✕
-                                      </button>
-                                    </span>
-                                  )}
+                            {/* Facebook-style Bone Composer Box focused on Tourism Experience Rating & Opinions */}
+                            <div className="bg-[#f0f2f5] dark:bg-[#3a3b3c] rounded-2xl p-3 border-0 relative shadow-2xs space-y-2.5">
+                              {/* Header: Title + Star Rating */}
+                              <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-black/5 dark:border-white/5 flex-wrap">
+                                <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                                  <MessageSquare className="w-3.5 h-3.5 text-[#105238] dark:text-[#8ee01a]" />
+                                  <span>Opiniones y calificación de la experiencia</span>
                                 </div>
 
-                                {/* Star Rating on the Right (User: "a la derecha estan bien las estrellas me gusto") */}
-                                <div className="flex items-center gap-0.5 bg-white/80 dark:bg-[#242526]/80 px-2 py-0.5 rounded-full border border-black/5 shadow-2xs shrink-0">
-                                  {[1, 2, 3, 4, 5].map((starVal) => (
-                                    <button
-                                      key={starVal}
-                                      type="button"
-                                      onClick={() =>
-                                        setCommentRatings((prev) => ({
-                                          ...prev,
-                                          [service.id]: starVal,
-                                        }))
-                                      }
-                                      className="cursor-pointer"
-                                      title={`${starVal} estrellas`}
-                                    >
-                                      <Star
-                                        className={cn(
-                                          "w-3.5 h-3.5",
-                                          starVal <= currentRating
-                                            ? "fill-[#105238] text-[#105238] dark:fill-[#8ee01a] dark:text-[#8ee01a]"
-                                            : "text-muted-foreground/35",
-                                        )}
-                                      />
-                                    </button>
-                                  ))}
-                                  <span className="text-[10px] font-bold text-muted-foreground ml-1">
-                                    {currentRating}/5
+                                {/* Star Rating on the Right */}
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[11px] text-muted-foreground font-medium hidden sm:inline">
+                                    Calificar:
                                   </span>
+                                  <div className="flex items-center gap-0.5 bg-white/90 dark:bg-[#242526] px-2 py-0.5 rounded-full border border-black/5 shadow-2xs">
+                                    {[1, 2, 3, 4, 5].map((starVal) => (
+                                      <button
+                                        key={starVal}
+                                        type="button"
+                                        onClick={() =>
+                                          setCommentRatings((prev) => ({
+                                            ...prev,
+                                            [service.id]: starVal,
+                                          }))
+                                        }
+                                        className="cursor-pointer hover:scale-110 transition-transform"
+                                        title={`${starVal} estrellas`}
+                                      >
+                                        <Star
+                                          className={cn(
+                                            "w-3.5 h-3.5",
+                                            starVal <= currentRating
+                                              ? "fill-[#105238] text-[#105238] dark:fill-[#8ee01a] dark:text-[#8ee01a]"
+                                              : "text-muted-foreground/35",
+                                          )}
+                                        />
+                                      </button>
+                                    ))}
+                                    <span className="text-[10px] font-bold text-foreground ml-1">
+                                      {currentRating}/5
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
 
-                              {/* Input Textarea (Clean, No border) */}
+                              {/* Traveler Intent Quick Chips: "si fue, o si le gustaria ir..." */}
+                              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-0.5">
+                                {[
+                                  { label: "🌴 Ya visité este lugar", prefix: "¡Ya visité este lugar y lo recomiendo! " },
+                                  { label: "✨ Me gustaría ir", prefix: "¡Me encantaría ir pronto! " },
+                                  { label: "❓ Pregunta sobre el sitio", prefix: "¿Alguien sabe si " },
+                                ].map((pill) => (
+                                  <button
+                                    key={pill.label}
+                                    type="button"
+                                    onClick={() => {
+                                      setCommentDrafts((prev) => {
+                                        const current = prev[service.id] || ""
+                                        if (current.startsWith(pill.prefix)) return prev
+                                        return {
+                                          ...prev,
+                                          [service.id]: pill.prefix + current,
+                                        }
+                                      })
+                                    }}
+                                    className="px-2.5 py-0.5 rounded-full bg-white/80 hover:bg-white dark:bg-black/20 dark:hover:bg-black/40 border border-black/5 text-[10px] font-semibold text-slate-700 dark:text-slate-300 transition-colors whitespace-nowrap cursor-pointer shadow-2xs"
+                                  >
+                                    {pill.label}
+                                  </button>
+                                ))}
+                              </div>
+
+                              {/* User Avatar + Active Badges (Flag & Location) */}
+                              <div className="flex items-center gap-2 flex-wrap pt-0.5">
+                                {currentUser?.avatar ? (
+                                  <img
+                                    src={currentUser.avatar}
+                                    alt={currentUser.name || "Usuario"}
+                                    className="w-6 h-6 rounded-full object-cover ring-1 ring-black/10 shrink-0"
+                                  />
+                                ) : (
+                                  <div className="w-6 h-6 rounded-full bg-[#105238] text-white flex items-center justify-center font-bold text-[9px] shrink-0 ring-1 ring-black/10">
+                                    {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : "V"}
+                                  </div>
+                                )}
+
+                                {/* Active Country Flag Badge: Round 3D Flag only, NO bulky country text! */}
+                                {currentCountry && (
+                                  <span className="inline-flex items-center gap-1.5 bg-white dark:bg-[#242526] pl-1 pr-2 py-0.5 rounded-full border border-black/5 text-foreground shadow-2xs">
+                                    <RoundFlagIcon code={currentCountry.code} className="w-4 h-4" />
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setCommentCountries((prev) => {
+                                          const next = { ...prev }
+                                          delete next[service.id]
+                                          return next
+                                        })
+                                      }
+                                      className="text-muted-foreground hover:text-foreground text-xs leading-none cursor-pointer"
+                                      title="Quitar bandera"
+                                    >
+                                      ✕
+                                    </button>
+                                  </span>
+                                )}
+
+                                {/* Active Location Badge */}
+                                {currentLoc && (
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-white dark:bg-[#242526] px-2 py-0.5 rounded-full border border-black/5 text-foreground shadow-2xs">
+                                    <MapPin className="w-3 h-3 text-slate-500" />
+                                    <span className="truncate max-w-[140px]">{currentLoc}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setCommentLocations((prev) => {
+                                          const next = { ...prev }
+                                          delete next[service.id]
+                                          return next
+                                        })
+                                      }
+                                      className="text-muted-foreground hover:text-foreground ml-0.5 cursor-pointer"
+                                    >
+                                      ✕
+                                    </button>
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Input Textarea (Clean, No border, focused on Tourism Experience) */}
                               <textarea
                                 value={draftText}
                                 onChange={(e) =>
@@ -4640,7 +4654,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                     handleAddServiceComment(service.id)
                                   }
                                 }}
-                                placeholder={`Comentar como ${currentUser?.name || "viajero"}...`}
+                                placeholder={`Comenta u opina sobre tu experiencia en ${service.name}... (si ya fuiste, qué tal fue o si te gustaría ir)`}
                                 className="w-full bg-transparent border-0 focus:outline-none focus:ring-0 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground resize-none p-0 min-h-[44px] max-h-24 leading-relaxed"
                                 rows={2}
                               />
@@ -4724,7 +4738,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                 {/* Send Icon Button (NO text "Publicar" - with Black Tooltip) */}
                                 <div className="relative group/iconbtn">
                                   <span className="pointer-events-none opacity-0 group-hover/iconbtn:opacity-100 transition-opacity duration-150 absolute -top-8 right-0 bg-[#1f2937] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap shadow-lg z-50">
-                                    Enviar comentario
+                                    Enviar opinión
                                   </span>
                                   <button
                                     type="button"
@@ -4745,7 +4759,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                 {/* FLOATING POPOVER: EMOJIS (DESPRENDE HACIA ARRIBA CON BÚSQUEDA Y CATEGORÍAS) */}
                                 {commentPickerMode === "emojis" && (
                                   <div className="comment-picker-popover absolute bottom-full left-0 mb-3 w-[330px] max-w-[92vw] bg-white dark:bg-[#242526] rounded-2xl border border-border shadow-[0_16px_40px_rgba(0,0,0,0.25)] p-3.5 z-50 animate-in fade-in zoom-in-95 duration-150 after:content-[''] after:absolute after:top-full after:left-14 after:border-[7px] after:border-transparent after:border-t-white dark:after:border-t-[#242526]">
-                                    <div className="flex items-center justify-between pb-2.5 border-b border-border/50">
+                                    <div className="flex items-center justify-between pb-2 border-b border-border/50">
                                       <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
                                         <Smile className="w-4 h-4 text-slate-700 dark:text-slate-300" />
                                         <span>Emojis</span>
@@ -4760,7 +4774,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                     </div>
 
                                     {/* Search input */}
-                                    <div className="pt-2.5 pb-2">
+                                    <div className="pt-2 pb-1.5">
                                       <div className="relative">
                                         <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                                         <input
@@ -4773,8 +4787,8 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                       </div>
                                     </div>
 
-                                    {/* Category Pills: Todo, 😊 Emociones, 🌲 Naturaleza, ✈️ Viaje */}
-                                    <div className="flex items-center gap-1 overflow-x-auto pb-2 scrollbar-none text-[11px]">
+                                    {/* Category Pills: Wrap cleanly without any scrollbar */}
+                                    <div className="flex flex-wrap gap-1 pb-1.5 text-[11px]">
                                       {[
                                         { id: "todo", label: "Todo" },
                                         { id: "emociones", label: "😊 Emociones" },
@@ -4800,8 +4814,8 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                       })}
                                     </div>
 
-                                    {/* Emojis Grid */}
-                                    <div className="max-h-52 overflow-y-auto pt-1">
+                                    {/* Emojis Grid: with scrollbar-hide */}
+                                    <div className="max-h-52 overflow-y-auto scrollbar-hide pt-1">
                                       <div className="grid grid-cols-6 gap-1.5 justify-items-center">
                                         {filteredEmojis.map((emoji, idx) => (
                                           <button
@@ -4823,10 +4837,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                   </div>
                                 )}
 
-                                {/* FLOATING POPOVER: BANDERAS DEL MUNDO (ESTILO IMAGEN 4 CON CARRUSEL Y BÚSQUEDA) */}
+                                {/* FLOATING POPOVER: BANDERAS DEL MUNDO (ESTILO IMAGEN 4 CON FLECHAS CIRCULARES ESTÁNDAR) */}
                                 {commentPickerMode === "country" && (
                                   <div className="comment-picker-popover absolute bottom-full left-0 mb-3 w-[330px] max-w-[92vw] bg-white dark:bg-[#242526] rounded-2xl border border-border shadow-[0_16px_40px_rgba(0,0,0,0.25)] p-3.5 z-50 animate-in fade-in zoom-in-95 duration-150 after:content-[''] after:absolute after:top-full after:left-24 after:border-[7px] after:border-transparent after:border-t-white dark:after:border-t-[#242526]">
-                                    <div className="flex items-center justify-between pb-2.5 border-b border-border/50">
+                                    <div className="flex items-center justify-between pb-2 border-b border-border/50">
                                       <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
                                         <Flag className="w-4 h-4 text-slate-700 dark:text-slate-300" />
                                         <span>Banderas del mundo</span>
@@ -4841,7 +4855,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                     </div>
 
                                     {/* Search & Style Switch (Imagen 4) */}
-                                    <div className="pt-2.5 pb-2">
+                                    <div className="pt-2 pb-1.5">
                                       <div className="flex items-center gap-1.5">
                                         <div className="relative flex-1">
                                           <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -4867,46 +4881,73 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                       </div>
                                     </div>
 
-                                    {/* Continent filter pills (Sutil, solo 10% acento en seleccionado) */}
-                                    <div className="flex items-center gap-1 overflow-x-auto pb-2 scrollbar-none text-[11px]">
-                                      {(["Todas", "América", "Europa", "Asia", "África", "Oceanía"] as const).map(
-                                        (cont) => {
-                                          const isActive = flagContinent === cont
-                                          return (
-                                            <button
-                                              key={cont}
-                                              type="button"
-                                              onClick={() => {
-                                                setFlagContinent(cont)
-                                                setFlagCarouselPage(0)
-                                              }}
-                                              className={cn(
-                                                "px-3 py-1 rounded-full font-bold whitespace-nowrap transition-colors cursor-pointer text-[11px]",
-                                                isActive
-                                                  ? "bg-[#105238] text-white shadow-2xs"
-                                                  : "bg-[#f0f2f5] hover:bg-[#e4e6eb] dark:bg-black/20 dark:hover:bg-black/30 text-slate-700 dark:text-slate-300",
-                                              )}
-                                            >
-                                              {cont}
-                                            </button>
-                                          )
-                                        },
-                                      )}
+                                    {/* Continents slider with standard PalenqueGo circular arrows (NO scrollbar) */}
+                                    <div className="flex items-center gap-1.5 py-1">
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          flagContinentTrackRef.current?.scrollBy({ left: -120, behavior: "smooth" })
+                                        }
+                                        className="w-6 h-6 rounded-full bg-white dark:bg-card border border-slate-200/90 shadow-2xs flex items-center justify-center text-slate-600 hover:bg-[#f0f2f5] hover:text-slate-900 transition-all shrink-0 cursor-pointer"
+                                        aria-label="Anterior"
+                                      >
+                                        <ChevronLeft className="w-3.5 h-3.5" />
+                                      </button>
+
+                                      <div
+                                        ref={flagContinentTrackRef}
+                                        className="flex-1 flex gap-1 overflow-x-auto scrollbar-hide py-0.5"
+                                      >
+                                        {(["Todas", "América", "Europa", "Asia", "África", "Oceanía"] as const).map(
+                                          (cont) => {
+                                            const isActive = flagContinent === cont
+                                            return (
+                                              <button
+                                                key={cont}
+                                                type="button"
+                                                onClick={() => {
+                                                  setFlagContinent(cont)
+                                                  setFlagCarouselPage(0)
+                                                }}
+                                                className={cn(
+                                                  "px-2.5 py-1 rounded-full font-bold whitespace-nowrap transition-colors cursor-pointer text-[10px]",
+                                                  isActive
+                                                    ? "bg-[#105238] text-white shadow-2xs"
+                                                    : "bg-[#f0f2f5] hover:bg-[#e4e6eb] dark:bg-black/20 dark:hover:bg-black/30 text-slate-700 dark:text-slate-300",
+                                                )}
+                                              >
+                                                {cont}
+                                              </button>
+                                            )
+                                          },
+                                        )}
+                                      </div>
+
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          flagContinentTrackRef.current?.scrollBy({ left: 120, behavior: "smooth" })
+                                        }
+                                        className="w-6 h-6 rounded-full bg-white dark:bg-card border border-slate-200/90 shadow-2xs flex items-center justify-center text-slate-600 hover:bg-[#f0f2f5] hover:text-slate-900 transition-all shrink-0 cursor-pointer"
+                                        aria-label="Siguiente"
+                                      >
+                                        <ChevronRight className="w-3.5 h-3.5" />
+                                      </button>
                                     </div>
 
-                                    {/* Round Flags Carousel */}
+                                    {/* Round Flags Carousel with standard PalenqueGo circular arrow buttons */}
                                     {filteredFlags.length === 0 ? (
-                                      <div className="py-6 text-center text-xs text-muted-foreground">
+                                      <div className="py-5 text-center text-xs text-muted-foreground">
                                         No se encontraron banderas
                                       </div>
                                     ) : (
-                                      <div className="pt-2">
-                                        <div className="flex items-center justify-between gap-1">
+                                      <div className="pt-1.5">
+                                        <div className="flex items-center justify-between gap-1.5">
                                           <button
                                             type="button"
                                             disabled={flagCarouselPage === 0}
                                             onClick={() => setFlagCarouselPage((p) => Math.max(0, p - 1))}
-                                            className="w-7 h-7 rounded-full flex items-center justify-center text-slate-600 hover:bg-[#f0f2f5] dark:hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                            className="w-7 h-7 rounded-full bg-white dark:bg-card border border-slate-200/90 shadow-2xs flex items-center justify-center text-slate-700 hover:bg-[#f0f2f5] hover:text-slate-900 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer shrink-0"
                                             aria-label="Anterior"
                                           >
                                             <ChevronLeft className="w-4 h-4" />
@@ -4953,32 +4994,12 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                             onClick={() =>
                                               setFlagCarouselPage((p) => Math.min(totalFlagPages - 1, p + 1))
                                             }
-                                            className="w-7 h-7 rounded-full flex items-center justify-center text-slate-600 hover:bg-[#f0f2f5] dark:hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                            className="w-7 h-7 rounded-full bg-white dark:bg-card border border-slate-200/90 shadow-2xs flex items-center justify-center text-slate-700 hover:bg-[#f0f2f5] hover:text-slate-900 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer shrink-0"
                                             aria-label="Siguiente"
                                           >
                                             <ChevronRight className="w-4 h-4" />
                                           </button>
                                         </div>
-
-                                        {/* Pagination Dots (Imagen 4) */}
-                                        {totalFlagPages > 1 && (
-                                          <div className="flex items-center justify-center gap-1.5 pt-3 pb-1">
-                                            {Array.from({ length: totalFlagPages }).map((_, idx) => (
-                                              <button
-                                                key={idx}
-                                                type="button"
-                                                onClick={() => setFlagCarouselPage(idx)}
-                                                className={cn(
-                                                  "w-1.5 h-1.5 rounded-full transition-all cursor-pointer",
-                                                  flagCarouselPage === idx
-                                                    ? "bg-[#105238] dark:bg-[#8ee01a] w-3"
-                                                    : "bg-slate-300 dark:bg-slate-600",
-                                                )}
-                                                aria-label={`Página ${idx + 1}`}
-                                              />
-                                            ))}
-                                          </div>
-                                        )}
                                       </div>
                                     )}
                                   </div>
@@ -4987,7 +5008,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                 {/* FLOATING POPOVER: UBICACIÓN (DESPRENDE HACIA ARRIBA CON BÚSQUEDA Y AUTO-DETECCIÓN) */}
                                 {commentPickerMode === "location" && (
                                   <div className="comment-picker-popover absolute bottom-full left-0 mb-3 w-[330px] max-w-[92vw] bg-white dark:bg-[#242526] rounded-2xl border border-border shadow-[0_16px_40px_rgba(0,0,0,0.25)] p-3.5 z-50 animate-in fade-in zoom-in-95 duration-150 after:content-[''] after:absolute after:top-full after:left-5 after:border-[7px] after:border-transparent after:border-t-white dark:after:border-t-[#242526]">
-                                    <div className="flex items-center justify-between pb-2.5 border-b border-border/50">
+                                    <div className="flex items-center justify-between pb-2 border-b border-border/50">
                                       <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
                                         <MapPin className="w-4 h-4 text-slate-700 dark:text-slate-300" />
                                         <span>Ubicación</span>
@@ -5002,7 +5023,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                     </div>
 
                                     {/* Search Bar */}
-                                    <div className="pt-2.5 pb-2">
+                                    <div className="pt-2 pb-1.5">
                                       <div className="relative">
                                         <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                                         <input
@@ -5052,7 +5073,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                       <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide pt-1">
                                         Destinos populares
                                       </div>
-                                      <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto pt-0.5">
+                                      <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto scrollbar-hide pt-0.5">
                                         {POPULAR_TRAVEL_LOCATIONS.filter((loc) =>
                                           loc.toLowerCase().includes(locationSearchQuery.toLowerCase()),
                                         ).map((loc) => (
