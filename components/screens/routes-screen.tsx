@@ -28,6 +28,7 @@ import {
   ArrowDown,
   Mail,
   Link2,
+  ShieldCheck,
 } from "lucide-react"
 import { REACTIONS, ReactionBadgeIcon, type ReactionKey } from "./marketplace-screen"
 import { Badge } from "@/components/ui/badge"
@@ -931,6 +932,18 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
                               Servicios
                             </Button>
                           </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => {
+                              setTracking(null)
+                              onNavigate?.("safeflow")
+                            }}
+                            className="w-full h-9 rounded-xl bg-[#eaf0e2]/70 hover:bg-[#eaf0e2] text-[#105238] font-bold text-xs gap-1.5 cursor-pointer"
+                          >
+                            <ShieldCheck className="w-4 h-4 text-[#105238]" />
+                            Seguimiento con Safe-Flow
+                          </Button>
                         </div>
                       </div>
                     )}
@@ -1172,6 +1185,25 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
         <div className="flex flex-col lg:flex-row lg:justify-between lg:gap-8 items-start">
           {/* LEFT / CENTER COLUMN: SOCIAL ROUTE FEED */}
           <div className="w-full max-w-[650px] mx-auto space-y-4">
+            {/* Selector de Modo: Modo Servicios | Modo Rutas */}
+            <div className="bg-white dark:bg-card border border-border/80 rounded-2xl p-1.5 shadow-2xs flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => onNavigate?.("marketplace")}
+                className="flex-1 h-9 rounded-xl bg-transparent hover:bg-[#eaf0e2]/70 text-foreground/80 hover:text-[#105238] text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Compass className="w-3.5 h-3.5" />
+                <span>Modo Servicios</span>
+              </button>
+              <button
+                type="button"
+                className="flex-1 h-9 rounded-xl bg-[#105238] text-white text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+              >
+                <Navigation2 className="w-3.5 h-3.5 text-[#8ee01a]" />
+                <span>Modo Rutas</span>
+              </button>
+            </div>
+
             {/* Search & Quick Return Banner */}
             <div className="bg-white dark:bg-card border border-border/80 rounded-3xl p-3.5 shadow-2xs space-y-3">
               <div className="relative">

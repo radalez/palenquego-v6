@@ -7,7 +7,7 @@ import {
   LayoutGrid, ChevronUp, X, Bookmark, Clock, Share2,
   ArrowUpDown, Calendar, Users, Bus, Building2, Camera, ChevronDown,
   Map, Filter, Palmtree, Utensils, Home, Landmark, Leaf, Sparkles, Car, Star,
-  Compass, Plane, Mountain, Sun, Menu, List, Image as ImageIcon, MoreHorizontal
+  Compass, Plane, Mountain, Sun, Menu, List, Image as ImageIcon, MoreHorizontal, Ticket
 } from 'lucide-react'
 import { ScrollArea } from "@/components/ui/scroll-area"
 import * as LucideIcons from 'lucide-react'
@@ -334,7 +334,16 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
           return distA - distB
         })
         if (sorted.length > 0) {
-          setPreviewRoute(sorted[0])
+          const nearest = sorted[0]
+          setPreviewRoute(nearest)
+          setIsSheetExpanded(true)
+          const targetStop = nearest.stops?.[0]
+          if (targetStop) {
+            mapRef.current.panTo({ lat: targetStop.latitude, lng: targetStop.longitude })
+            if ((mapRef.current.getZoom() || 10) < 12) {
+              mapRef.current.setZoom(12)
+            }
+          }
         }
       }
     }
@@ -1651,7 +1660,17 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
                   </span>
                 </div>
 
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                  <button
+                    type="button"
+                    onClick={() => onNavigate('rutas-classic')}
+                    className="flex items-center gap-1 bg-[#105238] hover:bg-[#0c3e2b] text-white font-bold text-xs px-2.5 py-1.5 rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer"
+                    title="Ver todas las rutas en feed, rastrear GPS y comprar boletos"
+                  >
+                    <Ticket className="h-3.5 w-3.5 text-[#8ee01a]" />
+                    <span>Feed & Boletos</span>
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => setIsUserRoutesModalOpen(true)}
