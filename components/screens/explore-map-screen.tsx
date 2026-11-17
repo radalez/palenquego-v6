@@ -1594,50 +1594,52 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
           {/* ─── VISTA LISTA: CATEGORÍAS, RUTAS PARA TU VIAJE, FILTROS Y TARJETAS ─── */}
           {view === 'list' && (
             <>
-              {/* BARRA DE LAS 3 SUPER CATEGORÍAS */}
-              <div className="bg-gray-100/90 rounded-2xl p-1.5 flex items-center justify-between gap-1 border border-gray-200 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => { setSuperCategory(prev => prev === 'INTERURBANO' ? null : 'INTERURBANO'); setSearchQuery(''); setDestination(''); }}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-1 rounded-xl text-xs font-bold transition-all ${
-                    superCategory === 'INTERURBANO'
-                      ? 'bg-white text-[#064e3b] shadow-xs border border-emerald-200'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
-                  }`}
-                >
-                  <Bus className="h-3.5 w-3.5" />
-                  <span className="text-[11px]">Interurbano</span>
-                </button>
+              {/* BARRA DE LAS 3 SUPER CATEGORÍAS (Sticky arriba en scroll) */}
+              <div className="sticky top-0 z-30 bg-white pt-2 pb-1.5 -mx-4 px-4 shrink-0">
+                <div className="bg-gray-100/90 rounded-2xl p-1.5 flex items-center justify-between gap-1 border border-gray-200">
+                  <button
+                    type="button"
+                    onClick={() => { setSuperCategory(prev => prev === 'INTERURBANO' ? null : 'INTERURBANO'); setSearchQuery(''); setDestination(''); }}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-1 rounded-xl text-xs font-bold transition-all ${
+                      superCategory === 'INTERURBANO'
+                        ? 'bg-white text-[#064e3b] shadow-xs border border-emerald-200'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
+                    }`}
+                  >
+                    <Bus className="h-3.5 w-3.5" />
+                    <span className="text-[11px]">Interurbano</span>
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={() => { setSuperCategory(prev => prev === 'URBANO' ? null : 'URBANO'); setSearchQuery(''); setDestination(''); }}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-1 rounded-xl text-xs font-bold transition-all ${
-                    superCategory === 'URBANO'
-                      ? 'bg-white text-[#064e3b] shadow-xs border border-emerald-200'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
-                  }`}
-                >
-                  <Building2 className="h-3.5 w-3.5" />
-                  <span className="text-[11px]">Urbano</span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => { setSuperCategory(prev => prev === 'URBANO' ? null : 'URBANO'); setSearchQuery(''); setDestination(''); }}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-1 rounded-xl text-xs font-bold transition-all ${
+                      superCategory === 'URBANO'
+                        ? 'bg-white text-[#064e3b] shadow-xs border border-emerald-200'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
+                    }`}
+                  >
+                    <Building2 className="h-3.5 w-3.5" />
+                    <span className="text-[11px]">Urbano</span>
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={() => { setSuperCategory(prev => prev === 'TOUR' ? null : 'TOUR'); setSearchQuery(''); setDestination(''); }}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-1 rounded-xl text-xs font-bold transition-all ${
-                    superCategory === 'TOUR'
-                      ? 'bg-white text-[#064e3b] shadow-xs border border-emerald-200'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
-                  }`}
-                >
-                  <Camera className="h-3.5 w-3.5" />
-                  <span className="text-[11px]">Tours</span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => { setSuperCategory(prev => prev === 'TOUR' ? null : 'TOUR'); setSearchQuery(''); setDestination(''); }}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-1 rounded-xl text-xs font-bold transition-all ${
+                      superCategory === 'TOUR'
+                        ? 'bg-white text-[#064e3b] shadow-xs border border-emerald-200'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
+                    }`}
+                  >
+                    <Camera className="h-3.5 w-3.5" />
+                    <span className="text-[11px]">Tours</span>
+                  </button>
+                </div>
               </div>
 
-              {/* BARRA: "Rutas para tu viaje" + Botones Filtros & Mapa */}
-              <div className="flex items-center justify-between pt-1 pb-1 shrink-0">
+              {/* BARRA: "Rutas para tu viaje" + Botones Filtros & Mapa (Se oculta detrás de los tabs al hacer scroll) */}
+              <div className="flex items-center justify-between pt-1 pb-1 shrink-0 relative z-10">
                 <div>
                   <h2 className="text-base font-extrabold text-gray-900">Rutas para tu viaje</h2>
                   <span className="inline-block text-[11px] font-bold text-[#064e3b] bg-emerald-100/70 px-2 py-0.5 rounded-md mt-0.5">
@@ -1677,24 +1679,26 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
                 </div>
               </div>
 
-              {/* Buscador Rápido de Rutas */}
-              <div className="relative shrink-0">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-                <Input
-                  placeholder="Buscar rutas o destinos..."
-                  className="w-full bg-white border-gray-200 text-gray-800 placeholder:text-gray-400 rounded-xl h-10 pl-10 pr-10 shadow-2xs text-xs focus-visible:ring-1 focus-visible:ring-[#059669]"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                {searchQuery && (
-                  <button className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" onClick={() => setSearchQuery('')}>
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                )}
+              {/* Buscador Rápido de Rutas (Sticky justo debajo de los tabs al hacer scroll) */}
+              <div className="sticky top-[58px] z-20 bg-white pt-1 pb-2 -mx-4 px-4 shrink-0">
+                <div className="relative">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                  <Input
+                    placeholder="Buscar rutas o destinos..."
+                    className="w-full bg-white border-gray-200 text-gray-800 placeholder:text-gray-400 rounded-xl h-10 pl-10 pr-10 shadow-2xs text-xs focus-visible:ring-1 focus-visible:ring-[#059669]"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                  {searchQuery && (
+                    <button className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" onClick={() => setSearchQuery('')}>
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
               </div>
 
-              {/* LISTA DE RUTAS DISPONIBLES */}
-              <div className="flex-1 flex flex-col gap-2.5 overflow-y-auto min-h-0 pr-1">
+              {/* LISTA DE RUTAS DISPONIBLES (Fluye en el scroll del panel completo) */}
+              <div className="flex flex-col gap-2.5 pb-20 lg:pb-6">
                 {filteredRoutes.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-gray-400">
                     <MapPin className="h-10 w-10 mb-2 opacity-30 text-gray-400" />
