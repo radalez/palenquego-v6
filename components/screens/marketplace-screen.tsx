@@ -43,6 +43,7 @@ import {
   Shuffle,
   Award,
   Flag,
+  Globe,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -1162,6 +1163,96 @@ function CountryFlagBadge({ code, name, className }: { code: string; name?: stri
   )
 }
 
+function RoundFlagIcon({
+  code,
+  className,
+  isSelected,
+}: {
+  code: string
+  className?: string
+  isSelected?: boolean
+}) {
+  const [hasError, setHasError] = useState(false)
+  const lower = (code || "").toLowerCase()
+  return (
+    <div className={cn("relative inline-flex items-center justify-center shrink-0", className)}>
+      {!hasError && lower ? (
+        <img
+          src={`https://flagcdn.com/w80/${lower}.png`}
+          alt={code}
+          onError={() => setHasError(true)}
+          className="w-full h-full object-cover rounded-full shadow-2xs border border-black/10"
+        />
+      ) : (
+        <div className="w-full h-full rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-[9px] font-bold uppercase text-slate-700 dark:text-slate-200">
+          {code}
+        </div>
+      )}
+      {isSelected && (
+        <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-[#105238] text-white flex items-center justify-center text-[8px] font-black shadow-xs ring-1 ring-white">
+          ✓
+        </span>
+      )}
+    </div>
+  )
+}
+
+interface WorldFlag {
+  code: string
+  name: string
+  continent: "América" | "Europa" | "Asia" | "África" | "Oceanía"
+}
+
+const WORLD_FLAGS: WorldFlag[] = [
+  // América
+  { code: "sv", name: "El Salvador", continent: "América" },
+  { code: "gt", name: "Guatemala", continent: "América" },
+  { code: "hn", name: "Honduras", continent: "América" },
+  { code: "ni", name: "Nicaragua", continent: "América" },
+  { code: "cr", name: "Costa Rica", continent: "América" },
+  { code: "pa", name: "Panamá", continent: "América" },
+  { code: "mx", name: "México", continent: "América" },
+  { code: "us", name: "Estados Unidos", continent: "América" },
+  { code: "ca", name: "Canadá", continent: "América" },
+  { code: "co", name: "Colombia", continent: "América" },
+  { code: "br", name: "Brasil", continent: "América" },
+  { code: "ar", name: "Argentina", continent: "América" },
+  { code: "cl", name: "Chile", continent: "América" },
+  { code: "pe", name: "Perú", continent: "América" },
+  { code: "ec", name: "Ecuador", continent: "América" },
+  { code: "do", name: "República Dominicana", continent: "América" },
+  // Europa
+  { code: "es", name: "España", continent: "Europa" },
+  { code: "it", name: "Italia", continent: "Europa" },
+  { code: "de", name: "Alemania", continent: "Europa" },
+  { code: "fr", name: "Francia", continent: "Europa" },
+  { code: "gb", name: "Reino Unido", continent: "Europa" },
+  { code: "pt", name: "Portugal", continent: "Europa" },
+  { code: "nl", name: "Países Bajos", continent: "Europa" },
+  { code: "ch", name: "Suiza", continent: "Europa" },
+  // Asia
+  { code: "cn", name: "China", continent: "Asia" },
+  { code: "jp", name: "Japón", continent: "Asia" },
+  { code: "kr", name: "Corea del Sur", continent: "Asia" },
+  { code: "in", name: "India", continent: "Asia" },
+  { code: "il", name: "Israel", continent: "Asia" },
+  { code: "ae", name: "Emiratos Árabes", continent: "Asia" },
+  // África
+  { code: "za", name: "Sudáfrica", continent: "África" },
+  { code: "eg", name: "Egipto", continent: "África" },
+  { code: "ma", name: "Marruecos", continent: "África" },
+  { code: "ke", name: "Kenia", continent: "África" },
+  // Oceanía
+  { code: "au", name: "Australia", continent: "Oceanía" },
+  { code: "nz", name: "Nueva Zelanda", continent: "Oceanía" },
+]
+
+const EMOJI_CATEGORIES = {
+  emociones: ["😊", "😍", "🤩", "😎", "🥳", "🙌", "❤️", "🔥", "✨", "💯", "👍", "👏", "😃", "🥰", "🤙", "✌️", "💪", "🌟"],
+  naturaleza: ["🌴", "🌊", "🌅", "🌋", "🏖️", "🌺", "🌲", "☀️", "🌙", "⭐", "🥑", "🥥", "🍍", "🐬", "🐢", "🦜", "🐚", "🌈"],
+  viaje: ["✈️", "🚗", "🎒", "🥾", "🏄", "🛶", "🚴", "🧭", "🗺️", "🎫", "🏕️", "📸", "🏨", "⚓", "🛳️", "🛵", "🧳", "🥂"],
+}
+
 const TRAVEL_EMOJIS = [
   {
     category: "Playa y Naturaleza",
@@ -1366,6 +1457,74 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   const [commentCountries, setCommentCountries] = useState<Record<number, { code: string; flag: string; name: string }>>({})
   const [commentPickerMode, setCommentPickerMode] = useState<"emojis" | "location" | "country" | null>(null)
   const [customCommentLocation, setCustomCommentLocation] = useState("")
+
+  const [flagSearchQuery, setFlagSearchQuery] = useState("")
+  const [flagContinent, setFlagContinent] = useState<string>("Todas")
+  const [flagCarouselPage, setFlagCarouselPage] = useState(0)
+
+  const [emojiSearchQuery, setEmojiSearchQuery] = useState("")
+  const [emojiCategory, setEmojiCategory] = useState<string>("todo")
+
+  const [locationSearchQuery, setLocationSearchQuery] = useState("")
+
+  // Click-outside listener to dismiss emojis, flags, or location popovers
+  useEffect(() => {
+    if (!commentPickerMode) return
+
+    const handlePointerDownOutside = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as HTMLElement | null
+      if (!target) return
+      if (target.closest(".comment-picker-popover") || target.closest(".comment-picker-trigger")) {
+        return
+      }
+      setCommentPickerMode(null)
+    }
+
+    document.addEventListener("mousedown", handlePointerDownOutside)
+    document.addEventListener("touchstart", handlePointerDownOutside)
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDownOutside)
+      document.removeEventListener("touchstart", handlePointerDownOutside)
+    }
+  }, [commentPickerMode])
+
+  const filteredFlags = useMemo(() => {
+    let list = WORLD_FLAGS
+    if (flagContinent !== "Todas") {
+      list = list.filter((f) => f.continent === flagContinent)
+    }
+    if (flagSearchQuery.trim()) {
+      const q = flagSearchQuery.toLowerCase().trim()
+      list = list.filter((f) => f.name.toLowerCase().includes(q) || f.code.toLowerCase().includes(q))
+    }
+    return list
+  }, [flagContinent, flagSearchQuery])
+
+  const FLAGS_PER_PAGE = 7
+  const totalFlagPages = Math.max(1, Math.ceil(filteredFlags.length / FLAGS_PER_PAGE))
+  const paginatedFlags = useMemo(() => {
+    const start = flagCarouselPage * FLAGS_PER_PAGE
+    return filteredFlags.slice(start, start + FLAGS_PER_PAGE)
+  }, [filteredFlags, flagCarouselPage])
+
+  const filteredEmojis = useMemo(() => {
+    let list: string[] = []
+    if (emojiCategory === "todo") {
+      list = [
+        ...EMOJI_CATEGORIES.emociones,
+        ...EMOJI_CATEGORIES.naturaleza,
+        ...EMOJI_CATEGORIES.viaje,
+      ]
+    } else if (emojiCategory === "emociones") {
+      list = EMOJI_CATEGORIES.emociones
+    } else if (emojiCategory === "naturaleza") {
+      list = EMOJI_CATEGORIES.naturaleza
+    } else if (emojiCategory === "viaje") {
+      list = EMOJI_CATEGORIES.viaje
+    }
+    return list
+  }, [emojiCategory])
   const [openShareId, setOpenShareId] = useState<number | null>(null)
   const shareCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [copiedServiceId, setCopiedServiceId] = useState<number | null>(null)
@@ -3835,95 +3994,109 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                           : "shadow-2xs",
                       )}
                     >
-                      {/* Post Header: Business + Location + Price */}
-                      <div className="p-4 flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <button
-                            type="button"
-                            onClick={() => service.businessId && router.push(`/b/${service.businessId}`)}
-                            className="shrink-0 cursor-pointer"
-                          >
-                            <Avatar className="w-11 h-11 border border-slate-200">
-                              <AvatarImage src={service.businessAvatar} alt={service.businessName || service.name} />
-                              <AvatarFallback className="bg-[#f0f2f5] text-slate-700 font-bold text-xs">
-                                {(service.businessName || service.name).substring(0, 2).toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                          </button>
-                          <div className="min-w-0">
+                      {/* Post Header & Caption: Sticky when comments are open so the user NEVER loses context on scroll! */}
+                      <div
+                        className={cn(
+                          "transition-all duration-200",
+                          openCommentsId === service.id &&
+                            "sticky z-30 bg-card/98 backdrop-blur-md rounded-t-3xl border-b border-border/40 shadow-xs",
+                        )}
+                        style={
+                          openCommentsId === service.id
+                            ? { top: showStickySearch ? `${stickySearchHeight + 6}px` : "8px" }
+                            : undefined
+                        }
+                      >
+                        {/* Post Header: Business + Location + Price */}
+                        <div className="p-4 flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
                             <button
                               type="button"
                               onClick={() => service.businessId && router.push(`/b/${service.businessId}`)}
-                              className="font-bold text-sm text-foreground hover:underline truncate block text-left cursor-pointer"
+                              className="shrink-0 cursor-pointer"
                             >
-                              {service.businessName || "Comercio Aliado PalenqueGo"}
+                              <Avatar className="w-11 h-11 border border-slate-200">
+                                <AvatarImage src={service.businessAvatar} alt={service.businessName || service.name} />
+                                <AvatarFallback className="bg-[#f0f2f5] text-slate-700 font-bold text-xs">
+                                  {(service.businessName || service.name).substring(0, 2).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
                             </button>
-                            <div className="flex items-center gap-2 text-[11px] text-slate-500">
-                              <span className="inline-flex items-center gap-1 truncate">
-                                <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-                                <span className="truncate">{service.location}</span>
-                              </span>
-                              <span>·</span>
-                              <span className="font-medium text-slate-500">
-                                {service.category || service.categoria?.nombre || "Experiencia"}
-                              </span>
+                            <div className="min-w-0">
+                              <button
+                                type="button"
+                                onClick={() => service.businessId && router.push(`/b/${service.businessId}`)}
+                                className="font-bold text-sm text-foreground hover:underline truncate block text-left cursor-pointer"
+                              >
+                                {service.businessName || "Comercio Aliado PalenqueGo"}
+                              </button>
+                              <div className="flex items-center gap-2 text-[11px] text-slate-500">
+                                <span className="inline-flex items-center gap-1 truncate">
+                                  <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                                  <span className="truncate">{service.location}</span>
+                                </span>
+                                <span>·</span>
+                                <span className="font-medium text-slate-500">
+                                  {service.category || service.categoria?.nombre || "Experiencia"}
+                                </span>
+                              </div>
                             </div>
+                          </div>
+
+                          {/* Price Pill */}
+                          <div className="text-right shrink-0">
+                            {hasFlashOffer ? (
+                              <div>
+                                <span className="text-[11px] line-through text-muted-foreground mr-1.5">
+                                  ${basePrice.toFixed(2)}
+                                </span>
+                                <span className="text-lg font-black text-[#105238] dark:text-[#8ee01a]">
+                                  ${flashPrice.toFixed(2)}
+                                </span>
+                                <span className="text-[11px] text-muted-foreground font-semibold"> /p</span>
+                              </div>
+                            ) : (
+                              <div>
+                                <span className="text-lg font-black text-foreground">${basePrice.toFixed(2)}</span>
+                                <span className="text-[11px] text-muted-foreground font-semibold"> /p</span>
+                              </div>
+                            )}
                           </div>
                         </div>
 
-                        {/* Price Pill */}
-                        <div className="text-right shrink-0">
-                          {hasFlashOffer ? (
-                            <div>
-                              <span className="text-[11px] line-through text-muted-foreground mr-1.5">
-                                ${basePrice.toFixed(2)}
-                              </span>
-                              <span className="text-lg font-black text-[#105238] dark:text-[#8ee01a]">
-                                ${flashPrice.toFixed(2)}
-                              </span>
-                              <span className="text-[11px] text-muted-foreground font-semibold"> /p</span>
+                        {/* Post Caption: Title + Description + Rating + Bone "+ Info" button (like Facebook's "Más información") */}
+                        <div className="px-4 pb-3 space-y-1.5">
+                          <div className="flex items-start justify-between gap-2">
+                            <h3
+                              onClick={() => openServiceDetailInstant(service)}
+                              className="font-extrabold text-base sm:text-lg text-foreground hover:underline transition-colors cursor-pointer leading-snug"
+                            >
+                              {service.name}
+                            </h3>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => openServiceDetailInstant(service)}
+                                className="inline-flex items-center gap-1 bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-800 text-[11px] font-bold px-3 py-1 rounded-lg transition-colors cursor-pointer"
+                                title="Ver página completa de la experiencia"
+                              >
+                                <Info className="w-3 h-3 text-slate-600" />
+                                <span>Más información</span>
+                              </button>
+                              <div className="flex items-center gap-1 bg-[#f0f2f5] px-2 py-1 rounded-lg">
+                                <Star className="w-3.5 h-3.5 fill-slate-700 text-slate-700" />
+                                <span className="font-bold text-slate-800 text-xs">{service.rating}</span>
+                                <span className="text-[11px] text-slate-500">({service.reviews})</span>
+                              </div>
                             </div>
-                          ) : (
-                            <div>
-                              <span className="text-lg font-black text-foreground">${basePrice.toFixed(2)}</span>
-                              <span className="text-[11px] text-muted-foreground font-semibold"> /p</span>
-                            </div>
+                          </div>
+
+                          {service.description && (
+                            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                              {service.description}
+                            </p>
                           )}
                         </div>
-                      </div>
-
-                      {/* Post Caption: Title + Description + Rating + Bone "+ Info" button (like Facebook's "Más información") */}
-                      <div className="px-4 pb-3 space-y-1.5">
-                        <div className="flex items-start justify-between gap-2">
-                          <h3
-                            onClick={() => openServiceDetailInstant(service)}
-                            className="font-extrabold text-base sm:text-lg text-foreground hover:underline transition-colors cursor-pointer leading-snug"
-                          >
-                            {service.name}
-                          </h3>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => openServiceDetailInstant(service)}
-                              className="inline-flex items-center gap-1 bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-800 text-[11px] font-bold px-3 py-1 rounded-lg transition-colors cursor-pointer"
-                              title="Ver página completa de la experiencia"
-                            >
-                              <Info className="w-3 h-3 text-slate-600" />
-                              <span>Más información</span>
-                            </button>
-                            <div className="flex items-center gap-1 bg-[#f0f2f5] px-2 py-1 rounded-lg">
-                              <Star className="w-3.5 h-3.5 fill-slate-700 text-slate-700" />
-                              <span className="font-bold text-slate-800 text-xs">{service.rating}</span>
-                              <span className="text-[11px] text-slate-500">({service.reviews})</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {service.description && (
-                          <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 leading-relaxed">
-                            {service.description}
-                          </p>
-                        )}
                       </div>
 
                       {/* Post Media: Clicking image opens the Interactive Experience Lightbox Modal */}
@@ -4378,10 +4551,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                     </div>
                                   )}
 
-                                  {/* Active Country Flag Badge */}
+                                  {/* Active Country Flag Badge: Round 3D Flag only, NO bulky country text! */}
                                   {currentCountry && (
-                                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-white dark:bg-[#242526] px-2 py-0.5 rounded-full border border-black/5 text-foreground shadow-2xs">
-                                      <CountryFlagBadge code={currentCountry.code} name={currentCountry.name} />
+                                    <span className="inline-flex items-center gap-1.5 bg-white dark:bg-[#242526] pl-1 pr-2 py-0.5 rounded-full border border-black/5 text-foreground shadow-2xs">
+                                      <RoundFlagIcon code={currentCountry.code} className="w-5 h-5" />
                                       <button
                                         type="button"
                                         onClick={() =>
@@ -4391,7 +4564,8 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                             return next
                                           })
                                         }
-                                        className="text-muted-foreground hover:text-foreground ml-0.5 cursor-pointer"
+                                        className="text-muted-foreground hover:text-foreground text-xs leading-none cursor-pointer"
+                                        title="Quitar bandera"
                                       >
                                         ✕
                                       </button>
@@ -4477,7 +4651,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                   {/* 1. Ubicación (Gray icon + Black Tooltip) */}
                                   <div className="relative group/iconbtn">
                                     <span className="pointer-events-none opacity-0 group-hover/iconbtn:opacity-100 transition-opacity duration-150 absolute -top-8 left-1/2 -translate-x-1/2 bg-[#1f2937] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap shadow-lg z-50">
-                                      Marcar ubicación
+                                      Ubicación
                                     </span>
                                     <button
                                       type="button"
@@ -4487,7 +4661,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                         )
                                       }
                                       className={cn(
-                                        "p-1.5 rounded-full transition-colors cursor-pointer flex items-center justify-center",
+                                        "comment-picker-trigger p-1.5 rounded-full transition-colors cursor-pointer flex items-center justify-center",
                                         commentPickerMode === "location"
                                           ? "bg-black/10 dark:bg-white/15 text-foreground"
                                           : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10",
@@ -4501,7 +4675,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                   {/* 2. Bandera de País (Gray icon + Black Tooltip) */}
                                   <div className="relative group/iconbtn">
                                     <span className="pointer-events-none opacity-0 group-hover/iconbtn:opacity-100 transition-opacity duration-150 absolute -top-8 left-1/2 -translate-x-1/2 bg-[#1f2937] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap shadow-lg z-50">
-                                      País de origen
+                                      Banderas del mundo
                                     </span>
                                     <button
                                       type="button"
@@ -4511,12 +4685,12 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                         )
                                       }
                                       className={cn(
-                                        "p-1.5 rounded-full transition-colors cursor-pointer flex items-center justify-center",
+                                        "comment-picker-trigger p-1.5 rounded-full transition-colors cursor-pointer flex items-center justify-center",
                                         commentPickerMode === "country"
                                           ? "bg-black/10 dark:bg-white/15 text-foreground"
                                           : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10",
                                       )}
-                                      aria-label="País de origen"
+                                      aria-label="Banderas del mundo"
                                     >
                                       <Flag className="w-4 h-4" />
                                     </button>
@@ -4525,7 +4699,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                   {/* 3. Emojis Viajeros (Gray icon + Black Tooltip) */}
                                   <div className="relative group/iconbtn">
                                     <span className="pointer-events-none opacity-0 group-hover/iconbtn:opacity-100 transition-opacity duration-150 absolute -top-8 left-1/2 -translate-x-1/2 bg-[#1f2937] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap shadow-lg z-50">
-                                      Emojis de viajeros
+                                      Emojis
                                     </span>
                                     <button
                                       type="button"
@@ -4535,12 +4709,12 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                         )
                                       }
                                       className={cn(
-                                        "p-1.5 rounded-full transition-colors cursor-pointer flex items-center justify-center",
+                                        "comment-picker-trigger p-1.5 rounded-full transition-colors cursor-pointer flex items-center justify-center",
                                         commentPickerMode === "emojis"
                                           ? "bg-black/10 dark:bg-white/15 text-foreground"
                                           : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10",
                                       )}
-                                      aria-label="Emojis de viajeros"
+                                      aria-label="Emojis"
                                     >
                                       <Smile className="w-4 h-4" />
                                     </button>
@@ -4568,159 +4742,320 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                   </button>
                                 </div>
 
-                                {/* FLOATING POPOVER: EMOJIS (DESPRENDE HACIA ARRIBA) */}
+                                {/* FLOATING POPOVER: EMOJIS (DESPRENDE HACIA ARRIBA CON BÚSQUEDA Y CATEGORÍAS) */}
                                 {commentPickerMode === "emojis" && (
-                                  <div className="absolute bottom-full left-0 mb-3 w-80 max-w-[90vw] bg-white dark:bg-[#242526] rounded-2xl border border-border shadow-[0_16px_40px_rgba(0,0,0,0.25)] p-3 z-50 animate-in fade-in zoom-in-95 duration-150 after:content-[''] after:absolute after:top-full after:left-14 after:border-[7px] after:border-transparent after:border-t-white dark:after:border-t-[#242526]">
-                                    <div className="flex items-center justify-between pb-2 border-b border-border/50 text-[11px] font-bold text-muted-foreground">
-                                      <span>EMOJIS DE VIAJEROS</span>
+                                  <div className="comment-picker-popover absolute bottom-full left-0 mb-3 w-[330px] max-w-[92vw] bg-white dark:bg-[#242526] rounded-2xl border border-border shadow-[0_16px_40px_rgba(0,0,0,0.25)] p-3.5 z-50 animate-in fade-in zoom-in-95 duration-150 after:content-[''] after:absolute after:top-full after:left-14 after:border-[7px] after:border-transparent after:border-t-white dark:after:border-t-[#242526]">
+                                    <div className="flex items-center justify-between pb-2.5 border-b border-border/50">
+                                      <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                                        <Smile className="w-4 h-4 text-slate-700 dark:text-slate-300" />
+                                        <span>Emojis</span>
+                                      </div>
                                       <button
                                         type="button"
                                         onClick={() => setCommentPickerMode(null)}
-                                        className="text-xs hover:text-foreground cursor-pointer"
+                                        className="text-xs text-muted-foreground hover:text-foreground p-1 cursor-pointer"
                                       >
                                         ✕
                                       </button>
                                     </div>
-                                    <div className="max-h-52 overflow-y-auto space-y-2.5 pt-2">
-                                      {TRAVEL_EMOJIS.map((group) => (
-                                        <div key={group.category} className="space-y-1">
-                                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide block">
-                                            {group.category}
+
+                                    {/* Search input */}
+                                    <div className="pt-2.5 pb-2">
+                                      <div className="relative">
+                                        <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                                        <input
+                                          type="text"
+                                          value={emojiSearchQuery}
+                                          onChange={(e) => setEmojiSearchQuery(e.target.value)}
+                                          placeholder="Buscar emoji..."
+                                          className="w-full h-8 pl-8 pr-2.5 rounded-xl border border-slate-200 dark:border-border bg-[#f0f2f5]/80 dark:bg-black/20 text-xs placeholder:text-muted-foreground focus:outline-none focus:border-slate-400"
+                                        />
+                                      </div>
+                                    </div>
+
+                                    {/* Category Pills: Todo, 😊 Emociones, 🌲 Naturaleza, ✈️ Viaje */}
+                                    <div className="flex items-center gap-1 overflow-x-auto pb-2 scrollbar-none text-[11px]">
+                                      {[
+                                        { id: "todo", label: "Todo" },
+                                        { id: "emociones", label: "😊 Emociones" },
+                                        { id: "naturaleza", label: "🌲 Naturaleza" },
+                                        { id: "viaje", label: "✈️ Viaje" },
+                                      ].map((cat) => {
+                                        const isActive = emojiCategory === cat.id
+                                        return (
+                                          <button
+                                            key={cat.id}
+                                            type="button"
+                                            onClick={() => setEmojiCategory(cat.id)}
+                                            className={cn(
+                                              "px-3 py-1 rounded-full font-bold whitespace-nowrap transition-colors cursor-pointer text-[11px]",
+                                              isActive
+                                                ? "bg-[#105238] text-white shadow-2xs"
+                                                : "bg-[#f0f2f5] hover:bg-[#e4e6eb] dark:bg-black/20 dark:hover:bg-black/30 text-slate-700 dark:text-slate-300",
+                                            )}
+                                          >
+                                            {cat.label}
+                                          </button>
+                                        )
+                                      })}
+                                    </div>
+
+                                    {/* Emojis Grid */}
+                                    <div className="max-h-52 overflow-y-auto pt-1">
+                                      <div className="grid grid-cols-6 gap-1.5 justify-items-center">
+                                        {filteredEmojis.map((emoji, idx) => (
+                                          <button
+                                            key={`${emoji}-${idx}`}
+                                            type="button"
+                                            onClick={() => {
+                                              setCommentDrafts((prev) => ({
+                                                ...prev,
+                                                [service.id]: (prev[service.id] || "") + emoji,
+                                              }))
+                                            }}
+                                            className="w-9 h-9 rounded-xl hover:bg-[#f0f2f5] dark:hover:bg-white/10 text-xl flex items-center justify-center transition-transform hover:scale-125 cursor-pointer"
+                                          >
+                                            {emoji}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* FLOATING POPOVER: BANDERAS DEL MUNDO (ESTILO IMAGEN 4 CON CARRUSEL Y BÚSQUEDA) */}
+                                {commentPickerMode === "country" && (
+                                  <div className="comment-picker-popover absolute bottom-full left-0 mb-3 w-[330px] max-w-[92vw] bg-white dark:bg-[#242526] rounded-2xl border border-border shadow-[0_16px_40px_rgba(0,0,0,0.25)] p-3.5 z-50 animate-in fade-in zoom-in-95 duration-150 after:content-[''] after:absolute after:top-full after:left-24 after:border-[7px] after:border-transparent after:border-t-white dark:after:border-t-[#242526]">
+                                    <div className="flex items-center justify-between pb-2.5 border-b border-border/50">
+                                      <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                                        <Flag className="w-4 h-4 text-slate-700 dark:text-slate-300" />
+                                        <span>Banderas del mundo</span>
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() => setCommentPickerMode(null)}
+                                        className="text-xs text-muted-foreground hover:text-foreground p-1 cursor-pointer"
+                                      >
+                                        ✕
+                                      </button>
+                                    </div>
+
+                                    {/* Search & Style Switch (Imagen 4) */}
+                                    <div className="pt-2.5 pb-2">
+                                      <div className="flex items-center gap-1.5">
+                                        <div className="relative flex-1">
+                                          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                                          <input
+                                            type="text"
+                                            value={flagSearchQuery}
+                                            onChange={(e) => {
+                                              setFlagSearchQuery(e.target.value)
+                                              setFlagCarouselPage(0)
+                                            }}
+                                            placeholder="Buscar país..."
+                                            className="w-full h-8 pl-8 pr-2.5 rounded-xl border border-slate-200 dark:border-border bg-[#f0f2f5]/80 dark:bg-black/20 text-xs placeholder:text-muted-foreground focus:outline-none focus:border-slate-400"
+                                          />
+                                        </div>
+                                        <div className="flex items-center gap-0.5 bg-[#f0f2f5] dark:bg-black/20 p-0.5 rounded-xl border border-black/5 shrink-0">
+                                          <span className="w-6 h-6 rounded-lg bg-[#105238] text-white flex items-center justify-center">
+                                            <Flag className="w-3 h-3 fill-current" />
                                           </span>
-                                          <div className="grid grid-cols-6 gap-1">
-                                            {group.emojis.map((emoji) => (
+                                          <span className="w-6 h-6 rounded-lg text-slate-500 hover:text-slate-800 flex items-center justify-center">
+                                            <Globe className="w-3 h-3" />
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* Continent filter pills (Sutil, solo 10% acento en seleccionado) */}
+                                    <div className="flex items-center gap-1 overflow-x-auto pb-2 scrollbar-none text-[11px]">
+                                      {(["Todas", "América", "Europa", "Asia", "África", "Oceanía"] as const).map(
+                                        (cont) => {
+                                          const isActive = flagContinent === cont
+                                          return (
+                                            <button
+                                              key={cont}
+                                              type="button"
+                                              onClick={() => {
+                                                setFlagContinent(cont)
+                                                setFlagCarouselPage(0)
+                                              }}
+                                              className={cn(
+                                                "px-3 py-1 rounded-full font-bold whitespace-nowrap transition-colors cursor-pointer text-[11px]",
+                                                isActive
+                                                  ? "bg-[#105238] text-white shadow-2xs"
+                                                  : "bg-[#f0f2f5] hover:bg-[#e4e6eb] dark:bg-black/20 dark:hover:bg-black/30 text-slate-700 dark:text-slate-300",
+                                              )}
+                                            >
+                                              {cont}
+                                            </button>
+                                          )
+                                        },
+                                      )}
+                                    </div>
+
+                                    {/* Round Flags Carousel */}
+                                    {filteredFlags.length === 0 ? (
+                                      <div className="py-6 text-center text-xs text-muted-foreground">
+                                        No se encontraron banderas
+                                      </div>
+                                    ) : (
+                                      <div className="pt-2">
+                                        <div className="flex items-center justify-between gap-1">
+                                          <button
+                                            type="button"
+                                            disabled={flagCarouselPage === 0}
+                                            onClick={() => setFlagCarouselPage((p) => Math.max(0, p - 1))}
+                                            className="w-7 h-7 rounded-full flex items-center justify-center text-slate-600 hover:bg-[#f0f2f5] dark:hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                            aria-label="Anterior"
+                                          >
+                                            <ChevronLeft className="w-4 h-4" />
+                                          </button>
+
+                                          <div className="flex-1 grid grid-cols-7 gap-1.5 justify-items-center">
+                                            {paginatedFlags.map((flag) => {
+                                              const isSelected =
+                                                currentCountry?.code?.toLowerCase() === flag.code.toLowerCase()
+                                              return (
+                                                <button
+                                                  key={flag.code}
+                                                  type="button"
+                                                  onClick={() => {
+                                                    setCommentCountries((prev) => ({
+                                                      ...prev,
+                                                      [service.id]: {
+                                                        code: flag.code.toUpperCase(),
+                                                        flag: flag.name,
+                                                        name: flag.name,
+                                                      },
+                                                    }))
+                                                    setCommentPickerMode(null)
+                                                  }}
+                                                  className="group/flag relative p-0.5 rounded-full hover:scale-110 transition-transform cursor-pointer"
+                                                  title={flag.name}
+                                                >
+                                                  <RoundFlagIcon
+                                                    code={flag.code}
+                                                    className="w-8 h-8 sm:w-9 sm:h-9"
+                                                    isSelected={isSelected}
+                                                  />
+                                                  <span className="pointer-events-none opacity-0 group-hover/flag:opacity-100 transition-opacity absolute -bottom-6 left-1/2 -translate-x-1/2 bg-[#1f2937] text-white text-[9px] font-bold px-2 py-0.5 rounded-md whitespace-nowrap shadow-lg z-50">
+                                                    {flag.name}
+                                                  </span>
+                                                </button>
+                                              )
+                                            })}
+                                          </div>
+
+                                          <button
+                                            type="button"
+                                            disabled={flagCarouselPage >= totalFlagPages - 1}
+                                            onClick={() =>
+                                              setFlagCarouselPage((p) => Math.min(totalFlagPages - 1, p + 1))
+                                            }
+                                            className="w-7 h-7 rounded-full flex items-center justify-center text-slate-600 hover:bg-[#f0f2f5] dark:hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                            aria-label="Siguiente"
+                                          >
+                                            <ChevronRight className="w-4 h-4" />
+                                          </button>
+                                        </div>
+
+                                        {/* Pagination Dots (Imagen 4) */}
+                                        {totalFlagPages > 1 && (
+                                          <div className="flex items-center justify-center gap-1.5 pt-3 pb-1">
+                                            {Array.from({ length: totalFlagPages }).map((_, idx) => (
                                               <button
-                                                key={emoji}
+                                                key={idx}
                                                 type="button"
-                                                onClick={() => {
-                                                  setCommentDrafts((prev) => ({
-                                                    ...prev,
-                                                    [service.id]: (prev[service.id] || "") + emoji,
-                                                  }))
-                                                }}
-                                                className="w-9 h-9 rounded-xl hover:bg-[#f0f2f5] dark:hover:bg-white/10 text-xl flex items-center justify-center transition-transform hover:scale-125 cursor-pointer"
-                                              >
-                                                {emoji}
-                                              </button>
+                                                onClick={() => setFlagCarouselPage(idx)}
+                                                className={cn(
+                                                  "w-1.5 h-1.5 rounded-full transition-all cursor-pointer",
+                                                  flagCarouselPage === idx
+                                                    ? "bg-[#105238] dark:bg-[#8ee01a] w-3"
+                                                    : "bg-slate-300 dark:bg-slate-600",
+                                                )}
+                                                aria-label={`Página ${idx + 1}`}
+                                              />
                                             ))}
                                           </div>
-                                        </div>
-                                      ))}
-                                    </div>
+                                        )}
+                                      </div>
+                                    )}
                                   </div>
                                 )}
 
-                                {/* FLOATING POPOVER: BANDERAS CON IMÁGENES REALES (DESPRENDE HACIA ARRIBA) */}
-                                {commentPickerMode === "country" && (
-                                  <div className="absolute bottom-full left-0 mb-3 w-72 max-w-[90vw] bg-white dark:bg-[#242526] rounded-2xl border border-border shadow-[0_16px_40px_rgba(0,0,0,0.25)] p-3 z-50 animate-in fade-in zoom-in-95 duration-150 after:content-[''] after:absolute after:top-full after:left-24 after:border-[7px] after:border-transparent after:border-t-white dark:after:border-t-[#242526]">
-                                    <div className="flex items-center justify-between pb-2 border-b border-border/50 text-[11px] font-bold text-muted-foreground">
-                                      <span>PAÍS DEL VIAJERO</span>
-                                      <button
-                                        type="button"
-                                        onClick={() => setCommentPickerMode(null)}
-                                        className="text-xs hover:text-foreground cursor-pointer"
-                                      >
-                                        ✕
-                                      </button>
-                                    </div>
-                                    <div className="max-h-56 overflow-y-auto divide-y divide-border/40 pt-1">
-                                      {TRAVELER_COUNTRIES.map((ct) => (
-                                        <button
-                                          key={ct.code}
-                                          type="button"
-                                          onClick={() => {
-                                            setCommentCountries((prev) => ({
-                                              ...prev,
-                                              [service.id]: {
-                                                code: ct.code,
-                                                flag: ct.name,
-                                                name: ct.name,
-                                              },
-                                            }))
-                                            setCommentPickerMode(null)
-                                          }}
-                                          className="w-full flex items-center gap-2.5 p-2 hover:bg-[#f0f2f5] dark:hover:bg-white/10 rounded-xl text-xs text-left cursor-pointer transition-colors"
-                                        >
-                                          <CountryFlagBadge code={ct.code} />
-                                          <span className="font-semibold text-foreground truncate">{ct.name}</span>
-                                        </button>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-
-                                {/* FLOATING POPOVER: UBICACIÓN (DESPRENDE HACIA ARRIBA) */}
+                                {/* FLOATING POPOVER: UBICACIÓN (DESPRENDE HACIA ARRIBA CON BÚSQUEDA Y AUTO-DETECCIÓN) */}
                                 {commentPickerMode === "location" && (
-                                  <div className="absolute bottom-full left-0 mb-3 w-80 max-w-[90vw] bg-white dark:bg-[#242526] rounded-2xl border border-border shadow-[0_16px_40px_rgba(0,0,0,0.25)] p-3 z-50 animate-in fade-in zoom-in-95 duration-150 after:content-[''] after:absolute after:top-full after:left-5 after:border-[7px] after:border-transparent after:border-t-white dark:after:border-t-[#242526]">
-                                    <div className="flex items-center justify-between pb-2 border-b border-border/50 text-[11px] font-bold text-muted-foreground">
-                                      <span>¿DESDE DÓNDE ESCRIBES?</span>
+                                  <div className="comment-picker-popover absolute bottom-full left-0 mb-3 w-[330px] max-w-[92vw] bg-white dark:bg-[#242526] rounded-2xl border border-border shadow-[0_16px_40px_rgba(0,0,0,0.25)] p-3.5 z-50 animate-in fade-in zoom-in-95 duration-150 after:content-[''] after:absolute after:top-full after:left-5 after:border-[7px] after:border-transparent after:border-t-white dark:after:border-t-[#242526]">
+                                    <div className="flex items-center justify-between pb-2.5 border-b border-border/50">
+                                      <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                                        <MapPin className="w-4 h-4 text-slate-700 dark:text-slate-300" />
+                                        <span>Ubicación</span>
+                                      </div>
                                       <button
                                         type="button"
                                         onClick={() => setCommentPickerMode(null)}
-                                        className="text-xs hover:text-foreground cursor-pointer"
+                                        className="text-xs text-muted-foreground hover:text-foreground p-1 cursor-pointer"
                                       >
                                         ✕
                                       </button>
                                     </div>
 
-                                    {/* Auto-detect Location from this Experience */}
-                                    <div className="pt-2 space-y-2">
+                                    {/* Search Bar */}
+                                    <div className="pt-2.5 pb-2">
+                                      <div className="relative">
+                                        <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                                        <input
+                                          type="text"
+                                          value={locationSearchQuery}
+                                          onChange={(e) => setLocationSearchQuery(e.target.value)}
+                                          placeholder="Buscar lugar o playa..."
+                                          onKeyDown={(e) => {
+                                            if (e.key === "Enter" && locationSearchQuery.trim()) {
+                                              setCommentLocations((prev) => ({
+                                                ...prev,
+                                                [service.id]: locationSearchQuery.trim(),
+                                              }))
+                                              setLocationSearchQuery("")
+                                              setCommentPickerMode(null)
+                                            }
+                                          }}
+                                          className="w-full h-8 pl-8 pr-2.5 rounded-xl border border-slate-200 dark:border-border bg-[#f0f2f5]/80 dark:bg-black/20 text-xs placeholder:text-muted-foreground focus:outline-none focus:border-slate-400"
+                                        />
+                                      </div>
+                                    </div>
+
+                                    {/* Auto-detect Location from this Experience (Sutil, no saturado de verde) */}
+                                    <div className="space-y-2 pt-1">
                                       <button
                                         type="button"
                                         onClick={() => {
-                                          const autoLoc = service.location || service.businessName || "Palenque, El Salvador"
+                                          const autoLoc =
+                                            service.location || service.businessName || "Palenque, El Salvador"
                                           setCommentLocations((prev) => ({
                                             ...prev,
                                             [service.id]: autoLoc,
                                           }))
                                           setCommentPickerMode(null)
                                         }}
-                                        className="w-full flex items-center gap-2 p-2 rounded-xl bg-[#eaf0e2] hover:bg-[#d8e6cb] text-[#105238] font-bold text-xs text-left cursor-pointer transition-colors"
+                                        className="w-full flex items-center gap-2 p-2 rounded-xl bg-[#f0f2f5] hover:bg-[#e4e6eb] dark:bg-black/20 dark:hover:bg-black/30 border border-slate-200/60 dark:border-white/5 text-foreground font-semibold text-xs text-left cursor-pointer transition-colors"
                                       >
-                                        <MapPin className="w-4 h-4 shrink-0" />
+                                        <MapPin className="w-3.5 h-3.5 text-[#105238] dark:text-[#8ee01a] shrink-0" />
                                         <span className="truncate">
-                                          Ubicación del lugar: {service.location || service.businessName || "Palenque"}
+                                          Ubicación de la experiencia:{" "}
+                                          <span className="font-bold text-[#105238] dark:text-[#8ee01a]">
+                                            {service.location || service.businessName || "Palenque"}
+                                          </span>
                                         </span>
                                       </button>
 
-                                      <div className="flex gap-1.5 pt-1">
-                                        <input
-                                          type="text"
-                                          value={customCommentLocation}
-                                          onChange={(e) => setCustomCommentLocation(e.target.value)}
-                                          onKeyDown={(e) => {
-                                            if (e.key === "Enter" && customCommentLocation.trim()) {
-                                              setCommentLocations((prev) => ({
-                                                ...prev,
-                                                [service.id]: customCommentLocation.trim(),
-                                              }))
-                                              setCustomCommentLocation("")
-                                              setCommentPickerMode(null)
-                                            }
-                                          }}
-                                          placeholder="O escribe playa o ciudad..."
-                                          className="flex-1 h-8 px-2.5 rounded-xl border border-border bg-background text-xs"
-                                        />
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            if (customCommentLocation.trim()) {
-                                              setCommentLocations((prev) => ({
-                                                ...prev,
-                                                [service.id]: customCommentLocation.trim(),
-                                              }))
-                                              setCustomCommentLocation("")
-                                              setCommentPickerMode(null)
-                                            }
-                                          }}
-                                          className="h-8 px-3 rounded-xl bg-[#105238] text-white font-bold text-xs cursor-pointer"
-                                        >
-                                          Fijar
-                                        </button>
+                                      <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide pt-1">
+                                        Destinos populares
                                       </div>
-
-                                      <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto pt-1">
-                                        {POPULAR_TRAVEL_LOCATIONS.map((loc) => (
+                                      <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto pt-0.5">
+                                        {POPULAR_TRAVEL_LOCATIONS.filter((loc) =>
+                                          loc.toLowerCase().includes(locationSearchQuery.toLowerCase()),
+                                        ).map((loc) => (
                                           <button
                                             key={loc}
                                             type="button"
@@ -4731,9 +5066,9 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                                               }))
                                               setCommentPickerMode(null)
                                             }}
-                                            className="px-2 py-1 rounded-lg bg-muted/80 hover:bg-[#eaf0e2] hover:text-[#105238] text-[11px] font-medium transition-colors cursor-pointer"
+                                            className="px-2.5 py-1 rounded-full bg-[#f0f2f5] hover:bg-[#105238] hover:text-white dark:bg-black/20 dark:hover:bg-[#105238] text-slate-700 dark:text-slate-300 text-[11px] font-medium transition-colors cursor-pointer"
                                           >
-                                            📍 {loc}
+                                            {loc}
                                           </button>
                                         ))}
                                       </div>
