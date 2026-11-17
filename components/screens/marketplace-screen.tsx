@@ -1420,6 +1420,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   const [showStickySearch, setShowStickySearch] = useState(true)
   const showStickySearchRef = useRef(true)
   const lastScrollYRef = useRef(0)
+  const stickyHeaderRef = useRef<HTMLDivElement | null>(null)
   const stickySearchRowRef = useRef<HTMLDivElement | null>(null)
   const [stickySearchHeight, setStickySearchHeight] = useState(68)
   const [isMobileSearchFocused, setIsMobileSearchFocused] = useState(false)
@@ -1904,8 +1905,12 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
         }
       }
 
-      // When near the top of the feed, always keep top search bar visible
-      if (currentY <= 70) {
+      // Only collapse the search bar AFTER the sticky bar has actually reached the top edge!
+      const stickyEl = stickyHeaderRef.current
+      const containerTop = mainContainer ? mainContainer.getBoundingClientRect().top : 0
+      const isStickyAtTop = stickyEl ? stickyEl.getBoundingClientRect().top <= containerTop + 6 : currentY > 260
+
+      if (!isStickyAtTop) {
         if (!showStickySearchRef.current) {
           showStickySearchRef.current = true
           setShowStickySearch(true)
@@ -1913,6 +1918,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
         if (isMobileInlineSearchOpenRef.current) {
           isMobileInlineSearchOpenRef.current = false
           setIsMobileInlineSearchOpen(false)
+          setIsMobileInlineInputFocused(false)
         }
         lastScrollYRef.current = currentY
         return
@@ -3721,19 +3727,19 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
               </div>
             </div>
 
-            {/* STICKY HEADER: COLLAPSIBLE SEARCH BAR (REVEALS ON SCROLL UP) + STICKY CATEGORIES */}
+            {/* STICKY HEADER: COLLAPSIBLE SEARCH BAR (REVEALS ON SCROLL UP IN DESKTOP) + STICKY CATEGORIES */}
             <div
-              className="sticky top-0 z-30 bg-[#fafaf8]/95 dark:bg-background/95 backdrop-blur-md -mx-1 px-1 transition-transform duration-300 ease-out will-change-transform"
-              style={{
-                transform: showStickySearch ? "translateY(0)" : `translateY(-${stickySearchHeight}px)`,
-              }}
+              ref={stickyHeaderRef}
+              className="sticky top-0 z-30 bg-[#fafaf8]/95 dark:bg-background/95 backdrop-blur-md -mx-1 px-1"
             >
               {/* COLLAPSIBLE SEARCH ROW */}
               <div
                 ref={stickySearchRowRef}
                 className={cn(
-                  "sticky-search-container pt-2 pb-1.5 transition-opacity duration-200",
-                  showStickySearch ? "opacity-100" : "opacity-0 pointer-events-none"
+                  "sticky-search-container overflow-hidden transition-all duration-200 ease-out",
+                  showStickySearch
+                    ? "max-h-24 pt-2 pb-1.5 opacity-100"
+                    : "max-h-0 pt-0 pb-0 opacity-0 pointer-events-none"
                 )}
               >
                 <div className="bg-card border border-border rounded-3xl p-2.5 sm:p-3.5 shadow-2xs">
