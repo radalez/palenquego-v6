@@ -1821,28 +1821,6 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
                 </button>
               </div>
               {renderSearchCardUnified()}
-
-              {/* Banner Dinámico Modo Urbano / Taxi en Cabecera Móvil */}
-              {superCategory === 'URBANO' && (
-                <div className="shrink-0 bg-gradient-to-r from-[#04281a] to-[#064e3b] text-white p-2 px-3 rounded-2xl border border-emerald-400/40 flex items-center justify-between shadow-md mt-0.5 animate-in fade-in slide-in-from-top-1">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-7 h-7 rounded-xl bg-white/10 flex items-center justify-center text-[#a3e635] shrink-0">
-                      <Car className="h-4 w-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-black text-white leading-tight truncate">Taxi & Rutas Urbanas</p>
-                      <p className="text-[9px] text-white/70 truncate">Pide a demanda o propón tu tarifa</p>
-                    </div>
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={() => setIsUserRoutesModalOpen(true)}
-                    className="bg-[#a3e635] hover:bg-[#86efac] text-[#064e3b] font-black text-[11px] h-7 px-3 rounded-xl shadow-xs shrink-0"
-                  >
-                    + Pedir Viaje
-                  </Button>
-                </div>
-              )}
             </div>
           </div>
         )}
