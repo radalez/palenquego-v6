@@ -1235,6 +1235,14 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   const [searchQuery, setSearchQuery] = useState(() =>
     cachedMarketplaceSession?.shouldRestoreOnMount ? cachedMarketplaceSession.searchQuery : "",
   )
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery)
+    }, 280)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
   const [showStickySearch, setShowStickySearch] = useState(true)
   const showStickySearchRef = useRef(true)
   const lastScrollYRef = useRef(0)
@@ -1652,18 +1660,18 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     } else if (onlyPreferred && preferredCategories.length > 0) {
       params.set("cats", preferredCategories.join(","))
     }
-    if (searchQuery.trim()) {
-      params.set("search", searchQuery.trim())
+    if (debouncedSearchQuery.trim()) {
+      params.set("search", debouncedSearchQuery.trim())
     }
-    // Only send exclude_ids in the general "all" feed so clicking a specific category (e.g. Hoteles) always delivers all its items
-    if (!selectedCategory || selectedCategory === "all") {
+    // Only send exclude_ids in the general "all" feed and ONLY when NOT searching
+    if ((!selectedCategory || selectedCategory === "all") && !debouncedSearchQuery.trim()) {
       const seenArr = Array.from(seenIdsRef.current)
       if (seenArr.length > 0) {
         params.set("exclude_ids", seenArr.slice(-600).join(","))
       }
     }
     return `?${params.toString()}`
-  }, [selectedCategory, onlyPreferred, preferredCategories, searchQuery])
+  }, [selectedCategory, onlyPreferred, preferredCategories, debouncedSearchQuery])
 
   // Single-request 40-item random unseen catalog fetch (or instant 0ms restore when returning from a service detail!)
   useEffect(() => {
@@ -2368,19 +2376,53 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     .sort((a, b) => (b.rating || 0) - (a.rating || 0))
     .slice(0, 5)
 
-  const filteredServices = services.filter((service) => {
-    if (filters.searchQuery && !service.name.toLowerCase().includes(filters.searchQuery.toLowerCase())) {
-      return false
-    }
-    if (filters.ratingMin > 0 && service.rating < filters.ratingMin) return false
-    if (filters.priceMin > 0 && service.price < filters.priceMin) return false
-    if (filters.priceMax < 500 && service.price > filters.priceMax) return false
-    return true
-  })
+  const effectiveSearchQuery = (searchQuery || filters.searchQuery || "").trim().toLowerCase()
+
+  const filteredServices = useMemo(() => {
+    // When searching, use all available loaded services across current feed and global pool
+    const source = effectiveSearchQuery && globalCatalogPool.length > 0
+      ? Array.from(new Map([...services, ...globalCatalogPool].map((s) => [s.id, s])).values())
+      : services
+
+    return source.filter((service) => {
+      if (effectiveSearchQuery) {
+        const name = (service.name || "").toLowerCase()
+        const cat = (service.category || service.categoria?.nombre || "").toLowerCase()
+        const loc = (service.location || "").toLowerCase()
+        const desc = (service.description || "").toLowerCase()
+        const storeName = ((service as any).store?.name || (service as any).tienda?.nombre_comercial || "").toLowerCase()
+
+        const matches =
+          name.includes(effectiveSearchQuery) ||
+          cat.includes(effectiveSearchQuery) ||
+          loc.includes(effectiveSearchQuery) ||
+          desc.includes(effectiveSearchQuery) ||
+          storeName.includes(effectiveSearchQuery)
+
+        if (!matches) return false
+      }
+      if (filters.ratingMin > 0 && service.rating < filters.ratingMin) return false
+      if (filters.priceMin > 0 && service.price < filters.priceMin) return false
+      if (filters.priceMax < 500 && service.price > filters.priceMax) return false
+      return true
+    })
+  }, [services, globalCatalogPool, effectiveSearchQuery, filters])
 
   // Dynamic, category-interleaved ordering so the feed never feels repetitive
   const orderedServices = useMemo(() => {
     if (filteredServices.length <= 1) return filteredServices
+
+    // When actively searching, sort by relevance (name starting with search first)
+    if (effectiveSearchQuery) {
+      return [...filteredServices].sort((a, b) => {
+        const aName = (a.name || "").toLowerCase()
+        const bName = (b.name || "").toLowerCase()
+        const aStarts = aName.startsWith(effectiveSearchQuery) ? 2 : aName.includes(effectiveSearchQuery) ? 1 : 0
+        const bStarts = bName.startsWith(effectiveSearchQuery) ? 2 : bName.includes(effectiveSearchQuery) ? 1 : 0
+        if (aStarts !== bStarts) return bStarts - aStarts
+        return (b.rating || 0) - (a.rating || 0)
+      })
+    }
 
     const pseudoScore = (id: number) => {
       const x = Math.sin(id * 9301 + feedSeed * 49297) * 233280
@@ -2422,7 +2464,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
       round++
     }
     return result
-  }, [filteredServices, feedSeed, preferredCategories])
+  }, [filteredServices, feedSeed, preferredCategories, effectiveSearchQuery])
 
   const discoveryCategories = useMemo(
     () => categories.filter((c) => c.id !== "all" && c.id !== "flash"),
@@ -2903,6 +2945,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   }, [persistSeenIds, selectedCategory, flashServices.length])
 
   const visibleBatchServices = useMemo(() => {
+    // When actively searching, return all matched services directly
+    if (effectiveSearchQuery) {
+      return orderedServices
+    }
     if (currentBatchIds.length > 0) {
       const batchSet = new Set(currentBatchIds)
       const mapped = orderedServices.filter((s) => batchSet.has(s.id))
@@ -2912,7 +2958,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
       return orderedServices.slice(0, BATCH_SIZE)
     }
     return []
-  }, [orderedServices, currentBatchIds, allUnseenExhausted])
+  }, [orderedServices, currentBatchIds, allUnseenExhausted, effectiveSearchQuery])
 
   // Active service for the Interactive Experience Lightbox Modal
   const lightboxActiveService = useMemo(() => {
@@ -3258,7 +3304,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                       <Input
                         value={searchQuery}
                         placeholder="Buscar experiencias, tours, restaurantes..."
-                        className="pl-10 pr-10 bg-[#f0f2f5]/70 dark:bg-background border border-transparent focus:border-slate-300 h-10 rounded-2xl text-sm"
+                        className="pl-10 pr-10 bg-[#f0f2f5]/70 dark:bg-background border border-slate-200/80 dark:border-border focus:border-slate-300 focus-visible:border-slate-300 focus-visible:ring-0 focus:outline-none h-10 rounded-2xl text-sm"
                         onChange={(e) => setSearchQuery(e.target.value)}
                       />
                       {searchQuery && (
@@ -3555,6 +3601,26 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
             })}
 
             {/* SERVICE SOCIAL FEED POSTS */}
+            {effectiveSearchQuery && visibleBatchServices.length === 0 && !isLoadingFeed && (
+              <div className="bg-card border border-border rounded-3xl p-8 text-center space-y-3 shadow-2xs">
+                <Search className="w-8 h-8 text-slate-400 mx-auto" />
+                <h3 className="font-extrabold text-base text-foreground">
+                  No encontramos resultados para "{searchQuery}"
+                </h3>
+                <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                  Prueba buscando por nombre del lugar, municipio o categoría (ej. Restaurante, Hotel, Tours), o haz clic en limpiar para ver todo el feed.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setSearchQuery("")}
+                  className="rounded-xl border-slate-300 text-xs font-bold cursor-pointer"
+                >
+                  Limpiar búsqueda
+                </Button>
+              </div>
+            )}
+
             {isReloadingBatch || (isLoadingFeed && visibleBatchServices.length === 0) ? (
               <div className="py-16 text-center space-y-3">
                 <div className="w-9 h-9 border-3 border-[#105238] border-t-transparent rounded-full animate-spin mx-auto" />
@@ -4331,9 +4397,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                 })}
 
                 {/* End of Category/Selection OR Cycle Wrap-Around Strategy Hub */}
-                {(allUnseenExhausted ||
-                  !catalogHasMore ||
-                  visibleBatchServices.length < BATCH_SIZE) && (
+                {!effectiveSearchQuery &&
+                  (allUnseenExhausted ||
+                    !catalogHasMore ||
+                    visibleBatchServices.length < BATCH_SIZE) && (
                   <div className="bg-card border border-border rounded-3xl p-5 shadow-2xs space-y-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
