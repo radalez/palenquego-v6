@@ -3277,7 +3277,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     )
   }, [openCommentsId, visibleBatchServices, services, globalCatalogPool])
 
-  // Body scroll lock and Escape key handler when comments spotlight is open
+  // Escape key handler when comments spotlight is open
   useEffect(() => {
     if (openCommentsId === null) return
     const originalOverflow = document.body.style.overflow
@@ -3296,18 +3296,9 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     }
   }, [openCommentsId])
 
-  // Center card smoothly when opening comments
+  // Toggle comments
   const handleToggleComments = useCallback((serviceId: number) => {
-    setOpenCommentsId((prev) => {
-      const isOpening = prev !== serviceId
-      if (isOpening) {
-        setTimeout(() => {
-          const el = document.getElementById(`service-card-${serviceId}`)
-          el?.scrollIntoView({ behavior: "smooth", block: "center" })
-        }, 50)
-      }
-      return isOpening ? serviceId : null
-    })
+    setOpenCommentsId((prev) => (prev === serviceId ? null : serviceId))
   }, [])
 
   // Promo Video Stories from Followed Businesses (only shown in feed when a followed business has active stories)
@@ -4006,19 +3997,24 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                       />
                     )}
 
+                    {/* Placeholder in feed to keep scroll position intact when card elevates to fixed modal */}
+                    {openCommentsId === service.id && (
+                      <div className="w-full h-[520px] rounded-3xl opacity-0 pointer-events-none" aria-hidden="true" />
+                    )}
+
                     <article
                       id={`service-card-${service.id}`}
                       className={cn(
-                        "bg-card border border-border rounded-3xl transition-all duration-200 scroll-mt-24",
+                        "bg-card border border-border rounded-3xl transition-all duration-200",
                         openCommentsId === service.id
-                          ? "relative z-40 shadow-[0_25px_60px_-10px_rgba(0,0,0,0.35)] ring-2 ring-black/10 dark:ring-white/10 scale-[1.01] max-h-[85vh] sm:max-h-[88vh] flex flex-col overflow-hidden"
-                          : "shadow-2xs overflow-visible",
+                          ? "fixed top-1 sm:top-1.5 inset-x-2 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-40 w-[calc(100%-1rem)] sm:w-full sm:max-w-xl md:max-w-2xl h-[calc(100vh-10px)] sm:h-[calc(100vh-14px)] flex flex-col overflow-hidden shadow-[0_25px_60px_-10px_rgba(0,0,0,0.45)] ring-2 ring-black/10 dark:ring-white/10 animate-in fade-in zoom-in-[0.99] duration-150"
+                          : "relative shadow-2xs overflow-visible scroll-mt-24",
                       )}
                     >
-                      {/* Post Header: Business + Location + Price (Fixed at top when comments are open) */}
+                      {/* Post Header: Business + Location + Price (Fixed at top of card, max 4-5px from top edge of screen) */}
                       <div
                         className={cn(
-                          "p-4 flex items-center justify-between gap-3 shrink-0 bg-card",
+                          "p-3.5 sm:p-4 flex items-center justify-between gap-3 shrink-0 bg-card",
                           openCommentsId === service.id && "border-b border-border/40 z-10",
                         )}
                       >
@@ -4056,23 +4052,39 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                           </div>
                         </div>
 
-                        {/* Price Pill */}
-                        <div className="text-right shrink-0">
-                          {hasFlashOffer ? (
-                            <div>
-                              <span className="text-[11px] line-through text-muted-foreground mr-1.5">
-                                ${basePrice.toFixed(2)}
-                              </span>
-                              <span className="text-lg font-black text-[#105238] dark:text-[#8ee01a]">
-                                ${flashPrice.toFixed(2)}
-                              </span>
-                              <span className="text-[11px] text-muted-foreground font-semibold"> /p</span>
-                            </div>
-                          ) : (
-                            <div>
-                              <span className="text-lg font-black text-foreground">${basePrice.toFixed(2)}</span>
-                              <span className="text-[11px] text-muted-foreground font-semibold"> /p</span>
-                            </div>
+                        {/* Price Pill + Close Button */}
+                        <div className="flex items-center gap-2 shrink-0">
+                          <div className="text-right">
+                            {hasFlashOffer ? (
+                              <div>
+                                <span className="text-[11px] line-through text-muted-foreground mr-1.5">
+                                  ${basePrice.toFixed(2)}
+                                </span>
+                                <span className="text-lg font-black text-[#105238] dark:text-[#8ee01a]">
+                                  ${flashPrice.toFixed(2)}
+                                </span>
+                                <span className="text-[11px] text-muted-foreground font-semibold"> /p</span>
+                              </div>
+                            ) : (
+                              <div>
+                                <span className="text-lg font-black text-foreground">${basePrice.toFixed(2)}</span>
+                                <span className="text-[11px] text-muted-foreground font-semibold"> /p</span>
+                              </div>
+                            )}
+                          </div>
+                          {openCommentsId === service.id && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOpenCommentsId(null)
+                                setCommentPickerMode(null)
+                              }}
+                              className="w-7 h-7 rounded-full bg-[#f0f2f5] hover:bg-[#e4e6eb] dark:bg-white/10 dark:hover:bg-white/15 flex items-center justify-center text-slate-700 dark:text-neutral-200 transition-colors cursor-pointer text-xs font-bold shrink-0 ml-1"
+                              aria-label="Cerrar"
+                              title="Cerrar comentarios"
+                            >
+                              ✕
+                            </button>
                           )}
                         </div>
                       </div>
