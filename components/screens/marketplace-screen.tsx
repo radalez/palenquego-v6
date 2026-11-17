@@ -1432,8 +1432,20 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     searchQuery: "",
   })
 
-  // Preferences Modal state
-  const [preferredCategories, setPreferredCategories] = useState<string[]>([])
+  // Preferences Modal state (initialized synchronously to prevent post-mount re-sort & double fetch)
+  const [preferredCategories, setPreferredCategories] = useState<string[]>(() => {
+    if (typeof window === "undefined") return []
+    try {
+      const savedPrefs = localStorage.getItem("palenque_experiencias_prefs")
+      if (savedPrefs) {
+        const parsed = JSON.parse(savedPrefs)
+        if (Array.isArray(parsed)) return parsed
+      }
+    } catch {
+      // ignore
+    }
+    return []
+  })
   const [showPreferencesModal, setShowPreferencesModal] = useState(false)
   const [onlyPreferred, setOnlyPreferred] = useState(() =>
     cachedMarketplaceSession?.shouldRestoreOnMount ? cachedMarketplaceSession.onlyPreferred : false,
@@ -1618,10 +1630,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     if (typeof window === "undefined") return
     try {
       const savedPrefs = localStorage.getItem("palenque_experiencias_prefs")
-      if (savedPrefs) {
-        const parsed = JSON.parse(savedPrefs)
-        if (Array.isArray(parsed)) setPreferredCategories(parsed)
-      } else {
+      if (!savedPrefs) {
         setShowPreferencesModal(true)
       }
 
@@ -1757,6 +1766,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     setOnlyPreferred(false)
     setSelectedCategory(catId)
     setSearchQuery("")
+    setCurrentBatchIds([])
     setAllUnseenExhausted(false)
     setFeedSeed(Math.floor(Math.random() * 99999) + 1)
     if (typeof window !== "undefined") {
@@ -1941,28 +1951,28 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     }
 
     let cancelled = false
-    setIsLoadingFeed(true)
+    const previousServices = useAppStore.getState().services
+    const hasCachedServices = previousServices.length > 0
+
+    // Pin initial visible cards immediately so nothing swaps underneath the user while fetching
+    if (hasCachedServices && orderedServicesRef.current.length > 0) {
+      setCurrentBatchIds((prev) =>
+        prev.length > 0 ? prev : orderedServicesRef.current.slice(0, BATCH_SIZE).map((s) => s.id),
+      )
+    }
+
+    if (!hasCachedServices) {
+      setIsLoadingFeed(true)
+    }
     const safetyTimer = setTimeout(() => {
       if (!cancelled) setIsLoadingFeed(false)
     }, 6000)
 
-    const previousServices = useAppStore.getState().services
-
-    fetchServices(buildUnseenCatalogQuery()).finally(() => {
+    fetchServices(buildUnseenCatalogQuery(), hasCachedServices).finally(() => {
       clearTimeout(safetyTimer)
       if (cancelled) return
-      const newlyFetched = useAppStore.getState().services
       seenInCurrentBatchRef.current.clear()
       lastAdvanceRef.current = Date.now()
-
-      // Merge previous + newlyFetched so visible cards are NEVER wiped out from underneath the user!
-      if (previousServices.length > 0 && newlyFetched.length > 0) {
-        const mergedMap = new Map<number, Service>()
-        for (const s of previousServices) mergedMap.set(s.id, s)
-        for (const s of newlyFetched) mergedMap.set(s.id, s)
-        const mergedServices = Array.from(mergedMap.values())
-        useAppStore.setState({ services: mergedServices })
-      }
 
       const activeStoreServices = useAppStore.getState().services
       if (activeStoreServices.length > 0) {
@@ -1981,10 +1991,11 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
           }
         }
         // ONLY initialize currentBatchIds if it's currently empty!
-        // If the user already has cards on screen, keep them stable!
+        // If the user already has cards on screen, keep them 100% locked!
         setCurrentBatchIds((prev) => {
           if (prev.length > 0) return prev
-          return activeStoreServices.slice(0, BATCH_SIZE).map((s) => s.id)
+          const source = orderedServicesRef.current.length > 0 ? orderedServicesRef.current : activeStoreServices
+          return source.slice(0, BATCH_SIZE).map((s) => s.id)
         })
         setAllUnseenExhausted(false)
       } else {
@@ -2150,7 +2161,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     setIsReloadingBatch(true)
     const safetyTimer = setTimeout(() => setIsReloadingBatch(false), 6000)
     try {
-      await fetchServices(buildUnseenCatalogQuery())
+      await fetchServices(buildUnseenCatalogQuery(), true)
       const newlyFetched = useAppStore.getState().services
 
       // Merge previous + newlyFetched so the feed grows downward like Facebook and NEVER shrinks above the user's scroll position
@@ -3261,8 +3272,8 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     }
     let list: Service[] = []
     if (currentBatchIds.length > 0) {
-      const batchSet = new Set(currentBatchIds)
-      const mapped = orderedServices.filter((s) => batchSet.has(s.id))
+      const byId = new Map(orderedServices.map((s) => [s.id, s]))
+      const mapped = currentBatchIds.map((id) => byId.get(id)).filter((s): s is Service => Boolean(s))
       if (mapped.length > 0) list = mapped
     }
     if (list.length === 0 && !allUnseenExhausted && orderedServices.length > 0) {

@@ -848,7 +848,7 @@ interface AppState {
 
   isFetchingMoreCatalog: boolean
 
-  fetchServices: (query?: string) => Promise<void>
+  fetchServices: (query?: string, merge?: boolean) => Promise<void>
 
   fetchMoreServices: () => Promise<void>
 
@@ -1805,9 +1805,11 @@ export const useAppStore = create<AppState>()(
 
 
 
-     fetchServices: async (query = "") => {
+     fetchServices: async (query = "", merge = false) => {
 
-        set({ isLoading: true });
+        if (!merge) {
+          set({ isLoading: true });
+        }
 
         try {
 
@@ -1918,17 +1920,25 @@ export const useAppStore = create<AppState>()(
 
 
 
-          set({ 
-
-            services: formatted, 
-
-            catalogNextUrl: data.next || null,
-
-            catalogHasMore: Boolean(data.next),
-
-            isLoading: false 
-
-          });
+          if (merge) {
+            const prev = get().services;
+            const mergedMap = new Map<number, Service>();
+            for (const s of prev) mergedMap.set(s.id, s);
+            for (const s of formatted) mergedMap.set(s.id, s);
+            set({
+              services: Array.from(mergedMap.values()),
+              catalogNextUrl: data.next || null,
+              catalogHasMore: Boolean(data.next),
+              isLoading: false,
+            });
+          } else {
+            set({
+              services: formatted,
+              catalogNextUrl: data.next || null,
+              catalogHasMore: Boolean(data.next),
+              isLoading: false,
+            });
+          }
 
         } catch (error) {
 
