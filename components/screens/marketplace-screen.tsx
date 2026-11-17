@@ -3314,9 +3314,13 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     )
   }, [openCommentsId, visibleBatchServices, services, globalCatalogPool])
 
-  // Escape key handler when comments spotlight is open
+  // Escape key handler + body spotlight class when comments spotlight is open
   useEffect(() => {
-    if (openCommentsId === null) return
+    if (openCommentsId === null) {
+      document.body.classList.remove("comments-spotlight-open")
+      return
+    }
+    document.body.classList.add("comments-spotlight-open")
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setOpenCommentsId(null)
@@ -3324,7 +3328,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
       }
     }
     window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
+    return () => {
+      document.body.classList.remove("comments-spotlight-open")
+      window.removeEventListener("keydown", handleKeyDown)
+    }
   }, [openCommentsId])
 
   // Prevent wheel movement on header/composer/backdrop when comments spotlight is active

@@ -280,3 +280,9 @@
     background-color: rgba(16, 82, 56, 0.38);
   }
 }
+
+/* Keep mobile bottom nav behind the blur backdrop when a card's comments spotlight is open */
+body.comments-spotlight-open .mobile-bottom-nav {
+  z-index: 10 !important;
+  pointer-events: none !important;
+}
