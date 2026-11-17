@@ -1417,12 +1417,11 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     return () => clearTimeout(timer)
   }, [searchQuery])
 
-  const [showStickySearch, setShowStickySearch] = useState(true)
-  const showStickySearchRef = useRef(true)
+  const [isCategoriesStuck, setIsCategoriesStuck] = useState(false)
+  const isCategoriesStuckRef = useRef(false)
   const lastScrollYRef = useRef(0)
   const stickyHeaderRef = useRef<HTMLDivElement | null>(null)
   const stickySearchRowRef = useRef<HTMLDivElement | null>(null)
-  const [stickySearchHeight, setStickySearchHeight] = useState(68)
   const [isMobileSearchFocused, setIsMobileSearchFocused] = useState(false)
   const [isMobileInlineSearchOpen, setIsMobileInlineSearchOpen] = useState(false)
   const [isMobileInlineInputFocused, setIsMobileInlineInputFocused] = useState(false)
@@ -1835,21 +1834,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     }
   }, [isHoveringRightSidebar])
 
-  // Reverse-scroll smart header: Hide search bar when scrolling down, reveal smoothly when scrolling up slightly
-  useEffect(() => {
-    if (typeof window === "undefined") return
-
-    const updateH = () => {
-      if (stickySearchRowRef.current) {
-        const h = stickySearchRowRef.current.offsetHeight
-        if (h > 20) setStickySearchHeight(h)
-      }
-    }
-    updateH()
-    window.addEventListener("resize", updateH)
-    return () => window.removeEventListener("resize", updateH)
-  }, [])
-
+  // Track when the sticky category bar is pinned at the top edge (so mobile lupita appears only after search box scrolls off)
   useEffect(() => {
     if (typeof window === "undefined") return
 
@@ -1878,18 +1863,22 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
 
       const isMobileViewport = window.innerWidth < 640
       const activeEl = document.activeElement
+      const currentY = getScrollY()
 
-      // Don't collapse top sticky search if an input inside sticky search is focused
-      if (activeEl && activeEl.tagName === "INPUT" && activeEl.closest(".sticky-search-container")) {
-        if (!showStickySearchRef.current) {
-          showStickySearchRef.current = true
-          setShowStickySearch(true)
-        }
-        return
+      const searchEl = stickySearchRowRef.current
+      const containerTop = mainContainer ? mainContainer.getBoundingClientRect().top : 0
+      const stuck = searchEl ? searchEl.getBoundingClientRect().bottom <= containerTop + 8 : currentY > 240
+
+      if (stuck !== isCategoriesStuckRef.current) {
+        isCategoriesStuckRef.current = stuck
+        setIsCategoriesStuck(stuck)
       }
 
-      const currentY = getScrollY()
-      const lastY = lastScrollYRef.current
+      if (!stuck && isMobileInlineSearchOpenRef.current) {
+        isMobileInlineSearchOpenRef.current = false
+        setIsMobileInlineSearchOpen(false)
+        setIsMobileInlineInputFocused(false)
+      }
 
       // If mobile inline search is open and user scrolls down enough (~2 swipes / > 280px), return to categories
       if (
@@ -1905,43 +1894,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
         }
       }
 
-      // Only collapse the search bar AFTER the sticky bar has actually reached the top edge!
-      const stickyEl = stickyHeaderRef.current
-      const containerTop = mainContainer ? mainContainer.getBoundingClientRect().top : 0
-      const isStickyAtTop = stickyEl ? stickyEl.getBoundingClientRect().top <= containerTop + 6 : currentY > 260
-
-      if (!isStickyAtTop) {
-        if (!showStickySearchRef.current) {
-          showStickySearchRef.current = true
-          setShowStickySearch(true)
-        }
-        if (isMobileInlineSearchOpenRef.current) {
-          isMobileInlineSearchOpenRef.current = false
-          setIsMobileInlineSearchOpen(false)
-          setIsMobileInlineInputFocused(false)
-        }
-        lastScrollYRef.current = currentY
-        return
-      }
-
-      const diff = currentY - lastY
-
-      // Scrolled down by more than 16px -> hide top search bar
-      if (diff > 16) {
-        if (showStickySearchRef.current) {
-          showStickySearchRef.current = false
-          setShowStickySearch(false)
-        }
-        lastScrollYRef.current = currentY
-      }
-      // Scrolled up by more than 16px -> reveal top search bar smoothly ONLY on Desktop (>= 640px)
-      else if (diff < -16) {
-        if (!isMobileViewport && !showStickySearchRef.current) {
-          showStickySearchRef.current = true
-          setShowStickySearch(true)
-        }
-        lastScrollYRef.current = currentY
-      }
+      lastScrollYRef.current = currentY
     }
 
     window.addEventListener("scroll", handleScrollHeader, { capture: true, passive: true })
@@ -3727,21 +3680,8 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
               </div>
             </div>
 
-            {/* STICKY HEADER: COLLAPSIBLE SEARCH BAR (REVEALS ON SCROLL UP IN DESKTOP) + STICKY CATEGORIES */}
-            <div
-              ref={stickyHeaderRef}
-              className="sticky top-0 z-30 bg-[#fafaf8]/95 dark:bg-background/95 backdrop-blur-md -mx-1 px-1"
-            >
-              {/* COLLAPSIBLE SEARCH ROW */}
-              <div
-                ref={stickySearchRowRef}
-                className={cn(
-                  "sticky-search-container overflow-hidden transition-all duration-200 ease-out",
-                  showStickySearch
-                    ? "max-h-24 pt-2 pb-1.5 opacity-100"
-                    : "max-h-0 pt-0 pb-0 opacity-0 pointer-events-none"
-                )}
-              >
+            {/* TOP SEARCH ROW (Natural scroll flow — never fights or clips with feed cards) */}
+            <div ref={stickySearchRowRef} className="sticky-search-container">
                 <div className="bg-card border border-border rounded-3xl p-2.5 sm:p-3.5 shadow-2xs">
                   <div className="flex flex-nowrap sm:flex-wrap items-center gap-1.5 sm:gap-2">
                     <div className="relative flex-1 min-w-0 sm:min-w-[180px]">
@@ -3825,7 +3765,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
               </div>
 
               {/* STICKY CATEGORY PILLS BAR (with preferred categories first + scroll arrows + mobile inline search swap) */}
-              <div className="py-2">
+              <div
+                ref={stickyHeaderRef}
+                className="sticky top-0 z-30 bg-[#fafaf8]/95 dark:bg-background/95 backdrop-blur-md -mx-1 px-1 py-2"
+              >
                 {isMobileInlineSearchOpen && (
                   <div className="mobile-inline-search flex sm:hidden w-full animate-in fade-in duration-150">
                     <div className="bg-card border border-border rounded-3xl p-2 shadow-2xs w-full">
@@ -3961,7 +3904,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                       )
                     })}
                   </div>
-                  {!showStickySearch && (
+                  {isCategoriesStuck && (
                     <button
                       type="button"
                       onClick={() => {
@@ -3990,7 +3933,6 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   </button>
                 </div>
               </div>
-            </div>
 
             {/* TRAVELER EXPERIENCE TRIGGER (Opens Blurred-Backdrop Modal) */}
             <div
