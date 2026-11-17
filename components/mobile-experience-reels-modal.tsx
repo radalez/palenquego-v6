@@ -1,12 +1,10 @@
 "use client"
 
-import React, { useState, useRef } from "react"
+import React, { useState, useRef, useEffect } from "react"
 import {
   ArrowDown,
   ArrowUp,
   Check,
-  ChevronLeft,
-  ChevronRight,
   Heart,
   Info,
   MapPin,
@@ -78,11 +76,16 @@ export function MobileExperienceReelsModal({
   const [showDetailsSheet, setShowDetailsSheet] = useState(false)
   const [isCleanMediaMode, setIsCleanMediaMode] = useState(false)
   const [expandDesc, setExpandDesc] = useState(false)
+  const [isHorizontalImage, setIsHorizontalImage] = useState(false)
 
   // Touch swipe support for horizontal photos & vertical feed stepping
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
 
   const currentPhotoUrl = allPhotos[safePhotoIdx] || defaultCover
+
+  useEffect(() => {
+    setIsHorizontalImage(false)
+  }, [currentPhotoUrl])
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (showDetailsSheet) return
@@ -127,8 +130,12 @@ export function MobileExperienceReelsModal({
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         className={cn(
-          "relative w-full bg-[#090a0c] overflow-hidden transition-all duration-300 ease-out flex items-center justify-center",
-          showDetailsSheet ? "h-[34dvh] shrink-0" : "flex-1 h-full",
+          "relative w-full bg-[#090a0c] overflow-hidden transition-all duration-300 ease-out flex flex-col items-center",
+          showDetailsSheet
+            ? "h-[34dvh] shrink-0 justify-center"
+            : isHorizontalImage
+              ? "flex-1 h-full justify-start pt-16"
+              : "flex-1 h-full justify-center",
         )}
       >
         {/* Ambient blurred backdrop so horizontal & vertical photos both look cinematic */}
@@ -138,14 +145,23 @@ export function MobileExperienceReelsModal({
           className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-35 scale-110 pointer-events-none"
         />
 
-        {/* Crisp Full Image (works equally well for vertical AND horizontal images) */}
+        {/* Crisp Full Image (horizontal sits higher up; vertical fills naturally) */}
         <img
           src={currentPhotoUrl}
           alt={service.name}
+          onLoad={(e) => {
+            const { naturalWidth, naturalHeight } = e.currentTarget
+            if (naturalWidth > 0 && naturalHeight > 0) {
+              setIsHorizontalImage(naturalWidth > naturalHeight * 1.1)
+            }
+          }}
           onClick={() => {
             if (!showDetailsSheet) setIsCleanMediaMode((prev) => !prev)
           }}
-          className="relative z-10 w-full h-full object-contain"
+          className={cn(
+            "relative z-10 w-full object-contain",
+            isHorizontalImage && !showDetailsSheet ? "max-h-[54dvh]" : "h-full",
+          )}
           onError={(e) => {
             e.currentTarget.src = defaultCover
           }}
@@ -192,31 +208,6 @@ export function MobileExperienceReelsModal({
           </div>
         </div>
 
-        {/* LATERAL PHOTO ARROWS (when multiple photos exist) */}
-        {allPhotos.length > 1 && !isCleanMediaMode && (
-          <>
-            <button
-              type="button"
-              onClick={() => setPhotoIdx((prev) => (prev - 1 + allPhotos.length) % allPhotos.length)}
-              className="absolute left-2.5 top-1/2 -translate-y-1/2 z-30 w-9 h-9 rounded-full bg-black/55 backdrop-blur-md hover:bg-black/80 text-white border border-white/20 flex items-center justify-center shadow-lg cursor-pointer active:scale-95"
-              aria-label="Foto anterior"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setPhotoIdx((prev) => (prev + 1) % allPhotos.length)}
-              className={cn(
-                "absolute top-1/2 -translate-y-1/2 z-30 w-9 h-9 rounded-full bg-black/55 backdrop-blur-md hover:bg-black/80 text-white border border-white/20 flex items-center justify-center shadow-lg cursor-pointer active:scale-95",
-                showDetailsSheet ? "right-2.5" : "right-16",
-              )}
-              aria-label="Siguiente foto"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </>
-        )}
-
         {/* RIGHT-SIDE FLOATING REELS ACTION RAIL (TikTok Style: Like, Ver Info, Up/Down Arrows) */}
         {!showDetailsSheet && !isCleanMediaMode && (
           <div className="absolute right-2.5 bottom-44 z-30 flex flex-col items-center gap-3">
@@ -256,7 +247,7 @@ export function MobileExperienceReelsModal({
             </button>
 
             {/* Feed Up / Down Navigation Arrows */}
-            <div className="flex flex-col items-center gap-1.5 pt-1">
+            <div className="flex flex-col items-center gap-2 pt-1">
               <button
                 type="button"
                 onClick={() => onStepService("prev")}
@@ -265,11 +256,6 @@ export function MobileExperienceReelsModal({
               >
                 <ArrowUp className="w-4 h-4" />
               </button>
-              {currentFeedPos >= 0 && (
-                <span className="text-[10px] font-bold text-white bg-black/65 px-2 py-0.5 rounded-full border border-white/15">
-                  {currentFeedPos + 1}/{totalFeedCount}
-                </span>
-              )}
               <button
                 type="button"
                 onClick={() => onStepService("next")}
@@ -285,7 +271,7 @@ export function MobileExperienceReelsModal({
         {/* BOTTOM REELS OVERLAY (Circular Thumbnails + Info + Booking CTA) */}
         {!showDetailsSheet && !isCleanMediaMode && (
           <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/95 via-black/80 to-transparent pt-12 pb-4 px-4 space-y-2.5">
-            {/* Circular Photo Thumbnails Strip (PalenqueGo signature style) */}
+            {/* Circular Photo Thumbnails Strip (Fixed position for vertical & horizontal photos) */}
             {allPhotos.length > 1 && (
               <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-0.5 pr-12">
                 {allPhotos.map((pUrl, idx) => (
@@ -307,18 +293,9 @@ export function MobileExperienceReelsModal({
               </div>
             )}
 
-            {/* Pool & Routes Badges */}
-            <div className="flex items-center gap-2 flex-wrap pr-12">
-              <span className="bg-black/60 backdrop-blur-md text-white border border-white/15 text-[10px] font-semibold px-2.5 py-1 rounded-full inline-flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-[#8ee01a]" />
-                <span>
-                  {service.hasActivePool
-                    ? `Pool disponible · ${service.spotsLeft || 3} cupos`
-                    : "Ahorra en grupo con Pool"}
-                </span>
-              </span>
-
-              {service.routes && service.routes.length > 0 && (
+            {/* Routes Badge (if available) */}
+            {service.routes && service.routes.length > 0 && (
+              <div className="flex items-center gap-2 flex-wrap pr-12">
                 <button
                   type="button"
                   onClick={() => onOpenRoutes(service)}
@@ -327,10 +304,10 @@ export function MobileExperienceReelsModal({
                   <MapPin className="w-3 h-3 text-[#105238]" />
                   <span>{service.routes.length} rutas</span>
                 </button>
-              )}
-            </div>
+              </div>
+            )}
 
-            {/* Title, Business, Rating & Short Description */}
+            {/* Title, Business, Rating & Single-line Description */}
             <div className="space-y-1 pr-12">
               <div className="flex items-center gap-2 text-[11px] text-neutral-300 flex-wrap">
                 <button
@@ -358,7 +335,7 @@ export function MobileExperienceReelsModal({
 
               <p
                 onClick={() => setShowDetailsSheet(true)}
-                className="text-xs text-neutral-200/90 line-clamp-2 leading-snug cursor-pointer"
+                className="text-xs text-neutral-200/90 line-clamp-1 leading-snug cursor-pointer"
               >
                 {service.description ||
                   "Vive una experiencia auténtica en El Salvador con atención verificada por la red PalenqueGo."}
@@ -369,8 +346,7 @@ export function MobileExperienceReelsModal({
                 onClick={() => setShowDetailsSheet(true)}
                 className="text-[11px] font-bold text-[#8ee01a] inline-flex items-center gap-1 pt-0.5 cursor-pointer"
               >
-                <span>Ver detalles y características</span>
-                <span>→</span>
+                <span>Ver más</span>
               </button>
             </div>
 
