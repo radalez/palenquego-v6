@@ -1,19 +1,48 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import { MapPin, Navigation2, Clock, Users, AlertCircle, X, Truck, Ticket, ShoppingCart, Search, ArrowLeft } from "lucide-react"
+import {
+  MapPin,
+  Navigation2,
+  Clock,
+  Users,
+  X,
+  Truck,
+  Ticket,
+  ShoppingCart,
+  Search,
+  ArrowLeft,
+  Heart,
+  MessageCircle,
+  Share2,
+  Star,
+  Send,
+  Info,
+  Compass,
+  Store,
+  ChevronRight,
+  Check,
+  Maximize2,
+} from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { useAppStore, type Route, type Service } from "@/lib/store"
+import {
+  useAppStore,
+  type Route,
+  type Service,
+  DEFAULT_STORE_COVER,
+  getProxyImage,
+} from "@/lib/store"
 import { HeaderWithMenu } from "@/components/header-with-menu"
-import dynamic from 'next/dynamic';
-import { cn } from "@/lib/utils"
+import dynamic from "next/dynamic"
+import { cn, getRouteImageUrl, handleImageFallback } from "@/lib/utils"
 
-const MapPreview = dynamic(() => import('@/components/MapPreview'), { 
-  ssr: false, 
-  loading: () => <div className="h-full w-full bg-muted animate-pulse rounded-xl" />
-});
+const MapPreview = dynamic(() => import("@/components/MapPreview"), {
+  ssr: false,
+  loading: () => <div className="h-full w-full bg-muted animate-pulse rounded-xl" />,
+})
+
 interface RouteTrackingState {
   routeId: number
   showTracking: boolean
@@ -34,91 +63,186 @@ interface TicketPurchaseState {
   endStopId?: number
 }
 
+interface RouteCommentItem {
+  id: string
+  userName: string
+  userAvatar?: string
+  text: string
+  rating: number
+  createdAt: string
+}
+
 // Distance helper functions
 function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
-  const R = 6371; // Radius of the earth in km
-  const dLat = deg2rad(lat2-lat1);
-  const dLon = deg2rad(lon2-lon1); 
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
-    Math.sin(dLon/2) * Math.sin(dLon/2)
-    ; 
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
-  const d = R * c; // Distance in km
-  return d;
+  const R = 6371
+  const dLat = deg2rad(lat2 - lat1)
+  const dLon = deg2rad(lon2 - lon1)
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c
 }
 
 function deg2rad(deg: number) {
-  return deg * (Math.PI/180)
+  return deg * (Math.PI / 180)
 }
 
 interface RoutesScreenProps {
   onNavigate?: (tab: string) => void
 }
 
+const ROUTE_REACTIONS_KEY = "palenquego_route_reactions_v1"
+const ROUTE_COMMENTS_KEY = "palenquego_route_comments_v1"
+
 export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
-  const { routes, services, fetchRoutes, isLoading, routeSearchQuery, setRouteSearchQuery, returnToMapRoute, setReturnToMapRoute, myUserRoutes, fetchMyUserRoutes, activeTrackingRouteId, setActiveTrackingRouteId } = useAppStore() 
+  const {
+    routes,
+    services,
+    fetchRoutes,
+    routeSearchQuery,
+    setRouteSearchQuery,
+    returnToMapRoute,
+    myUserRoutes,
+    fetchMyUserRoutes,
+    activeTrackingRouteId,
+    setActiveTrackingRouteId,
+    currentUser,
+    bookings,
+    fetchMyBookings,
+  } = useAppStore()
+
   const [tracking, setTracking] = useState<RouteTrackingState | null>(null)
   const [serviceView, setServiceView] = useState<ServiceViewState | null>(null)
   const [ticketPurchase, setTicketPurchase] = useState<TicketPurchaseState | null>(null)
   const [ticketModalOpen, setTicketModalOpen] = useState(false)
+  const [activeFilter, setActiveFilter] = useState<"ALL" | "MY_ROUTES" | "GPS" | "TOURS">("ALL")
+  const [adRotationIndex, setAdRotationIndex] = useState(0)
+  const [isHoveringSidebar, setIsHoveringSidebar] = useState(false)
+  const [toastText, setToastText] = useState<string | null>(null)
+
+  // Reacciones y comentarios locales por ruta (persistidos en localStorage)
+  const [likedRouteIds, setLikedRouteIds] = useState<Record<number, boolean>>({})
+  const [routeComments, setRouteComments] = useState<Record<number, RouteCommentItem[]>>({})
+
+  useEffect(() => {
+    try {
+      const savedLikes = localStorage.getItem(ROUTE_REACTIONS_KEY)
+      if (savedLikes) setLikedRouteIds(JSON.parse(savedLikes))
+      const savedComments = localStorage.getItem(ROUTE_COMMENTS_KEY)
+      if (savedComments) setRouteComments(JSON.parse(savedComments))
+    } catch {
+      // Ignorar errores de almacenamiento
+    }
+  }, [])
+
+  const showQuickToast = (msg: string) => {
+    setToastText(msg)
+    setTimeout(() => setToastText(null), 2600)
+  }
+
+  const toggleLikeRoute = (routeId: number) => {
+    setLikedRouteIds((prev) => {
+      const next = { ...prev, [routeId]: !prev[routeId] }
+      try {
+        localStorage.setItem(ROUTE_REACTIONS_KEY, JSON.stringify(next))
+      } catch {
+        // ignore
+      }
+      return next
+    })
+  }
+
+  const addRouteComment = (routeId: number, text: string, rating: number) => {
+    const clean = text.trim()
+    if (!clean) return
+    const newItem: RouteCommentItem = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      userName: currentUser?.name || "Viajero PalenqueGo",
+      userAvatar: (currentUser as any)?.avatar || (currentUser as any)?.foto_perfil,
+      text: clean,
+      rating,
+      createdAt: "Ahora",
+    }
+    setRouteComments((prev) => {
+      const existing = prev[routeId] || []
+      const next = { ...prev, [routeId]: [newItem, ...existing] }
+      try {
+        localStorage.setItem(ROUTE_COMMENTS_KEY, JSON.stringify(next))
+      } catch {
+        // ignore
+      }
+      return next
+    })
+    showQuickToast("Comentario publicado en la ruta")
+  }
+
+  // Rotación tranquila de publicidad cada 18s (igual que Experiencias)
+  useEffect(() => {
+    if (isHoveringSidebar) return
+    const interval = setInterval(() => {
+      setAdRotationIndex((prev) => prev + 1)
+    }, 18000)
+    return () => clearInterval(interval)
+  }, [isHoveringSidebar])
 
   const allRoutes = useMemo(() => {
     const formattedUserRoutes: Route[] = (myUserRoutes || []).map((ur: any) => ({
       id: ur.id,
       name: ur.name,
-      colorHex: '#059669',
-      price_one_way: String(ur.proposed_price || '0'),
-      price_round_trip: String(ur.proposed_price || '0'),
+      colorHex: "#105238",
+      price_one_way: String(ur.proposed_price || "0"),
+      price_round_trip: String(ur.proposed_price || "0"),
       is_active: true,
       driver_name: ur.driver_name,
-      unit_name: ur.driver_name ? 'Taxi / Auto' : 'Sin asignar',
+      unit_name: ur.driver_name ? "Taxi / Auto" : "Sin asignar",
       stops: (ur.stops || []).map((s: any, idx: number) => ({
         id: s.id || idx + 1,
         name: s.name,
         latitude: Number(s.latitude) || 13.6893,
         longitude: Number(s.longitude) || -89.1872,
         order: s.order || idx + 1,
-        minutes_from_start: s.minutes_from_start || (idx * 15)
-      }))
+        minutes_from_start: s.minutes_from_start || idx * 15,
+      })),
     }))
     return [...routes, ...formattedUserRoutes]
   }, [routes, myUserRoutes])
 
-  const filteredRoutes = allRoutes.filter((route) => {
+  const filteredRoutes = useMemo(() => {
     const query = (routeSearchQuery || "").toLowerCase()
-    return (
-      (route.name || "").toLowerCase().includes(query) ||
-      (route.stops || []).some((stop) => (stop.name || "")?.toLowerCase().includes(query))
-    )
-  })
+    return allRoutes.filter((route: any) => {
+      const matchesSearch =
+        !query ||
+        (route.name || "").toLowerCase().includes(query) ||
+        (route.stops || []).some((stop: any) => (stop.name || "").toLowerCase().includes(query))
+      if (!matchesSearch) return false
+      if (activeFilter === "MY_ROUTES") return Boolean(route.user_has_ticket)
+      if (activeFilter === "GPS") return Boolean(route.is_active && route.unit_lat && route.unit_lng)
+      if (activeFilter === "TOURS") return route.route_type === "TOUR"
+      return true
+    })
+  }, [allRoutes, routeSearchQuery, activeFilter])
 
   useEffect(() => {
-    fetchRoutes();
-    fetchMyUserRoutes?.();
-    // Primera carga inmediata
-    fetchRoutes();
+    fetchRoutes()
+    fetchMyUserRoutes?.()
+    fetchMyBookings?.()
 
-    // Establecemos el intervalo de 10 segundos para refrescar el GPS del bus
     const gpsInterval = setInterval(() => {
-      console.log("Refrescando posición GPS del bus...");
-      fetchRoutes();
-    }, 10000);
+      fetchRoutes()
+    }, 10000)
 
-    // Limpieza al desmontar el componente para evitar fugas de memoria
     return () => {
-      clearInterval(gpsInterval);
-    };
-  }, [fetchRoutes]);
+      clearInterval(gpsInterval)
+    }
+  }, [fetchRoutes, fetchMyUserRoutes, fetchMyBookings])
 
   useEffect(() => {
     if (activeTrackingRouteId) {
-      setTracking({ routeId: activeTrackingRouteId, showTracking: true, currentStop: 1 });
-      setActiveTrackingRouteId(null);
+      setTracking({ routeId: activeTrackingRouteId, showTracking: true, currentStop: 1 })
+      setActiveTrackingRouteId(null)
     }
-  }, [activeTrackingRouteId, setActiveTrackingRouteId]);
-
+  }, [activeTrackingRouteId, setActiveTrackingRouteId])
 
   const handleStartTracking = (route: Route) => {
     setTracking({ routeId: route.id, showTracking: true, currentStop: 1 })
@@ -128,50 +252,74 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
     setServiceView({ routeId: route.id, showServices: true })
   }
 
+  const handleShareRoute = async (route: Route) => {
+    const url = typeof window !== "undefined" ? `${window.location.origin}/r/${route.id}` : ""
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: route.name,
+          text: `Explora y rastrea esta ruta en PalenqueGo: ${route.name}`,
+          url,
+        })
+      } else if (navigator.clipboard && url) {
+        await navigator.clipboard.writeText(url)
+        showQuickToast("Enlace de ruta copiado al portapapeles")
+      }
+    } catch {
+      // Cancelado por el usuario
+    }
+  }
+
   const getTicketPrices = () => {
-    if (!ticketPurchase) return { oneWay: "0.00", roundTrip: "0.00", startName: null, endName: null };
-    
-    const route = allRoutes.find(r => r.id === ticketPurchase.routeId);
-    if (!route || !route.stops || route.stops.length === 0) return { oneWay: route?.price_one_way || "0.00", roundTrip: route?.price_round_trip || "0.00", startName: null, endName: null };
-    
-    let startStop = route.stops[0];
-    let endStop = route.stops[route.stops.length - 1];
+    if (!ticketPurchase) return { oneWay: "0.00", roundTrip: "0.00", startName: null, endName: null }
+
+    const route = allRoutes.find((r) => r.id === ticketPurchase.routeId)
+    if (!route || !route.stops || route.stops.length === 0) {
+      return {
+        oneWay: route?.price_one_way || "0.00",
+        roundTrip: route?.price_round_trip || "0.00",
+        startName: null,
+        endName: null,
+      }
+    }
+
+    let startStop = route.stops[0]
+    let endStop = route.stops[route.stops.length - 1]
 
     if (ticketPurchase.startStopId) {
-        startStop = route.stops.find(s => s.id === ticketPurchase.startStopId) || startStop;
+      startStop = route.stops.find((s) => s.id === ticketPurchase.startStopId) || startStop
     }
     if (ticketPurchase.endStopId) {
-        endStop = route.stops.find(s => s.id === ticketPurchase.endStopId) || endStop;
+      endStop = route.stops.find((s) => s.id === ticketPurchase.endStopId) || endStop
     }
 
     if (startStop && endStop && startStop.order < endStop.order) {
-        let oneWayTotal = 0;
-        let roundTripTotal = 0;
-        const segment = route.stops.filter(s => s.order >= startStop.order && s.order <= endStop.order);
-        segment.forEach(s => {
-            oneWayTotal += parseFloat(s.effective_price_one_way || "0");
-            roundTripTotal += parseFloat(s.effective_price_round_trip || "0");
-        });
-        return {
-            oneWay: oneWayTotal.toFixed(2),
-            roundTrip: roundTripTotal.toFixed(2),
-            startName: startStop.name,
-            endName: endStop.name
-        };
+      let oneWayTotal = 0
+      let roundTripTotal = 0
+      const segment = route.stops.filter((s) => s.order >= startStop.order && s.order <= endStop.order)
+      segment.forEach((s) => {
+        oneWayTotal += parseFloat(s.effective_price_one_way || "0")
+        roundTripTotal += parseFloat(s.effective_price_round_trip || "0")
+      })
+      return {
+        oneWay: oneWayTotal.toFixed(2),
+        roundTrip: roundTripTotal.toFixed(2),
+        startName: startStop.name,
+        endName: endStop.name,
+      }
     }
-    
+
     return {
       oneWay: route.price_one_way || "0.00",
       roundTrip: route.price_round_trip || "0.00",
       startName: null,
-      endName: null
-    };
-  };
+      endName: null,
+    }
+  }
 
   const handleBuyTicket = (route: Route, service?: Service) => {
-    // Initial state with defaults
-    let initialStart = route.stops?.[0]?.id;
-    let initialEnd = route.stops?.[route.stops.length - 1]?.id;
+    const initialStart = route.stops?.[0]?.id
+    const initialEnd = route.stops?.[route.stops.length - 1]?.id
 
     setTicketPurchase({
       routeId: route.id,
@@ -182,251 +330,330 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
       endStopId: initialEnd,
     })
 
-    // Find closest stop asynchronously
     if (navigator.geolocation && route.stops && route.stops.length > 0) {
       navigator.geolocation.getCurrentPosition((position) => {
-        const userLat = position.coords.latitude;
-        const userLng = position.coords.longitude;
-        
-        let closestStopId: number | undefined;
-        let minDistance = 1; // 1km threshold
-        
-        route.stops.forEach(stop => {
-          const distance = getDistanceFromLatLonInKm(userLat, userLng, stop.latitude, stop.longitude);
+        const userLat = position.coords.latitude
+        const userLng = position.coords.longitude
+
+        let closestStopId: number | undefined
+        let minDistance = 1
+
+        route.stops.forEach((stop) => {
+          const distance = getDistanceFromLatLonInKm(userLat, userLng, stop.latitude, stop.longitude)
           if (distance < minDistance) {
-            minDistance = distance;
-            closestStopId = stop.id;
+            minDistance = distance
+            closestStopId = stop.id
           }
-        });
-        
+        })
+
         if (closestStopId) {
-          setTicketPurchase(prev => prev ? { ...prev, startStopId: closestStopId } : null);
+          setTicketPurchase((prev) => (prev ? { ...prev, startStopId: closestStopId } : null))
         }
-      });
+      })
     }
   }
 
   const handleConfirmTicketPayment = () => {
     setTicketPurchase((prev) => (prev ? { ...prev, step: "payment" } : null))
-    const route = allRoutes.find(r => r.id === ticketPurchase?.routeId)
+    const route = allRoutes.find((r) => r.id === ticketPurchase?.routeId)
     if (route && ticketPurchase) {
-      const redirectUrl = window.location.origin + "/checkout-success";
-      useAppStore.getState().buyTicketWompi(
-        ticketPurchase.routeId,
-        ticketPurchase.startStopId!,
-        ticketPurchase.endStopId!,
-        "ONE_WAY",
-        redirectUrl
-      ).then((wompiUrl) => {
-        if (wompiUrl) {
-          window.location.href = wompiUrl;
-        } else {
-          alert("Error al iniciar el pago con Wompi. Inténtalo de nuevo.");
-          setTicketPurchase(null)
-        }
-      });
+      const redirectUrl = window.location.origin + "/checkout-success"
+      useAppStore
+        .getState()
+        .buyTicketWompi(ticketPurchase.routeId, ticketPurchase.startStopId!, ticketPurchase.endStopId!, "ONE_WAY", redirectUrl)
+        .then((wompiUrl) => {
+          if (wompiUrl) {
+            window.location.href = wompiUrl
+          } else {
+            alert("Error al iniciar el pago con Wompi. Inténtalo de nuevo.")
+            setTicketPurchase(null)
+          }
+        })
     } else {
       setTicketPurchase(null)
     }
   }
 
+  const primaryBooking = (bookings || []).find(
+    (b: any) =>
+      (b.status === "PENDIENTE" || b.status === "CONFIRMADA") &&
+      (!currentUser || b.userId === currentUser.id || (!b.userId && b.userEmail === currentUser.email))
+  )
+
   return (
-    <div className="flex flex-col">
-      <HeaderWithMenu title="Rutas de Transporte" onNavigate={onNavigate} />
+    <div className="flex flex-col min-h-full bg-[#f5f6f3] dark:bg-background">
+      <HeaderWithMenu
+        title="Rutas de Transporte"
+        subtitle="Explora recorridos, reacciona y rastrea en tiempo real"
+        onNavigate={onNavigate}
+      />
 
-      {/* Tracking Modal with Scroll */}
-      {tracking?.showTracking && (() => {
-        const trackedRoute = allRoutes.find(r => r.id === tracking.routeId)
-        const routeAny = trackedRoute as any
-        const hasGPS = routeAny?.is_active && routeAny?.unit_lat && routeAny?.unit_lng
-        return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-card rounded-2xl max-w-sm w-full max-h-[85vh] shadow-xl overflow-hidden flex flex-col">
-            {/* Header */}
-            <div className="bg-primary px-6 py-4 flex items-center justify-between text-primary-foreground flex-shrink-0">
-              <div className="flex items-center gap-2">
-                <Truck className="w-5 h-5" />
-                <div>
-                  <h2 className="text-lg font-bold leading-tight">Rastreando Ruta</h2>
-                  <p className="text-xs text-primary-foreground/70 leading-tight">{trackedRoute?.name}</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setTracking(null)}
-                className="p-1 hover:bg-primary-foreground/20 rounded-lg transition"
+      {/* Toast flotante */}
+      {toastText && (
+        <div className="fixed bottom-20 lg:bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#105238] text-white text-xs font-bold px-4 py-2.5 rounded-full shadow-xl border border-[#8ee01a]/40 animate-in fade-in slide-in-from-bottom-2">
+          {toastText}
+        </div>
+      )}
+
+      {/* ─── FULL-SCREEN / LIGHTBOX INTERACTIVE MAP TRACKER MODAL ─── */}
+      {tracking?.showTracking &&
+        (() => {
+          const trackedRoute = allRoutes.find((r) => r.id === tracking.routeId)
+          const routeAny = trackedRoute as any
+          const hasGPS = Boolean(routeAny?.is_active && routeAny?.unit_lat && routeAny?.unit_lng)
+          const stops = trackedRoute?.stops || []
+          const unitLat = routeAny?.unit_lat
+          const unitLng = routeAny?.unit_lng
+
+          const getDistanceMeters = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+            const R = 6371e3
+            const p1 = (lat1 * Math.PI) / 180
+            const p2 = (lat2 * Math.PI) / 180
+            const dp = ((lat2 - lat1) * Math.PI) / 180
+            const dl = ((lon2 - lon1) * Math.PI) / 180
+            const a =
+              Math.sin(dp / 2) * Math.sin(dp / 2) +
+              Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) * Math.sin(dl / 2)
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+          }
+
+          let closestStopOrder = -1
+          let minDistance = Infinity
+          if (hasGPS) {
+            stops.forEach((stop) => {
+              const dist = getDistanceMeters(unitLat, unitLng, stop.latitude, stop.longitude)
+              if (dist < minDistance) {
+                minDistance = dist
+                closestStopOrder = stop.order
+              }
+            })
+          }
+
+          return (
+            <div
+              className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-2 sm:p-5 animate-in fade-in duration-150"
+              onClick={() => setTracking(null)}
+            >
+              <div
+                className="bg-white dark:bg-card rounded-3xl w-full max-w-5xl h-[90vh] max-h-[760px] shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 border border-white/15"
+                onClick={(e) => e.stopPropagation()}
               >
-                <X size={20} />
-              </button>
-            </div>
+                {/* LEFT / MAIN: FULL INTERACTIVE MAP */}
+                <div className="lg:col-span-8 relative h-[44vh] lg:h-full bg-[#e8f0e6]">
+                  <MapPreview
+                    stops={stops}
+                    unitLocation={hasGPS ? { lat: routeAny.unit_lat, lng: routeAny.unit_lng } : undefined}
+                  />
 
-            <div className="overflow-y-auto flex-1 p-6 space-y-6">
-              {/* GPS Status - REAL */}
-              <div className={cn("p-4 rounded-xl space-y-3", hasGPS ? "bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800" : "bg-muted")}>
-                <div className="flex items-center gap-2">
-                  <div className={cn("w-3 h-3 rounded-full", hasGPS ? "bg-green-500 animate-pulse" : "bg-muted-foreground")}></div>
-                  <p className="font-semibold">{hasGPS ? "GPS en vivo" : "Sin señal GPS aún"}</p>
-                </div>
-                {hasGPS ? (
-                  <div className="space-y-1 text-sm">
-                    <p className="text-muted-foreground">Lat: <span className="font-mono text-foreground">{routeAny.unit_lat != null ? Number(routeAny.unit_lat).toFixed(6) : '—'}</span></p>
-                    <p className="text-muted-foreground">Lng: <span className="font-mono text-foreground">{routeAny.unit_lng != null ? Number(routeAny.unit_lng).toFixed(6) : '—'}</span></p>
-                    <p className="text-xs text-green-600 dark:text-green-400 mt-1">Actualizado hace unos segundos</p>
+                  {/* Top-left floating route + GPS pill */}
+                  <div className="absolute top-3 left-3 right-14 flex flex-wrap items-center gap-2 pointer-events-none">
+                    <div className="bg-white/95 dark:bg-card/95 backdrop-blur-md px-3.5 py-2 rounded-2xl shadow-lg border border-border/60 flex items-center gap-2.5 pointer-events-auto max-w-full">
+                      <span
+                        className={cn(
+                          "w-2.5 h-2.5 rounded-full shrink-0",
+                          hasGPS ? "bg-[#8ee01a] animate-pulse ring-4 ring-[#8ee01a]/25" : "bg-slate-400"
+                        )}
+                      />
+                      <div className="min-w-0">
+                        <p className="text-xs font-extrabold text-foreground truncate">{trackedRoute?.name}</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {hasGPS ? "GPS en vivo · Actualizado" : "Sin señal GPS del conductor aún"}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    El chofer aún no ha activado el GPS. Cuando lo haga, verás la posición en vivo aquí.
-                  </p>
-                )}
-              </div>
 
-              {/* Map Preview - real si hay GPS */}
-              <div className="rounded-xl h-48 overflow-hidden border border-border shadow-inner">
-                <MapPreview
-                  stops={trackedRoute?.stops || []}
-                  unitLocation={hasGPS ? { lat: routeAny.unit_lat, lng: routeAny.unit_lng } : undefined}
-                />
-              </div>
+                  {/* Mobile close button on map */}
+                  <button
+                    type="button"
+                    onClick={() => setTracking(null)}
+                    className="lg:hidden absolute top-3 right-3 w-9 h-9 rounded-full bg-black/70 text-white flex items-center justify-center shadow-lg cursor-pointer"
+                    aria-label="Cerrar mapa"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
 
-              {/* Paradas */}
-              <div className="space-y-3">
-                <p className="font-semibold text-sm">Paradas de la ruta:</p>
-                {(() => {
-                  const stops = trackedRoute?.stops || [];
-                  const unitLat = routeAny.unit_lat;
-                  const unitLng = routeAny.unit_lng;
+                {/* RIGHT PANEL: ROUTE DETAILS & STOPS */}
+                <div className="lg:col-span-4 flex flex-col h-full bg-white dark:bg-card border-l border-border/60 overflow-hidden">
+                  <div className="px-5 py-4 border-b border-border/60 flex items-center justify-between shrink-0">
+                    <div className="min-w-0">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-[#105238] bg-[#eaf0e2] px-2 py-0.5 rounded-full">
+                        Rastreo de Ruta
+                      </span>
+                      <h3 className="text-sm font-black text-foreground truncate mt-1">{trackedRoute?.name}</h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setTracking(null)}
+                      className="hidden lg:flex w-8 h-8 rounded-full bg-[#f0f2f5] hover:bg-gray-200 text-gray-700 items-center justify-center transition-colors cursor-pointer shrink-0"
+                      aria-label="Cerrar rastreo"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
 
-                  // Función para calcular distancia (Haversine) en metros
-                  const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-                    const R = 6371e3; // Radio de la tierra en metros
-                    const p1 = lat1 * Math.PI/180;
-                    const p2 = lat2 * Math.PI/180;
-                    const dp = (lat2-lat1) * Math.PI/180;
-                    const dl = (lon2-lon1) * Math.PI/180;
-                    const a = Math.sin(dp/2) * Math.sin(dp/2) +
-                              Math.cos(p1) * Math.cos(p2) *
-                              Math.sin(dl/2) * Math.sin(dl/2);
-                    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-                    return R * c;
-                  };
-
-                  let closestStopOrder = -1;
-                  let minDistance = Infinity;
-
-                  if (hasGPS) {
-                    stops.forEach(stop => {
-                      const dist = getDistance(unitLat, unitLng, stop.latitude, stop.longitude);
-                      if (dist < minDistance) {
-                        minDistance = dist;
-                        closestStopOrder = stop.order;
-                      }
-                    });
-                  }
-
-                  return stops.map((stop) => {
-                    // Si el GPS está activo, evaluamos.
-                    // Si está a < 50m de la parada actual, o si la parada es anterior a la más cercana, está "pasada"
-                    let isPassed = false;
-                    let isCurrent = false;
-
-                    if (hasGPS) {
-                      const dist = getDistance(unitLat, unitLng, stop.latitude, stop.longitude);
-                      if (dist <= 10) {
-                        isPassed = true; // Está justo en la parada o pasó hace poco (dentro de 10m)
-                        isCurrent = true;
-                      } else if (stop.order < closestStopOrder) {
-                        isPassed = true; // Ya la pasó porque la más cercana es una posterior
-                      }
-                    }
-
-                    return (
-                      <div key={stop.order} className={cn(
-                        "flex items-center gap-3 p-2 rounded-lg transition-colors",
-                        isPassed ? "bg-green-50 dark:bg-green-950/30" : "bg-muted/50"
-                      )}>
-                        <div className={cn(
-                          "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0",
-                          isPassed ? "bg-green-500 text-white" : "bg-primary/10 text-primary"
-                        )}>
-                          {isPassed ? "✓" : stop.order}
+                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                    {/* Conductor & Unidad compacta */}
+                    <div className="p-3 rounded-2xl bg-[#f7f9f5] dark:bg-muted/40 border border-[#eaf0e2] dark:border-border flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-10 h-10 rounded-full bg-[#105238] text-white flex items-center justify-center font-black text-xs shrink-0 overflow-hidden">
+                          {trackedRoute?.driver_avatar ? (
+                            <img src={trackedRoute.driver_avatar} alt="Chofer" className="w-full h-full object-cover" />
+                          ) : (
+                            (trackedRoute?.driver_name || "PG").slice(0, 2).toUpperCase()
+                          )}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className={cn(
-                            "text-sm font-medium truncate",
-                            isPassed ? "text-green-700 dark:text-green-400" : ""
-                          )}>
-                            {stop.name || `Parada ${stop.order}`}
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-foreground truncate">
+                            {trackedRoute?.driver_name || "Conductor por asignar"}
                           </p>
-                          <p className="text-xs text-muted-foreground">
-                            {isCurrent 
-                              ? <span className="text-green-600 font-semibold">¡Autobús aquí! (A menos de 50m)</span>
-                              : stop.minutes_from_start ? `~${stop.minutes_from_start} min desde el inicio` : ""
-                            }
+                          <p className="text-[11px] text-muted-foreground truncate">
+                            {trackedRoute?.unit_license_plate || "Unidad oficial"} · {trackedRoute?.unit_capacity || 0} PAX
                           </p>
                         </div>
                       </div>
-                    );
-                  });
-                })()}
+                      <span className="text-xs font-black text-[#105238] shrink-0">
+                        ${Number(trackedRoute?.price_one_way || 0).toFixed(2)} /p
+                      </span>
+                    </div>
+
+                    {/* Paradas */}
+                    <div className="space-y-2">
+                      <p className="text-xs font-extrabold text-foreground uppercase tracking-wider">
+                        Paradas ({stops.length})
+                      </p>
+                      <div className="space-y-2">
+                        {stops.map((stop) => {
+                          let isPassed = false
+                          let isCurrent = false
+                          if (hasGPS) {
+                            const dist = getDistanceMeters(unitLat, unitLng, stop.latitude, stop.longitude)
+                            if (dist <= 50) {
+                              isPassed = true
+                              isCurrent = true
+                            } else if (stop.order < closestStopOrder) {
+                              isPassed = true
+                            }
+                          }
+                          return (
+                            <div
+                              key={stop.order}
+                              className={cn(
+                                "flex items-center gap-3 p-2.5 rounded-2xl border transition-colors",
+                                isPassed
+                                  ? "bg-[#eaf0e2]/70 border-[#8ee01a]/60"
+                                  : "bg-card border-border/60"
+                              )}
+                            >
+                              <div
+                                className={cn(
+                                  "w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shrink-0",
+                                  isPassed ? "bg-[#105238] text-[#8ee01a]" : "bg-[#eaf0e2] text-[#105238]"
+                                )}
+                              >
+                                {isPassed ? <Check className="w-3.5 h-3.5" /> : stop.order}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-bold text-foreground truncate">
+                                  {stop.name || `Parada ${stop.order}`}
+                                </p>
+                                <p className="text-[11px] text-muted-foreground">
+                                  {isCurrent
+                                    ? "Unidad aquí ahora"
+                                    : stop.minutes_from_start
+                                      ? `~${stop.minutes_from_start} min desde inicio`
+                                      : `${Number(stop.latitude).toFixed(4)}, ${Number(stop.longitude).toFixed(4)}`}
+                                </p>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Footer CTA inside Tracker */}
+                  <div className="p-4 border-t border-border/60 bg-white dark:bg-card space-y-2 shrink-0">
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        onClick={() => {
+                          if (trackedRoute) {
+                            setTracking(null)
+                            handleBuyTicket(trackedRoute)
+                          }
+                        }}
+                        className="flex-1 h-11 rounded-xl bg-[#105238] hover:bg-[#0c3e2b] text-white font-bold text-xs gap-1.5 cursor-pointer"
+                      >
+                        <Ticket className="w-4 h-4 text-[#8ee01a]" />
+                        Comprar Boleto
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          if (trackedRoute) {
+                            setTracking(null)
+                            handleViewServices(trackedRoute)
+                          }
+                        }}
+                        className="h-11 px-3.5 rounded-xl border-border font-bold text-xs cursor-pointer"
+                      >
+                        Servicios
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               </div>
-
             </div>
-
-            {/* Close Button - Sticky at Bottom */}
-            <div className="px-6 py-4 border-t border-border flex-shrink-0 bg-card">
-              <Button onClick={() => setTracking(null)} className="w-full bg-primary">
-                Cerrar Rastreo
-              </Button>
-            </div>
-          </div>
-        </div>
-        )
-      })()}
+          )
+        })()}
 
       {/* Services Modal */}
       {serviceView?.showServices && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-card rounded-2xl max-w-md w-full max-h-[85vh] shadow-xl overflow-hidden flex flex-col">
-            {/* Header */}
-            <div className="bg-secondary px-6 py-4 flex items-center justify-between text-secondary-foreground flex-shrink-0">
-              <h2 className="text-lg font-bold">Servicios en esta ruta</h2>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-3xl max-w-md w-full max-h-[85vh] shadow-2xl overflow-hidden flex flex-col border border-border">
+            <div className="bg-[#105238] px-6 py-4 flex items-center justify-between text-white flex-shrink-0">
+              <h2 className="text-base font-bold">Servicios en esta ruta</h2>
               <button
                 onClick={() => setServiceView(null)}
-                className="p-1 hover:bg-secondary-foreground/20 rounded-lg transition"
+                className="p-1.5 hover:bg-white/15 rounded-full transition cursor-pointer"
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 
-            {/* Services List */}
             <div className="overflow-y-auto flex-1 p-4 space-y-3">
-              {services
-                .filter((s) => s.category !== "Hotel" || Math.random() > 0.3) // Mostrar algunos servicios
-                .slice(0, 6)
-                .map((service) => (
-                  <div key={service.id} className="border border-border rounded-xl p-4 hover:bg-muted/50 transition">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-bold text-sm line-clamp-1">{service.name}</h3>
-                      <Badge className="bg-secondary/20 text-secondary text-xs">${service.price}</Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground mb-3">{service.location}</p>
-                    <Button
-                      onClick={() => {
-                        handleBuyTicket(allRoutes.find((r) => r.id === serviceView.routeId)!, service)
-                        setServiceView(null)
-                      }}
-                      size="sm"
-                      className="w-full bg-primary text-xs"
-                    >
-                      <Ticket size={14} className="mr-1" />
-                      Comprar Boleto + Servicio
-                    </Button>
+              {services.slice(0, 6).map((service) => (
+                <div
+                  key={service.id}
+                  className="border border-border rounded-2xl p-4 hover:bg-muted/40 transition space-y-2"
+                >
+                  <div className="flex justify-between items-start gap-2">
+                    <h3 className="font-bold text-sm line-clamp-1">{service.name}</h3>
+                    <Badge className="bg-[#eaf0e2] text-[#105238] font-bold text-xs shrink-0">
+                      ${service.price} /p
+                    </Badge>
                   </div>
-                ))}
+                  <p className="text-xs text-muted-foreground">{service.location}</p>
+                  <Button
+                    onClick={() => {
+                      handleBuyTicket(allRoutes.find((r) => r.id === serviceView.routeId)!, service)
+                      setServiceView(null)
+                    }}
+                    size="sm"
+                    className="w-full bg-[#105238] hover:bg-[#0c3e2b] text-white text-xs rounded-xl h-9 cursor-pointer"
+                  >
+                    <Ticket size={14} className="mr-1.5 text-[#8ee01a]" />
+                    Comprar Boleto + Servicio
+                  </Button>
+                </div>
+              ))}
             </div>
 
-            {/* Close Button */}
-            <div className="px-6 py-4 border-t border-border flex-shrink-0 bg-card">
-              <Button onClick={() => setServiceView(null)} variant="outline" className="w-full bg-transparent">
+            <div className="px-6 py-3.5 border-t border-border flex-shrink-0 bg-card">
+              <Button onClick={() => setServiceView(null)} variant="outline" className="w-full rounded-xl bg-transparent">
                 Cerrar
               </Button>
             </div>
@@ -436,140 +663,147 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
 
       {/* Ticket Purchase Modal */}
       {ticketPurchase?.showPayment && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-card rounded-2xl max-w-md w-full max-h-[85vh] shadow-xl overflow-hidden flex flex-col">
-            {/* Header */}
-            <div className="bg-primary px-6 py-4 flex items-center justify-between text-primary-foreground flex-shrink-0">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-3xl max-w-md w-full max-h-[85vh] shadow-2xl overflow-hidden flex flex-col border border-border">
+            <div className="bg-[#105238] px-6 py-4 flex items-center justify-between text-white flex-shrink-0">
               <div className="flex items-center gap-2">
-                <ShoppingCart className="w-5 h-5" />
-                <h2 className="text-lg font-bold">Comprar Boleto</h2>
+                <ShoppingCart className="w-5 h-5 text-[#8ee01a]" />
+                <h2 className="text-base font-bold">Comprar Boleto</h2>
               </div>
               {ticketPurchase.step === "selection" && (
                 <button
                   onClick={() => setTicketPurchase(null)}
-                  className="p-1 hover:bg-primary-foreground/20 rounded-lg transition"
+                  className="p-1.5 hover:bg-white/15 rounded-full transition cursor-pointer"
                 >
-                  <X size={20} />
+                  <X size={18} />
                 </button>
               )}
             </div>
 
-            {/* Content */}
-            <div className="p-6 space-y-6 overflow-y-auto flex-1 custom-scrollbar">
+            <div className="p-6 space-y-5 overflow-y-auto flex-1 custom-scrollbar">
               {ticketPurchase.step === "selection" && (
                 <>
                   <div className="space-y-4">
-                    <div className="bg-muted p-4 rounded-xl">
-                      <p className="text-xs text-muted-foreground mb-1">Ruta seleccionada</p>
-                      <p className="font-bold">{allRoutes.find((r) => r.id === ticketPurchase.routeId)?.name}</p>
+                    <div className="bg-[#eaf0e2]/60 border border-[#aeb6a1]/40 p-4 rounded-2xl">
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-[#105238] mb-1">
+                        Ruta seleccionada
+                      </p>
+                      <p className="font-extrabold text-sm text-foreground">
+                        {allRoutes.find((r) => r.id === ticketPurchase.routeId)?.name}
+                      </p>
                     </div>
 
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       <div>
-                        <label className="block text-sm font-semibold mb-2">Parada de Origen</label>
-                        <select 
-                          className="w-full p-3 rounded-xl border border-border bg-background"
-                          value={ticketPurchase.startStopId || ''}
-                          onChange={(e) => setTicketPurchase(prev => prev ? { ...prev, startStopId: Number(e.target.value) } : null)}
+                        <label className="block text-xs font-bold mb-1.5">Parada de Origen</label>
+                        <select
+                          className="w-full p-2.5 text-sm rounded-xl border border-border bg-background"
+                          value={ticketPurchase.startStopId || ""}
+                          onChange={(e) =>
+                            setTicketPurchase((prev) =>
+                              prev ? { ...prev, startStopId: Number(e.target.value) } : null
+                            )
+                          }
                         >
-                          {allRoutes.find((r) => r.id === ticketPurchase.routeId)?.stops?.filter(s => {
-                             const endStop = allRoutes.find((r) => r.id === ticketPurchase.routeId)?.stops?.find(es => es.id === ticketPurchase.endStopId);
-                             return !endStop || s.order < endStop.order;
-                          }).map(stop => (
-                            <option key={stop.id} value={stop.id}>{stop.name}</option>
-                          ))}
+                          {allRoutes
+                            .find((r) => r.id === ticketPurchase.routeId)
+                            ?.stops?.filter((s) => {
+                              const endStop = allRoutes
+                                .find((r) => r.id === ticketPurchase.routeId)
+                                ?.stops?.find((es) => es.id === ticketPurchase.endStopId)
+                              return !endStop || s.order < endStop.order
+                            })
+                            .map((stop) => (
+                              <option key={stop.id} value={stop.id}>
+                                {stop.name}
+                              </option>
+                            ))}
                         </select>
                       </div>
 
                       <div>
-                        <label className="block text-sm font-semibold mb-2">Parada de Destino</label>
-                        <select 
-                          className="w-full p-3 rounded-xl border border-border bg-background"
-                          value={ticketPurchase.endStopId || ''}
-                          onChange={(e) => setTicketPurchase(prev => prev ? { ...prev, endStopId: Number(e.target.value) } : null)}
+                        <label className="block text-xs font-bold mb-1.5">Parada de Destino</label>
+                        <select
+                          className="w-full p-2.5 text-sm rounded-xl border border-border bg-background"
+                          value={ticketPurchase.endStopId || ""}
+                          onChange={(e) =>
+                            setTicketPurchase((prev) =>
+                              prev ? { ...prev, endStopId: Number(e.target.value) } : null
+                            )
+                          }
                         >
-                          {allRoutes.find((r) => r.id === ticketPurchase.routeId)?.stops?.filter(s => {
-                             const startStop = allRoutes.find((r) => r.id === ticketPurchase.routeId)?.stops?.find(ss => ss.id === ticketPurchase.startStopId);
-                             return startStop && s.order > startStop.order;
-                          }).map(stop => (
-                            <option key={stop.id} value={stop.id}>{stop.name}</option>
-                          ))}
+                          {allRoutes
+                            .find((r) => r.id === ticketPurchase.routeId)
+                            ?.stops?.filter((s) => {
+                              const startStop = allRoutes
+                                .find((r) => r.id === ticketPurchase.routeId)
+                                ?.stops?.find((ss) => ss.id === ticketPurchase.startStopId)
+                              return startStop && s.order > startStop.order
+                            })
+                            .map((stop) => (
+                              <option key={stop.id} value={stop.id}>
+                                {stop.name}
+                              </option>
+                            ))}
                         </select>
                       </div>
 
                       {getTicketPrices().startName && getTicketPrices().endName && (
-                        <p className="text-xs text-[#059669] bg-[#059669]/10 p-2 rounded-lg mb-2">
-                          📍 Viaje: <strong>{getTicketPrices().startName}</strong> ➔ <strong>{getTicketPrices().endName}</strong>
+                        <p className="text-xs text-[#105238] bg-[#eaf0e2] p-2.5 rounded-xl font-medium">
+                          Viaje: <strong>{getTicketPrices().startName}</strong> ➔{" "}
+                          <strong>{getTicketPrices().endName}</strong>
                         </p>
                       )}
                     </div>
 
-                    <div className="space-y-3">
-                        <label className="flex items-center gap-3 p-3 border border-border rounded-xl cursor-pointer hover:bg-muted/50 transition">
-                          <input type="radio" name="ticket" defaultChecked className="w-4 h-4" />
-                          <div className="flex-1">
-                            <p className="font-semibold text-sm">Boleto Sencillo</p>
-                            <p className="text-xs text-muted-foreground">Ida a tu destino</p>
-                          </div>
-                          {/* PRECIO REAL IDA */}
-                          <p className="font-bold">${getTicketPrices().oneWay}</p>
-                        </label>
+                    <div className="space-y-2.5">
+                      <label className="flex items-center gap-3 p-3 border border-border rounded-2xl cursor-pointer hover:bg-muted/40 transition">
+                        <input type="radio" name="ticket" defaultChecked className="w-4 h-4 accent-[#105238]" />
+                        <div className="flex-1">
+                          <p className="font-bold text-sm">Boleto Sencillo</p>
+                          <p className="text-xs text-muted-foreground">Ida a tu destino</p>
+                        </div>
+                        <p className="font-black text-[#105238]">${getTicketPrices().oneWay} /p</p>
+                      </label>
 
-                        <label className="flex items-center gap-3 p-3 border border-border rounded-xl cursor-pointer hover:bg-muted/50 transition">
-                          <input type="radio" name="ticket" className="w-4 h-4" />
-                          <div className="flex-1">
-                            <p className="font-semibold text-sm">Boleto de Retorno</p>
-                            <p className="text-xs text-muted-foreground">Ida y vuelta incluido</p>
-                          </div>
-                          {/* PRECIO REAL REDONDO */}
-                          <p className="font-bold">${getTicketPrices().roundTrip}</p>
-                        </label>
-                      </div>
-
-                    <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-                      <p className="text-xs text-blue-900 dark:text-blue-100">
-                        <strong>Tarifa total:</strong> Tu boleto + acceso al servicio seleccionado
-                      </p>
+                      <label className="flex items-center gap-3 p-3 border border-border rounded-2xl cursor-pointer hover:bg-muted/40 transition">
+                        <input type="radio" name="ticket" className="w-4 h-4 accent-[#105238]" />
+                        <div className="flex-1">
+                          <p className="font-bold text-sm">Boleto de Retorno</p>
+                          <p className="text-xs text-muted-foreground">Ida y vuelta incluido</p>
+                        </div>
+                        <p className="font-black text-[#105238]">${getTicketPrices().roundTrip} /p</p>
+                      </label>
                     </div>
                   </div>
 
-                  <Button onClick={handleConfirmTicketPayment} className="w-full bg-primary text-base font-semibold h-12">
-                    Proceder al Pago
-                  </Button>
-                  <Button onClick={() => setTicketPurchase(null)} variant="outline" className="w-full bg-transparent">
-                    Cancelar
-                  </Button>
+                  <div className="space-y-2">
+                    <Button
+                      onClick={handleConfirmTicketPayment}
+                      className="w-full bg-[#105238] hover:bg-[#0c3e2b] text-white text-sm font-bold h-11 rounded-xl cursor-pointer"
+                    >
+                      Proceder al Pago
+                    </Button>
+                    <Button
+                      onClick={() => setTicketPurchase(null)}
+                      variant="outline"
+                      className="w-full rounded-xl bg-transparent"
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
                 </>
               )}
 
               {ticketPurchase.step === "payment" && (
                 <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center animate-pulse">
-                    <ShoppingCart className="w-8 h-8 text-primary" />
+                  <div className="w-16 h-16 bg-[#eaf0e2] rounded-full flex items-center justify-center animate-pulse">
+                    <ShoppingCart className="w-8 h-8 text-[#105238]" />
                   </div>
                   <h3 className="font-bold text-lg">Procesando Compra</h3>
                   <p className="text-sm text-muted-foreground text-center">
                     Tu boleto de transporte está siendo procesado de forma segura...
                   </p>
-                  <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-                    <div className="bg-primary h-full animate-pulse"></div>
-                  </div>
-                </div>
-              )}
-
-              {ticketPurchase.step === "success" && (
-                <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                  <div className="w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
-                    <Ticket className="w-8 h-8 text-green-600 dark:text-green-400" />
-                  </div>
-                  <h3 className="font-bold text-lg text-green-600 dark:text-green-400">¡Boleto Comprado!</h3>
-                  <p className="text-sm text-muted-foreground text-center">
-                    Tu boleto y código QR serán enviados a tu email en breve.
-                  </p>
-                  <div className="w-full bg-muted p-3 rounded-lg text-center">
-                    <p className="text-xs text-muted-foreground mb-1">Referencia de boleto</p>
-                    <p className="font-mono font-bold text-sm">TKT-2025-00847</p>
-                  </div>
                 </div>
               )}
             </div>
@@ -577,334 +811,759 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
         </div>
       )}
 
-      <div className="px-4 py-4 border-b border-border bg-card">
-        <p className="text-muted-foreground text-sm mb-4">Transporte seguro a tus servicios favoritos</p>
-        
-        {/* Search Bar */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input 
-            placeholder="Buscar por nombre o parada..." 
-            className="pl-9 h-11 bg-white border-gray-200 rounded-full text-[15px]"
-            value={routeSearchQuery}
-            onChange={(e) => setRouteSearchQuery(e.target.value)}
-          />
-          {routeSearchQuery && (
-            <button 
-              onClick={() => setRouteSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-      </div>
+      {/* ─── MAIN EXPERIENCIAS-STYLE 2-COLUMN LAYOUT ─── */}
+      <div className="max-w-[1380px] mx-auto w-full px-4 sm:px-6 lg:px-5 pt-5 pb-28">
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:gap-8 items-start">
+          {/* LEFT / CENTER COLUMN: SOCIAL ROUTE FEED */}
+          <div className="w-full max-w-[650px] mx-auto space-y-4">
+            {/* Search & Quick Return Banner */}
+            <div className="bg-white dark:bg-card border border-border/80 rounded-3xl p-3.5 shadow-2xs space-y-3">
+              <div className="relative">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Buscar rutas, destinos o paradas..."
+                  className="pl-10 pr-9 h-10 bg-[#f0f2f5] dark:bg-muted border-0 rounded-full text-sm focus-visible:ring-1 focus-visible:ring-[#105238]"
+                  value={routeSearchQuery}
+                  onChange={(e) => setRouteSearchQuery(e.target.value)}
+                />
+                {routeSearchQuery && (
+                  <button
+                    onClick={() => setRouteSearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
 
-      {/* Botón de Mapa Interactivo (Debajo del buscador, arriba de las rutas) */}
-      <div className="px-4 pt-4">
-        <div 
-          onClick={() => {
-            onNavigate?.("map-explorer")
-          }}
-          className={cn("group border rounded-2xl p-4 flex items-center gap-4 cursor-pointer transition-all duration-300", 
-            returnToMapRoute ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90 hover:shadow-lg" : "bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20 hover:border-primary/40 hover:shadow-md"
-          )}
-        >
-          <div className="relative">
-            {!returnToMapRoute && <div className="absolute inset-0 bg-primary/30 rounded-full animate-ping opacity-75" style={{ animationDuration: '2s' }}></div>}
-            <div className={cn("relative p-3 rounded-full flex-shrink-0 group-hover:-translate-y-1 transition-transform duration-300", returnToMapRoute ? "bg-white/20" : "bg-primary/20")}>
-              {returnToMapRoute ? <ArrowLeft className="w-6 h-6 text-white drop-shadow-sm" /> : <MapPin className="w-6 h-6 text-primary drop-shadow-sm" />}
+              {/* Filter Pills + Back to Map button */}
+              <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-0.5">
+                {[
+                  { id: "ALL", label: "Todas" },
+                  { id: "TOURS", label: "Tours" },
+                  { id: "GPS", label: "GPS en vivo" },
+                  ...(allRoutes.some((r: any) => r.user_has_ticket)
+                    ? [{ id: "MY_ROUTES", label: "Mis Rutas" }]
+                    : []),
+                ].map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => setActiveFilter(f.id as any)}
+                    className={cn(
+                      "px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer border",
+                      activeFilter === f.id
+                        ? "bg-[#105238] text-white border-[#105238] shadow-xs"
+                        : "bg-[#f0f2f5] dark:bg-muted text-foreground/80 border-transparent hover:bg-[#eaf0e2] hover:text-[#105238]"
+                    )}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={() => onNavigate?.("map-explorer")}
+                  className="ml-auto px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap bg-[#eaf0e2] hover:bg-[#105238] text-[#105238] hover:text-white transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer"
+                >
+                  {returnToMapRoute ? (
+                    <>
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      <span className="max-w-[140px] truncate">Volver a {returnToMapRoute}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Compass className="w-3.5 h-3.5" />
+                      <span>Explorar Mapa</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
-          </div>
-          <div className="flex-1">
-            <h3 className={cn("font-bold text-base transition-colors duration-300", returnToMapRoute ? "text-white" : "text-foreground group-hover:text-primary")}>
-              {returnToMapRoute ? `Volver a ${returnToMapRoute}` : "Ver rutas en mapa interactivo"}
-            </h3>
-            <p className={cn("text-sm leading-tight mt-0.5", returnToMapRoute ? "text-white/80" : "text-muted-foreground")}>
-              {returnToMapRoute ? "Regresar a la vista detallada del mapa" : "Explora destinos y encuentra paradas cerca de ti."}
-            </p>
-          </div>
-        </div>
-      </div>
 
-      <div className="px-4 py-6 space-y-6">
-
-        {/* --- MI RUTA (rutas con boleto activo) --- */}
-        {filteredRoutes.some((r: any) => r.user_has_ticket) && (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <span className="text-lg">⭐</span>
-              <h2 className="font-bold text-base">Mi Ruta</h2>
-              <div className="flex-1 h-px bg-primary/20" />
-            </div>
-            {filteredRoutes.filter((r: any) => r.user_has_ticket).map((route) => (
-              <RouteCardItem
-                key={route.id} route={route}
-                onTrack={handleStartTracking}
-                onServices={handleViewServices}
-                onBuy={handleBuyTicket}
+            {/* FEED CARDS */}
+            {filteredRoutes.map((route) => (
+              <RouteFeedCard
+                key={route.id}
+                route={route}
+                isLiked={Boolean(likedRouteIds[route.id])}
+                comments={routeComments[route.id] || []}
+                currentUser={currentUser}
+                onToggleLike={() => toggleLikeRoute(route.id)}
+                onAddComment={(text, rating) => addRouteComment(route.id, text, rating)}
+                onTrack={() => handleStartTracking(route)}
+                onServices={() => handleViewServices(route)}
+                onBuy={() => handleBuyTicket(route)}
+                onShare={() => handleShareRoute(route)}
               />
             ))}
-          </div>
-        )}
 
-        {/* --- OTRAS RUTAS --- */}
-        <div className="space-y-3">
-          {filteredRoutes.some((r: any) => r.user_has_ticket) && (
-            <div className="flex items-center gap-2">
-              <span className="text-lg">🚌</span>
-              <h2 className="font-bold text-base">Otras Rutas</h2>
-              <div className="flex-1 h-px bg-border" />
-            </div>
-          )}
-          {filteredRoutes.filter((r: any) => !r.user_has_ticket).map((route) => (
-            <RouteCardItem
-              key={route.id} route={route}
-              onTrack={handleStartTracking}
-              onServices={handleViewServices}
-              onBuy={handleBuyTicket}
-            />
-          ))}
-          {filteredRoutes.length === 0 && (
-            <div className="text-center py-8">
-              <div className="bg-muted w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Search className="h-6 w-6 text-muted-foreground" />
+            {filteredRoutes.length === 0 && (
+              <div className="bg-white dark:bg-card border border-border rounded-3xl text-center py-12 px-6 shadow-2xs">
+                <div className="bg-[#eaf0e2] w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Search className="h-6 w-6 text-[#105238]" />
+                </div>
+                <p className="text-foreground font-bold text-sm">No se encontraron rutas</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Intenta con otros términos de búsqueda o cambia el filtro
+                </p>
               </div>
-              <p className="text-muted-foreground font-medium">No se encontraron rutas</p>
-              <p className="text-xs text-muted-foreground mt-1">Intenta con otros términos de búsqueda</p>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
 
+          {/* RIGHT STICKY SIDEBAR ON DESKTOP (Same Experiencias aesthetic) */}
+          <aside
+            onMouseEnter={() => setIsHoveringSidebar(true)}
+            onMouseLeave={() => setIsHoveringSidebar(false)}
+            className="hidden lg:block lg:w-[300px] xl:w-[320px] shrink-0 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto hover-scrollbar pr-1 space-y-4"
+          >
+            {/* 1. Publicidad (Experiencias destacadas) */}
+            {(() => {
+              const hasRealPhoto = (s: Service) =>
+                Boolean(s.image && !s.image.includes("placeholder") && s.image !== DEFAULT_STORE_COVER)
+              const adPool = (services || []).filter(hasRealPhoto).slice(0, 10)
+              if (adPool.length === 0) return null
+              const firstIdx = (adRotationIndex * 2) % adPool.length
+              const secondIdx = (firstIdx + 1) % adPool.length
+              const visibleAds = adPool.length > 1 ? [adPool[firstIdx], adPool[secondIdx]] : [adPool[firstIdx]]
+              return (
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between px-1">
+                    <h3 className="text-sm font-extrabold text-muted-foreground tracking-tight">Publicidad</h3>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#105238] bg-[#eaf0e2] px-2 py-0.5 rounded-full">
+                      Destacado
+                    </span>
+                  </div>
+                  <div className="space-y-2.5">
+                    {visibleAds.map((ad, idx) => {
+                      const baseP = Number(ad.price) || 15
+                      const discPct = ad.oferta_flash?.descuento_porcentaje || (idx === 0 ? 20 : 15)
+                      const promoP = ad.oferta_flash?.precio_promocional ?? +(baseP * (1 - discPct / 100)).toFixed(2)
+                      return (
+                        <button
+                          key={`${ad.id}-${firstIdx}-${idx}`}
+                          type="button"
+                          onClick={() => onNavigate?.("marketplace")}
+                          className="w-full flex items-center gap-3 p-2 rounded-2xl bg-card/80 hover:bg-card hover:shadow-xs border border-border/60 hover:border-[#aeb6a1] transition-all text-left cursor-pointer group/ad"
+                        >
+                          <div className="relative w-20 h-20 rounded-2xl overflow-hidden shrink-0 bg-muted border border-border/50">
+                            <img
+                              src={getProxyImage(ad.image || "") || DEFAULT_STORE_COVER}
+                              alt={ad.name}
+                              className="w-full h-full object-cover group-hover/ad:scale-105 transition-transform duration-300"
+                              onError={(e) => {
+                                e.currentTarget.src = DEFAULT_STORE_COVER
+                              }}
+                            />
+                            <span className="absolute top-1.5 left-1.5 bg-black/75 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">
+                              -{discPct}%
+                            </span>
+                          </div>
+                          <div className="min-w-0 flex-1 space-y-1">
+                            <p className="text-[13px] font-extrabold text-foreground leading-snug line-clamp-2 group-hover/ad:underline">
+                              {ad.name}
+                            </p>
+                            <div className="flex items-baseline gap-1.5">
+                              <span className="text-sm font-black text-[#105238]">${promoP}</span>
+                              <span className="text-[11px] line-through text-muted-foreground">${baseP}</span>
+                              <span className="text-[10px] text-muted-foreground">/p</span>
+                            </div>
+                            <p className="text-[11px] text-muted-foreground truncate">
+                              palenquego.com · {ad.category || "Experiencia"}
+                            </p>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })()}
+
+            {/* 2. Reserva pendiente / próxima */}
+            {primaryBooking && (
+              <div className="bg-white dark:bg-card border border-border/80 rounded-3xl p-4 shadow-2xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-[#105238]">
+                    <Ticket className="w-3.5 h-3.5" />
+                    {primaryBooking.status === "PENDIENTE" ? "Reserva pendiente" : "Mi próxima reserva"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onNavigate?.("pool")}
+                    className="text-[11px] font-bold text-[#105238] hover:underline cursor-pointer"
+                  >
+                    Ver todas
+                  </button>
+                </div>
+                <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-[#f7f9f5] dark:bg-muted/40 border border-[#eaf0e2]">
+                  <div className="w-12 h-12 rounded-xl overflow-hidden bg-muted shrink-0">
+                    <img
+                      src={getProxyImage(primaryBooking.service?.image || "") || DEFAULT_STORE_COVER}
+                      alt={primaryBooking.service?.name || "Reserva"}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = DEFAULT_STORE_COVER
+                      }}
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-extrabold text-foreground truncate">
+                      {primaryBooking.service?.name || "Experiencia"}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Total: <strong className="text-[#105238]">${primaryBooking.totalPrice}</strong>
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => onNavigate?.("pool")}
+                  className="w-full h-9 rounded-xl bg-[#f0f2f5] hover:bg-[#eaf0e2] text-[#105238] font-bold text-xs border-0 shadow-none cursor-pointer"
+                >
+                  Ver Voucher / Pagar
+                </Button>
+              </div>
+            )}
+
+            {/* 3. Tiendas y Experiencias Aliadas */}
+            {(services || []).length > 0 && (
+              <div className="bg-white dark:bg-card border border-border/80 rounded-3xl p-4 shadow-2xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-foreground">
+                    <Store className="w-3.5 h-3.5 text-[#105238]" />
+                    Experiencias Aliadas
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onNavigate?.("marketplace")}
+                    className="text-[11px] font-bold text-[#105238] hover:underline cursor-pointer"
+                  >
+                    Explorar
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {(services || []).slice(0, 3).map((svc) => (
+                    <button
+                      key={svc.id}
+                      type="button"
+                      onClick={() => onNavigate?.("marketplace")}
+                      className="w-full flex items-center gap-2.5 p-2 rounded-2xl hover:bg-[#f0f2f5] dark:hover:bg-muted transition-colors text-left cursor-pointer"
+                    >
+                      <img
+                        src={getProxyImage(svc.image || "") || DEFAULT_STORE_COVER}
+                        alt={svc.name}
+                        className="w-10 h-10 rounded-full object-cover border border-border/60 shrink-0"
+                        onError={(e) => {
+                          e.currentTarget.src = DEFAULT_STORE_COVER
+                        }}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold text-foreground truncate">{svc.name}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">
+                          {svc.category || "Turismo"} · ${svc.price} /p
+                        </p>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </aside>
+        </div>
       </div>
 
       {/* Floating Ticket Button */}
-      {useAppStore.getState().activeTickets?.length > 0 && (
+      {(useAppStore.getState().activeTickets?.length || 0) > 0 && (
         <button
           onClick={() => setTicketModalOpen(true)}
-          className="fixed bottom-20 right-4 bg-primary text-primary-foreground p-4 rounded-full shadow-2xl hover:scale-105 transition-transform flex items-center justify-center z-40"
+          className="fixed bottom-20 lg:bottom-6 right-5 bg-[#105238] text-white px-4 py-3 rounded-full shadow-2xl hover:scale-105 transition-transform flex items-center justify-center z-40 cursor-pointer border border-[#8ee01a]/40"
         >
-          <Ticket className="w-6 h-6 mr-2" />
-          <span className="font-bold">Ver Ticket</span>
+          <Ticket className="w-5 h-5 mr-2 text-[#8ee01a]" />
+          <span className="font-bold text-xs">Ver Ticket</span>
         </button>
       )}
 
       {/* Ticket Modal */}
       {ticketModalOpen && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-card rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl relative border border-border">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl relative border border-border">
             <button
               onClick={() => setTicketModalOpen(false)}
-              className="absolute top-4 right-4 text-primary-foreground/80 hover:text-primary-foreground z-10"
+              className="absolute top-4 right-4 text-white/80 hover:text-white z-10 cursor-pointer"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5" />
             </button>
-            <div className="p-8 text-center bg-primary border-b border-border">
-               <Ticket className="w-16 h-16 mx-auto text-primary-foreground mb-4" />
-               <h2 className="text-2xl font-bold text-primary-foreground">Ticket Inteligente</h2>
-               <p className="text-sm text-primary-foreground/80 mt-2">Muestra esta pantalla al chofer</p>
+            <div className="p-7 text-center bg-[#105238] border-b border-border">
+              <Ticket className="w-12 h-12 mx-auto text-[#8ee01a] mb-3" />
+              <h2 className="text-xl font-bold text-white">Ticket Inteligente</h2>
+              <p className="text-xs text-white/80 mt-1">Muestra esta pantalla al chofer</p>
             </div>
-            
-            <div className="p-6 space-y-4 bg-card max-h-[60vh] overflow-y-auto">
-               {useAppStore.getState().activeTickets?.map((t: any) => (
-                 <div key={t.id} className="border-2 border-primary/20 rounded-xl p-4 bg-background shadow-sm">
-                   <h3 className="font-bold text-lg mb-2 text-primary">{t.route_name}</h3>
-                   <div className="flex justify-between items-center text-sm mb-4">
-                     <span className="font-semibold">{t.start_stop_name || 'Origen'}</span>
-                     <span className="text-muted-foreground mx-2">➔</span>
-                     <span className="font-semibold">{t.end_stop_name || 'Destino'}</span>
-                   </div>
-                   <div className="flex justify-between items-center border-t border-border pt-4">
-                     <span className="text-xs font-medium text-green-600 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded-md">Pago Confirmado</span>
-                     <span className="font-black text-lg">${t.total_paid}</span>
-                   </div>
-                 </div>
-               ))}
+
+            <div className="p-5 space-y-3 bg-card max-h-[60vh] overflow-y-auto">
+              {useAppStore.getState().activeTickets?.map((t: any) => (
+                <div key={t.id} className="border border-[#aeb6a1]/50 rounded-2xl p-4 bg-background shadow-2xs">
+                  <h3 className="font-bold text-sm mb-2 text-[#105238]">{t.route_name}</h3>
+                  <div className="flex justify-between items-center text-xs mb-3">
+                    <span className="font-semibold">{t.start_stop_name || "Origen"}</span>
+                    <span className="text-muted-foreground mx-2">➔</span>
+                    <span className="font-semibold">{t.end_stop_name || "Destino"}</span>
+                  </div>
+                  <div className="flex justify-between items-center border-t border-border pt-3">
+                    <span className="text-[11px] font-bold text-[#105238] bg-[#eaf0e2] px-2.5 py-0.5 rounded-full">
+                      Pago Confirmado
+                    </span>
+                    <span className="font-black text-base text-[#105238]">${t.total_paid}</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       )}
-
     </div>
   )
 }
 
-// ─── Componente de tarjeta de ruta ───────────────────────────────────────────
-function RouteCardItem({
+// ─── Experiencias-style Route Post Card ───────────────────────────────────────
+function RouteFeedCard({
   route,
+  isLiked,
+  comments,
+  currentUser,
+  onToggleLike,
+  onAddComment,
   onTrack,
   onServices,
   onBuy,
+  onShare,
 }: {
   route: Route
-  onTrack: (r: Route) => void
-  onServices: (r: Route) => void
-  onBuy: (r: Route) => void
+  isLiked: boolean
+  comments: RouteCommentItem[]
+  currentUser: any
+  onToggleLike: () => void
+  onAddComment: (text: string, rating: number) => void
+  onTrack: () => void
+  onServices: () => void
+  onBuy: () => void
+  onShare: () => void
 }) {
   const r = route as any
-  const hasGPS = r.is_active && r.unit_lat && r.unit_lng
+  const hasGPS = Boolean(r.is_active && r.unit_lat && r.unit_lng)
+  const [showMoreInfo, setShowMoreInfo] = useState(false)
+  const [showComments, setShowComments] = useState(false)
+  const [commentText, setCommentText] = useState("")
+  const [commentRating, setCommentRating] = useState(5)
+
+  const coverUrl = getRouteImageUrl(route)
+  const stops = route.stops || []
+  const stopsSummary =
+    stops.length > 0
+      ? stops
+          .slice(0, 3)
+          .map((s) => s.name)
+          .filter(Boolean)
+          .join(" ➔ ") + (stops.length > 3 ? ` (+${stops.length - 3})` : "")
+      : "Recorrido verificado"
+
+  const avgRating =
+    comments.length > 0
+      ? (comments.reduce((acc, c) => acc + c.rating, 0) / comments.length).toFixed(1)
+      : "5.0"
+
+  const priceNum = Number(route.price_one_way || 0)
+
+  const handleSubmitComment = () => {
+    if (!commentText.trim()) return
+    onAddComment(commentText, commentRating)
+    setCommentText("")
+  }
 
   return (
-    <div className={cn(
-      "bg-card border border-border rounded-2xl overflow-hidden hover:shadow-lg transition",
-      !route.is_active && "opacity-60",
-      r.user_has_ticket && "ring-2 ring-primary/40"
-    )}>
-      {/* Header */}
-      <div className="p-4 border-b border-border">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className={cn("text-lg font-bold", !route.is_active && "text-muted-foreground")}>
+    <article
+      className={cn(
+        "bg-white dark:bg-card border border-border/80 rounded-3xl shadow-2xs overflow-hidden transition-all duration-200 hover:shadow-md",
+        r.user_has_ticket && "ring-2 ring-[#105238]/30"
+      )}
+    >
+      {/* 1. CABECERA ESTILO EXPERIENCIAS */}
+      <div className="px-4 pt-4 pb-2.5 flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="relative w-11 h-11 rounded-full overflow-hidden border border-border/70 bg-[#eaf0e2] shrink-0">
+            <img
+              src={route.driver_avatar || coverUrl}
+              alt={route.name}
+              className="w-full h-full object-cover"
+              onError={handleImageFallback}
+            />
+            {hasGPS && (
+              <span
+                className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-[#8ee01a] border-2 border-white animate-pulse"
+                title="GPS en vivo"
+              />
+            )}
+          </div>
+
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <h3 className="text-[15px] font-extrabold text-foreground leading-tight truncate">
                 {route.name}
               </h3>
               {r.user_has_ticket && (
-                <span className="inline-flex items-center gap-1 bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full shadow-sm">
-                  ⭐ Mi Ruta
+                <span className="text-[10px] font-black bg-[#105238] text-[#8ee01a] px-2 py-0.5 rounded-full shrink-0">
+                  Mi Ruta
                 </span>
               )}
             </div>
-          </div>
-          <span className="inline-flex items-center gap-1 bg-muted text-muted-foreground text-xs font-bold px-2.5 py-1 rounded-full border border-border shadow-sm shrink-0 ml-2">
-            <Users className="w-3.5 h-3.5" />
-            {route.unit_capacity || 0} PAX
-          </span>
-        </div>
-            {/* Información del Chofer y Unidad */}
-            <div className="mt-4 flex flex-col gap-4 p-4 bg-muted/10 rounded-xl border border-border/50 shadow-sm">
-              
-              {/* Chofer */}
-              <div className="flex items-center gap-4">
-                {route.driver_avatar ? (
-                  <div className="relative shrink-0">
-                     <img src={route.driver_avatar} alt="Chofer" className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm" />
-                     <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full" style={{ backgroundColor: route.colorHex, border: '2px solid white' }} />
-                  </div>
-                ) : (
-                  <div className="relative shrink-0 w-16 h-16 rounded-full bg-muted flex items-center justify-center border-2 border-white shadow-sm">
-                    <span className="text-sm font-bold text-muted-foreground uppercase">{route.driver_name ? route.driver_name.substring(0, 3) : 'DRV'}</span>
-                    <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full" style={{ backgroundColor: route.colorHex, border: '2px solid white' }} />
-                  </div>
-                )}
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
-                    Conductor
-                  </span>
-                  <span className="text-base font-semibold text-foreground leading-none">
-                    {route.driver_name || 'Sin chofer'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="h-px bg-border/40 w-full" />
-
-              {/* Unidad */}
-              <div className="flex items-start justify-between">
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
-                    Placa del Vehículo
-                  </span>
-                  <span className="text-xl font-black tracking-widest text-foreground leading-none">
-                    {route.unit_license_plate ? route.unit_license_plate : 'SIN PLACA'}
-                  </span>
-                  <span className="text-sm text-muted-foreground mt-1.5">
-                    {route.unit_name || 'Unidad'}
-                  </span>
-                </div>
-                
-                {route.unit_color && (
-                  <div className="flex flex-col items-center shrink-0">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
-                      Color del Vehículo
-                    </span>
-                    <div 
-                      className="w-[50px] h-[50px] rounded-full shadow-md border border-black/10 mt-0.5"
-                      title={route.unit_color}
-                      style={{ 
-                        backgroundColor: route.unit_color.startsWith('#') ? route.unit_color : (
-                          {
-                            'Blanco': '#ffffff',
-                            'Negro': '#111111',
-                            'Gris': '#808080',
-                            'Plata': '#c0c0c0',
-                            'Azul': '#3b82f6',
-                            'Rojo': '#ef4444',
-                            'Verde': '#22c55e',
-                            'Amarillo': '#eab308',
-                            'Naranja': '#f97316',
-                            'Beige': '#f5f5dc',
-                            'Marrón': '#8b4513'
-                          }[route.unit_color] || '#cccccc'
-                        )
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-
-        {/* Stats */}
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          <div className="bg-muted p-2 rounded-lg text-center">
-            <p className="text-xs text-muted-foreground">Paradas</p>
-            <p className="font-bold text-sm">{(route.stops || []).length}</p>
-          </div>
-          <div className="bg-muted p-2 rounded-lg text-center">
-            <p className="text-xs text-muted-foreground">GPS</p>
-            <p className={cn("font-bold text-sm", hasGPS ? "text-green-600" : "text-muted-foreground")}>
-              {hasGPS ? "En vivo ●" : "Sin señal"}
+            <p className="text-[12px] text-muted-foreground truncate mt-0.5">
+              {route.driver_name || "PalenqueGo Transportes"} · {stops.length} paradas ·{" "}
+              <span className={cn("font-semibold", hasGPS ? "text-[#105238]" : "text-muted-foreground")}>
+                {hasGPS ? "GPS en vivo" : route.unit_license_plate || "Unidad oficial"}
+              </span>
             </p>
           </div>
         </div>
+
+        <div className="text-right shrink-0">
+          <div className="flex items-baseline justify-end gap-0.5">
+            <span className="text-base font-black text-foreground">
+              {priceNum > 0 ? `$${priceNum.toFixed(2)}` : "Gratis"}
+            </span>
+            {priceNum > 0 && <span className="text-[11px] font-semibold text-muted-foreground">/p</span>}
+          </div>
+          {route.unit_capacity ? (
+            <span className="text-[10px] font-bold text-[#105238] bg-[#eaf0e2] px-2 py-0.5 rounded-full inline-flex items-center gap-1 mt-0.5">
+              <Users className="w-2.5 h-2.5" />
+              {route.unit_capacity} PAX
+            </span>
+          ) : null}
+        </div>
       </div>
 
-      {/* Paradas */}
-      <div className="px-4 py-3 border-b border-border">
-        <p className="text-sm font-semibold mb-2">Paradas de esta ruta:</p>
-        <div className="space-y-2">
-          {(route.stops || []).map((stop, idx) => (
-            <div key={idx} className="flex items-center gap-3 text-sm">
-              <div className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/10 text-primary font-bold text-xs flex-shrink-0">
-                {stop.order}
+      {/* 2. DESCRIPCIÓN Y PARADAS EXPANDIBLES */}
+      <div className="px-4 pb-3 space-y-2">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <p className="text-[13px] text-foreground/85 font-medium truncate flex-1 min-w-[180px]">
+            {stopsSummary}
+          </p>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setShowMoreInfo((v) => !v)}
+              className="inline-flex items-center gap-1 text-xs font-bold text-[#105238] bg-[#eaf0e2]/80 hover:bg-[#eaf0e2] px-2.5 py-1 rounded-full transition-colors cursor-pointer"
+            >
+              <Info className="w-3.5 h-3.5" />
+              {showMoreInfo ? "Ocultar detalles" : "Más información"}
+            </button>
+            <span className="inline-flex items-center gap-1 text-xs font-bold text-foreground bg-[#f0f2f5] dark:bg-muted px-2 py-1 rounded-full">
+              <Star className="w-3.5 h-3.5 fill-[#105238] text-[#105238]" />
+              {avgRating} <span className="text-muted-foreground font-normal">({comments.length})</span>
+            </span>
+          </div>
+        </div>
+
+        {r.descripcion && (
+          <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{r.descripcion}</p>
+        )}
+
+        {/* Detalles expandibles: Paradas + Unidad/Chofer */}
+        {showMoreInfo && (
+          <div className="mt-2 p-3.5 rounded-2xl bg-[#f7f9f5] dark:bg-muted/40 border border-[#eaf0e2] dark:border-border space-y-3 animate-in fade-in duration-150">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+              <div className="bg-white dark:bg-card p-2.5 rounded-xl border border-border/50">
+                <span className="text-[10px] font-bold uppercase text-muted-foreground block">Conductor</span>
+                <span className="font-bold text-foreground truncate block">{route.driver_name || "Por asignar"}</span>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">{stop.name || `Parada ${stop.order}`}</p>
-                <p className="text-xs text-muted-foreground">
-                  {stop.latitude != null ? Number(stop.latitude).toFixed(4) : '—'}, {stop.longitude != null ? Number(stop.longitude).toFixed(4) : '—'}
-                </p>
+              <div className="bg-white dark:bg-card p-2.5 rounded-xl border border-border/50">
+                <span className="text-[10px] font-bold uppercase text-muted-foreground block">Vehículo / Placa</span>
+                <span className="font-bold text-foreground truncate block">
+                  {route.unit_license_plate || route.unit_name || "Oficial"}
+                </span>
+              </div>
+              <div className="bg-white dark:bg-card p-2.5 rounded-xl border border-border/50 col-span-2 sm:col-span-1">
+                <span className="text-[10px] font-bold uppercase text-muted-foreground block">Estado GPS</span>
+                <span className={cn("font-bold block", hasGPS ? "text-[#105238]" : "text-muted-foreground")}>
+                  {hasGPS ? "En vivo ●" : "Sin señal"}
+                </span>
               </div>
             </div>
-          ))}
-        </div>
+
+            {stops.length > 0 && (
+              <div className="space-y-1.5">
+                <p className="text-[11px] font-extrabold uppercase tracking-wider text-[#105238]">
+                  Paradas del recorrido
+                </p>
+                <div className="space-y-1.5">
+                  {stops.map((stop, idx) => (
+                    <div key={stop.id || idx} className="flex items-center gap-2.5 text-xs">
+                      <span className="w-5 h-5 rounded-full bg-[#105238] text-[#8ee01a] font-black text-[10px] flex items-center justify-center shrink-0">
+                        {stop.order || idx + 1}
+                      </span>
+                      <span className="font-semibold text-foreground truncate flex-1">
+                        {stop.name || `Parada ${idx + 1}`}
+                      </span>
+                      {stop.minutes_from_start ? (
+                        <span className="text-[11px] text-muted-foreground shrink-0">
+                          <Clock className="w-3 h-3 inline mr-0.5" />
+                          {stop.minutes_from_start}m
+                        </span>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Mapa */}
-      <div className="p-4 h-56 border-b border-border">
-        <div className="h-full w-full rounded-xl overflow-hidden border border-border">
-          <MapPreview
-            stops={route.stops}
-            unitLocation={hasGPS ? { lat: r.unit_lat, lng: r.unit_lng } : undefined}
-          />
-        </div>
-      </div>
-
-      {/* Botones */}
-      <div className="p-4 flex gap-2">
-        <Button onClick={() => onTrack(route)} variant="outline" className="flex-1 gap-2 bg-transparent">
-          <Navigation2 size={16} /> Rastrear
-        </Button>
-        <Button onClick={() => onServices(route)} className="flex-1 bg-primary">
-          Ver Servicios
-        </Button>
-      </div>
-      <div className="px-4 pb-4">
-        <Button
-          onClick={() => onBuy(route)}
-          className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground gap-2"
+      {/* 3. IMAGEN DE LA RUTA (Click abre el mapa completo igual que el lightbox de Experiencias) */}
+      <div className="px-4">
+        <div
+          onClick={onTrack}
+          className="relative h-[260px] sm:h-[310px] w-full rounded-2xl overflow-hidden bg-muted cursor-pointer group border border-border/50"
+          title="Haz clic para abrir el mapa completo y rastrear esta ruta"
         >
-          <Ticket size={16} /> Comprar Boleto
-        </Button>
+          <img
+            src={coverUrl}
+            alt={route.name}
+            className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
+            onError={handleImageFallback}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/20 pointer-events-none" />
+
+          {/* Badges superiores */}
+          <div className="absolute top-3 left-3 flex items-center gap-1.5">
+            <span className="bg-black/65 backdrop-blur-md text-white text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
+              <MapPin className="w-3 h-3 text-[#8ee01a]" />
+              {stops.length} paradas
+            </span>
+            {hasGPS && (
+              <span className="bg-[#105238]/90 backdrop-blur-md text-[#8ee01a] text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#8ee01a] animate-pulse" />
+                En vivo
+              </span>
+            )}
+          </div>
+
+          {/* Botón corazón rápido */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              onToggleLike()
+            }}
+            className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 hover:bg-white text-foreground flex items-center justify-center shadow-md transition-transform active:scale-90 cursor-pointer"
+            aria-label="Me gusta esta ruta"
+          >
+            <Heart className={cn("w-4 h-4", isLiked ? "fill-[#105238] text-[#105238]" : "text-gray-700")} />
+          </button>
+
+          {/* Indicador inferior derecho para abrir el mapa completo */}
+          <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2">
+            <span className="text-white text-xs font-bold drop-shadow-sm truncate">
+              {r.duracion || `${Math.max(1, stops.length - 1) * 20} min estimados`}
+            </span>
+            <span className="bg-white/95 hover:bg-white text-[#105238] text-xs font-extrabold px-3 py-1.5 rounded-full shadow-lg inline-flex items-center gap-1.5 shrink-0">
+              <Maximize2 className="w-3.5 h-3.5" />
+              Ver mapa completo
+            </span>
+          </div>
+        </div>
       </div>
-    </div>
+
+      {/* 4. BARRA DE ACCIONES SOCIALES + RASTREAR / BOLETO */}
+      <div className="px-4 py-3 flex items-center justify-between gap-1.5 flex-wrap sm:flex-nowrap">
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={onToggleLike}
+            className={cn(
+              "px-2.5 py-2 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer",
+              isLiked
+                ? "bg-[#eaf0e2] text-[#105238]"
+                : "text-muted-foreground hover:bg-[#f0f2f5] hover:text-foreground"
+            )}
+          >
+            <Heart className={cn("w-4 h-4", isLiked && "fill-[#105238] text-[#105238]")} />
+            <span>{isLiked ? "Te gusta" : "Reaccionar"}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowComments((v) => !v)}
+            className={cn(
+              "px-2.5 py-2 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer",
+              showComments
+                ? "bg-[#eaf0e2] text-[#105238]"
+                : "text-muted-foreground hover:bg-[#f0f2f5] hover:text-foreground"
+            )}
+          >
+            <MessageCircle className="w-4 h-4" />
+            <span>Comentar{comments.length > 0 ? ` (${comments.length})` : ""}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={onShare}
+            className="px-2.5 py-2 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 text-muted-foreground hover:bg-[#f0f2f5] hover:text-foreground transition-colors cursor-pointer"
+          >
+            <Share2 className="w-4 h-4" />
+            <span className="hidden sm:inline">Compartir</span>
+          </button>
+        </div>
+
+        <div className="flex items-center gap-1.5 ml-auto">
+          <Button
+            type="button"
+            size="sm"
+            onClick={onServices}
+            variant="ghost"
+            className="h-9 px-2.5 rounded-xl text-xs font-bold text-muted-foreground hover:text-[#105238] hover:bg-[#eaf0e2]/70 cursor-pointer"
+          >
+            Servicios
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            onClick={onTrack}
+            className="h-9 px-3.5 rounded-xl bg-[#eaf0e2] hover:bg-[#105238] text-[#105238] hover:text-white font-bold text-xs gap-1.5 border-0 shadow-none transition-colors cursor-pointer"
+          >
+            <Navigation2 className="w-3.5 h-3.5" />
+            Rastrear
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            onClick={onBuy}
+            className="h-9 px-3.5 rounded-xl bg-[#105238] hover:bg-[#0c3e2b] text-white font-bold text-xs gap-1.5 shadow-2xs cursor-pointer"
+          >
+            <Ticket className="w-3.5 h-3.5 text-[#8ee01a]" />
+            Boleto
+          </Button>
+        </div>
+      </div>
+
+      {/* 5. SECCIÓN DE COMENTARIOS Y CALIFICACIÓN INLINE */}
+      {showComments && (
+        <div className="border-t border-border/60 bg-[#fafaf8] dark:bg-muted/20 p-4 space-y-3 animate-in fade-in duration-150">
+          {/* Lista de comentarios */}
+          {comments.length > 0 ? (
+            <div className="space-y-2.5 max-h-52 overflow-y-auto pr-1">
+              {comments.map((c) => (
+                <div key={c.id} className="flex items-start gap-2.5">
+                  <div className="w-7 h-7 rounded-full bg-[#105238] text-white text-[10px] font-black flex items-center justify-center shrink-0 overflow-hidden">
+                    {c.userAvatar ? (
+                      <img src={c.userAvatar} alt={c.userName} className="w-full h-full object-cover" />
+                    ) : (
+                      c.userName.slice(0, 2).toUpperCase()
+                    )}
+                  </div>
+                  <div className="flex-1 bg-white dark:bg-card border border-border/60 rounded-2xl px-3 py-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-extrabold text-foreground">{c.userName}</span>
+                      <div className="flex items-center gap-0.5">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star
+                            key={i}
+                            className={cn(
+                              "w-3 h-3",
+                              i < c.rating ? "fill-[#105238] text-[#105238]" : "text-gray-300"
+                            )}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-xs text-foreground/90 mt-1">{c.text}</p>
+                    <span className="text-[10px] text-muted-foreground">{c.createdAt}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground text-center py-1">
+              Sé el primero en opinar sobre esta ruta.
+            </p>
+          )}
+
+          {/* Fila unificada: Avatar + Plantillas + Estrellas */}
+          <div className="flex items-center justify-between gap-1.5 overflow-x-auto scrollbar-hide py-0.5 flex-nowrap">
+            <div className="flex items-center gap-1.5 shrink-0 flex-nowrap">
+              <div className="w-7 h-7 rounded-full bg-[#105238] text-white text-[10px] font-black flex items-center justify-center shrink-0 overflow-hidden">
+                {(currentUser as any)?.avatar ? (
+                  <img src={(currentUser as any).avatar} alt="Tú" className="w-full h-full object-cover" />
+                ) : (
+                  (currentUser?.name || "TU").slice(0, 2).toUpperCase()
+                )}
+              </div>
+              {["Ya tomé esta ruta", "Excelente recorrido", "¿Horario de salida?"].map((tpl) => (
+                <button
+                  key={tpl}
+                  type="button"
+                  onClick={() => setCommentText(tpl)}
+                  className="px-2 py-0.5 rounded-full bg-white dark:bg-card border border-border text-[10px] font-bold text-foreground/80 hover:border-[#105238] hover:text-[#105238] whitespace-nowrap shrink-0 cursor-pointer"
+                >
+                  {tpl}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-white dark:bg-card border border-border shrink-0 ml-auto">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setCommentRating(star)}
+                  className="cursor-pointer p-0.5"
+                  aria-label={`Calificar ${star} estrellas`}
+                >
+                  <Star
+                    className={cn(
+                      "w-3 h-3",
+                      star <= commentRating ? "fill-[#105238] text-[#105238]" : "text-gray-300"
+                    )}
+                  />
+                </button>
+              ))}
+              <span className="text-[10px] font-bold text-[#105238] ml-1">{commentRating}/5</span>
+            </div>
+          </div>
+
+          {/* Input de comentario */}
+          <div className="flex items-center gap-2 bg-white dark:bg-card border border-border rounded-2xl px-3 py-1.5">
+            <input
+              type="text"
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault()
+                  handleSubmitComment()
+                }
+              }}
+              placeholder="Comparte tu experiencia, opina, califica..."
+              className="flex-1 bg-transparent text-xs outline-none text-foreground placeholder:text-muted-foreground"
+            />
+            <button
+              type="button"
+              disabled={!commentText.trim()}
+              onClick={handleSubmitComment}
+              className={cn(
+                "p-1.5 rounded-full transition-colors cursor-pointer",
+                commentText.trim()
+                  ? "text-[#105238] hover:bg-[#f0f2f5]"
+                  : "text-gray-300 cursor-not-allowed"
+              )}
+              aria-label="Publicar comentario"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+    </article>
   )
 }
