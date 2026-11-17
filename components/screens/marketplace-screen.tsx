@@ -1851,11 +1851,11 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   useEffect(() => {
     if (typeof window === "undefined") return
 
-    const getScrollY = (target?: EventTarget | null) => {
-      if (target && target instanceof HTMLElement && target.scrollTop > 0) {
-        return target.scrollTop
-      }
-      const mainContainer = document.querySelector(".overflow-y-auto") as HTMLElement | null
+    const getMainScrollContainer = () =>
+      document.getElementById("main-scroll-container") as HTMLElement | null
+
+    const getScrollY = () => {
+      const mainContainer = getMainScrollContainer()
       if (mainContainer && mainContainer.scrollTop > 0) {
         return mainContainer.scrollTop
       }
@@ -1863,6 +1863,17 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     }
 
     const handleScrollHeader = (e: Event) => {
+      const mainContainer = getMainScrollContainer()
+      // Ignore horizontal/nested scroll events (e.g. category pills track, carousels, sidebars)
+      if (
+        e.target instanceof HTMLElement &&
+        e.target !== mainContainer &&
+        e.target !== document.documentElement &&
+        e.target !== document.body
+      ) {
+        return
+      }
+
       const isMobileViewport = window.innerWidth < 640
       const activeEl = document.activeElement
 
@@ -1875,7 +1886,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
         return
       }
 
-      const currentY = getScrollY(e.target)
+      const currentY = getScrollY()
       const lastY = lastScrollYRef.current
 
       // If mobile inline search is open and user scrolls down significantly (> 140px), return to categories
@@ -3902,7 +3913,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                     <button
                       type="button"
                       onClick={() => {
-                        const mainContainer = document.querySelector(".overflow-y-auto") as HTMLElement | null
+                        const mainContainer = document.getElementById("main-scroll-container") as HTMLElement | null
                         const currentY =
                           mainContainer && mainContainer.scrollTop > 0
                             ? mainContainer.scrollTop
