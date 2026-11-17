@@ -1422,6 +1422,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
   const lastScrollYRef = useRef(0)
   const stickySearchRowRef = useRef<HTMLDivElement | null>(null)
   const [stickySearchHeight, setStickySearchHeight] = useState(68)
+  const [isMobileSearchFocused, setIsMobileSearchFocused] = useState(false)
+  const [isMobileInlineSearchOpen, setIsMobileInlineSearchOpen] = useState(false)
+  const isMobileInlineSearchOpenRef = useRef(false)
+  const mobileInlineSearchScrollStartRef = useRef(0)
   const [serviceToRate, setServiceToRate] = useState<Service | null>(null)
   const [showFilterPanel, setShowFilterPanel] = useState(false)
   const [showComparisonModal, setShowComparisonModal] = useState(false)
@@ -1859,8 +1863,10 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     }
 
     const handleScrollHeader = (e: Event) => {
-      // Don't collapse if an input inside sticky search is focused
+      const isMobileViewport = window.innerWidth < 640
       const activeEl = document.activeElement
+
+      // Don't collapse top sticky search if an input inside sticky search is focused
       if (activeEl && activeEl.tagName === "INPUT" && activeEl.closest(".sticky-search-container")) {
         if (!showStickySearchRef.current) {
           showStickySearchRef.current = true
@@ -1872,11 +1878,28 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
       const currentY = getScrollY(e.target)
       const lastY = lastScrollYRef.current
 
-      // When near the top of the feed, always keep search bar visible
+      // If mobile inline search is open and user scrolls down significantly (> 140px), return to categories
+      if (
+        isMobileViewport &&
+        isMobileInlineSearchOpenRef.current &&
+        currentY > mobileInlineSearchScrollStartRef.current + 140
+      ) {
+        isMobileInlineSearchOpenRef.current = false
+        setIsMobileInlineSearchOpen(false)
+        if (activeEl && activeEl instanceof HTMLElement && activeEl.closest(".mobile-inline-search")) {
+          activeEl.blur()
+        }
+      }
+
+      // When near the top of the feed, always keep top search bar visible
       if (currentY <= 70) {
         if (!showStickySearchRef.current) {
           showStickySearchRef.current = true
           setShowStickySearch(true)
+        }
+        if (isMobileInlineSearchOpenRef.current) {
+          isMobileInlineSearchOpenRef.current = false
+          setIsMobileInlineSearchOpen(false)
         }
         lastScrollYRef.current = currentY
         return
@@ -1884,7 +1907,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
 
       const diff = currentY - lastY
 
-      // Scrolled down by more than 16px -> hide search bar
+      // Scrolled down by more than 16px -> hide top search bar
       if (diff > 16) {
         if (showStickySearchRef.current) {
           showStickySearchRef.current = false
@@ -1892,9 +1915,9 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
         }
         lastScrollYRef.current = currentY
       }
-      // Scrolled up by more than 16px -> reveal search bar smoothly
+      // Scrolled up by more than 16px -> reveal top search bar smoothly ONLY on Desktop (>= 640px)
       else if (diff < -16) {
-        if (!showStickySearchRef.current) {
+        if (!isMobileViewport && !showStickySearchRef.current) {
           showStickySearchRef.current = true
           setShowStickySearch(true)
         }
@@ -3700,21 +3723,37 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   showStickySearch ? "opacity-100" : "opacity-0 pointer-events-none"
                 )}
               >
-                <div className="bg-card border border-border rounded-3xl p-3 sm:p-3.5 shadow-2xs">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <div className="relative flex-1 min-w-[180px]">
-                      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <div className="bg-card border border-border rounded-3xl p-2.5 sm:p-3.5 shadow-2xs">
+                  <div className="flex flex-nowrap sm:flex-wrap items-center gap-1.5 sm:gap-2">
+                    <div className="relative flex-1 min-w-0 sm:min-w-[180px]">
+                      <Search className="absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input
                         value={searchQuery}
                         placeholder="Buscar experiencias, tours, restaurantes..."
-                        className="pl-10 pr-10 bg-[#f0f2f5]/70 dark:bg-background border border-slate-200/80 dark:border-border focus:border-slate-300 focus-visible:border-slate-300 focus-visible:ring-0 focus:outline-none h-10 rounded-2xl text-sm"
+                        className="pl-9 sm:pl-10 pr-9 sm:pr-10 bg-[#f0f2f5]/70 dark:bg-background border border-slate-200/80 dark:border-border focus:border-slate-300 focus-visible:border-slate-300 focus-visible:ring-0 focus:outline-none h-9 sm:h-10 rounded-2xl text-xs sm:text-sm"
+                        onFocus={() => setIsMobileSearchFocused(true)}
+                        onBlur={() => setTimeout(() => setIsMobileSearchFocused(false), 150)}
                         onChange={(e) => setSearchQuery(e.target.value)}
                       />
-                      {searchQuery && (
+                      {(searchQuery || isMobileSearchFocused) && (
                         <button
                           type="button"
-                          onClick={() => setSearchQuery("")}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            if (searchQuery) {
+                              setSearchQuery("")
+                            } else {
+                              setIsMobileSearchFocused(false)
+                              if (document.activeElement instanceof HTMLElement) {
+                                document.activeElement.blur()
+                              }
+                            }
+                          }}
+                          className={cn(
+                            "absolute right-2.5 sm:right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer",
+                            !searchQuery && "sm:hidden",
+                          )}
+                          aria-label={searchQuery ? "Limpiar búsqueda" : "Cerrar enfoque de búsqueda"}
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -3725,17 +3764,25 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                       type="button"
                       variant="outline"
                       onClick={() => setShowFilterPanel(true)}
-                      className="h-10 px-3.5 rounded-2xl border-transparent bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-800 text-xs font-bold gap-1.5 cursor-pointer shadow-none"
+                      className={cn(
+                        "h-9 w-9 p-0 sm:h-10 sm:w-auto sm:px-3.5 rounded-2xl border-transparent bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-800 text-xs font-bold gap-1.5 cursor-pointer shadow-none shrink-0",
+                        isMobileSearchFocused ? "hidden sm:inline-flex" : "inline-flex",
+                      )}
+                      aria-label="Filtros"
                     >
                       <Filter className="w-4 h-4 text-slate-700" />
-                      <span>Filtros</span>
+                      <span className="hidden sm:inline">Filtros</span>
                     </Button>
 
                     <Button
                       type="button"
                       variant="outline"
                       onClick={() => setShowPreferencesModal(true)}
-                      className="h-10 px-3.5 rounded-2xl border-transparent bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-800 text-xs font-bold gap-1.5 cursor-pointer shadow-none"
+                      className={cn(
+                        "h-9 w-9 p-0 sm:h-10 sm:w-auto sm:px-3.5 rounded-2xl border-transparent bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-800 text-xs font-bold gap-1.5 cursor-pointer shadow-none shrink-0",
+                        isMobileSearchFocused ? "hidden sm:inline-flex" : "inline-flex",
+                      )}
+                      aria-label="Preferencias"
                     >
                       <SlidersHorizontal className="w-4 h-4 text-slate-700" />
                       <span className="hidden sm:inline">Preferencias</span>
@@ -3746,7 +3793,11 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                       variant="outline"
                       onClick={handleRestartCycle}
                       title="Mezclar orden del feed"
-                      className="h-10 px-3 rounded-2xl border-transparent bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-800 text-xs font-bold gap-1 cursor-pointer shadow-none"
+                      className={cn(
+                        "h-9 w-9 p-0 sm:h-10 sm:w-auto sm:px-3 rounded-2xl border-transparent bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-800 text-xs font-bold gap-1 cursor-pointer shadow-none shrink-0",
+                        isMobileSearchFocused ? "hidden sm:inline-flex" : "inline-flex",
+                      )}
+                      aria-label="Mezclar orden del feed"
                     >
                       <Shuffle className="w-4 h-4 text-slate-700" />
                     </Button>
@@ -3754,9 +3805,45 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                 </div>
               </div>
 
-              {/* STICKY CATEGORY PILLS BAR (with preferred categories first + scroll arrows) */}
+              {/* STICKY CATEGORY PILLS BAR (with preferred categories first + scroll arrows + mobile inline search swap) */}
               <div className="py-2">
-                <div className="flex items-center gap-1.5">
+                {isMobileInlineSearchOpen && (
+                  <div className="mobile-inline-search flex sm:hidden items-center gap-2 w-full animate-in fade-in duration-150">
+                    <div className="relative flex-1 min-w-0">
+                      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        autoFocus
+                        value={searchQuery}
+                        placeholder="Buscar experiencias, tours, restaurantes..."
+                        className="pl-10 pr-9 bg-white dark:bg-card border border-slate-200/90 dark:border-border focus:border-slate-300 focus-visible:ring-0 focus:outline-none h-9 rounded-full text-xs shadow-2xs"
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                      />
+                      {searchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => setSearchQuery("")}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                          aria-label="Limpiar búsqueda"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        isMobileInlineSearchOpenRef.current = false
+                        setIsMobileInlineSearchOpen(false)
+                      }}
+                      className="w-9 h-9 rounded-full bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-700 flex items-center justify-center shrink-0 cursor-pointer transition-colors border border-slate-200/70"
+                      aria-label="Volver a categorías"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+
+                <div className={cn("flex items-center gap-1.5", isMobileInlineSearchOpen && "hidden sm:flex")}>
                   <button
                     type="button"
                     onClick={() => categoriesTrackRef.current?.scrollBy({ left: -220, behavior: "smooth" })}
@@ -3811,6 +3898,25 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                       )
                     })}
                   </div>
+                  {!showStickySearch && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const mainContainer = document.querySelector(".overflow-y-auto") as HTMLElement | null
+                        const currentY =
+                          mainContainer && mainContainer.scrollTop > 0
+                            ? mainContainer.scrollTop
+                            : window.scrollY || document.documentElement.scrollTop || 0
+                        mobileInlineSearchScrollStartRef.current = currentY
+                        isMobileInlineSearchOpenRef.current = true
+                        setIsMobileInlineSearchOpen(true)
+                      }}
+                      className="flex sm:hidden w-8 h-8 rounded-full bg-[#f0f2f5] hover:bg-[#e4e6eb] border border-slate-200/80 items-center justify-center text-slate-700 shrink-0 shadow-2xs cursor-pointer transition-all active:scale-95"
+                      aria-label="Buscar"
+                    >
+                      <Search className="w-4 h-4" />
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => categoriesTrackRef.current?.scrollBy({ left: 220, behavior: "smooth" })}
