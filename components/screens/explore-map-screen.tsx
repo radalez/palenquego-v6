@@ -7,7 +7,7 @@ import {
   LayoutGrid, ChevronUp, X, Bookmark, Clock, Share2,
   ArrowUpDown, Calendar, Users, Bus, Building2, Camera, ChevronDown,
   Map, Filter, Palmtree, Utensils, Home, Landmark, Leaf, Sparkles, Car, Star,
-  Compass, Plane, Mountain, Sun, Menu, List, Image as ImageIcon
+  Compass, Plane, Mountain, Sun, Menu, List, Image as ImageIcon, MoreHorizontal
 } from 'lucide-react'
 import { ScrollArea } from "@/components/ui/scroll-area"
 import * as LucideIcons from 'lucide-react'
@@ -348,10 +348,10 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
     }
   }, [fetchMyUserRoutes, fetchRequestedTrips, fetchHomeSlides, currentUser?.tipo])
 
-  // Ocultar el menú inferior móvil cuando el usuario oculta el panel "Descubre Palenque" en vista Mapa
+  // Ocultar el menú inferior móvil en vista Detalle de Ruta o cuando el panel "Descubre Palenque" está oculto en vista Mapa
   useEffect(() => {
     if (typeof document === "undefined") return
-    const shouldHideNav = view === 'map' && !isSheetExpanded
+    const shouldHideNav = view === 'detail' || (view === 'map' && !isSheetExpanded)
     document.body.classList.toggle("explore-hide-mobile-nav", shouldHideNav)
     return () => {
       document.body.classList.remove("explore-hide-mobile-nav")
@@ -2745,9 +2745,9 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
         </div>
       )}
 
-      {/* BOTTOM SHEET — lista de paradas + botones */}
+      {/* MOBILE ONLY: BOTTOM SHEET — lista de paradas + botones (al ras del piso sin menú inferior) */}
       <div 
-        className="absolute bottom-16 lg:bottom-0 left-0 right-0 z-20 bg-white rounded-t-3xl shadow-[0_-8px_30px_rgba(0,0,0,0.12)] flex flex-col transition-all duration-300" 
+        className="lg:hidden absolute bottom-0 left-0 right-0 z-20 bg-white rounded-t-3xl shadow-[0_-8px_30px_rgba(0,0,0,0.12)] flex flex-col transition-all duration-300" 
         style={{ maxHeight: isSheetExpanded ? '55vh' : 'auto' }}
       >
         <div 
@@ -2771,35 +2771,35 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
                 </div>
               )}
               <div className="relative flex flex-col">
-            <div className="absolute left-[15px] top-4 bottom-4 w-0.5 bg-gray-200 z-0" />
-            {selectedRoute?.stops?.map((stop: any, idx: number) => (
-              <div key={stop.id || idx} className="relative z-10 flex gap-4 items-start py-3 bg-white">
-                <div className="w-8 h-8 rounded-full text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-md" style={{ backgroundColor: catColor }}>
-                  {idx + 1}
-                </div>
-                <div className="flex-1 flex justify-between items-start">
-                  <div className="min-w-0 pr-2">
-                    <p className="font-bold text-gray-900 text-sm leading-tight">{stop.name}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {idx === 0 ? 'Punto de inicio de la ruta' : (stop.description || `Parada ${idx + 1}`)}
-                    </p>
+                <div className="absolute left-[15px] top-4 bottom-4 w-0.5 bg-gray-200 z-0" />
+                {selectedRoute?.stops?.map((stop: any, idx: number) => (
+                  <div key={stop.id || idx} className="relative z-10 flex gap-4 items-start py-3 bg-white">
+                    <div className="w-8 h-8 rounded-full text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-md" style={{ backgroundColor: catColor }}>
+                      {idx + 1}
+                    </div>
+                    <div className="flex-1 flex justify-between items-start">
+                      <div className="min-w-0 pr-2">
+                        <p className="font-bold text-gray-900 text-sm leading-tight">{stop.name}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {idx === 0 ? 'Punto de inicio de la ruta' : (stop.description || `Parada ${idx + 1}`)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1 text-gray-400 shrink-0">
+                        <Clock className="h-3 w-3" />
+                        <span className="text-[10px]">
+                          {stop.minutes_from_start != null
+                            ? `${stop.minutes_from_start} min`
+                            : idx === 0 ? '0 min' : `${idx * 20} min`}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1 text-gray-400 shrink-0">
-                    <Clock className="h-3 w-3" />
-                    <span className="text-[10px]">
-                      {stop.minutes_from_start != null
-                        ? `${stop.minutes_from_start} min`
-                        : idx === 0 ? '0 min' : `${idx * 20} min`}
-                    </span>
-                  </div>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
 
             {/* Botones */}
-            <div className="px-5 py-4 pb-6 sm:pb-4 border-t border-gray-100 flex gap-3 shrink-0 bg-white">
+            <div className="px-5 py-4 pb-6 border-t border-gray-100 flex gap-3 shrink-0 bg-white">
               <Button
                 className="flex-1 rounded-2xl h-14 bg-[#059669] hover:bg-[#047857] text-white font-bold text-base shadow-lg"
                 onClick={() => {
@@ -2820,6 +2820,103 @@ export function ExploreMapScreen({ onBack, onNavigate, onToggleDesktopSidebar, i
           </>
         )}
       </div>
+
+      {/* DESKTOP ONLY: Circulito "Ver más" + Circulito tres puntos (cuando está colapsado) o Card flotante a la derecha */}
+      {!isSheetExpanded ? (
+        <div className="hidden lg:flex items-center gap-2.5 absolute bottom-6 right-6 z-30 animate-in fade-in duration-200">
+          <button
+            type="button"
+            onClick={() => setIsSheetExpanded(true)}
+            className="h-11 px-4 rounded-full bg-white hover:bg-[#eaf0e2] text-[#105238] border border-gray-200/90 shadow-xl font-bold text-xs flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+          >
+            <span>Ver más</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsSheetExpanded(true)}
+            className="w-11 h-11 rounded-full bg-[#105238] hover:bg-[#0c3e2b] text-[#8ee01a] border border-white/20 shadow-xl flex items-center justify-center transition-all active:scale-95 cursor-pointer"
+            title="Ver detalles de la ruta"
+            aria-label="Ver detalles de la ruta"
+          >
+            <MoreHorizontal className="w-5 h-5" />
+          </button>
+        </div>
+      ) : (
+        <div className="hidden lg:flex flex-col absolute top-24 bottom-6 right-6 w-[390px] z-30 bg-white rounded-3xl shadow-2xl border border-gray-200/90 overflow-hidden animate-in fade-in slide-in-from-right-4 duration-200">
+          <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white">
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#105238]">Detalle del Recorrido</p>
+              <h3 className="text-sm font-black text-gray-900 truncate">{selectedRoute?.name}</h3>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsSheetExpanded(false)}
+              className="w-8 h-8 rounded-full bg-[#f0f2f5] hover:bg-gray-200 text-gray-700 flex items-center justify-center shrink-0 transition-colors cursor-pointer"
+              title="Minimizar detalles"
+              aria-label="Minimizar detalles"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-5 py-3 min-h-0 custom-scrollbar">
+            {selectedRoute?.descripcion && (
+              <div className="mb-4 bg-emerald-50/80 border border-emerald-100 rounded-2xl p-3.5 text-xs text-emerald-950 leading-relaxed shadow-2xs">
+                <p className="font-bold text-emerald-900 mb-1 flex items-center gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
+                  Descripción de la Experiencia
+                </p>
+                {selectedRoute.descripcion}
+              </div>
+            )}
+            <div className="relative flex flex-col">
+              <div className="absolute left-[15px] top-4 bottom-4 w-0.5 bg-gray-200 z-0" />
+              {selectedRoute?.stops?.map((stop: any, idx: number) => (
+                <div key={stop.id || idx} className="relative z-10 flex gap-4 items-start py-3 bg-white">
+                  <div className="w-8 h-8 rounded-full text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-md" style={{ backgroundColor: catColor }}>
+                    {idx + 1}
+                  </div>
+                  <div className="flex-1 flex justify-between items-start">
+                    <div className="min-w-0 pr-2">
+                      <p className="font-bold text-gray-900 text-sm leading-tight">{stop.name}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {idx === 0 ? 'Punto de inicio de la ruta' : (stop.description || `Parada ${idx + 1}`)}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 text-gray-400 shrink-0">
+                      <Clock className="h-3 w-3" />
+                      <span className="text-[10px]">
+                        {stop.minutes_from_start != null
+                          ? `${stop.minutes_from_start} min`
+                          : idx === 0 ? '0 min' : `${idx * 20} min`}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="px-5 py-3.5 border-t border-gray-100 flex gap-2.5 shrink-0 bg-white">
+            <Button
+              className="flex-1 rounded-2xl h-12 bg-[#105238] hover:bg-[#0c3e2b] text-white font-bold text-sm shadow-lg cursor-pointer"
+              onClick={() => {
+                if (selectedRoute) {
+                  useAppStore.getState().setRouteSearchQuery(selectedRoute.name);
+                  useAppStore.getState().setReturnToMapRoute(selectedRoute.name);
+                }
+                onNavigate('rutas-classic')
+              }}
+            >
+              <Navigation2 className="mr-2 h-4 w-4 text-[#8ee01a]" />
+              Iniciar ruta
+            </Button>
+            <Button variant="outline" size="icon" className="w-12 h-12 rounded-2xl bg-[#f0f2f5] hover:bg-gray-200 border-transparent text-gray-700 transition-colors cursor-pointer">
+              <Share2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* MODAL / DIÁLOGO DE DETALLE DE POOL (ACTIVADO DESDE CABECERA) */}
       {showPoolDetailModal && selectedRoute && (() => {
