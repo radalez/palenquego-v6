@@ -3277,9 +3277,12 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     )
   }, [openCommentsId, visibleBatchServices, services, globalCatalogPool])
 
-  // Escape key handler to close comments spotlight
+  // Body scroll lock and Escape key handler when comments spotlight is open
   useEffect(() => {
     if (openCommentsId === null) return
+    const originalOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setOpenCommentsId(null)
@@ -3287,8 +3290,25 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
       }
     }
     window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
+    return () => {
+      document.body.style.overflow = originalOverflow
+      window.removeEventListener("keydown", handleKeyDown)
+    }
   }, [openCommentsId])
+
+  // Center card smoothly when opening comments
+  const handleToggleComments = useCallback((serviceId: number) => {
+    setOpenCommentsId((prev) => {
+      const isOpening = prev !== serviceId
+      if (isOpening) {
+        setTimeout(() => {
+          const el = document.getElementById(`service-card-${serviceId}`)
+          el?.scrollIntoView({ behavior: "smooth", block: "center" })
+        }, 50)
+      }
+      return isOpening ? serviceId : null
+    })
+  }, [])
 
   // Promo Video Stories from Followed Businesses (only shown in feed when a followed business has active stories)
   const [followedStoreIdsLocal, setFollowedStoreIdsLocal] = useState<number[]>([])
@@ -3989,14 +4009,19 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                     <article
                       id={`service-card-${service.id}`}
                       className={cn(
-                        "bg-card border border-border rounded-3xl overflow-visible scroll-mt-24 transition-all duration-200",
+                        "bg-card border border-border rounded-3xl transition-all duration-200 scroll-mt-24",
                         openCommentsId === service.id
-                          ? "relative z-40 shadow-[0_25px_60px_-10px_rgba(0,0,0,0.35)] ring-2 ring-black/10 dark:ring-white/10 scale-[1.01]"
-                          : "shadow-2xs",
+                          ? "relative z-40 shadow-[0_25px_60px_-10px_rgba(0,0,0,0.35)] ring-2 ring-black/10 dark:ring-white/10 scale-[1.01] max-h-[85vh] sm:max-h-[88vh] flex flex-col overflow-hidden"
+                          : "shadow-2xs overflow-visible",
                       )}
                     >
-                      {/* Post Header: Business + Location + Price */}
-                      <div className="p-4 flex items-center justify-between gap-3">
+                      {/* Post Header: Business + Location + Price (Fixed at top when comments are open) */}
+                      <div
+                        className={cn(
+                          "p-4 flex items-center justify-between gap-3 shrink-0 bg-card",
+                          openCommentsId === service.id && "border-b border-border/40 z-10",
+                        )}
+                      >
                         <div className="flex items-center gap-3 min-w-0">
                           <button
                             type="button"
@@ -4052,7 +4077,15 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                         </div>
                       </div>
 
-                      {/* Post Caption: Title + Description + Rating + Bone "+ Info" button (like Facebook's "Más información") */}
+                      {/* Center Scrollable Body: Caption + Media + Actions + Existing Comments */}
+                      <div
+                        className={cn(
+                          openCommentsId === service.id
+                            ? "flex-1 overflow-y-auto scrollbar-hide overscroll-contain min-h-0"
+                            : "",
+                        )}
+                      >
+                        {/* Post Caption: Title + Description + Rating + Bone "+ Info" button (like Facebook's "Más información") */}
                       <div className="px-4 pb-3 space-y-1.5">
                         <div className="flex items-start justify-between gap-2">
                           <h3
@@ -4235,9 +4268,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                           {commentsList.length > 0 && (
                             <button
                               type="button"
-                              onClick={() =>
-                                setOpenCommentsId((prev) => (prev === service.id ? null : service.id))
-                              }
+                              onClick={() => handleToggleComments(service.id)}
                               className="hover:underline cursor-pointer"
                             >
                               {commentsList.length} {commentsList.length === 1 ? "comentario" : "comentarios"}
@@ -4323,9 +4354,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                         {/* Comentar / Calificar */}
                         <button
                           type="button"
-                          onClick={() =>
-                            setOpenCommentsId((prev) => (prev === service.id ? null : service.id))
-                          }
+                          onClick={() => handleToggleComments(service.id)}
                           className="flex-1 min-w-[95px] h-9 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer px-2"
                         >
                           <MessageSquare className="w-4 h-4 shrink-0" />
@@ -4451,84 +4480,89 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                         </Button>
                       </div>
 
-                      {/* INLINE COMMENTS & FACEBOOK-STYLE BONE COMPOSER */}
-                      {openCommentsId === service.id && (() => {
-                        const commentsList = serviceComments[service.id] || []
-                        const draftText = commentDrafts[service.id] || ""
-                        const currentRating = commentRatings[service.id] || 5
-                        const currentLoc = commentLocations[service.id]
-                        const currentCountry = commentCountries[service.id]
-                        const hasSendableContent = Boolean(draftText.trim() || currentLoc)
-
-                        return (
-                          <div className="px-4 pb-4 pt-3 border-t border-border/50 bg-[#fafaf8] dark:bg-[#1e1e1e] rounded-b-3xl space-y-3.5 animate-in fade-in duration-150">
-                            {/* Existing Comments List */}
-                            {commentsList.length > 0 && (
-                              <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
-                                {commentsList.map((c) => (
-                                  <div key={c.id} className="flex gap-2.5 items-start">
-                                    {c.authorAvatar ? (
-                                      <img
-                                        src={c.authorAvatar}
-                                        alt={c.author}
-                                        className="w-7 h-7 rounded-full object-cover shrink-0 ring-1 ring-border/50"
-                                      />
-                                    ) : (
-                                      <div className="w-7 h-7 rounded-full bg-[#105238] text-white flex items-center justify-center text-[10px] font-bold shrink-0">
-                                        {c.author ? c.author.charAt(0).toUpperCase() : "V"}
-                                      </div>
-                                    )}
-                                    <div className="flex-1 min-w-0">
-                                      <div className="bg-[#f0f2f5] dark:bg-[#3a3b3c] rounded-2xl px-3 py-2 space-y-0.5">
-                                        <div className="flex flex-wrap items-center gap-1.5 justify-between">
-                                          <span className="font-bold text-xs text-foreground truncate max-w-[150px]">
-                                            {c.author}
+                      {/* Existing Comments List (Scrolls smoothly inside the center body) */}
+                      {openCommentsId === service.id && commentsList.length > 0 && (
+                        <div className="px-4 pb-4 pt-3 border-t border-border/50 bg-[#fafaf8] dark:bg-[#1e1e1e] space-y-2.5">
+                          <div className="flex items-center justify-between text-xs font-bold text-muted-foreground uppercase tracking-wide">
+                            <span>Experiencias y opiniones ({commentsList.length})</span>
+                          </div>
+                          <div className="space-y-2.5">
+                            {commentsList.map((c) => (
+                              <div key={c.id} className="flex gap-2.5 items-start">
+                                {c.authorAvatar ? (
+                                  <img
+                                    src={c.authorAvatar}
+                                    alt={c.author}
+                                    className="w-7 h-7 rounded-full object-cover shrink-0 ring-1 ring-border/50"
+                                  />
+                                ) : (
+                                  <div className="w-7 h-7 rounded-full bg-[#105238] text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                                    {c.author ? c.author.charAt(0).toUpperCase() : "V"}
+                                  </div>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <div className="bg-[#f0f2f5] dark:bg-[#3a3b3c] rounded-2xl px-3 py-2 space-y-0.5">
+                                    <div className="flex flex-wrap items-center gap-1.5 justify-between">
+                                      <span className="font-bold text-xs text-foreground truncate max-w-[150px]">
+                                        {c.author}
+                                      </span>
+                                      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground shrink-0">
+                                        {c.rating && (
+                                          <span className="inline-flex items-center gap-0.5 font-bold text-[#105238] dark:text-[#8ee01a]">
+                                            <Star className="w-3 h-3 fill-[#105238] dark:fill-[#8ee01a]" />
+                                            {c.rating}
                                           </span>
-                                          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground shrink-0">
-                                            {c.rating && (
-                                              <span className="inline-flex items-center gap-0.5 font-bold text-[#105238] dark:text-[#8ee01a]">
-                                                <Star className="w-3 h-3 fill-[#105238] dark:fill-[#8ee01a]" />
-                                                {c.rating}
-                                              </span>
-                                            )}
-                                            <span>{c.createdAt}</span>
-                                          </div>
-                                        </div>
-
-                                        {(c.location || c.flag || c.countryCode) && (
-                                          <div className="flex flex-wrap items-center gap-1 pt-0.5">
-                                            {c.countryCode && (
-                                              <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-white/80 dark:bg-black/25 px-2 py-0.5 rounded-full border border-black/5 text-foreground/80">
-                                                <CountryFlagBadge code={c.countryCode} name={c.flag} />
-                                              </span>
-                                            )}
-                                            {c.location && (
-                                              <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-white/80 dark:bg-black/25 px-2 py-0.5 rounded-full border border-black/5 text-foreground/80">
-                                                <MapPin className="w-2.5 h-2.5 text-slate-500" />
-                                                {c.location}
-                                              </span>
-                                            )}
-                                          </div>
                                         )}
-
-                                        <p className="text-xs sm:text-sm text-foreground/90 whitespace-pre-wrap break-words leading-relaxed pt-0.5">
-                                          {c.text}
-                                        </p>
+                                        <span>{c.createdAt}</span>
                                       </div>
                                     </div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
 
-                            {/* Facebook-style Bone Composer Box focused on Tourism Experience Rating & Opinions */}
-                            <div className="bg-[#f0f2f5] dark:bg-[#3a3b3c] rounded-2xl p-3 border-0 relative shadow-2xs space-y-2.5">
-                              {/* Header: Title + Star Rating */}
-                              <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-black/5 dark:border-white/5 flex-wrap">
-                                <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
-                                  <MessageSquare className="w-3.5 h-3.5 text-[#105238] dark:text-[#8ee01a]" />
-                                  <span>Opiniones y calificación de la experiencia</span>
+                                    {(c.location || c.flag || c.countryCode) && (
+                                      <div className="flex flex-wrap items-center gap-1 pt-0.5">
+                                        {c.countryCode && (
+                                          <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-white/80 dark:bg-black/25 px-2 py-0.5 rounded-full border border-black/5 text-foreground/80">
+                                            <CountryFlagBadge code={c.countryCode} name={c.flag} />
+                                          </span>
+                                        )}
+                                        {c.location && (
+                                          <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-white/80 dark:bg-black/25 px-2 py-0.5 rounded-full border border-black/5 text-foreground/80">
+                                            <MapPin className="w-2.5 h-2.5 text-slate-500" />
+                                            {c.location}
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
+
+                                    <p className="text-xs sm:text-sm text-foreground/90 whitespace-pre-wrap break-words leading-relaxed pt-0.5">
+                                      {c.text}
+                                    </p>
+                                  </div>
                                 </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* FACEBOOK-STYLE BONE COMPOSER PINNED AT BOTTOM (Visible at all times!) */}
+                    {openCommentsId === service.id && (() => {
+                      const draftText = commentDrafts[service.id] || ""
+                      const currentRating = commentRatings[service.id] || 5
+                      const currentLoc = commentLocations[service.id]
+                      const currentCountry = commentCountries[service.id]
+                      const hasSendableContent = Boolean(draftText.trim() || currentLoc)
+
+                      return (
+                        <div className="shrink-0 border-t border-border/50 bg-[#fafaf8] dark:bg-[#1e1e1e] p-3 rounded-b-3xl z-10 animate-in fade-in duration-150">
+                          {/* Facebook-style Bone Composer Box focused on Tourism Experience Rating & Opinions */}
+                          <div className="bg-[#f0f2f5] dark:bg-[#3a3b3c] rounded-2xl p-3 border-0 relative shadow-2xs space-y-2.5">
+                            {/* Header: Title + Star Rating */}
+                            <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-black/5 dark:border-white/5 flex-wrap">
+                              <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                                <MessageSquare className="w-3.5 h-3.5 text-[#105238] dark:text-[#8ee01a]" />
+                                <span>Opiniones y calificación de la experiencia</span>
+                              </div>
 
                                 {/* Star Rating on the Right */}
                                 <div className="flex items-center gap-1">
