@@ -22,7 +22,12 @@ import {
   ChevronRight,
   Check,
   Maximize2,
+  Minimize2,
   ThumbsUp,
+  ArrowUp,
+  ArrowDown,
+  Mail,
+  Link2,
 } from "lucide-react"
 import { REACTIONS, ReactionBadgeIcon, type ReactionKey } from "./marketplace-screen"
 import { Badge } from "@/components/ui/badge"
@@ -128,6 +133,10 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
   const [openReactionPickerId, setOpenReactionPickerId] = useState<number | null>(null)
   const reactionCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [openCommentsRouteId, setOpenCommentsRouteId] = useState<number | null>(null)
+  const [openShareId, setOpenShareId] = useState<number | null>(null)
+  const [copiedRouteId, setCopiedRouteId] = useState<number | null>(null)
+  const [isMapFullscreen, setIsMapFullscreen] = useState(false)
+  const [mobileShowInfoDrawer, setMobileShowInfoDrawer] = useState(false)
   const [routeComments, setRouteComments] = useState<Record<number, RouteCommentItem[]>>({})
 
   useEffect(() => {
@@ -277,6 +286,8 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
   }, [activeTrackingRouteId, setActiveTrackingRouteId])
 
   const handleStartTracking = (route: Route) => {
+    setIsMapFullscreen(false)
+    setMobileShowInfoDrawer(false)
     setTracking({ routeId: route.id, showTracking: true, currentStop: 1 })
   }
 
@@ -461,154 +472,154 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
             })
           }
 
+          const navList = filteredRoutes.length > 0 ? filteredRoutes : allRoutes
+          const currentIdx = navList.findIndex((r) => r.id === tracking.routeId)
+          const totalNav = navList.length
+          const goPrevRoute = () => {
+            if (totalNav <= 1) return
+            const prevIdx = currentIdx <= 0 ? totalNav - 1 : currentIdx - 1
+            setMobileShowInfoDrawer(false)
+            setTracking({ routeId: navList[prevIdx].id, showTracking: true, currentStop: 1 })
+          }
+          const goNextRoute = () => {
+            if (totalNav <= 1) return
+            const nextIdx = currentIdx >= totalNav - 1 ? 0 : currentIdx + 1
+            setMobileShowInfoDrawer(false)
+            setTracking({ routeId: navList[nextIdx].id, showTracking: true, currentStop: 1 })
+          }
+          const isTrackedLiked = Boolean(trackedRoute && userReactions[trackedRoute.id])
+
           return (
-            <div
-              className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-2 sm:p-5 animate-in fade-in duration-150"
-              onClick={() => setTracking(null)}
-            >
-              <div
-                className="bg-white dark:bg-card rounded-3xl w-full max-w-5xl h-[90vh] max-h-[760px] shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 border border-white/15"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {/* LEFT / MAIN: FULL INTERACTIVE MAP */}
-                <div className="lg:col-span-8 relative h-[44vh] lg:h-full bg-[#e8f0e6]">
+            <>
+              {/* ── MÓVIL: REELS FULL-SCREEN 100DVH MAPA INTERACTIVO ── */}
+              <div className="sm:hidden fixed inset-0 z-[70] bg-[#0b0c0e] text-white h-[100dvh] w-full flex flex-col overflow-hidden select-none animate-in fade-in duration-150">
+                {/* Mapa de fondo a pantalla completa */}
+                <div className="absolute inset-0 z-0">
                   <MapPreview
                     stops={stops}
                     unitLocation={hasGPS ? { lat: routeAny.unit_lat, lng: routeAny.unit_lng } : undefined}
                   />
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/70 via-black/30 to-transparent" />
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-black/90 via-black/55 to-transparent" />
+                </div>
 
-                  {/* Top-left floating route + GPS pill */}
-                  <div className="absolute top-3 left-3 right-14 flex flex-wrap items-center gap-2 pointer-events-none">
-                    <div className="bg-white/95 dark:bg-card/95 backdrop-blur-md px-3.5 py-2 rounded-2xl shadow-lg border border-border/60 flex items-center gap-2.5 pointer-events-auto max-w-full">
+                {/* Top Overlay: Categoría + 1/N + Cerrar */}
+                <div className="relative z-20 px-4 pt-3.5 flex items-center justify-between gap-2 pointer-events-none">
+                  <div className="flex items-center gap-2 pointer-events-auto">
+                    <span className="bg-black/65 backdrop-blur-md text-white text-[11px] font-bold px-3 py-1 rounded-full border border-white/15 flex items-center gap-1.5">
                       <span
                         className={cn(
-                          "w-2.5 h-2.5 rounded-full shrink-0",
-                          hasGPS ? "bg-[#8ee01a] animate-pulse ring-4 ring-[#8ee01a]/25" : "bg-slate-400"
+                          "w-2 h-2 rounded-full",
+                          hasGPS ? "bg-[#8ee01a] animate-pulse" : "bg-slate-400"
                         )}
                       />
-                      <div className="min-w-0">
-                        <p className="text-xs font-extrabold text-foreground truncate">{trackedRoute?.name}</p>
-                        <p className="text-[11px] text-muted-foreground">
-                          {hasGPS ? "GPS en vivo · Actualizado" : "Sin señal GPS del conductor aún"}
-                        </p>
-                      </div>
-                    </div>
+                      {stops.length} paradas
+                    </span>
+                    {totalNav > 0 && (
+                      <span className="bg-black/65 backdrop-blur-md text-white/90 text-[11px] font-bold px-2.5 py-1 rounded-full border border-white/15">
+                        {currentIdx >= 0 ? currentIdx + 1 : 1}/{totalNav}
+                      </span>
+                    )}
                   </div>
-
-                  {/* Mobile close button on map */}
                   <button
                     type="button"
                     onClick={() => setTracking(null)}
-                    className="lg:hidden absolute top-3 right-3 w-9 h-9 rounded-full bg-black/70 text-white flex items-center justify-center shadow-lg cursor-pointer"
+                    className="pointer-events-auto w-9 h-9 rounded-full bg-black/65 backdrop-blur-md text-white border border-white/20 flex items-center justify-center shadow-lg cursor-pointer"
                     aria-label="Cerrar mapa"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 </div>
 
-                {/* RIGHT PANEL: ROUTE DETAILS & STOPS */}
-                <div className="lg:col-span-4 flex flex-col h-full bg-white dark:bg-card border-l border-border/60 overflow-hidden">
-                  <div className="px-5 py-4 border-b border-border/60 flex items-center justify-between shrink-0">
-                    <div className="min-w-0">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-[#105238] bg-[#eaf0e2] px-2 py-0.5 rounded-full">
-                        Rastreo de Ruta
-                      </span>
-                      <h3 className="text-sm font-black text-foreground truncate mt-1">{trackedRoute?.name}</h3>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setTracking(null)}
-                      className="hidden lg:flex w-8 h-8 rounded-full bg-[#f0f2f5] hover:bg-gray-200 text-gray-700 items-center justify-center transition-colors cursor-pointer shrink-0"
-                      aria-label="Cerrar rastreo"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+                {/* Right-side vertical floating action rail (igual que Experiencias móvil) */}
+                <div className="absolute right-3 bottom-32 z-20 flex flex-col items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => trackedRoute && toggleRouteReaction(trackedRoute.id, "recomiendo")}
+                    className="flex flex-col items-center gap-1 cursor-pointer"
+                    aria-label="Recomendar ruta"
+                  >
+                    <span className="w-10 h-10 rounded-full bg-white/95 text-slate-900 flex items-center justify-center shadow-lg">
+                      <Heart
+                        className={cn(
+                          "w-5 h-5",
+                          isTrackedLiked ? "fill-[#105238] text-[#105238]" : "text-slate-800"
+                        )}
+                      />
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setMobileShowInfoDrawer(true)}
+                    className="flex flex-col items-center gap-1 cursor-pointer"
+                    aria-label="Ver info"
+                  >
+                    <span className="w-10 h-10 rounded-full bg-black/65 backdrop-blur-md text-white border border-white/20 flex items-center justify-center shadow-lg">
+                      <Info className="w-4 h-4" />
+                    </span>
+                    <span className="text-[10px] font-bold text-white drop-shadow">Ver info</span>
+                  </button>
+
+                  {totalNav > 1 && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={goPrevRoute}
+                        className="w-10 h-10 rounded-full bg-white/95 text-slate-900 flex items-center justify-center shadow-lg active:scale-95 cursor-pointer"
+                        aria-label="Ruta anterior"
+                      >
+                        <ArrowUp className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={goNextRoute}
+                        className="w-10 h-10 rounded-full bg-[#105238] text-[#8ee01a] border border-white/20 flex items-center justify-center shadow-lg active:scale-95 cursor-pointer"
+                        aria-label="Siguiente ruta"
+                      >
+                        <ArrowDown className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
+                </div>
+
+                {/* Bottom Overlay: Título, GPS, Precio /p, Más info y Comprar Boleto */}
+                <div className="mt-auto relative z-20 px-4 pb-5 pt-3 space-y-3">
+                  <div className="pr-14 space-y-1">
+                    <p className="text-[11px] font-bold text-[#8ee01a] uppercase tracking-wider">
+                      {hasGPS ? "GPS en vivo · En recorrido" : "Ruta verificada"}
+                    </p>
+                    <h3 className="text-lg font-black text-white leading-tight line-clamp-2">
+                      {trackedRoute?.name}
+                    </h3>
+                    <p className="text-xs text-white/80 truncate">
+                      {trackedRoute?.driver_name || "PalenqueGo Transportes"} ·{" "}
+                      {trackedRoute?.unit_license_plate || "Unidad oficial"}
+                    </p>
                   </div>
 
-                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                    {/* Conductor & Unidad compacta */}
-                    <div className="p-3 rounded-2xl bg-[#f7f9f5] dark:bg-muted/40 border border-[#eaf0e2] dark:border-border flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-10 h-10 rounded-full bg-[#105238] text-white flex items-center justify-center font-black text-xs shrink-0 overflow-hidden">
-                          {trackedRoute?.driver_avatar ? (
-                            <img src={trackedRoute.driver_avatar} alt="Chofer" className="w-full h-full object-cover" />
-                          ) : (
-                            (trackedRoute?.driver_name || "PG").slice(0, 2).toUpperCase()
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-xs font-bold text-foreground truncate">
-                            {trackedRoute?.driver_name || "Conductor por asignar"}
-                          </p>
-                          <p className="text-[11px] text-muted-foreground truncate">
-                            {trackedRoute?.unit_license_plate || "Unidad oficial"} · {trackedRoute?.unit_capacity || 0} PAX
-                          </p>
-                        </div>
-                      </div>
-                      <span className="text-xs font-black text-[#105238] shrink-0">
-                        ${Number(trackedRoute?.price_one_way || 0).toFixed(2)} /p
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-xl font-black text-white">
+                        {Number(trackedRoute?.price_one_way || 0) > 0
+                          ? `$${Number(trackedRoute?.price_one_way).toFixed(2)}`
+                          : "Gratis"}
                       </span>
+                      {Number(trackedRoute?.price_one_way || 0) > 0 && (
+                        <span className="text-xs text-white/75 font-semibold">/p</span>
+                      )}
                     </div>
 
-                    {/* Paradas */}
-                    <div className="space-y-2">
-                      <p className="text-xs font-extrabold text-foreground uppercase tracking-wider">
-                        Paradas ({stops.length})
-                      </p>
-                      <div className="space-y-2">
-                        {stops.map((stop) => {
-                          let isPassed = false
-                          let isCurrent = false
-                          if (hasGPS) {
-                            const dist = getDistanceMeters(unitLat, unitLng, stop.latitude, stop.longitude)
-                            if (dist <= 50) {
-                              isPassed = true
-                              isCurrent = true
-                            } else if (stop.order < closestStopOrder) {
-                              isPassed = true
-                            }
-                          }
-                          return (
-                            <div
-                              key={stop.order}
-                              className={cn(
-                                "flex items-center gap-3 p-2.5 rounded-2xl border transition-colors",
-                                isPassed
-                                  ? "bg-[#eaf0e2]/70 border-[#8ee01a]/60"
-                                  : "bg-card border-border/60"
-                              )}
-                            >
-                              <div
-                                className={cn(
-                                  "w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shrink-0",
-                                  isPassed ? "bg-[#105238] text-[#8ee01a]" : "bg-[#eaf0e2] text-[#105238]"
-                                )}
-                              >
-                                {isPassed ? <Check className="w-3.5 h-3.5" /> : stop.order}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs font-bold text-foreground truncate">
-                                  {stop.name || `Parada ${stop.order}`}
-                                </p>
-                                <p className="text-[11px] text-muted-foreground">
-                                  {isCurrent
-                                    ? "Unidad aquí ahora"
-                                    : stop.minutes_from_start
-                                      ? `~${stop.minutes_from_start} min desde inicio`
-                                      : `${Number(stop.latitude).toFixed(4)}, ${Number(stop.longitude).toFixed(4)}`}
-                                </p>
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Footer CTA inside Tracker */}
-                  <div className="p-4 border-t border-border/60 bg-white dark:bg-card space-y-2 shrink-0">
-                    <div className="flex gap-2">
-                      <Button
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setMobileShowInfoDrawer(true)}
+                        className="h-10 px-3.5 rounded-full bg-white/95 text-slate-900 text-xs font-extrabold inline-flex items-center gap-1.5 shadow-lg cursor-pointer"
+                      >
+                        <Info className="w-3.5 h-3.5 text-[#105238]" />
+                        Más info
+                      </button>
+                      <button
                         type="button"
                         onClick={() => {
                           if (trackedRoute) {
@@ -616,29 +627,341 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
                             handleBuyTicket(trackedRoute)
                           }
                         }}
-                        className="flex-1 h-11 rounded-xl bg-[#105238] hover:bg-[#0c3e2b] text-white font-bold text-xs gap-1.5 cursor-pointer"
+                        className="h-10 px-4 rounded-full bg-[#105238] text-white border border-[#8ee01a]/40 text-xs font-extrabold inline-flex items-center gap-1.5 shadow-lg cursor-pointer"
                       >
-                        <Ticket className="w-4 h-4 text-[#8ee01a]" />
-                        Comprar Boleto
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => {
-                          if (trackedRoute) {
-                            setTracking(null)
-                            handleViewServices(trackedRoute)
-                          }
-                        }}
-                        className="h-11 px-3.5 rounded-xl border-border font-bold text-xs cursor-pointer"
-                      >
-                        Servicios
-                      </Button>
+                        <Ticket className="w-3.5 h-3.5 text-[#8ee01a]" />
+                        Boleto
+                      </button>
                     </div>
                   </div>
                 </div>
+
+                {/* Drawer móvil de paradas & detalles ("Ver info" / "Más info") */}
+                {mobileShowInfoDrawer && (
+                  <div
+                    className="fixed inset-0 z-30 bg-black/60 backdrop-blur-xs flex items-end"
+                    onClick={() => setMobileShowInfoDrawer(false)}
+                  >
+                    <div
+                      className="w-full max-h-[75dvh] bg-white dark:bg-card text-foreground rounded-t-3xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 duration-200"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="px-5 py-3.5 border-b border-border flex items-center justify-between shrink-0">
+                        <div className="min-w-0">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-[#105238] bg-[#eaf0e2] px-2 py-0.5 rounded-full">
+                            Paradas y Detalles
+                          </span>
+                          <h4 className="text-sm font-black truncate mt-1">{trackedRoute?.name}</h4>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setMobileShowInfoDrawer(false)}
+                          className="w-8 h-8 rounded-full bg-[#f0f2f5] text-gray-700 flex items-center justify-center cursor-pointer"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                        <div className="p-3 rounded-2xl bg-[#f7f9f5] border border-[#eaf0e2] flex items-center justify-between">
+                          <div>
+                            <p className="text-xs font-bold">{trackedRoute?.driver_name || "Conductor por asignar"}</p>
+                            <p className="text-[11px] text-muted-foreground">
+                              {trackedRoute?.unit_license_plate || "Unidad oficial"} · {trackedRoute?.unit_capacity || 0} PAX
+                            </p>
+                          </div>
+                          <span className="text-sm font-black text-[#105238]">
+                            ${Number(trackedRoute?.price_one_way || 0).toFixed(2)} /p
+                          </span>
+                        </div>
+                        {stops.map((stop) => (
+                          <div
+                            key={stop.order}
+                            className="flex items-center gap-3 p-2.5 rounded-2xl bg-card border border-border/60"
+                          >
+                            <div className="w-7 h-7 rounded-full bg-[#105238] text-[#8ee01a] flex items-center justify-center text-xs font-black shrink-0">
+                              {stop.order}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-bold truncate">{stop.name || `Parada ${stop.order}`}</p>
+                              <p className="text-[11px] text-muted-foreground">
+                                {stop.minutes_from_start ? `~${stop.minutes_from_start} min desde inicio` : "Parada verificada"}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="p-4 border-t border-border flex gap-2 shrink-0">
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            if (trackedRoute) {
+                              setTracking(null)
+                              handleBuyTicket(trackedRoute)
+                            }
+                          }}
+                          className="flex-1 h-11 rounded-xl bg-[#105238] text-white font-bold text-xs gap-1.5 cursor-pointer"
+                        >
+                          <Ticket className="w-4 h-4 text-[#8ee01a]" />
+                          Comprar Boleto
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            if (trackedRoute) {
+                              setTracking(null)
+                              handleViewServices(trackedRoute)
+                            }
+                          }}
+                          className="h-11 px-4 rounded-xl font-bold text-xs cursor-pointer"
+                        >
+                          Servicios
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
+
+              {/* ── ESCRITORIO / TABLET: LIGHTBOX CON EXPANDIR MAPA Y FLECHAS ARRIBA/ABAJO FUERA DEL CARD ── */}
+              <div
+                className="hidden sm:flex fixed inset-0 bg-black/85 backdrop-blur-md items-center justify-center z-50 p-4 lg:p-6 animate-in fade-in duration-150"
+                onClick={() => setTracking(null)}
+              >
+                <div className="flex items-center justify-center w-full max-w-6xl gap-4" onClick={(e) => e.stopPropagation()}>
+                  <div
+                    className={cn(
+                      "bg-white dark:bg-card rounded-[28px] w-full shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 border border-white/15 transition-all duration-200",
+                      isMapFullscreen ? "max-w-[1320px] h-[90vh]" : "max-w-5xl h-[85vh] max-h-[760px]"
+                    )}
+                  >
+                    {/* LEFT / MAIN: FULL INTERACTIVE MAP */}
+                    <div
+                      className={cn(
+                        "relative h-full bg-[#e8f0e6]",
+                        isMapFullscreen ? "lg:col-span-12" : "lg:col-span-8"
+                      )}
+                    >
+                      <MapPreview
+                        stops={stops}
+                        unitLocation={hasGPS ? { lat: routeAny.unit_lat, lng: routeAny.unit_lng } : undefined}
+                      />
+
+                      {/* Top-left floating route + GPS pill */}
+                      <div className="absolute top-3.5 left-3.5 right-24 flex flex-wrap items-center gap-2 pointer-events-none">
+                        <div className="bg-white/95 dark:bg-card/95 backdrop-blur-md px-3.5 py-2 rounded-2xl shadow-lg border border-border/60 flex items-center gap-2.5 pointer-events-auto max-w-full">
+                          <span
+                            className={cn(
+                              "w-2.5 h-2.5 rounded-full shrink-0",
+                              hasGPS ? "bg-[#8ee01a] animate-pulse ring-4 ring-[#8ee01a]/25" : "bg-slate-400"
+                            )}
+                          />
+                          <div className="min-w-0">
+                            <p className="text-xs font-extrabold text-foreground truncate">{trackedRoute?.name}</p>
+                            <p className="text-[11px] text-muted-foreground">
+                              {hasGPS ? "GPS en vivo · Actualizado" : "Sin señal GPS del conductor aún"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Top-right inside map: Expandir a pantalla completa + Cerrar (cuando está expandido) */}
+                      <div className="absolute top-3.5 right-3.5 flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsMapFullscreen((v) => !v)}
+                          className="h-9 px-3 rounded-full bg-white/95 hover:bg-[#eaf0e2] text-[#105238] border border-border/60 shadow-lg flex items-center gap-1.5 text-xs font-bold cursor-pointer transition-colors"
+                          title={isMapFullscreen ? "Mostrar detalles" : "Expandir mapa"}
+                        >
+                          {isMapFullscreen ? (
+                            <>
+                              <Minimize2 className="w-3.5 h-3.5" />
+                              <span>Ver panel</span>
+                            </>
+                          ) : (
+                            <>
+                              <Maximize2 className="w-3.5 h-3.5" />
+                              <span>Pantalla completa</span>
+                            </>
+                          )}
+                        </button>
+                        {isMapFullscreen && (
+                          <button
+                            type="button"
+                            onClick={() => setTracking(null)}
+                            className="w-9 h-9 rounded-full bg-black/70 hover:bg-black/85 text-white flex items-center justify-center shadow-lg cursor-pointer"
+                            aria-label="Cerrar mapa"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* RIGHT PANEL: ROUTE DETAILS & STOPS (oculto cuando mapa está en pantalla completa) */}
+                    {!isMapFullscreen && (
+                      <div className="lg:col-span-4 flex flex-col h-full bg-white dark:bg-card border-l border-border/60 overflow-hidden">
+                        <div className="px-5 py-4 border-b border-border/60 flex items-center justify-between shrink-0">
+                          <div className="min-w-0">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-[#105238] bg-[#eaf0e2] px-2 py-0.5 rounded-full">
+                              Rastreo de Ruta
+                            </span>
+                            <h3 className="text-sm font-black text-foreground truncate mt-1">{trackedRoute?.name}</h3>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setTracking(null)}
+                            className="w-8 h-8 rounded-full bg-[#f0f2f5] hover:bg-gray-200 text-gray-700 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                            aria-label="Cerrar rastreo"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                          <div className="p-3 rounded-2xl bg-[#f7f9f5] dark:bg-muted/40 border border-[#eaf0e2] dark:border-border flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="w-10 h-10 rounded-full bg-[#105238] text-white flex items-center justify-center font-black text-xs shrink-0 overflow-hidden">
+                                {trackedRoute?.driver_avatar ? (
+                                  <img
+                                    src={trackedRoute.driver_avatar}
+                                    alt="Chofer"
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  (trackedRoute?.driver_name || "PG").slice(0, 2).toUpperCase()
+                                )}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-xs font-bold text-foreground truncate">
+                                  {trackedRoute?.driver_name || "Conductor por asignar"}
+                                </p>
+                                <p className="text-[11px] text-muted-foreground truncate">
+                                  {trackedRoute?.unit_license_plate || "Unidad oficial"} ·{" "}
+                                  {trackedRoute?.unit_capacity || 0} PAX
+                                </p>
+                              </div>
+                            </div>
+                            <span className="text-xs font-black text-[#105238] shrink-0">
+                              ${Number(trackedRoute?.price_one_way || 0).toFixed(2)} /p
+                            </span>
+                          </div>
+
+                          <div className="space-y-2">
+                            <p className="text-xs font-extrabold text-foreground uppercase tracking-wider">
+                              Paradas ({stops.length})
+                            </p>
+                            <div className="space-y-2">
+                              {stops.map((stop) => {
+                                let isPassed = false
+                                let isCurrent = false
+                                if (hasGPS) {
+                                  const dist = getDistanceMeters(unitLat, unitLng, stop.latitude, stop.longitude)
+                                  if (dist <= 50) {
+                                    isPassed = true
+                                    isCurrent = true
+                                  } else if (stop.order < closestStopOrder) {
+                                    isPassed = true
+                                  }
+                                }
+                                return (
+                                  <div
+                                    key={stop.order}
+                                    className={cn(
+                                      "flex items-center gap-3 p-2.5 rounded-2xl border transition-colors",
+                                      isPassed
+                                        ? "bg-[#eaf0e2]/70 border-[#8ee01a]/60"
+                                        : "bg-card border-border/60"
+                                    )}
+                                  >
+                                    <div
+                                      className={cn(
+                                        "w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shrink-0",
+                                        isPassed ? "bg-[#105238] text-[#8ee01a]" : "bg-[#eaf0e2] text-[#105238]"
+                                      )}
+                                    >
+                                      {isPassed ? <Check className="w-3.5 h-3.5" /> : stop.order}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-xs font-bold text-foreground truncate">
+                                        {stop.name || `Parada ${stop.order}`}
+                                      </p>
+                                      <p className="text-[11px] text-muted-foreground">
+                                        {isCurrent
+                                          ? "Unidad aquí ahora"
+                                          : stop.minutes_from_start
+                                            ? `~${stop.minutes_from_start} min desde inicio`
+                                            : `${Number(stop.latitude).toFixed(4)}, ${Number(stop.longitude).toFixed(4)}`}
+                                      </p>
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="p-4 border-t border-border/60 bg-white dark:bg-card space-y-2 shrink-0">
+                          <div className="flex gap-2">
+                            <Button
+                              type="button"
+                              onClick={() => {
+                                if (trackedRoute) {
+                                  setTracking(null)
+                                  handleBuyTicket(trackedRoute)
+                                }
+                              }}
+                              className="flex-1 h-11 rounded-xl bg-[#105238] hover:bg-[#0c3e2b] text-white font-bold text-xs gap-1.5 cursor-pointer"
+                            >
+                              <Ticket className="w-4 h-4 text-[#8ee01a]" />
+                              Comprar Boleto
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                if (trackedRoute) {
+                                  setTracking(null)
+                                  handleViewServices(trackedRoute)
+                                }
+                              }}
+                              className="h-11 px-3.5 rounded-xl border-border font-bold text-xs cursor-pointer"
+                            >
+                              Servicios
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* FLECHAS ARRIBA / 1/N / ABAJO FUERA DEL CARD (EXACTAMENTE COMO EXPERIENCIAS) */}
+                  {totalNav > 1 && (
+                    <div className="flex flex-col items-center gap-2.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={goPrevRoute}
+                        className="w-11 h-11 rounded-full bg-white/95 hover:bg-white text-slate-900 shadow-2xl flex items-center justify-center transition-transform active:scale-95 cursor-pointer"
+                        aria-label="Ruta anterior"
+                      >
+                        <ArrowUp className="w-5 h-5" />
+                      </button>
+                      <span className="px-2.5 py-1 rounded-full bg-black/75 border border-white/15 text-white text-xs font-extrabold">
+                        {currentIdx >= 0 ? currentIdx + 1 : 1}/{totalNav}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={goNextRoute}
+                        className="w-11 h-11 rounded-full bg-white/95 hover:bg-white text-slate-900 shadow-2xl flex items-center justify-center transition-transform active:scale-95 cursor-pointer"
+                        aria-label="Siguiente ruta"
+                      >
+                        <ArrowDown className="w-5 h-5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
           )
         })()}
 
@@ -935,6 +1258,8 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
                 isJustReacted={justReactedRouteId === route.id}
                 isReactionPickerOpen={openReactionPickerId === route.id}
                 isCommentsOpen={openCommentsRouteId === route.id}
+                isShareOpen={openShareId === route.id}
+                isCopied={copiedRouteId === route.id}
                 comments={routeComments[route.id] || []}
                 currentUser={currentUser}
                 onReactionMouseEnter={() => handleReactionMouseEnter(route.id)}
@@ -947,11 +1272,21 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
                   setOpenCommentsRouteId((prev) => (prev === route.id ? null : route.id))
                 }
                 onCloseComments={() => setOpenCommentsRouteId(null)}
+                onToggleShare={() =>
+                  setOpenShareId((prev) => (prev === route.id ? null : route.id))
+                }
+                onCloseShare={() => setOpenShareId(null)}
+                onCopyShare={async (url) => {
+                  await navigator.clipboard.writeText(url)
+                  setCopiedRouteId(route.id)
+                  showQuickToast("Enlace de ruta copiado al portapapeles")
+                  setTimeout(() => setCopiedRouteId(null), 1500)
+                  setOpenShareId(null)
+                }}
                 onAddComment={(text, rating) => addRouteComment(route.id, text, rating)}
                 onTrack={() => handleStartTracking(route)}
                 onServices={() => handleViewServices(route)}
                 onBuy={() => handleBuyTicket(route)}
-                onShare={() => handleShareRoute(route)}
               />
             ))}
 
@@ -1191,6 +1526,8 @@ function RouteFeedCard({
   isJustReacted,
   isReactionPickerOpen,
   isCommentsOpen,
+  isShareOpen,
+  isCopied,
   comments,
   currentUser,
   onReactionMouseEnter,
@@ -1199,17 +1536,21 @@ function RouteFeedCard({
   onSelectReaction,
   onToggleComments,
   onCloseComments,
+  onToggleShare,
+  onCloseShare,
+  onCopyShare,
   onAddComment,
   onTrack,
   onServices,
   onBuy,
-  onShare,
 }: {
   route: Route
   userReaction: ReactionKey | null
   isJustReacted: boolean
   isReactionPickerOpen: boolean
   isCommentsOpen: boolean
+  isShareOpen: boolean
+  isCopied: boolean
   comments: RouteCommentItem[]
   currentUser: any
   onReactionMouseEnter: () => void
@@ -1218,11 +1559,13 @@ function RouteFeedCard({
   onSelectReaction: (r: ReactionKey) => void
   onToggleComments: () => void
   onCloseComments: () => void
+  onToggleShare: () => void
+  onCloseShare: () => void
+  onCopyShare: (url: string) => void
   onAddComment: (text: string, rating: number) => void
   onTrack: () => void
   onServices: () => void
   onBuy: () => void
-  onShare: () => void
 }) {
   const r = route as any
   const hasGPS = Boolean(r.is_active && r.unit_lat && r.unit_lng)
@@ -1591,14 +1934,115 @@ function RouteFeedCard({
               <span>Comentar{comments.length > 0 ? ` (${comments.length})` : ""}</span>
             </button>
 
-            <button
-              type="button"
-              onClick={onShare}
-              className="h-9 px-2.5 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 text-muted-foreground hover:bg-[#f0f2f5] hover:text-foreground transition-colors cursor-pointer"
-            >
-              <Share2 className="w-4 h-4" />
-              <span className="hidden sm:inline">Compartir</span>
-            </button>
+            {/* Compartir con Popover estilo Experiencias */}
+            <div className="relative">
+              {isShareOpen && (
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 pb-2.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="bg-white dark:bg-card border border-border rounded-full shadow-2xl px-2.5 py-2 flex items-center gap-2">
+                    {(() => {
+                      const shareUrl =
+                        typeof window !== "undefined" ? `${window.location.origin}/r/${route.id}` : ""
+                      return (
+                        <>
+                          <a
+                            href={`https://wa.me/?text=${encodeURIComponent(`${route.name} en PalenqueGo: ${shareUrl}`)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={onCloseShare}
+                            className="group/sharebtn relative w-9 h-9 rounded-full bg-[#f0f2f5] hover:bg-[#e4e6eb] border border-slate-200/80 flex items-center justify-center text-slate-800 shadow-sm transition-transform duration-200 hover:scale-120 hover:-translate-y-1.5"
+                            aria-label="WhatsApp"
+                          >
+                            <span className="pointer-events-none opacity-0 group-hover/sharebtn:opacity-100 transition-opacity duration-150 absolute -top-7 left-1/2 -translate-x-1/2 bg-[#1f2937] text-white text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap shadow">
+                              WhatsApp
+                            </span>
+                            <MessageCircle className="w-4 h-4 text-[#25D366]" />
+                          </a>
+                          <a
+                            href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={onCloseShare}
+                            className="group/sharebtn relative w-9 h-9 rounded-full bg-[#f0f2f5] hover:bg-[#e4e6eb] border border-slate-200/80 flex items-center justify-center text-[#1877F2] text-sm font-black shadow-sm transition-transform duration-200 hover:scale-120 hover:-translate-y-1.5"
+                            aria-label="Facebook"
+                          >
+                            <span className="pointer-events-none opacity-0 group-hover/sharebtn:opacity-100 transition-opacity duration-150 absolute -top-7 left-1/2 -translate-x-1/2 bg-[#1f2937] text-white text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap shadow">
+                              Facebook
+                            </span>
+                            f
+                          </a>
+                          <a
+                            href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`${route.name} en PalenqueGo`)}&url=${encodeURIComponent(shareUrl)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={onCloseShare}
+                            className="group/sharebtn relative w-9 h-9 rounded-full bg-[#f0f2f5] hover:bg-[#e4e6eb] border border-slate-200/80 flex items-center justify-center text-slate-900 text-xs font-black shadow-sm transition-transform duration-200 hover:scale-120 hover:-translate-y-1.5"
+                            aria-label="X"
+                          >
+                            <span className="pointer-events-none opacity-0 group-hover/sharebtn:opacity-100 transition-opacity duration-150 absolute -top-7 left-1/2 -translate-x-1/2 bg-[#1f2937] text-white text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap shadow">
+                              X
+                            </span>
+                            X
+                          </a>
+                          <a
+                            href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={onCloseShare}
+                            className="group/sharebtn relative w-9 h-9 rounded-full bg-[#f0f2f5] hover:bg-[#e4e6eb] border border-slate-200/80 flex items-center justify-center text-[#0A66C2] text-xs font-black shadow-sm transition-transform duration-200 hover:scale-120 hover:-translate-y-1.5"
+                            aria-label="LinkedIn"
+                          >
+                            <span className="pointer-events-none opacity-0 group-hover/sharebtn:opacity-100 transition-opacity duration-150 absolute -top-7 left-1/2 -translate-x-1/2 bg-[#1f2937] text-white text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap shadow">
+                              LinkedIn
+                            </span>
+                            in
+                          </a>
+                          <a
+                            href={`mailto:?subject=${encodeURIComponent(route.name)}&body=${encodeURIComponent(shareUrl)}`}
+                            onClick={onCloseShare}
+                            className="group/sharebtn relative w-9 h-9 rounded-full bg-[#f0f2f5] hover:bg-[#e4e6eb] border border-slate-200/80 flex items-center justify-center text-slate-700 shadow-sm transition-transform duration-200 hover:scale-120 hover:-translate-y-1.5"
+                            aria-label="Correo"
+                          >
+                            <span className="pointer-events-none opacity-0 group-hover/sharebtn:opacity-100 transition-opacity duration-150 absolute -top-7 left-1/2 -translate-x-1/2 bg-[#1f2937] text-white text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap shadow">
+                              Correo
+                            </span>
+                            <Mail className="w-4 h-4 text-slate-700" />
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => onCopyShare(shareUrl)}
+                            className="group/sharebtn relative w-9 h-9 rounded-full bg-[#f0f2f5] hover:bg-[#e4e6eb] border border-slate-200/80 flex items-center justify-center text-slate-700 shadow-sm transition-transform duration-200 hover:scale-120 hover:-translate-y-1.5 cursor-pointer"
+                            aria-label="Copiar enlace"
+                          >
+                            <span className="pointer-events-none opacity-0 group-hover/sharebtn:opacity-100 transition-opacity duration-150 absolute -top-7 left-1/2 -translate-x-1/2 bg-[#1f2937] text-white text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap shadow">
+                              Copiar
+                            </span>
+                            {isCopied ? (
+                              <Check className="w-4 h-4 text-[#105238]" />
+                            ) : (
+                              <Link2 className="w-4 h-4" />
+                            )}
+                          </button>
+                        </>
+                      )
+                    })()}
+                  </div>
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={onToggleShare}
+                className={cn(
+                  "h-9 px-2.5 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer",
+                  isShareOpen
+                    ? "bg-[#eaf0e2] text-[#105238]"
+                    : "text-muted-foreground hover:bg-[#f0f2f5] hover:text-foreground"
+                )}
+              >
+                <Share2 className="w-4 h-4" />
+                <span className="hidden sm:inline">Compartir</span>
+              </button>
+            </div>
           </div>
 
           <div className="flex items-center gap-1.5 ml-auto">
