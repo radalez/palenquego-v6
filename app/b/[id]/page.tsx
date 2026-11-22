@@ -88,6 +88,9 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
   const [storyMediaUrlDraft, setStoryMediaUrlDraft] = useState<string>("")
   const [storyPriceDraft, setStoryPriceDraft] = useState<string>("")
   const [storyIsVideoDraft, setStoryIsVideoDraft] = useState<boolean>(true)
+  const [storyModalidadDraft, setStoryModalidadDraft] = useState<"PROMO" | "POOL" | "HISTORIA" | "DESAFIO">("PROMO")
+  const [storyServiceIdDraft, setStoryServiceIdDraft] = useState<string>("")
+  const [storyPoolMetaDraft, setStoryPoolMetaDraft] = useState<string>("6")
   const [productNameDraft, setProductNameDraft] = useState<string>("")
   const [productDescDraft, setProductDescDraft] = useState<string>("")
   const [productPriceDraft, setProductPriceDraft] = useState<string>("")
@@ -299,11 +302,17 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
           ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
         },
         body: JSON.stringify({
-          titulo: storyTitleDraft.trim() || "Promo",
+          titulo: storyTitleDraft.trim() || "Momento Go",
           descripcion: storyDescDraft.trim(),
           media_cloudinary_url: cleanUrl,
           es_video: looksLikeVideo,
           precio_promo: storyPriceDraft ? parseFloat(storyPriceDraft) : null,
+          modalidad: storyModalidadDraft,
+          servicio_id: storyServiceIdDraft ? parseInt(storyServiceIdDraft, 10) : null,
+          meta_personas:
+            storyModalidadDraft === "POOL" || storyModalidadDraft === "DESAFIO"
+              ? parseInt(storyPoolMetaDraft || "6", 10)
+              : null,
         }),
       })
       const data = await res.json().catch(() => ({}))
@@ -316,6 +325,9 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
       setStoryDescDraft("")
       setStoryMediaUrlDraft("")
       setStoryPriceDraft("")
+      setStoryModalidadDraft("PROMO")
+      setStoryServiceIdDraft("")
+      setStoryPoolMetaDraft("6")
       setShowUploadStoryModal(false)
       await fetchBusinesses()
     } catch {
@@ -1513,9 +1525,9 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-[10px] font-black uppercase tracking-wider text-[#105238] bg-[#eaf0e2] px-2.5 py-0.5 rounded-full">
-                  Historias Diarias ({promoStories.length}/10)
+                  Momentos Go · Diarias ({promoStories.length}/10)
                 </span>
-                <h3 className="text-lg font-black text-foreground mt-1">Subir Video de Promoción</h3>
+                <h3 className="text-lg font-black text-foreground mt-1">Publicar Momento Go</h3>
               </div>
               <button
                 type="button"
@@ -1526,10 +1538,74 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
               </button>
             </div>
 
-            <form onSubmit={handlePublishPromoStory} className="space-y-3.5">
+            <form onSubmit={handlePublishPromoStory} className="space-y-3.5 max-h-[75vh] overflow-y-auto pr-1">
+              <div>
+                <label className="text-xs font-bold text-foreground block mb-1.5">
+                  Modalidad de Momento Go *
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { id: "PROMO" as const, label: "Reservar", sub: "Promo permanente" },
+                    { id: "POOL" as const, label: "Únete a la aventura", sub: "Pool · 24 horas" },
+                    { id: "HISTORIA" as const, label: "Historia", sub: "Informativa · 24h" },
+                    { id: "DESAFIO" as const, label: "Desafío", sub: "Pool reto · 24h" },
+                  ].map((mod) => (
+                    <button
+                      key={mod.id}
+                      type="button"
+                      onClick={() => setStoryModalidadDraft(mod.id)}
+                      className={cn(
+                        "p-2.5 rounded-xl border text-left transition-all cursor-pointer",
+                        storyModalidadDraft === mod.id
+                          ? "border-[#105238] bg-[#eaf0e2] text-[#105238]"
+                          : "border-border bg-background hover:border-[#105238]/40"
+                      )}
+                    >
+                      <p className="text-xs font-black leading-tight">{mod.label}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">{mod.sub}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {storyModalidadDraft !== "HISTORIA" && businessServices.length > 0 && (
+                <div className={cn("grid gap-2.5", (storyModalidadDraft === "POOL" || storyModalidadDraft === "DESAFIO") ? "grid-cols-3" : "grid-cols-1")}>
+                  <div className={cn((storyModalidadDraft === "POOL" || storyModalidadDraft === "DESAFIO") ? "col-span-2" : "")}>
+                    <label className="text-xs font-bold text-foreground block mb-1">
+                      Servicio vinculado {storyModalidadDraft === "PROMO" ? "(para Reservar)" : "(para el Pool)"}
+                    </label>
+                    <select
+                      value={storyServiceIdDraft}
+                      onChange={(e) => setStoryServiceIdDraft(e.target.value)}
+                      className="w-full h-10 px-3 rounded-xl border border-border bg-background text-xs font-semibold"
+                    >
+                      <option value="">Selecciona un servicio...</option>
+                      {businessServices.map((svc) => (
+                        <option key={svc.id} value={svc.id}>
+                          {svc.name} (${svc.price})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {(storyModalidadDraft === "POOL" || storyModalidadDraft === "DESAFIO") && (
+                    <div>
+                      <label className="text-xs font-bold text-foreground block mb-1">Cupos Pool</label>
+                      <input
+                        type="number"
+                        min={2}
+                        max={50}
+                        value={storyPoolMetaDraft}
+                        onChange={(e) => setStoryPoolMetaDraft(e.target.value)}
+                        className="w-full h-10 px-3 rounded-xl border border-border bg-background text-xs font-bold"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div>
                 <label className="text-xs font-bold text-foreground block mb-1">
-                  Título corto (Debajo del círculo) *
+                  Título corto *
                 </label>
                 <input
                   type="text"
@@ -1647,7 +1723,13 @@ export default function BusinessDetailPage({ params }: BusinessDetailPageProps) 
                 disabled={isUploadingToCloudinary}
                 className="w-full h-11 rounded-2xl bg-[#105238] hover:bg-[#0c3e2b] text-[#8ee01a] font-black text-sm cursor-pointer"
               >
-                Publicar Historia de Promoción
+                {storyModalidadDraft === "PROMO"
+                  ? "Publicar Promoción Permanente"
+                  : storyModalidadDraft === "POOL"
+                  ? "Publicar Aventura (Pool 24h)"
+                  : storyModalidadDraft === "DESAFIO"
+                  ? "Publicar Desafío (24h)"
+                  : "Publicar Historia (24h)"}
               </Button>
             </form>
           </div>

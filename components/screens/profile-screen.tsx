@@ -2,6 +2,7 @@
 import { generateVoucherPdf } from "@/lib/voucher-pdf"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import {
   Download,
   Mail,
@@ -38,7 +39,7 @@ import QRCode from "react-qr-code"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
-import { useAppStore, type Booking } from "@/lib/store"
+import { useAppStore, API_BASE, getProxyImage, type Booking } from "@/lib/store"
 import { cn } from "@/lib/utils"
 
 interface ProfileScreenProps {
@@ -47,8 +48,18 @@ interface ProfileScreenProps {
 }
 
 export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: ProfileScreenProps) {
+  const router = useRouter()
   const { toast } = useToast()
   const { currentUser, logout, bookings, pools, userFavorites, recommendations, payServiceWompi, accessToken, userIntentions, setUserIntentions, setMobileMenuOpen, businesses, fetchBusinesses, fetchMyBookings } = useAppStore()
+  const [myStores, setMyStores] = useState<Array<{
+    id: number
+    nombre_comercial: string
+    logo?: string
+    eslogan?: string
+    rol?: string
+    services_count?: number
+    stories_count?: number
+  }>>([])
   const [selectedQrBooking, setSelectedQrBooking] = useState<Booking | null>(null)
   const [payingWompiId, setPayingWompiId] = useState<number | null>(null)
   const [showPromoterModal, setShowPromoterModal] = useState(false)
@@ -74,6 +85,25 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
     }, 4000)
     return () => clearInterval(timer)
   }, [fetchMyBookings])
+
+  useEffect(() => {
+    const token = accessToken || (typeof window !== "undefined" ? localStorage.getItem("access_token") : null)
+    if (!token) return
+    let active = true
+    fetch(`${API_BASE}/stores/list/my-stores/`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (active && data && Array.isArray(data.stores)) {
+          setMyStores(data.stores)
+        }
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [accessToken])
 
   const isAliadoUser = Boolean(
     currentUser?.tipo === "ALIADO" || 
@@ -396,6 +426,59 @@ export function ProfileScreen({ onNavigateToBilling, onNavigateToSettings }: Pro
                 >
                   Abrir Panel de Negocios →
                 </Button>
+              </div>
+            </div>
+          )}
+
+          {myStores.length > 0 && (
+            <div className="mt-4 bg-card/95 backdrop-blur-md border border-border rounded-2xl p-4 shadow-md">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Store className="w-4 h-4 text-[#105238]" />
+                  <h3 className="text-xs font-black uppercase tracking-wider text-foreground">
+                    Mis Tiendas y Negocios
+                  </h3>
+                </div>
+                <span className="text-[11px] font-bold text-[#105238] bg-[#eaf0e2] px-2.5 py-0.5 rounded-full">
+                  {myStores.length} {myStores.length === 1 ? "tienda" : "tiendas"}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {myStores.map((st) => (
+                  <button
+                    key={st.id}
+                    type="button"
+                    onClick={() => router.push(`/b/${st.id}`)}
+                    className="flex items-center justify-between gap-3 p-3 rounded-xl border border-border bg-background hover:border-[#105238]/50 hover:bg-[#eaf0e2]/40 transition-all text-left cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      {st.logo ? (
+                        <img
+                          src={getProxyImage(st.logo)}
+                          alt={st.nombre_comercial}
+                          className="w-10 h-10 rounded-xl object-cover border border-border shrink-0"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-xl bg-[#105238] text-[#8ee01a] flex items-center justify-center font-black text-sm shrink-0">
+                          {st.nombre_comercial.slice(0, 2).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-sm font-extrabold text-foreground truncate group-hover:text-[#105238] transition-colors">
+                          {st.nombre_comercial}
+                        </p>
+                        <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground">
+                          <span className="font-bold text-[#105238]">
+                            {st.rol === "STAFF" ? "Staff" : "Propietario"}
+                          </span>
+                          <span>•</span>
+                          <span>{st.services_count ?? 0} servicios</span>
+                        </div>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-[#105238] group-hover:translate-x-0.5 transition-all shrink-0" />
+                  </button>
+                ))}
               </div>
             </div>
           )}

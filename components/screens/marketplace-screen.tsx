@@ -46,6 +46,7 @@ import {
   Award,
   Flag,
   Globe,
+  Video,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -59,6 +60,13 @@ import { RatingModal } from "@/components/rating-modal"
 import { AdvancedFilterPanel, type FilterOptions } from "@/components/advanced-filter-panel"
 import { PriceComparisonModal } from "@/components/price-comparison-modal"
 import { MobileExperienceReelsModal } from "@/components/mobile-experience-reels-modal"
+import {
+  MomentosGoCarousel,
+  MomentosGoViewerModal,
+  MomentosGoCreateModal,
+  getMomentoMeta,
+  type MomentoGoItem,
+} from "@/components/momentos-go-section"
 
 function FlashCountdown({ fechaFin }: { fechaFin: string }) {
   const [timeLeft, setTimeLeft] = useState<string>("")
@@ -1634,6 +1642,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     fetchBusinesses,
     isLoading,
     bookings,
+    accessToken,
   } = useAppStore()
 
   // Load saved preferences, reactions, comments, traveler posts from localStorage
@@ -3399,6 +3408,121 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
 
   // Promo Video Stories from Followed Businesses (only shown in feed when a followed business has active stories)
   const [followedStoreIdsLocal, setFollowedStoreIdsLocal] = useState<number[]>([])
+  const [momentosGo, setMomentosGo] = useState<MomentoGoItem[]>([])
+  const [activeMomentoViewerIdx, setActiveMomentoViewerIdx] = useState<number | null>(null)
+  const [showCreateMomentoModal, setShowCreateMomentoModal] = useState<boolean>(false)
+  const [viewedMomentosLocal, setViewedMomentosLocal] = useState<number[]>([])
+
+  useEffect(() => {
+    try {
+      const savedViews = JSON.parse(localStorage.getItem("palenque_viewed_momentos_v1") || "[]")
+      if (Array.isArray(savedViews)) setViewedMomentosLocal(savedViews.map(Number).filter(Boolean))
+    } catch {
+      // ignore
+    }
+  }, [])
+
+  const fetchMomentosGo = async () => {
+    try {
+      const token = accessToken || (typeof window !== "undefined" ? localStorage.getItem("access_token") : null)
+      const res = await fetch(`${API_BASE}/stores/list/momentos/`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+      if (res.ok) {
+        const data = await res.json()
+        if (Array.isArray(data?.momentos)) {
+          setMomentosGo(data.momentos)
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  useEffect(() => {
+    fetchMomentosGo()
+  }, [accessToken])
+
+  const handleMarkMomentoViewed = (id: number) => {
+    setViewedMomentosLocal((prev) => {
+      if (prev.includes(id)) return prev
+      const next = [...prev, id].slice(-100)
+      try {
+        localStorage.setItem("palenque_viewed_momentos_v1", JSON.stringify(next))
+      } catch {}
+      return next
+    })
+    setMomentosGo((prev) => prev.map((m) => (m.id === id ? { ...m, visto: true } : m)))
+    const token = accessToken || (typeof window !== "undefined" ? localStorage.getItem("access_token") : null)
+    if (token) {
+      fetch(`${API_BASE}/stores/list/momentos/${id}/view/`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      }).catch(() => {})
+    }
+  }
+
+  const handleMomentoAction = async (item: MomentoGoItem) => {
+    if (item.modalidad === "PROMO") {
+      setActiveMomentoViewerIdx(null)
+      if (item.servicio) {
+        const foundSvc = services.find((s) => s.id === item.servicio)
+        if (foundSvc) {
+          setSelectedService(foundSvc)
+          return
+        }
+      }
+      if (item.tienda) {
+        router.push(`/b/${item.tienda}?from=marketplace`)
+      }
+      return
+    }
+    if (item.modalidad === "POOL" || item.modalidad === "DESAFIO") {
+      const token = accessToken || (typeof window !== "undefined" ? localStorage.getItem("access_token") : null)
+      if (item.pool && token) {
+        try {
+          const res = await fetch(`${API_BASE}/pools/list/${item.pool}/join/`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          })
+          const d = await res.json().catch(() => ({}))
+          if (res.ok) {
+            alert(d.message || "¡Te has unido al Pool con éxito! Revisa tus viajes en Mis Viajes.")
+            fetchMomentosGo()
+            return
+          } else if (d.error) {
+            alert(d.error)
+            return
+          }
+        } catch {
+          // fallback below
+        }
+      }
+      setActiveMomentoViewerIdx(null)
+      if (item.servicio) {
+        const foundSvc = services.find((s) => s.id === item.servicio)
+        if (foundSvc) {
+          setSelectedService(foundSvc)
+          return
+        }
+      }
+      if (item.tienda) {
+        router.push(`/b/${item.tienda}?from=marketplace`)
+      }
+    }
+  }
+
+  const orderedMomentosGo = useMemo(() => {
+    return [...momentosGo].sort((a, b) => {
+      const aSeen = Boolean(a.visto || viewedMomentosLocal.includes(a.id))
+      const bSeen = Boolean(b.visto || viewedMomentosLocal.includes(b.id))
+      if (aSeen !== bSeen) return aSeen ? 1 : -1
+      return 0
+    })
+  }, [momentosGo, viewedMomentosLocal])
   const [activeFeedStoryItem, setActiveFeedStoryItem] = useState<{
     businessId: number
     businessName: string
@@ -3847,6 +3971,14 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                 </div>
               </div>
 
+            {/* MOMENTOS GO TOP REEL CAROUSEL */}
+            <MomentosGoCarousel
+              momentos={orderedMomentosGo}
+              onOpenViewer={(idx) => setActiveMomentoViewerIdx(idx)}
+              onOpenCreate={() => setShowCreateMomentoModal(true)}
+              onExecuteAction={handleMomentoAction}
+            />
+
             {/* TRAVELER EXPERIENCE TRIGGER (Opens Blurred-Backdrop Modal) */}
             <div
               onClick={() => {
@@ -3866,10 +3998,20 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                   ¿Viviste una experiencia increíble? Cuéntala y califica el lugar...
                 </div>
               </div>
-              <div className="flex items-center justify-between pt-2 border-t border-border/60 text-xs font-bold text-slate-700">
+              <div className="flex items-center justify-between pt-2 border-t border-border/60 text-xs font-bold text-slate-700 gap-2 flex-wrap">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-800 transition-colors">
                   <Star className="w-3.5 h-3.5 text-[#105238]" /> Calificar lugar visitado
                 </span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setShowCreateMomentoModal(true)
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#eaf0e2] hover:bg-[#dfe8d4] text-[#105238] font-extrabold transition-colors cursor-pointer"
+                >
+                  <Video className="w-3.5 h-3.5" /> Momento Go
+                </button>
                 <span className="inline-flex items-center gap-1 text-slate-500 font-semibold">
                   <MapPin className="w-3.5 h-3.5 text-slate-500" /> Buscar experiencia
                 </span>
@@ -5259,6 +5401,75 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                       })()}
                     </article>
 
+                    {/* Interleaved Momento Go / Promo Permanente in Feed (every 6 posts, unseen first) */}
+                    {((serviceIdx + 1 + (feedSeed % 2)) % 6 === 0) && (() => {
+                      const slotIdx = Math.floor((serviceIdx + 1 + (feedSeed % 2)) / 6) - 1
+                      const feedMomento = orderedMomentosGo[slotIdx]
+                      if (!feedMomento || slotIdx % 2 !== 0) return null
+                      const mMeta = getMomentoMeta(feedMomento.modalidad)
+                      return (
+                        <div
+                          key={`momento-feed-${feedMomento.id}-${serviceIdx}`}
+                          onClick={() => {
+                            const idx = orderedMomentosGo.findIndex((m) => m.id === feedMomento.id)
+                            if (idx >= 0) setActiveMomentoViewerIdx(idx)
+                          }}
+                          className="bg-card border border-[#105238]/25 rounded-3xl p-4 shadow-2xs cursor-pointer hover:border-[#105238]/60 transition-all space-y-3"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <span className={cn("px-2.5 py-0.5 rounded-full text-[10px] font-black", mMeta.badgeClass)}>
+                                Momento Go · {mMeta.badge}
+                              </span>
+                              <span className="text-[11px] font-bold text-muted-foreground">
+                                {feedMomento.tienda_nombre || feedMomento.autor_nombre}
+                              </span>
+                            </div>
+                            <span className="text-[10px] font-bold text-[#105238] bg-[#eaf0e2] px-2 py-0.5 rounded-full">
+                              {feedMomento.es_permanente ? "Promo permanente" : "24 horas"}
+                            </span>
+                          </div>
+                          <div className="relative h-64 rounded-2xl overflow-hidden bg-black">
+                            {feedMomento.es_video ? (
+                              <video
+                                src={feedMomento.media_cloudinary_url}
+                                muted
+                                playsInline
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <img
+                                src={getProxyImage(feedMomento.media_cloudinary_url)}
+                                alt={feedMomento.titulo}
+                                className="w-full h-full object-cover"
+                              />
+                            )}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                            <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between gap-3">
+                              <div>
+                                <p className="text-base font-black text-white">{feedMomento.titulo}</p>
+                                {feedMomento.descripcion && (
+                                  <p className="text-xs text-white/80 line-clamp-1">{feedMomento.descripcion}</p>
+                                )}
+                              </div>
+                              {feedMomento.modalidad !== "HISTORIA" && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleMomentoAction(feedMomento)
+                                  }}
+                                  className="px-4 py-2 rounded-full bg-[#105238] text-[#8ee01a] text-xs font-black shrink-0 cursor-pointer"
+                                >
+                                  {mMeta.cta}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })()}
+
                     {/* Spaced & Randomized Smart In-Feed Interleaving ("de vez en cuando, no siempre y aleatorios"):
                         Triggers every 6 posts with a seed-based offset so it feels organic and never repetitive */}
                     {((serviceIdx + 1 + (feedSeed % 2)) % 6 === 0) && (() => {
@@ -6611,6 +6822,28 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
           </>
         )
       })()}
+
+      {/* Momentos Go Viewer (Desktop Lightbox & Mobile 100dvh Reels) + Create Modal */}
+      <MomentosGoViewerModal
+        momentos={orderedMomentosGo}
+        activeIndex={activeMomentoViewerIdx}
+        onChangeIndex={(idx) => setActiveMomentoViewerIdx(idx)}
+        onClose={() => setActiveMomentoViewerIdx(null)}
+        onExecuteAction={handleMomentoAction}
+        onOpenBusiness={(storeId) => router.push(`/b/${storeId}?from=marketplace`)}
+        onMarkViewed={handleMarkMomentoViewed}
+      />
+
+      <MomentosGoCreateModal
+        open={showCreateMomentoModal}
+        onClose={() => setShowCreateMomentoModal(false)}
+        accessToken={accessToken || (typeof window !== "undefined" ? localStorage.getItem("access_token") : null)}
+        services={services}
+        onCreated={(newItem) => {
+          setMomentosGo((prev) => [newItem, ...prev])
+          setActiveMomentoViewerIdx(0)
+        }}
+      />
 
       {/* Followed Business Promo Video Story Player Modal */}
       {activeFeedStoryItem && (() => {
