@@ -403,6 +403,16 @@ export interface Route {
 
   is_active?: boolean;      // Opcional con ?
 
+  imagen_portada?: string;
+
+  image?: string;
+
+  descripcion?: string;
+
+  duracion?: string;
+
+  descuento_pool?: number;
+
   stops: {
 
     id?: number;
@@ -4530,6 +4540,20 @@ toggleFavoritePreference: (serviceId) =>
               price_round_trip: String(r.price_round_trip || '0'),
 
               is_active: r.is_active,
+
+              route_type: r.route_type,
+
+              category: r.category,
+
+              imagen_portada: r.imagen_portada,
+
+              image: r.image,
+
+              descripcion: r.descripcion,
+
+              duracion: r.duracion,
+
+              descuento_pool: r.descuento_pool,
 
               // Viene del backend: true si el usuario tiene boleto activo para esta ruta
 

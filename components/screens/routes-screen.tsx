@@ -150,6 +150,9 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
   const reactionCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [openCommentsRouteId, setOpenCommentsRouteId] = useState<number | null>(null)
   const [openShareId, setOpenShareId] = useState<number | null>(null)
+  const shareCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const catsTrackRef = useRef<HTMLDivElement | null>(null)
+  const experienciasTrackRef = useRef<HTMLDivElement | null>(null)
   const [copiedRouteId, setCopiedRouteId] = useState<number | null>(null)
   const [isMapFullscreen, setIsMapFullscreen] = useState(false)
   const [mobileShowInfoDrawer, setMobileShowInfoDrawer] = useState(false)
@@ -191,6 +194,20 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
   const handleReactionMouseLeave = () => {
     reactionCloseTimerRef.current = setTimeout(() => {
       setOpenReactionPickerId(null)
+    }, 180)
+  }
+
+  const handleShareMouseEnter = (routeId: number) => {
+    if (shareCloseTimerRef.current) {
+      clearTimeout(shareCloseTimerRef.current)
+      shareCloseTimerRef.current = null
+    }
+    setOpenShareId(routeId)
+  }
+
+  const handleShareMouseLeave = () => {
+    shareCloseTimerRef.current = setTimeout(() => {
+      setOpenShareId(null)
     }, 180)
   }
 
@@ -273,12 +290,13 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
         (route.name || "").toLowerCase().includes(query) ||
         (route.stops || []).some((stop: any) => (stop.name || "").toLowerCase().includes(query))
       if (!matchesSearch) return false
-      const rType = String(route.route_type || route.category?.name || "").toUpperCase()
+      const rType = String(route.route_type || "").toUpperCase()
+      const isTour = rType === "TOUR" || (route.name || "").toLowerCase().startsWith("tour")
       if (activeFilter === "MY_ROUTES") return Boolean(route.user_has_ticket)
       if (activeFilter === "GPS") return Boolean(route.is_active && route.unit_lat && route.unit_lng)
-      if (activeFilter === "TOURS") return rType === "TOUR" || rType.includes("TOUR")
-      if (activeFilter === "INTERURBANO") return rType === "INTERURBANO" || rType.includes("INTER")
-      if (activeFilter === "URBANO") return rType === "URBANO" || (!rType.includes("TOUR") && !rType.includes("INTER"))
+      if (activeFilter === "TOURS") return isTour
+      if (activeFilter === "INTERURBANO") return rType === "INTERURBANO"
+      if (activeFilter === "URBANO") return rType === "URBANO"
       return true
     })
 
@@ -336,7 +354,7 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
         badge: "REEL MOVILIDAD · MODO CHOFER",
         heading: "Genera ingresos con tu unidad en rutas y traslados",
         subtitle: "Pasajeros verificados, control de asientos y GPS en vivo",
-        ctaLabel: "Panel de Chofer",
+        ctaLabel: currentUser?.tipo === "CHOFER" ? "Panel de Chofer" : "Quiero ser Chofer",
         icon: Bus,
         onAction: () => onNavigate?.(currentUser?.tipo === "CHOFER" ? "conductor" : "profile"),
         steps: [
@@ -1370,52 +1388,26 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
               </button>
             </div>
 
-            {/* Search & Quick Return Banner */}
-            <div className="bg-white dark:bg-card border border-border/80 rounded-3xl p-3.5 shadow-2xs space-y-3">
-              <div className="relative">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Buscar rutas, destinos o paradas..."
-                  className="pl-10 pr-9 h-10 bg-[#f0f2f5] dark:bg-muted border-0 rounded-full text-sm focus-visible:ring-1 focus-visible:ring-[#105238]"
-                  value={routeSearchQuery}
-                  onChange={(e) => setRouteSearchQuery(e.target.value)}
-                />
-                {routeSearchQuery && (
-                  <button
-                    onClick={() => setRouteSearchQuery("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-
-              {/* Filter Pills + Shuffle + Back to Map button */}
-              <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-0.5">
-                {[
-                  { id: "ALL", label: "Todas" },
-                  { id: "INTERURBANO", label: "Interurbano" },
-                  { id: "URBANO", label: "Urbano" },
-                  { id: "TOURS", label: "Tours" },
-                  { id: "GPS", label: "GPS en vivo" },
-                  ...(allRoutes.some((r: any) => r.user_has_ticket)
-                    ? [{ id: "MY_ROUTES", label: "Mis Rutas" }]
-                    : []),
-                ].map((f) => (
-                  <button
-                    key={f.id}
-                    type="button"
-                    onClick={() => setActiveFilter(f.id as any)}
-                    className={cn(
-                      "px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer border",
-                      activeFilter === f.id
-                        ? "bg-[#105238] text-white border-[#105238] shadow-xs"
-                        : "bg-[#f0f2f5] dark:bg-muted text-foreground/80 border-transparent hover:bg-[#eaf0e2] hover:text-[#105238]"
-                    )}
-                  >
-                    {f.label}
-                  </button>
-                ))}
+            {/* Search & Categories Sticky Bar (sigue contigo al hacer scroll) */}
+            <div className="sticky top-2 z-20 bg-white/95 dark:bg-card/95 backdrop-blur-md border border-border/80 rounded-3xl p-3 shadow-sm space-y-2.5">
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1 min-w-0">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Buscar rutas, destinos o paradas..."
+                    className="pl-10 pr-9 h-10 bg-[#f0f2f5] dark:bg-muted border-0 rounded-full text-sm focus-visible:ring-1 focus-visible:ring-[#105238]"
+                    value={routeSearchQuery}
+                    onChange={(e) => setRouteSearchQuery(e.target.value)}
+                  />
+                  {routeSearchQuery && (
+                    <button
+                      onClick={() => setRouteSearchQuery("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
 
                 <button
                   type="button"
@@ -1423,21 +1415,22 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
                     setRouteSeed((s) => s + 1)
                     showQuickToast("Feed de rutas actualizado")
                   }}
-                  className="px-2.5 py-1.5 rounded-full text-xs font-bold bg-[#f0f2f5] hover:bg-[#eaf0e2] text-foreground/80 hover:text-[#105238] transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                  className="h-10 w-10 rounded-full bg-[#f0f2f5] hover:bg-[#eaf0e2] text-foreground/80 hover:text-[#105238] transition-colors flex items-center justify-center shrink-0 cursor-pointer"
                   title="Mezclar orden de rutas"
                 >
-                  <Shuffle className="w-3.5 h-3.5" />
+                  <Shuffle className="w-4 h-4" />
                 </button>
 
                 <button
                   type="button"
                   onClick={() => onNavigate?.("map-explorer")}
-                  className="ml-auto px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap bg-[#eaf0e2] hover:bg-[#105238] text-[#105238] hover:text-white transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer"
+                  className="h-10 px-3.5 rounded-full text-xs font-bold whitespace-nowrap bg-[#eaf0e2] hover:bg-[#105238] text-[#105238] hover:text-white transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer"
                 >
                   {returnToMapRoute ? (
                     <>
                       <ArrowLeft className="w-3.5 h-3.5" />
-                      <span className="max-w-[140px] truncate">Volver a {returnToMapRoute}</span>
+                      <span className="max-w-[110px] truncate hidden sm:inline">Volver a {returnToMapRoute}</span>
+                      <span className="sm:hidden">Mapa</span>
                     </>
                   ) : (
                     <>
@@ -1445,6 +1438,54 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
                       <span>Explorar Mapa</span>
                     </>
                   )}
+                </button>
+              </div>
+
+              {/* Category Pills with Desktop < / > Scroll Arrows */}
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => catsTrackRef.current?.scrollBy({ left: -180, behavior: "smooth" })}
+                  className="hidden sm:flex w-7 h-7 rounded-full bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-600 items-center justify-center shrink-0 cursor-pointer"
+                  aria-label="Categorías anteriores"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+
+                <div ref={catsTrackRef} className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide flex-1 py-0.5">
+                  {[
+                    { id: "ALL", label: "Todas" },
+                    { id: "INTERURBANO", label: "Interurbano" },
+                    { id: "URBANO", label: "Urbano" },
+                    { id: "TOURS", label: "Tours" },
+                    { id: "GPS", label: "GPS en vivo" },
+                    ...(allRoutes.some((r: any) => r.user_has_ticket)
+                      ? [{ id: "MY_ROUTES", label: "Mis Rutas" }]
+                      : []),
+                  ].map((f) => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => setActiveFilter(f.id as any)}
+                      className={cn(
+                        "px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer border shrink-0",
+                        activeFilter === f.id
+                          ? "bg-[#105238] text-white border-[#105238] shadow-xs"
+                          : "bg-[#f0f2f5] dark:bg-muted text-foreground/80 border-transparent hover:bg-[#eaf0e2] hover:text-[#105238]"
+                      )}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => catsTrackRef.current?.scrollBy({ left: 180, behavior: "smooth" })}
+                  className="hidden sm:flex w-7 h-7 rounded-full bg-[#f0f2f5] hover:bg-[#e4e6eb] text-slate-600 items-center justify-center shrink-0 cursor-pointer"
+                  aria-label="Siguientes categorías"
+                >
+                  <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -1501,6 +1542,8 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
                     onToggleShare={() =>
                       setOpenShareId((prev) => (prev === route.id ? null : route.id))
                     }
+                    onShareMouseEnter={() => handleShareMouseEnter(route.id)}
+                    onShareMouseLeave={handleShareMouseLeave}
                     onCloseShare={() => setOpenShareId(null)}
                     onCopyShare={async (url) => {
                       await navigator.clipboard.writeText(url)
@@ -1535,15 +1578,33 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
                             </h4>
                           </div>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => onNavigate?.("marketplace")}
-                          className="text-xs font-bold bg-[#105238] text-white px-3.5 py-1.5 rounded-full hover:bg-[#0c3e2b] transition-colors shrink-0 cursor-pointer"
-                        >
-                          Ver Servicios
-                        </button>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => experienciasTrackRef.current?.scrollBy({ left: -240, behavior: "smooth" })}
+                            className="hidden sm:flex w-7 h-7 rounded-full bg-white dark:bg-card border border-slate-200/90 items-center justify-center text-slate-600 hover:bg-[#f0f2f5] hover:text-slate-900 shadow-2xs transition-all cursor-pointer"
+                            aria-label="Anteriores experiencias"
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => experienciasTrackRef.current?.scrollBy({ left: 240, behavior: "smooth" })}
+                            className="hidden sm:flex w-7 h-7 rounded-full bg-white dark:bg-card border border-slate-200/90 items-center justify-center text-slate-600 hover:bg-[#f0f2f5] hover:text-slate-900 shadow-2xs transition-all cursor-pointer"
+                            aria-label="Siguientes experiencias"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onNavigate?.("marketplace")}
+                            className="text-xs font-bold bg-[#105238] text-white px-3.5 py-1.5 rounded-full hover:bg-[#0c3e2b] transition-colors shrink-0 cursor-pointer"
+                          >
+                            Ver Servicios
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex items-stretch gap-3 overflow-x-auto scrollbar-hide py-1">
+                      <div ref={experienciasTrackRef} className="flex items-stretch gap-3 overflow-x-auto scrollbar-hide py-1">
                         {(services || []).slice(0, 8).map((svc) => (
                           <button
                             key={svc.id}
@@ -1867,6 +1928,8 @@ function RouteFeedCard({
   onToggleComments,
   onCloseComments,
   onToggleShare,
+  onShareMouseEnter,
+  onShareMouseLeave,
   onCloseShare,
   onCopyShare,
   onAddComment,
@@ -1890,6 +1953,8 @@ function RouteFeedCard({
   onToggleComments: () => void
   onCloseComments: () => void
   onToggleShare: () => void
+  onShareMouseEnter: () => void
+  onShareMouseLeave: () => void
   onCloseShare: () => void
   onCopyShare: (url: string) => void
   onAddComment: (text: string, rating: number) => void
@@ -2264,10 +2329,18 @@ function RouteFeedCard({
               <span>Comentar{comments.length > 0 ? ` (${comments.length})` : ""}</span>
             </button>
 
-            {/* Compartir con Popover estilo Experiencias */}
-            <div className="relative">
+            {/* Compartir con Popover estilo Experiencias (hover en escritorio + clic en móvil) */}
+            <div
+              className="relative"
+              onMouseEnter={onShareMouseEnter}
+              onMouseLeave={onShareMouseLeave}
+            >
               {isShareOpen && (
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 pb-2.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+                <div
+                  onMouseEnter={onShareMouseEnter}
+                  onMouseLeave={onShareMouseLeave}
+                  className="absolute bottom-full left-1/2 -translate-x-1/2 pb-2.5 z-50 animate-in fade-in zoom-in-95 duration-150"
+                >
                   <div className="bg-white dark:bg-card border border-border rounded-full shadow-2xl px-2.5 py-2 flex items-center gap-2">
                     {(() => {
                       const shareUrl =

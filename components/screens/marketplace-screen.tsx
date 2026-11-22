@@ -3116,7 +3116,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
       badge: "REEL MOVILIDAD · MODO CHOFER",
       heading: "Genera ingresos con tu unidad en rutas y traslados",
       subtitle: "Pasajeros verificados, control de asientos y GPS en vivo",
-      ctaLabel: "Panel de Chofer",
+      ctaLabel: currentUser?.tipo === "CHOFER" ? "Panel de Chofer" : "Quiero ser Chofer",
       icon: Compass,
       onAction: () => onNavigate?.(currentUser?.tipo === "CHOFER" ? "conductor" : "profile"),
       steps: [
