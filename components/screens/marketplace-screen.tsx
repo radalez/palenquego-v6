@@ -445,7 +445,10 @@ function RoutesCarouselStrip({
   const filteredRoutes = useMemo(() => {
     if (!routes || routes.length === 0) return []
     if (!routeType) return routes
-    const matches = routes.filter((r) => (r.category || r.route_type || "").toUpperCase() === routeType)
+    const matches = routes.filter((r) => {
+      const catStr = typeof r.category === "string" ? r.category : r.category?.name || ""
+      return String(r.route_type || catStr || "").toUpperCase() === routeType
+    })
     return matches.length > 0 ? matches : routes
   }, [routes, routeType])
 
