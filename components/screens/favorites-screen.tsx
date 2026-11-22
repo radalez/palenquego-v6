@@ -71,77 +71,150 @@ export function FavoritesScreen({ onBack }: FavoritesScreenProps) {
   const selectedTripService = selectedTrip ? services.find((s) => s.id === selectedTrip.serviceId) : null
   const totalFavorites = meGustaServices.length + meFascinaServices.length
 
-  return (
-    <div className="flex flex-col min-h-full bg-background">
-      {/* Header */}
-      <div className="bg-gradient-to-br from-primary to-primary/80 px-4 pt-4 pb-8 sticky top-0 z-10">
-        <div className="flex items-center gap-3 mb-6">
-          <button
-            onClick={onBack}
-            className="p-2 hover:bg-primary/20 rounded-lg transition-colors"
-          >
-            <ChevronLeft className="w-6 h-6 text-primary-foreground" />
-          </button>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-primary-foreground">Mis Favoritos</h1>
-            <p className="text-sm text-primary-foreground/80">Gestor de Plan de Viajes • {totalFavorites} total</p>
+  const renderFavoriteCard = (service: (typeof services)[number], isFascina: boolean) => {
+    const favorite = userFavorites.find((f) => f.serviceId === service.id)!
+    const isSelectedTrip = favorite.selectedForTrip
+
+    return (
+      <div
+        key={service.id}
+        className={`bg-card rounded-2xl p-3.5 border transition-all duration-200 flex flex-col justify-between gap-3 shadow-2xs ${
+          isSelectedTrip
+            ? "border-[#105238] ring-2 ring-[#105238]/15"
+            : "border-border hover:border-[#105238]/40"
+        }`}
+      >
+        <div className="flex gap-3">
+          <img
+            src={service.image || "/placeholder.svg"}
+            alt={service.name}
+            className="w-20 h-20 rounded-xl object-cover flex-shrink-0 border border-border/50"
+          />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <h3 className="font-bold text-sm text-foreground leading-snug line-clamp-2">{service.name}</h3>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                  <MapPin className="w-3 h-3 shrink-0" />
+                  <span className="truncate">{service.location}</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleFavoriteClick(service.id)}
+                title={isFascina ? "Click para mover a Me gusta" : "Doble click para mover a Me fascina"}
+                className="p-1.5 hover:bg-muted rounded-full transition-colors flex-shrink-0 cursor-pointer"
+              >
+                <Heart
+                  className={`w-4 h-4 ${
+                    isFascina ? "fill-[#105238] stroke-[#105238]" : "fill-[#105238]/75 stroke-[#105238]"
+                  }`}
+                />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-3 mt-2 text-xs">
+              <div className="flex items-center gap-1 font-semibold text-foreground">
+                <Star className="w-3.5 h-3.5 fill-amber-400 stroke-amber-400" />
+                <span>{service.rating}</span>
+              </div>
+              <span className="font-black text-sm text-[#105238]">
+                ${service.price} <span className="text-[11px] font-medium text-muted-foreground">/p</span>
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Info Box */}
-        <div className="bg-primary-foreground/10 border border-primary-foreground/20 rounded-xl p-3 backdrop-blur-sm">
-          <p className="text-xs text-primary-foreground/80 font-medium">
-            Tu gestor personal de viajes
-          </p>
-          <p className="text-xs text-primary-foreground/70 mt-2">
-            Organiza tus experiencias: "Me gusta" para opciones y "Me fascina" para tus favoritas. Luego, elige tu experiencia ideal.
-          </p>
+        {!isSelectedTrip && (
+          <button
+            type="button"
+            onClick={() => selectTripFavorite(service.id)}
+            className="w-full h-9 px-3 text-xs font-bold text-[#105238] bg-[#eaf0e2] hover:bg-[#105238] hover:text-white rounded-xl transition-colors cursor-pointer"
+          >
+            Elegir para mi viaje
+          </button>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col min-h-full bg-background">
+      {/* Header (Centered max-w-3xl matching Notificaciones) */}
+      <div className="bg-[#105238] text-white px-4 pt-5 pb-6">
+        <div className="max-w-3xl mx-auto">
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex items-center gap-1 text-xs font-bold text-white/80 hover:text-white mb-3 cursor-pointer"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            <span>Volver</span>
+          </button>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-black text-white">Mis Favoritos</h1>
+              <p className="text-xs sm:text-sm text-white/80 mt-0.5">
+                Gestor de Plan de Viajes • {totalFavorites} {totalFavorites === 1 ? "guardado" : "guardados"}
+              </p>
+            </div>
+            <div className="w-11 h-11 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center shrink-0">
+              <Heart className="w-5 h-5 text-[#8ee01a]" />
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 px-4 py-4 space-y-4 pb-6">
+      {/* Content (Centered max-w-3xl) */}
+      <div className="flex-1 w-full max-w-3xl mx-auto px-4 py-6 space-y-6">
         {totalFavorites === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <Heart className="w-16 h-16 text-muted-foreground/20 mb-4" />
-            <p className="text-lg font-semibold text-muted-foreground">Sin favoritos aún</p>
-            <p className="text-sm text-muted-foreground/70 mt-2">Comienza a agregar experiencias desde el marketplace</p>
+          <div className="flex flex-col items-center justify-center py-16 text-center bg-card border border-border rounded-3xl p-8">
+            <Heart className="w-14 h-14 text-muted-foreground/25 mb-3" />
+            <p className="text-base font-bold text-foreground">Sin favoritos aún</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Comienza a guardar experiencias desde Experiencias para planear tu viaje.
+            </p>
           </div>
         ) : (
           <>
-            {/* Selected Trip Section - Always Visible */}
+            {/* Selected Trip Section */}
             {selectedTripService && (
-              <div className="bg-gradient-to-br from-primary via-primary/90 to-primary/80 rounded-2xl p-5 mb-2 shadow-lg">
-                <div className="flex items-center gap-2 mb-4">
-                  <Check className="w-6 h-6 text-primary-foreground animate-pulse" />
-                  <span className="font-bold text-primary-foreground text-lg">Tu próximo viaje</span>
+              <div className="bg-[#105238] rounded-3xl p-5 shadow-md text-white">
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <div className="flex items-center gap-2">
+                    <Check className="w-5 h-5 text-[#8ee01a]" />
+                    <span className="font-black text-base">Tu próximo viaje</span>
+                  </div>
+                  <span className="text-[11px] font-bold bg-white/15 px-2.5 py-0.5 rounded-full">
+                    Seleccionado
+                  </span>
                 </div>
-                <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-4 border border-primary-foreground/20 mb-4">
-                  <div className="flex gap-4">
-                    <img
-                      src={selectedTripService.image || "/placeholder.svg"}
-                      alt={selectedTripService.name}
-                      className="w-24 h-24 rounded-lg object-cover flex-shrink-0"
-                    />
-                    <div className="flex-1">
-                      <h3 className="font-bold text-primary-foreground text-lg">{selectedTripService.name}</h3>
-                      <div className="flex items-center gap-2 text-sm text-primary-foreground/90 mt-1">
-                        <MapPin className="w-4 h-4" />
-                        {selectedTripService.location}
+                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-3.5 border border-white/15 mb-4 flex gap-3.5">
+                  <img
+                    src={selectedTripService.image || "/placeholder.svg"}
+                    alt={selectedTripService.name}
+                    className="w-20 h-20 rounded-xl object-cover flex-shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-white text-base truncate">{selectedTripService.name}</h3>
+                    <div className="flex items-center gap-1.5 text-xs text-white/85 mt-1">
+                      <MapPin className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">{selectedTripService.location}</span>
+                    </div>
+                    <div className="flex items-center gap-3 mt-2.5">
+                      <div className="flex items-center gap-1 text-xs font-bold">
+                        <Star className="w-3.5 h-3.5 fill-amber-300 stroke-amber-300" />
+                        <span>{selectedTripService.rating}</span>
                       </div>
-                      <div className="flex items-center gap-3 mt-3">
-                        <div className="flex items-center gap-1">
-                          <Star className="w-4 h-4 fill-amber-300 stroke-amber-300" />
-                          <span className="font-bold text-primary-foreground">{selectedTripService.rating}</span>
-                        </div>
-                        <span className="text-xl font-bold text-primary-foreground">${selectedTripService.price}</span>
-                      </div>
+                      <span className="text-lg font-black text-[#8ee01a]">
+                        ${selectedTripService.price} <span className="text-xs font-normal text-white/75">/p</span>
+                      </span>
                     </div>
                   </div>
                 </div>
                 <Button
                   onClick={() => setShowBookingModal(true)}
-                  className="w-full bg-primary-foreground text-primary font-bold hover:bg-primary-foreground/90 h-12 text-base"
+                  className="w-full bg-[#8ee01a] text-[#105238] font-black hover:bg-[#8ee01a]/90 h-11 rounded-2xl text-sm cursor-pointer"
                 >
                   Reservar ahora
                 </Button>
@@ -151,145 +224,43 @@ export function FavoritesScreen({ onBack }: FavoritesScreenProps) {
             {/* Me Fascina Section */}
             {meFascinaServices.length > 0 && (
               <div className="space-y-3">
-                <div className="flex items-center gap-2 px-1">
-                  <Sparkles className="w-5 h-5 text-amber-500" />
-                  <h2 className="text-lg font-bold text-foreground">Me fascina</h2>
-                  <span className="ml-auto text-sm font-semibold text-muted-foreground bg-muted px-3 py-1 rounded-full">
+                <div className="flex items-center justify-between px-1">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-[#105238]" />
+                    <div>
+                      <h2 className="text-sm font-black uppercase tracking-wider text-foreground">Me fascina</h2>
+                      <p className="text-xs text-muted-foreground">Tus experiencias favoritas principales</p>
+                    </div>
+                  </div>
+                  <span className="text-xs font-bold text-[#105238] bg-[#eaf0e2] px-2.5 py-0.5 rounded-full">
                     {meFascinaServices.length}
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground px-1 mb-2">Tus experiencias favoritas principales</p>
 
-                <div className="space-y-2">
-                  {meFascinaServices.map((service) => {
-                    const favorite = userFavorites.find((f) => f.serviceId === service.id)!
-                    const isSelectedTrip = favorite.selectedForTrip
-
-                    return (
-                      <div
-                        key={service.id}
-                        className={`bg-card rounded-xl p-3 border-2 transition-all duration-200 ${
-                          isSelectedTrip ? "border-primary ring-2 ring-primary/20" : "border-amber-200/50"
-                        }`}
-                      >
-                        <div className="flex gap-3">
-                          <img
-                            src={service.image || "/placeholder.svg"}
-                            alt={service.name}
-                            className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2 mb-1">
-                              <div>
-                                <h3 className="font-semibold text-foreground">{service.name}</h3>
-                                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                                  <MapPin className="w-3 h-3" />
-                                  {service.location}
-                                </div>
-                              </div>
-                              <button
-                                onClick={() => handleFavoriteClick(service.id)}
-                                title="Click para mover a Me gusta"
-                                className="p-1 hover:bg-muted rounded transition-colors flex-shrink-0"
-                              >
-                                <Heart className="w-5 h-5 fill-amber-500 stroke-amber-500" />
-                              </button>
-                            </div>
-
-                            <div className="flex items-center gap-3 mt-2 text-sm">
-                              <div className="flex items-center gap-1">
-                                <Star className="w-3 h-3 fill-amber-500 stroke-amber-500" />
-                                <span className="font-medium">{service.rating}</span>
-                              </div>
-                              <span className="font-bold text-foreground">${service.price}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {!isSelectedTrip && (
-                          <button
-                            onClick={() => selectTripFavorite(service.id)}
-                            className="w-full mt-3 px-3 py-2 text-sm font-medium text-primary bg-primary/5 border border-primary rounded-lg hover:bg-primary/10 transition-colors"
-                          >
-                            Elegir para mi viaje
-                          </button>
-                        )}
-                      </div>
-                    )
-                  })}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  {meFascinaServices.map((service) => renderFavoriteCard(service, true))}
                 </div>
               </div>
             )}
 
             {/* Me Gusta Section */}
             {meGustaServices.length > 0 && (
-              <div className="space-y-3 mt-6">
-                <div className="flex items-center gap-2 px-1">
-                  <Heart className="w-5 h-5 text-red-500" />
-                  <h2 className="text-lg font-bold text-foreground">Me gusta</h2>
-                  <span className="ml-auto text-sm font-semibold text-muted-foreground bg-muted px-3 py-1 rounded-full">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between px-1">
+                  <div className="flex items-center gap-2">
+                    <Heart className="w-4 h-4 text-[#105238]" />
+                    <div>
+                      <h2 className="text-sm font-black uppercase tracking-wider text-foreground">Me gusta</h2>
+                      <p className="text-xs text-muted-foreground">Otras opciones que te interesan</p>
+                    </div>
+                  </div>
+                  <span className="text-xs font-bold text-[#105238] bg-[#eaf0e2] px-2.5 py-0.5 rounded-full">
                     {meGustaServices.length}
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground px-1 mb-2">Otras opciones que te interesan</p>
 
-                <div className="space-y-2">
-                  {meGustaServices.map((service) => {
-                    const favorite = userFavorites.find((f) => f.serviceId === service.id)!
-                    const isSelectedTrip = favorite.selectedForTrip
-
-                    return (
-                      <div
-                        key={service.id}
-                        className={`bg-card rounded-xl p-3 border-2 transition-all duration-200 ${
-                          isSelectedTrip ? "border-primary ring-2 ring-primary/20" : "border-red-200/30"
-                        }`}
-                      >
-                        <div className="flex gap-3">
-                          <img
-                            src={service.image || "/placeholder.svg"}
-                            alt={service.name}
-                            className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2 mb-1">
-                              <div>
-                                <h3 className="font-semibold text-foreground">{service.name}</h3>
-                                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                                  <MapPin className="w-3 h-3" />
-                                  {service.location}
-                                </div>
-                              </div>
-                              <button
-                                onClick={() => handleFavoriteClick(service.id)}
-                                title="Doble click para mover a Me fascina"
-                                className="p-1 hover:bg-muted rounded transition-colors flex-shrink-0"
-                              >
-                                <Heart className="w-5 h-5 fill-red-500 stroke-red-500" />
-                              </button>
-                            </div>
-
-                            <div className="flex items-center gap-3 mt-2 text-sm">
-                              <div className="flex items-center gap-1">
-                                <Star className="w-3 h-3 fill-amber-500 stroke-amber-500" />
-                                <span className="font-medium">{service.rating}</span>
-                              </div>
-                              <span className="font-bold text-foreground">${service.price}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {!isSelectedTrip && (
-                          <button
-                            onClick={() => selectTripFavorite(service.id)}
-                            className="w-full mt-3 px-3 py-2 text-sm font-medium text-primary bg-primary/5 border border-primary rounded-lg hover:bg-primary/10 transition-colors"
-                          >
-                            Elegir para mi viaje
-                          </button>
-                        )}
-                      </div>
-                    )
-                  })}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  {meGustaServices.map((service) => renderFavoriteCard(service, false))}
                 </div>
               </div>
             )}
