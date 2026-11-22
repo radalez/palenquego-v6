@@ -3522,37 +3522,37 @@ export const useAppStore = create<AppState>()(
 
 
       fetchNotifications: async () => {
-
         const { accessToken } = get();
-
         if (!accessToken) return;
-
         try {
-
-          const res = await fetch(`${API_BASE}/accounts/notifications/`, {
-
-            headers: { 'Authorization': `Bearer ${accessToken}` }
-
-          });
-
+          const res = await fetchWithAuth(`${API_BASE}/accounts/notifications/`, { cache: 'no-store' });
           if (res.ok) {
-
             const data = await res.json();
-
             const list = Array.isArray(data) ? data : (data.results || []);
-
             const unread = list.filter((n: InAppNotification) => !n.leido).length;
-
-            set({ inboxNotifications: list, unreadNotificationsCount: unread });
-
+            const paidCodes = new Set<string>();
+            list.forEach((n: InAppNotification) => {
+              const title = (n.titulo || "").toLowerCase();
+              if (title.includes("pago recibido") || title.includes("reserva pagada")) {
+                const matches = (n.mensaje || "").match(/#([A-Za-z0-9_-]+)/g);
+                matches?.forEach((m) => paidCodes.add(m.slice(1).toUpperCase()));
+              }
+            });
+            if (paidCodes.size > 0) {
+              const currentBookings = get().bookings || [];
+              const updatedBookings: Booking[] = currentBookings.map((b) =>
+                b.qrCode && paidCodes.has(String(b.qrCode).toUpperCase()) && b.status === "PENDIENTE"
+                  ? { ...b, status: "PAGADO" as const }
+                  : b
+              );
+              set({ inboxNotifications: list, unreadNotificationsCount: unread, bookings: updatedBookings });
+            } else {
+              set({ inboxNotifications: list, unreadNotificationsCount: unread });
+            }
           }
-
         } catch (e) {
-
           console.error("Error fetching notifications:", e);
-
         }
-
       },
 
 
@@ -4661,7 +4661,25 @@ toggleFavoritePreference: (serviceId) =>
 
           if (response.ok) {
             const data = await response.json();
-            const formattedBookings: Booking[] = data.map((b: any) => ({
+            const paidCodes = new Set<string>();
+            (get().inboxNotifications || []).forEach((n: InAppNotification) => {
+              const title = (n.titulo || "").toLowerCase();
+              if (title.includes("pago recibido") || title.includes("reserva pagada")) {
+                const matches = (n.mensaje || "").match(/#([A-Za-z0-9_-]+)/g);
+                matches?.forEach((m) => paidCodes.add(m.slice(1).toUpperCase()));
+              }
+            });
+
+            const formattedBookings: Booking[] = data.map((b: any) => {
+              const qr = String(b.qrCode || b.reserva_id || "");
+              const isPaidFromNotif = qr && paidCodes.has(qr.toUpperCase());
+              const resolvedStatus: Booking["status"] =
+                b.status === "PAGADO" || b.estado_pago === "PAGADO" || isPaidFromNotif
+                  ? "PAGADO"
+                  : b.status === "CONFIRMADO"
+                    ? "CONFIRMADO"
+                    : "PENDIENTE";
+              return {
               id: b.id,
               userId: get().currentUser?.id,
               userEmail: get().currentUser?.email,
@@ -4686,9 +4704,10 @@ toggleFavoritePreference: (serviceId) =>
               guests: b.guests || 1,
               extras: b.extras || [],
               totalPrice: b.totalPrice || 0,
-              status: b.status === "CONFIRMADO" ? "CONFIRMADO" : (b.status === "PAGADO" || b.estado_pago === "PAGADO") ? "PAGADO" : "PENDIENTE",
+              status: resolvedStatus,
               qrCode: b.qrCode || b.reserva_id,
-            }));
+              };
+            });
 
             set({ bookings: formattedBookings });
           }

@@ -136,8 +136,11 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 2. API GET requests (/api-proxy/...): Network-First con fallback a caché local
+  // 2. API GET requests (/api-proxy/...): Network-First con fallback a caché local (excluyendo my-bookings/notifications para estado en tiempo real)
   if (url.pathname.startsWith("/api-proxy/") || url.pathname.startsWith("/api/")) {
+    if (url.pathname.includes("my-bookings") || url.pathname.includes("notifications")) {
+      return;
+    }
     event.respondWith(networkFirst(request, API_CACHE));
     return;
   }
