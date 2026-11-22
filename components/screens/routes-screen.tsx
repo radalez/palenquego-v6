@@ -29,6 +29,8 @@ import {
   Mail,
   Link2,
   ShieldCheck,
+  Route as RouteIcon,
+  Sparkles,
 } from "lucide-react"
 import { REACTIONS, ReactionBadgeIcon, type ReactionKey } from "./marketplace-screen"
 import { Badge } from "@/components/ui/badge"
@@ -1185,22 +1187,29 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
         <div className="flex flex-col lg:flex-row lg:justify-between lg:gap-8 items-start">
           {/* LEFT / CENTER COLUMN: SOCIAL ROUTE FEED */}
           <div className="w-full max-w-[650px] mx-auto space-y-4">
-            {/* Selector de Modo: Modo Servicios | Modo Rutas */}
-            <div className="bg-white dark:bg-card border border-border/80 rounded-2xl p-1.5 shadow-2xs flex items-center gap-1.5">
+            {/* Selector estilo Facebook: Iconos centrados con línea verde inferior */}
+            <div className="bg-white dark:bg-card border border-border/70 rounded-2xl px-2 flex items-center shadow-2xs">
               <button
                 type="button"
                 onClick={() => onNavigate?.("marketplace")}
-                className="flex-1 h-9 rounded-xl bg-transparent hover:bg-[#eaf0e2]/70 text-foreground/80 hover:text-[#105238] text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                aria-label="Servicios"
+                className="group relative flex-1 h-12 flex items-center justify-center rounded-xl hover:bg-[#eaf0e2]/60 text-slate-500 hover:text-[#105238] transition-colors cursor-pointer"
               >
-                <Compass className="w-3.5 h-3.5" />
-                <span>Modo Servicios</span>
+                <Sparkles className="w-6 h-6" />
+                <span className="pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 absolute top-full mt-1.5 bg-neutral-900/95 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg whitespace-nowrap shadow-lg z-40">
+                  Servicios
+                </span>
               </button>
               <button
                 type="button"
-                className="flex-1 h-9 rounded-xl bg-[#105238] text-white text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                aria-label="Rutas"
+                className="group relative flex-1 h-12 flex items-center justify-center rounded-xl hover:bg-[#eaf0e2]/60 text-[#105238] transition-colors cursor-pointer"
               >
-                <Navigation2 className="w-3.5 h-3.5 text-[#8ee01a]" />
-                <span>Modo Rutas</span>
+                <RouteIcon className="w-6 h-6" />
+                <span className="absolute bottom-0 inset-x-4 h-[3px] rounded-t-full bg-[#105238]" />
+                <span className="pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 absolute top-full mt-1.5 bg-neutral-900/95 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg whitespace-nowrap shadow-lg z-40">
+                  Rutas
+                </span>
               </button>
             </div>
 

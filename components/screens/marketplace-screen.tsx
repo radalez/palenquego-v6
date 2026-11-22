@@ -19,7 +19,7 @@ import {
   Users,
   Zap,
   Compass,
-  Navigation,
+  Route as RouteIcon,
   ThumbsUp,
   Smile,
   Sparkles,
@@ -3494,22 +3494,29 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
         <div className="flex flex-col lg:flex-row lg:justify-between lg:gap-8 items-start">
           {/* LEFT / CENTER COLUMN: SOCIAL FEED */}
           <div ref={feedTopRef} className="w-full max-w-[650px] mx-auto space-y-5">
-            {/* Selector de Modo: Modo Servicios | Modo Rutas */}
-            <div className="bg-white dark:bg-card border border-border/80 rounded-2xl p-1.5 shadow-2xs flex items-center gap-1.5">
+            {/* Selector estilo Facebook: Iconos centrados con línea verde inferior */}
+            <div className="bg-white dark:bg-card border border-border/70 rounded-2xl px-2 flex items-center shadow-2xs">
               <button
                 type="button"
-                className="flex-1 h-9 rounded-xl bg-[#105238] text-white text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                aria-label="Servicios"
+                className="group relative flex-1 h-12 flex items-center justify-center rounded-xl hover:bg-[#eaf0e2]/60 text-[#105238] transition-colors cursor-pointer"
               >
-                <Sparkles className="w-3.5 h-3.5 text-[#8ee01a]" />
-                <span>Modo Servicios</span>
+                <Sparkles className="w-6 h-6" />
+                <span className="absolute bottom-0 inset-x-4 h-[3px] rounded-t-full bg-[#105238]" />
+                <span className="pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 absolute top-full mt-1.5 bg-neutral-900/95 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg whitespace-nowrap shadow-lg z-40">
+                  Servicios
+                </span>
               </button>
               <button
                 type="button"
                 onClick={() => onNavigate?.("rutas-classic")}
-                className="flex-1 h-9 rounded-xl bg-transparent hover:bg-[#eaf0e2]/70 text-foreground/80 hover:text-[#105238] text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                aria-label="Rutas"
+                className="group relative flex-1 h-12 flex items-center justify-center rounded-xl hover:bg-[#eaf0e2]/60 text-slate-500 hover:text-[#105238] transition-colors cursor-pointer"
               >
-                <Navigation className="w-3.5 h-3.5" />
-                <span>Modo Rutas</span>
+                <RouteIcon className="w-6 h-6" />
+                <span className="pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 absolute top-full mt-1.5 bg-neutral-900/95 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg whitespace-nowrap shadow-lg z-40">
+                  Rutas
+                </span>
               </button>
             </div>
 
@@ -5784,28 +5791,29 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
               )
             })()}
 
-            {/* ACCESO DIRECTO: RUTAS DE TRANSPORTE, GPS EN VIVO Y BOLETOS */}
-            <button
-              type="button"
-              onClick={() => onNavigate?.("rutas-classic")}
-              className="w-full text-left p-3.5 rounded-3xl bg-gradient-to-br from-[#105238] to-[#0b3b28] text-white shadow-sm hover:shadow-md transition-all cursor-pointer group/routes border border-[#8ee01a]/30"
-            >
+            {/* ACCESO DIRECTO SUAVE: RUTAS DE TRANSPORTE, GPS EN VIVO Y BOLETOS */}
+            <div className="bg-white dark:bg-card border border-border/80 rounded-3xl p-4 shadow-2xs space-y-2.5">
               <div className="flex items-center justify-between gap-2">
-                <span className="inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-[#8ee01a]">
-                  <Navigation className="w-3.5 h-3.5" />
+                <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-foreground">
+                  <RouteIcon className="w-4 h-4 text-[#105238]" />
                   Rutas de Transporte
                 </span>
-                <span className="text-[10px] font-bold bg-white/15 px-2 py-0.5 rounded-full">
-                  GPS + Safe-Flow
+                <span className="text-[10px] font-bold bg-[#eaf0e2] text-[#105238] px-2 py-0.5 rounded-full">
+                  GPS · Safe-Flow
                 </span>
               </div>
-              <p className="text-xs font-bold text-white/95 mt-1.5 leading-snug">
+              <p className="text-xs text-muted-foreground leading-snug">
                 Rastrea tu ruta en vivo, compra boletos y activa seguimiento Safe-Flow.
               </p>
-              <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#8ee01a] mt-2 group-hover/routes:translate-x-0.5 transition-transform">
-                Abrir Feed de Rutas <ChevronRight className="w-3.5 h-3.5" />
-              </span>
-            </button>
+              <button
+                type="button"
+                onClick={() => onNavigate?.("rutas-classic")}
+                className="w-full h-9 rounded-xl bg-[#eaf0e2]/80 hover:bg-[#eaf0e2] text-[#105238] text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <span>Abrir Feed de Rutas</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
 
             {/* 2. OFERTAS FLASH: Shown ONLY if the user/catalog has active flash offers (> 0). Hidden completely when 0! */}
             {flashServices.length > 0 && (
