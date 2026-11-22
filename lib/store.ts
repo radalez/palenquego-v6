@@ -4655,11 +4655,8 @@ toggleFavoritePreference: (serviceId) =>
         if (!token) return;
 
         try {
-          const response = await fetch(`${API_BASE}/catalog/my-bookings/`, {
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            }
+          const response = await fetchWithAuth(`${API_BASE}/catalog/my-bookings/`, {
+            cache: 'no-store',
           });
 
           if (response.ok) {

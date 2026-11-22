@@ -2069,6 +2069,18 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
     fetchRoutes()
     useAppStore.getState().fetchUserLikes()
     useAppStore.getState().fetchMyBookings?.()
+
+    const refreshBookings = () => {
+      if (document.visibilityState === "visible") {
+        useAppStore.getState().fetchMyBookings?.()
+      }
+    }
+    window.addEventListener("focus", refreshBookings)
+    document.addEventListener("visibilitychange", refreshBookings)
+    return () => {
+      window.removeEventListener("focus", refreshBookings)
+      document.removeEventListener("visibilitychange", refreshBookings)
+    }
   }, [])
 
   // Restore last viewed card position
@@ -3604,117 +3616,6 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                 </div>
               </div>
             )}
-
-            {/* TOP "RUTAS GO" CIRCULAR STRIP (with arrows + 10 routes + Ver más) */}
-            <div className="bg-card border border-border rounded-3xl p-4 shadow-2xs relative">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Compass className="w-4 h-4 text-slate-700 dark:text-foreground" />
-                  <h2 className="text-xs font-black uppercase tracking-wider text-foreground">
-                    Rutas & Destinos Go
-                  </h2>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => routesTrackRef.current?.scrollBy({ left: -240, behavior: "smooth" })}
-                    className="hidden sm:flex w-7 h-7 rounded-full bg-white dark:bg-card border border-slate-200/90 items-center justify-center text-slate-600 hover:bg-[#f0f2f5] hover:text-slate-900 shadow-2xs transition-all cursor-pointer"
-                    aria-label="Rutas anteriores"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => routesTrackRef.current?.scrollBy({ left: 240, behavior: "smooth" })}
-                    className="hidden sm:flex w-7 h-7 rounded-full bg-white dark:bg-card border border-slate-200/90 items-center justify-center text-slate-600 hover:bg-[#f0f2f5] hover:text-slate-900 shadow-2xs transition-all cursor-pointer"
-                    aria-label="Siguientes rutas"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onNavigate?.("map-explorer")}
-                    className="text-xs font-bold text-slate-700 hover:text-[#105238] hover:underline flex items-center gap-0.5 ml-1 cursor-pointer"
-                  >
-                    <span>Abrir mapa</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-
-              <div ref={routesTrackRef} className="flex items-start gap-3.5 overflow-x-auto pb-1 scrollbar-hide">
-                {/* First Circle: Open Interactive Map Go */}
-                <button
-                  type="button"
-                  onClick={() => onNavigate?.("map-explorer")}
-                  className="flex flex-col items-center gap-1.5 shrink-0 w-18 group cursor-pointer"
-                >
-                  <div className="w-15 h-15 rounded-full p-0.5 bg-slate-200 group-hover:bg-[#105238] shadow-xs group-hover:scale-105 transition-all">
-                    <div className="w-full h-full rounded-full bg-[#105238] flex items-center justify-center border-2 border-white">
-                      <Compass className="w-6 h-6 text-white" />
-                    </div>
-                  </div>
-                  <span className="text-[11px] font-bold text-foreground text-center leading-tight line-clamp-2">
-                    Mapa Go
-                  </span>
-                </button>
-
-                {/* Real Routes Circles (prioritize TOUR first, then URBANO/INTERURBANO) */}
-                {[...routes]
-                  .sort((a: any, b: any) => {
-                    const rank = (r: any) => {
-                      const t = (r.category || r.route_type || "").toUpperCase()
-                      if (t === "TOUR") return 0
-                      if (t === "URBANO") return 1
-                      return 2
-                    }
-                    return rank(a) - rank(b)
-                  })
-                  .slice(0, 10)
-                  .map((route: any) => {
-                  const thumb = route.image || route.imagen_portada || DEFAULT_STORE_COVER
-                  return (
-                    <button
-                      key={route.id}
-                      type="button"
-                      onClick={() => {
-                        useAppStore.getState().setReturnToMapRoute(route.name)
-                        onNavigate?.("map-explorer")
-                      }}
-                      className="flex flex-col items-center gap-1.5 shrink-0 w-18 group cursor-pointer"
-                    >
-                      <div className="w-15 h-15 rounded-full p-0.5 bg-slate-200/90 group-hover:bg-slate-400 shadow-xs group-hover:scale-105 transition-all">
-                        <img
-                          src={thumb}
-                          alt={route.name}
-                          className="w-full h-full rounded-full object-cover border-2 border-white"
-                          onError={(e) => {
-                            e.currentTarget.src = DEFAULT_STORE_COVER
-                          }}
-                        />
-                      </div>
-                      <span className="text-[11px] font-semibold text-foreground text-center leading-tight line-clamp-2">
-                        {route.name}
-                      </span>
-                    </button>
-                  )
-                })}
-
-                {/* Final Circle: Ver más rutas */}
-                <button
-                  type="button"
-                  onClick={() => onNavigate?.("map-explorer")}
-                  className="flex flex-col items-center gap-1.5 shrink-0 w-18 group cursor-pointer"
-                >
-                  <div className="w-15 h-15 rounded-full bg-[#f0f2f5] hover:bg-[#e4e6eb] border border-slate-200 flex items-center justify-center text-slate-700 transition-colors">
-                    <ChevronRight className="w-6 h-6" />
-                  </div>
-                  <span className="text-[11px] font-bold text-slate-700 text-center leading-tight">
-                    Ver más
-                  </span>
-                </button>
-              </div>
-            </div>
 
             {/* TOP SEARCH ROW (Natural scroll flow — never fights or clips with feed cards) */}
             <div ref={stickySearchRowRef} className="sticky-search-container">
