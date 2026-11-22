@@ -405,6 +405,10 @@ export interface Route {
 
   imagen_portada?: string;
 
+  imagenes?: string[];
+
+  stops_images?: string[];
+
   image?: string;
 
   descripcion?: string;
@@ -4547,6 +4551,10 @@ toggleFavoritePreference: (serviceId) =>
 
               imagen_portada: r.imagen_portada,
 
+              imagenes: Array.isArray(r.imagenes) ? r.imagenes : undefined,
+
+              stops_images: Array.isArray(r.stops_images) ? r.stops_images : undefined,
+
               image: r.image,
 
               descripcion: r.descripcion,
@@ -4575,7 +4583,9 @@ toggleFavoritePreference: (serviceId) =>
 
                 effective_price_one_way: s.effective_price_one_way,
 
-                effective_price_round_trip: s.effective_price_round_trip
+                effective_price_round_trip: s.effective_price_round_trip,
+
+                imagen: s.imagen || s.image || undefined
 
               }))
 
