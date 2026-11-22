@@ -98,9 +98,9 @@ export function getMomentoMeta(modalidad: MomentoModalidad) {
     case "HISTORIA":
     default:
       return {
-        badge: "Bitácora",
-        cta: "Ver historia",
-        cardCta: "Ver historia",
+        badge: "Momento",
+        cta: "Ver momento",
+        cardCta: "Ver momento",
         icon: BookOpen,
         badgeClass: "bg-black/65 text-white border border-white/20",
       }
@@ -707,7 +707,7 @@ export function MomentosGoCreateModal({
   const [servicioId, setServicioId] = useState("")
   const [metaPersonas, setMetaPersonas] = useState("6")
   const [myStores, setMyStores] = useState<
-    Array<{ id: number; nombre_comercial: string; cloudinary_cloud_name?: string; cloudinary_upload_preset?: string }>
+    Array<{ id: number; nombre_comercial: string; logo?: string; cloudinary_cloud_name?: string; cloudinary_upload_preset?: string }>
   >([])
   const [tiendaId, setTiendaId] = useState("")
   const [submitting, setSubmitting] = useState(false)
@@ -738,39 +738,44 @@ export function MomentosGoCreateModal({
 
   if (!open) return null
 
+  const myStoreIds = new Set(myStores.map((s) => s.id))
+  const ownStoreServices = tiendaId
+    ? services.filter((s) => s.businessId === Number(tiendaId))
+    : services.filter((s) => s.businessId && myStoreIds.has(s.businessId))
+
   const cards = [
     {
       id: "HISTORIA" as const,
-      title: "Historia",
-      subtitle: "Comparte un recuerdo",
-      duration: "24h",
+      title: "Crear Momento",
+      subtitle: "Foto o video de 24h",
       icon: BookOpen,
-      accent: "bg-slate-900 text-white",
+      gradient: "from-indigo-500 via-blue-500 to-sky-400",
     },
     {
       id: "DESAFIO" as const,
-      title: "Desafío",
-      subtitle: "¿Quién se atreve?",
-      duration: "24h",
+      title: "Lanzar Desafío",
+      subtitle: "Reto grupal de 24h",
       icon: Flame,
-      accent: "bg-amber-50 text-amber-700 border border-amber-200",
+      gradient: "from-fuchsia-500 via-purple-500 to-indigo-500",
     },
-    {
-      id: "POOL" as const,
-      title: "Únete",
-      subtitle: "Arma tu grupo Pool",
-      duration: "24h",
-      icon: Users,
-      accent: "bg-sky-50 text-sky-700 border border-sky-200",
-    },
-    {
-      id: "PROMO" as const,
-      title: "Reservar",
-      subtitle: "Promo de tu tienda",
-      duration: "Fija",
-      icon: Sparkles,
-      accent: "bg-[#eaf0e2] text-[#105238] border border-[#105238]/20",
-    },
+    ...(myStores.length > 0
+      ? [
+          {
+            id: "POOL" as const,
+            title: "Únete (Pool)",
+            subtitle: "Grupo de tu tienda · 24h",
+            icon: Users,
+            gradient: "from-sky-500 via-cyan-500 to-teal-500",
+          },
+          {
+            id: "PROMO" as const,
+            title: "Reservar (Promo)",
+            subtitle: "Promo fija de tu tienda",
+            icon: Sparkles,
+            gradient: "from-emerald-600 via-teal-600 to-slate-800",
+          },
+        ]
+      : []),
   ]
 
   const handleFileChange = (file: File | null) => {
@@ -795,26 +800,32 @@ export function MomentosGoCreateModal({
     setMediaPreview("")
     setMediaUrl("")
     setShowUrlInput(false)
+    setServicioId("")
     setErrorMsg(null)
+  }
+
+  const handleDiscard = () => {
+    resetAll()
+    onClose()
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrorMsg(null)
     if (!modalidad) {
-      setErrorMsg("Elige primero una de las 4 tarjetas arriba.")
+      setErrorMsg("Elige primero una tarjeta.")
       return
     }
     if (!accessToken) {
-      setErrorMsg("Inicia sesión para publicar tu Momento Go.")
+      setErrorMsg("Inicia sesión para publicar tu Momento.")
       return
     }
-    if (modalidad === "PROMO" && !tiendaId && myStores.length > 0) {
-      setErrorMsg("Selecciona tu tienda para publicar una promoción fija.")
+    if ((modalidad === "PROMO" || modalidad === "POOL") && myStores.length > 0 && !tiendaId) {
+      setErrorMsg("Selecciona tu tienda para esta publicación.")
       return
     }
     if (!mediaFile && !mediaUrl.trim()) {
-      setErrorMsg("Sube un video o foto desde tu dispositivo.")
+      setErrorMsg("Sube un video o foto para continuar.")
       return
     }
 
@@ -824,7 +835,6 @@ export function MomentosGoCreateModal({
       let finalIsVideo = esVideo
       const selectedStore = myStores.find((s) => String(s.id) === tiendaId)
 
-      // Si hay archivo y la tienda tiene Cloudinary configurado, subir directo ahí
       if (mediaFile && selectedStore?.cloudinary_cloud_name && selectedStore?.cloudinary_upload_preset) {
         const cloudFd = new FormData()
         cloudFd.append("file", mediaFile)
@@ -880,7 +890,7 @@ export function MomentosGoCreateModal({
 
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        setErrorMsg(data.error || "No se pudo publicar tu Momento Go.")
+        setErrorMsg(data.error || "No se pudo publicar tu Momento.")
         return
       }
       onCreated(data)
@@ -893,130 +903,165 @@ export function MomentosGoCreateModal({
     }
   }
 
+  const activeMeta = modalidad ? getMomentoMeta(modalidad) : null
+
   return (
-    <div
-      onClick={onClose}
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4"
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="bg-white dark:bg-card border border-slate-200 dark:border-border rounded-3xl max-w-lg w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
-      >
-        {/* Fixed Header (never clipped) */}
-        <div className="px-5 py-4 border-b border-slate-100 dark:border-border flex items-center justify-between shrink-0 bg-white dark:bg-card">
-          <div>
-            <h3 className="text-base font-black text-slate-900 dark:text-foreground">Crear Momento Go</h3>
-            <p className="text-xs text-slate-500">Elige el estilo de tu publicación</p>
+    <div className="fixed inset-0 z-50 bg-[#f0f2f5] dark:bg-background flex flex-col md:flex-row overflow-hidden">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="video/*,image/*"
+        className="hidden"
+        onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
+      />
+
+      {/* LEFT SIDEBAR (Meta Stories Studio style) */}
+      <aside className="w-full md:w-[340px] lg:w-[360px] bg-white dark:bg-card border-b md:border-b-0 md:border-r border-slate-200 dark:border-border flex flex-col justify-between shrink-0 max-h-[48vh] md:max-h-full">
+        {/* Top bar */}
+        <div className="px-4 py-3.5 border-b border-slate-100 dark:border-border flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={handleDiscard}
+              className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-muted flex items-center justify-center text-slate-700 cursor-pointer transition-colors"
+              aria-label="Cerrar"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div>
+              <h2 className="text-base font-black text-slate-900 dark:text-foreground leading-tight">
+                {modalidad ? "Tu Momento" : "Momentos Go"}
+              </h2>
+              <p className="text-[11px] text-slate-500">
+                {modalidad ? "Personaliza y comparte" : "Elige qué quieres compartir"}
+              </p>
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-muted flex items-center justify-center text-slate-600 cursor-pointer transition-colors"
-            aria-label="Cerrar"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          {modalidad && (
+            <button
+              type="button"
+              onClick={() => setModalidad(null)}
+              className="text-xs font-bold text-slate-500 hover:text-slate-900 cursor-pointer"
+            >
+              Cambiar tipo
+            </button>
+          )}
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 overflow-y-auto space-y-4">
-          {/* 4-Card Carousel Selector */}
-          <div className="flex items-stretch gap-2.5 overflow-x-auto pb-1 scrollbar-hide">
-            {cards.map((c) => {
-              if (c.id === "PROMO" && myStores.length === 0) return null
-              const Icon = c.icon
-              const isSelected = modalidad === c.id
-              return (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => {
-                    setModalidad(c.id)
-                    if (c.id === "PROMO" && myStores.length > 0 && !tiendaId) {
-                      setTiendaId(String(myStores[0].id))
-                    }
-                  }}
-                  className={cn(
-                    "w-[116px] shrink-0 rounded-2xl p-3 text-left border transition-all cursor-pointer flex flex-col justify-between gap-2.5",
-                    isSelected
-                      ? "border-slate-900 dark:border-white bg-slate-50 dark:bg-muted shadow-sm ring-1 ring-slate-900/10"
-                      : "border-slate-200 dark:border-border bg-white dark:bg-background hover:border-slate-300"
-                  )}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center", c.accent)}>
-                      <Icon className="w-4 h-4" />
-                    </div>
-                    <span className="text-[10px] font-bold text-slate-400">{c.duration}</span>
-                  </div>
-                  <div>
-                    <p className="text-xs font-black text-slate-900 dark:text-foreground leading-tight">{c.title}</p>
-                    <p className="text-[10px] text-slate-500 leading-tight mt-0.5">{c.subtitle}</p>
-                  </div>
-                </button>
-              )
-            })}
-          </div>
+        {/* Guided Sidebar Form (appears after choosing a card) */}
+        <form id="momento-studio-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 space-y-3.5">
+          {!modalidad ? (
+            <div className="space-y-3 py-2">
+              <p className="text-xs text-slate-600 dark:text-muted-foreground leading-relaxed">
+                Selecciona una de las tarjetas del estudio para comenzar a armar tu Momento Go con vista previa en tiempo real.
+              </p>
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-muted/40 border border-slate-200/70 space-y-1.5 text-xs text-slate-600">
+                <p className="font-bold text-slate-800 dark:text-foreground">¿Cómo funciona?</p>
+                <p>• <strong>Momento</strong> y <strong>Desafío</strong> duran 24 horas.</p>
+                {myStores.length > 0 && (
+                  <p>• <strong>Reservar</strong> queda fija vinculada a tu servicio.</p>
+                )}
+              </div>
+            </div>
+          ) : (
+            <>
+              <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-foreground block mb-1">
+                  Título o texto principal
+                </label>
+                <input
+                  type="text"
+                  maxLength={60}
+                  required
+                  value={titulo}
+                  onChange={(e) => setTitulo(e.target.value)}
+                  placeholder={
+                    modalidad === "DESAFIO"
+                      ? "¿Quién se atreve a subir este volcán?"
+                      : modalidad === "POOL"
+                      ? "Escapada en grupo este finde"
+                      : "Escribe un título atractivo..."
+                  }
+                  className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-border bg-slate-50/70 dark:bg-background text-sm focus:outline-none focus:border-slate-400"
+                />
+              </div>
 
-          {/* Progressive Composer: Appears smoothly once a card is selected */}
-          {modalidad && (
-            <div className="space-y-3.5 pt-1 animate-in fade-in slide-in-from-bottom-2 duration-200">
-              {/* Friendly Media Uploader + Live Preview */}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="video/*,image/*"
-                className="hidden"
-                onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
-              />
+              <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-foreground block mb-1">
+                  Descripción
+                </label>
+                <textarea
+                  rows={2}
+                  maxLength={220}
+                  value={descripcion}
+                  onChange={(e) => setDescripcion(e.target.value)}
+                  placeholder="Cuéntale a la comunidad qué vivirán..."
+                  className="w-full p-3 rounded-xl border border-slate-200 dark:border-border bg-slate-50/70 dark:bg-background text-xs resize-none focus:outline-none focus:border-slate-400"
+                />
+              </div>
 
-              {mediaPreview || mediaUrl.trim() ? (
-                <div className="relative rounded-2xl overflow-hidden bg-black h-52 border border-slate-200 dark:border-border">
-                  {esVideo ? (
-                    <video
-                      src={mediaPreview || mediaUrl}
-                      controls
-                      playsInline
-                      className="w-full h-full object-contain"
-                    />
-                  ) : (
-                    <img
-                      src={mediaPreview || mediaUrl}
-                      alt="Vista previa"
-                      className="w-full h-full object-cover"
-                    />
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMediaFile(null)
-                      if (mediaPreview && mediaPreview.startsWith("blob:")) URL.revokeObjectURL(mediaPreview)
-                      setMediaPreview("")
-                      setMediaUrl("")
+              {myStores.length > 0 && (modalidad === "PROMO" || modalidad === "POOL" || modalidad === "DESAFIO" || modalidad === "HISTORIA") && (
+                <div>
+                  <label className="text-xs font-bold text-slate-700 dark:text-foreground block mb-1">
+                    Publicar desde
+                  </label>
+                  <select
+                    value={tiendaId}
+                    onChange={(e) => {
+                      setTiendaId(e.target.value)
+                      setServicioId("")
                     }}
-                    className="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full bg-black/70 hover:bg-black text-white text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                    className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-border bg-slate-50/70 dark:bg-background text-xs font-semibold"
                   >
-                    <X className="w-3 h-3" /> Cambiar
-                  </button>
+                    {modalidad !== "PROMO" && modalidad !== "POOL" && (
+                      <option value="">Mi perfil personal</option>
+                    )}
+                    {myStores.map((st) => (
+                      <option key={st.id} value={st.id}>
+                        {st.nombre_comercial}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full h-36 rounded-2xl border-2 border-dashed border-slate-200 dark:border-border bg-slate-50/70 dark:bg-muted/30 hover:bg-slate-100/80 transition-colors flex flex-col items-center justify-center gap-2 cursor-pointer"
-                >
-                  <div className="w-10 h-10 rounded-full bg-white dark:bg-card shadow-xs border border-slate-200 flex items-center justify-center text-slate-700">
-                    <CloudUpload className="w-5 h-5" />
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs font-bold text-slate-800 dark:text-foreground">
-                      Sube un video o foto
-                    </p>
-                    <p className="text-[11px] text-slate-500">MP4, MOV, JPG o PNG desde tu dispositivo</p>
-                  </div>
-                </button>
               )}
 
-              <div className="flex justify-end">
+              {(modalidad === "PROMO" || modalidad === "POOL" || (modalidad === "DESAFIO" && myStores.length > 0)) && ownStoreServices.length > 0 && (
+                <div>
+                  <label className="text-xs font-bold text-slate-700 dark:text-foreground block mb-1">
+                    Tu servicio vinculado
+                  </label>
+                  <select
+                    value={servicioId}
+                    onChange={(e) => setServicioId(e.target.value)}
+                    className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-border bg-slate-50/70 dark:bg-background text-xs font-semibold"
+                  >
+                    <option value="">Selecciona uno de tus servicios...</option>
+                    {ownStoreServices.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} (${s.price})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {(modalidad === "POOL" || modalidad === "DESAFIO") && (
+                <div>
+                  <label className="text-xs font-bold text-slate-700 dark:text-foreground block mb-1">
+                    Cupos disponibles del grupo
+                  </label>
+                  <input
+                    type="number"
+                    min={2}
+                    max={50}
+                    value={metaPersonas}
+                    onChange={(e) => setMetaPersonas(e.target.value)}
+                    className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-border bg-slate-50/70 dark:bg-background text-xs font-bold"
+                  />
+                </div>
+              )}
+
+              <div className="pt-1">
                 <button
                   type="button"
                   onClick={() => setShowUrlInput((v) => !v)}
@@ -1024,111 +1069,171 @@ export function MomentosGoCreateModal({
                 >
                   {showUrlInput ? "Ocultar enlace" : "¿Prefieres pegar un enlace de video/foto?"}
                 </button>
+                {showUrlInput && (
+                  <input
+                    type="url"
+                    value={mediaUrl}
+                    onChange={(e) => {
+                      setMediaUrl(e.target.value)
+                      setMediaFile(null)
+                      setMediaPreview("")
+                    }}
+                    placeholder="https://.../video.mp4"
+                    className="mt-2 w-full h-9 px-3 rounded-xl border border-slate-200 bg-slate-50 text-xs"
+                  />
+                )}
               </div>
-
-              {showUrlInput && (
-                <input
-                  type="url"
-                  value={mediaUrl}
-                  onChange={(e) => {
-                    setMediaUrl(e.target.value)
-                    setMediaFile(null)
-                    setMediaPreview("")
-                  }}
-                  placeholder="https://.../mi-video.mp4"
-                  className="w-full h-10 px-3.5 rounded-xl border border-slate-200 bg-slate-50 text-xs"
-                />
-              )}
-
-              {/* Title & Caption */}
-              <input
-                type="text"
-                maxLength={60}
-                required
-                value={titulo}
-                onChange={(e) => setTitulo(e.target.value)}
-                placeholder={
-                  modalidad === "DESAFIO"
-                    ? "Ej: ¿Quién se atreve a subir este volcán?"
-                    : modalidad === "POOL"
-                    ? "Ej: Escapada en grupo este fin de semana"
-                    : "Ponle un título corto a tu momento..."
-                }
-                className="w-full h-10 px-3.5 rounded-xl border border-slate-200 dark:border-border bg-white dark:bg-background text-sm font-medium focus:outline-none focus:border-slate-400"
-              />
-
-              <textarea
-                rows={2}
-                maxLength={220}
-                value={descripcion}
-                onChange={(e) => setDescripcion(e.target.value)}
-                placeholder="Cuéntale a la comunidad qué está pasando..."
-                className="w-full p-3 rounded-xl border border-slate-200 dark:border-border bg-white dark:bg-background text-xs resize-none focus:outline-none focus:border-slate-400"
-              />
-
-              {/* Optional Store / Service / Cupos */}
-              {myStores.length > 0 && (
-                <select
-                  value={tiendaId}
-                  onChange={(e) => setTiendaId(e.target.value)}
-                  className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-border bg-slate-50 dark:bg-background text-xs font-semibold text-slate-700"
-                >
-                  <option value="">Publicar con mi perfil personal</option>
-                  {myStores.map((st) => (
-                    <option key={st.id} value={st.id}>
-                      Publicar como {st.nombre_comercial}
-                    </option>
-                  ))}
-                </select>
-              )}
-
-              {modalidad !== "HISTORIA" && services.length > 0 && (
-                <div className={cn("grid gap-2", modalidad === "POOL" || modalidad === "DESAFIO" ? "grid-cols-3" : "grid-cols-1")}>
-                  <div className={cn(modalidad === "POOL" || modalidad === "DESAFIO" ? "col-span-2" : "")}>
-                    <select
-                      value={servicioId}
-                      onChange={(e) => setServicioId(e.target.value)}
-                      className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-border bg-slate-50 dark:bg-background text-xs font-semibold text-slate-700"
-                    >
-                      <option value="">Vincular experiencia (opcional)...</option>
-                      {services.slice(0, 60).map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name} (${s.price})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  {(modalidad === "POOL" || modalidad === "DESAFIO") && (
-                    <input
-                      type="number"
-                      min={2}
-                      max={50}
-                      value={metaPersonas}
-                      onChange={(e) => setMetaPersonas(e.target.value)}
-                      placeholder="Cupos"
-                      className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-border bg-slate-50 dark:bg-background text-xs font-bold"
-                    />
-                  )}
-                </div>
-              )}
 
               {errorMsg && (
                 <p className="text-xs font-semibold text-red-600 bg-red-50 p-2.5 rounded-xl border border-red-200">
                   {errorMsg}
                 </p>
               )}
-
-              <Button
-                type="submit"
-                disabled={submitting}
-                className="w-full h-11 rounded-2xl bg-[#105238] hover:bg-[#0c3e2b] text-white font-bold text-sm cursor-pointer"
-              >
-                {submitting ? "Publicando..." : "Publicar Momento"}
-              </Button>
-            </div>
+            </>
           )}
         </form>
-      </div>
+
+        {/* Bottom Sticky Actions (Descartar + Compartir) */}
+        {modalidad && (
+          <div className="p-4 border-t border-slate-100 dark:border-border flex items-center gap-2.5 bg-white dark:bg-card shrink-0">
+            <button
+              type="button"
+              onClick={handleDiscard}
+              className="flex-1 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer transition-colors"
+            >
+              Descartar
+            </button>
+            <Button
+              type="submit"
+              form="momento-studio-form"
+              disabled={submitting}
+              className="flex-[1.6] h-10 rounded-xl bg-[#105238] hover:bg-[#0c3e2b] text-white font-bold text-xs cursor-pointer"
+            >
+              {submitting ? "Compartiendo..." : "Compartir Momento"}
+            </Button>
+          </div>
+        )}
+      </aside>
+
+      {/* MAIN STUDIO CANVAS (Right Side) */}
+      <main className="flex-1 flex items-center justify-center p-4 sm:p-8 overflow-y-auto">
+        {!modalidad ? (
+          /* 4-Card Carousel Selection View (Meta Stories style) */
+          <div className="w-full max-w-3xl">
+            <div className="flex items-stretch justify-start sm:justify-center gap-4 overflow-x-auto pb-2 scrollbar-hide">
+              {cards.map((c) => {
+                const Icon = c.icon
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => {
+                      setModalidad(c.id)
+                      if ((c.id === "PROMO" || c.id === "POOL") && myStores.length > 0) {
+                        setTiendaId(String(myStores[0].id))
+                      }
+                    }}
+                    className={cn(
+                      "w-[165px] sm:w-[180px] h-[270px] sm:h-[300px] rounded-2xl p-5 shrink-0 bg-gradient-to-br text-white shadow-lg hover:scale-[1.03] active:scale-[0.99] transition-all flex flex-col items-center justify-center text-center gap-3 cursor-pointer",
+                      c.gradient
+                    )}
+                  >
+                    <div className="w-12 h-12 rounded-full bg-white text-slate-900 flex items-center justify-center shadow-md">
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-black leading-snug">{c.title}</p>
+                      <p className="text-[11px] text-white/85 mt-1">{c.subtitle}</p>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        ) : (
+          /* Live Vista Previa Stage (Meta Stories style) */
+          <div className="w-full max-w-3xl bg-white dark:bg-card rounded-2xl border border-slate-200 dark:border-border shadow-sm p-4 sm:p-5 flex flex-col">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold text-slate-700 dark:text-foreground">Vista previa</span>
+              {(mediaPreview || mediaUrl.trim()) && (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-xs font-bold text-slate-600 hover:text-slate-900 underline cursor-pointer"
+                >
+                  Cambiar archivo
+                </button>
+              )}
+            </div>
+
+            <div className="bg-[#18191a] rounded-xl py-6 px-4 flex items-center justify-center">
+              <div className="relative w-[240px] sm:w-[270px] h-[420px] sm:h-[465px] rounded-2xl overflow-hidden bg-gradient-to-b from-slate-800 to-black border border-white/15 shadow-2xl flex flex-col justify-between">
+                {mediaPreview || mediaUrl.trim() ? (
+                  esVideo ? (
+                    <video
+                      src={mediaPreview || mediaUrl}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  ) : (
+                    <img
+                      src={mediaPreview || mediaUrl}
+                      alt="Vista previa"
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  )
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white/90 hover:bg-white/5 transition-colors cursor-pointer p-6 text-center"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-white/15 flex items-center justify-center">
+                      <CloudUpload className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold">Sube tu video o foto</p>
+                      <p className="text-[11px] text-white/65 mt-1">Toca aquí para elegir desde tu dispositivo</p>
+                    </div>
+                  </button>
+                )}
+
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/45 pointer-events-none" />
+
+                {/* Top live badge */}
+                <div className="relative z-10 p-3 flex items-center justify-between pointer-events-none">
+                  {activeMeta && (
+                    <span className={cn("px-2.5 py-0.5 rounded-full text-[10px] font-black", activeMeta.badgeClass)}>
+                      {activeMeta.badge}
+                    </span>
+                  )}
+                  <span className="text-[10px] font-bold text-white/80 bg-black/45 px-2 py-0.5 rounded-full">
+                    {modalidad === "PROMO" ? "Fija" : "24h"}
+                  </span>
+                </div>
+
+                {/* Bottom live overlay */}
+                <div className="relative z-10 p-3.5 space-y-2 pointer-events-none">
+                  <p className="text-sm font-black text-white leading-snug line-clamp-2">
+                    {titulo || "Tu título aparecerá aquí..."}
+                  </p>
+                  {descripcion && (
+                    <p className="text-[11px] text-white/80 line-clamp-2">{descripcion}</p>
+                  )}
+                  {modalidad !== "HISTORIA" && activeMeta && (
+                    <div className="w-full h-8 rounded-full bg-white/95 text-slate-900 text-xs font-black flex items-center justify-center">
+                      {activeMeta.cta}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
     </div>
   )
 }
