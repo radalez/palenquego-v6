@@ -107,9 +107,26 @@ export function getMomentoMeta(modalidad: MomentoModalidad) {
   }
 }
 
+function getYouTubeId(url: string): string | null {
+  if (!url) return null
+  const match = url.match(
+    /(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
+  )
+  return match ? match[1] : null
+}
+
+function getYouTubeEmbedUrl(url: string): string | null {
+  const id = getYouTubeId(url)
+  return id ? `https://www.youtube.com/embed/${id}?autoplay=1&rel=0&playsinline=1` : null
+}
+
 function getMomentoPoster(item: MomentoGoItem): string {
   if (item.thumbnail_cloudinary_url) return getProxyImage(item.thumbnail_cloudinary_url)
   const url = item.media_cloudinary_url || ""
+  const ytId = getYouTubeId(url)
+  if (ytId) {
+    return `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`
+  }
   if (url.includes("/video/upload/")) {
     return getProxyImage(url.replace(/\.(mp4|webm|mov|m4v)(\?.*)?$/i, ".jpg"))
   }
@@ -387,7 +404,16 @@ export function MomentosGoViewerModal({
         }}
         className="md:hidden relative w-full h-[100dvh] bg-black overflow-hidden flex flex-col justify-between"
       >
-        {item.es_video ? (
+        {getYouTubeEmbedUrl(item.media_cloudinary_url) ? (
+          <iframe
+            key={item.media_cloudinary_url}
+            src={getYouTubeEmbedUrl(item.media_cloudinary_url)!}
+            title={item.titulo}
+            allow="autoplay; encrypted-media; picture-in-picture"
+            allowFullScreen
+            className="absolute inset-0 w-full h-full border-0"
+          />
+        ) : item.es_video ? (
           <video
             key={item.media_cloudinary_url}
             src={item.media_cloudinary_url}
@@ -510,7 +536,16 @@ export function MomentosGoViewerModal({
         <div className="flex-1 bg-[#141716] border border-white/10 rounded-3xl overflow-hidden shadow-2xl grid grid-cols-12 h-[82vh] max-h-[680px]">
           {/* Left Media */}
           <div className="col-span-7 relative bg-black flex items-center justify-center overflow-hidden">
-            {item.es_video ? (
+            {getYouTubeEmbedUrl(item.media_cloudinary_url) ? (
+              <iframe
+                key={item.media_cloudinary_url}
+                src={getYouTubeEmbedUrl(item.media_cloudinary_url)!}
+                title={item.titulo}
+                allow="autoplay; encrypted-media; picture-in-picture"
+                allowFullScreen
+                className="w-full h-full border-0"
+              />
+            ) : item.es_video ? (
               <video
                 key={item.media_cloudinary_url}
                 src={item.media_cloudinary_url}
@@ -1169,7 +1204,15 @@ export function MomentosGoCreateModal({
             <div className="bg-[#18191a] rounded-xl py-6 px-4 flex items-center justify-center">
               <div className="relative w-[240px] sm:w-[270px] h-[420px] sm:h-[465px] rounded-2xl overflow-hidden bg-gradient-to-b from-slate-800 to-black border border-white/15 shadow-2xl flex flex-col justify-between">
                 {mediaPreview || mediaUrl.trim() ? (
-                  esVideo ? (
+                  getYouTubeEmbedUrl(mediaUrl) ? (
+                    <iframe
+                      src={getYouTubeEmbedUrl(mediaUrl)!}
+                      title="Vista previa YouTube"
+                      allow="autoplay; encrypted-media; picture-in-picture"
+                      allowFullScreen
+                      className="absolute inset-0 w-full h-full border-0"
+                    />
+                  ) : esVideo ? (
                     <video
                       src={mediaPreview || mediaUrl}
                       autoPlay
