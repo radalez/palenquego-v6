@@ -327,8 +327,18 @@ export function MomentosGoViewerModal({
 }: MomentosGoViewerModalProps) {
   const [muted, setMuted] = useState(false)
   const [photoIdx, setPhotoIdx] = useState(0)
+  const [isDesktop, setIsDesktop] = useState(true)
   const touchStartY = useRef<number | null>(null)
   const wheelLock = useRef<number>(0)
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const mq = window.matchMedia("(min-width: 768px)")
+    const sync = () => setIsDesktop(mq.matches)
+    sync()
+    mq.addEventListener("change", sync)
+    return () => mq.removeEventListener("change", sync)
+  }, [])
 
   const item = activeIndex !== null ? momentos[activeIndex] : null
 
@@ -388,7 +398,8 @@ export function MomentosGoViewerModal({
       onWheel={handleWheel}
       className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center md:p-6"
     >
-      {/* MOBILE REELS VIEWER (100dvh TikTok style) */}
+      {/* MOBILE REELS VIEWER (100dvh TikTok style - only mounted on mobile) */}
+      {!isDesktop && (
       <div
         onClick={(e) => e.stopPropagation()}
         onTouchStart={(e) => {
@@ -527,11 +538,13 @@ export function MomentosGoViewerModal({
           )}
         </div>
       </div>
+      )}
 
-      {/* DESKTOP LIGHTBOX VIEWER (Service Detail Style + Scroll Arrows) */}
+      {/* DESKTOP LIGHTBOX VIEWER (Service Detail Style + Scroll Arrows - only mounted on desktop) */}
+      {isDesktop && (
       <div
         onClick={(e) => e.stopPropagation()}
-        className="hidden md:flex items-center gap-4 max-w-5xl w-full"
+        className="flex items-center gap-4 max-w-5xl w-full"
       >
         <div className="flex-1 bg-[#141716] border border-white/10 rounded-3xl overflow-hidden shadow-2xl grid grid-cols-12 h-[82vh] max-h-[680px]">
           {/* Left Media */}
@@ -563,15 +576,17 @@ export function MomentosGoViewerModal({
                 className="w-full h-full object-contain"
               />
             )}
-            <div className="absolute top-4 left-4 flex items-center gap-2">
-              <span className={cn("px-3 py-1 rounded-full text-xs font-black flex items-center gap-1.5", meta.badgeClass)}>
-                <MetaIcon className="w-3.5 h-3.5" />
-                {meta.badge}
-              </span>
-              <span className="px-2.5 py-1 rounded-full bg-black/65 text-white/90 text-xs font-bold">
-                {item.es_permanente ? "Promo permanente" : "Activo 24h"}
-              </span>
-            </div>
+            {!getYouTubeEmbedUrl(item.media_cloudinary_url) && (
+              <div className="absolute top-4 left-4 flex items-center gap-2 pointer-events-none">
+                <span className={cn("px-3 py-1 rounded-full text-xs font-black flex items-center gap-1.5", meta.badgeClass)}>
+                  <MetaIcon className="w-3.5 h-3.5" />
+                  {meta.badge}
+                </span>
+                <span className="px-2.5 py-1 rounded-full bg-black/65 text-white/90 text-xs font-bold">
+                  {item.es_permanente ? "Promo permanente" : "Activo 24h"}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Right Info Panel */}
@@ -712,6 +727,7 @@ export function MomentosGoViewerModal({
           </button>
         </div>
       </div>
+      )}
     </div>
   )
 }
