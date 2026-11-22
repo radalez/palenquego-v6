@@ -107,7 +107,7 @@ export function getMomentoMeta(modalidad: MomentoModalidad) {
   }
 }
 
-function getYouTubeId(url: string): string | null {
+export function getYouTubeId(url: string): string | null {
   if (!url) return null
   const match = url.match(
     /(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
@@ -120,7 +120,7 @@ function getYouTubeEmbedUrl(url: string): string | null {
   return id ? `https://www.youtube.com/embed/${id}?autoplay=1&rel=0&playsinline=1` : null
 }
 
-function getMomentoPoster(item: MomentoGoItem): string {
+export function getMomentoPoster(item: MomentoGoItem): string {
   if (item.thumbnail_cloudinary_url) return getProxyImage(item.thumbnail_cloudinary_url)
   const url = item.media_cloudinary_url || ""
   const ytId = getYouTubeId(url)

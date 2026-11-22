@@ -65,6 +65,8 @@ import {
   MomentosGoViewerModal,
   MomentosGoCreateModal,
   getMomentoMeta,
+  getMomentoPoster,
+  getYouTubeId,
   type MomentoGoItem,
 } from "@/components/momentos-go-section"
 
@@ -3481,7 +3483,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
       const token = accessToken || (typeof window !== "undefined" ? localStorage.getItem("access_token") : null)
       if (item.pool && token) {
         try {
-          const res = await fetch(`${API_BASE}/pools/list/${item.pool}/join/`, {
+          const res = await fetch(`${API_BASE}/pools/${item.pool}/join/`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -3490,6 +3492,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
           })
           const d = await res.json().catch(() => ({}))
           if (res.ok) {
+            setActiveMomentoViewerIdx(null)
             alert(d.message || "¡Te has unido al Pool con éxito! Revisa tus viajes en Mis Viajes.")
             fetchMomentosGo()
             return
@@ -5430,9 +5433,23 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                             </span>
                           </div>
                           <div className="relative h-64 rounded-2xl overflow-hidden bg-black">
-                            {feedMomento.es_video ? (
+                            {getYouTubeId(feedMomento.media_cloudinary_url) ? (
+                              <>
+                                <img
+                                  src={getMomentoPoster(feedMomento)}
+                                  alt={feedMomento.titulo}
+                                  className="w-full h-full object-cover"
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                  <div className="w-12 h-12 rounded-full bg-black/65 text-white flex items-center justify-center border border-white/25 shadow-lg">
+                                    <Play className="w-5 h-5 fill-current ml-0.5" />
+                                  </div>
+                                </div>
+                              </>
+                            ) : feedMomento.es_video ? (
                               <video
                                 src={feedMomento.media_cloudinary_url}
+                                poster={getMomentoPoster(feedMomento)}
                                 muted
                                 playsInline
                                 className="w-full h-full object-cover"
