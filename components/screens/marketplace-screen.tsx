@@ -20,6 +20,7 @@ import {
   Zap,
   Compass,
   Route as RouteIcon,
+  LayoutGrid,
   ThumbsUp,
   Smile,
   Sparkles,
@@ -3501,7 +3502,7 @@ export function MarketplaceScreen({ onNavigate }: MarketplaceScreenProps) {
                 aria-label="Servicios"
                 className="group relative flex-1 h-12 flex items-center justify-center text-[#105238] cursor-default"
               >
-                <Sparkles className="w-6 h-6" />
+                <LayoutGrid className="w-6 h-6" />
                 <span className="absolute bottom-0 inset-x-3 h-[3px] rounded-t-full bg-[#105238]" />
                 <span className="pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 absolute top-full mt-1.5 bg-neutral-900/95 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg whitespace-nowrap shadow-lg z-40">
                   Servicios

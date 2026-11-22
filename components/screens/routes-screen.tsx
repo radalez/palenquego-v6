@@ -30,7 +30,7 @@ import {
   Link2,
   ShieldCheck,
   Route as RouteIcon,
-  Sparkles,
+  LayoutGrid,
 } from "lucide-react"
 import { REACTIONS, ReactionBadgeIcon, type ReactionKey } from "./marketplace-screen"
 import { Badge } from "@/components/ui/badge"
@@ -1195,7 +1195,7 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
                 aria-label="Servicios"
                 className="group relative flex-1 h-10 my-1 flex items-center justify-center rounded-xl hover:bg-[#f0f2f5] dark:hover:bg-white/10 text-slate-500 transition-colors cursor-pointer"
               >
-                <Sparkles className="w-6 h-6" />
+                <LayoutGrid className="w-6 h-6" />
                 <span className="pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 absolute top-full mt-2.5 bg-neutral-900/95 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg whitespace-nowrap shadow-lg z-40">
                   Servicios
                 </span>
