@@ -1188,25 +1188,25 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
           {/* LEFT / CENTER COLUMN: SOCIAL ROUTE FEED */}
           <div className="w-full max-w-[650px] mx-auto space-y-4">
             {/* Selector estilo Facebook: Iconos centrados con línea verde inferior */}
-            <div className="bg-white dark:bg-card border border-border/70 rounded-2xl px-2 flex items-center shadow-2xs">
+            <div className="bg-white dark:bg-card border border-border/70 rounded-2xl px-2 flex items-center gap-1 shadow-2xs">
               <button
                 type="button"
                 onClick={() => onNavigate?.("marketplace")}
                 aria-label="Servicios"
-                className="group relative flex-1 h-12 flex items-center justify-center rounded-xl hover:bg-[#eaf0e2]/60 text-slate-500 hover:text-[#105238] transition-colors cursor-pointer"
+                className="group relative flex-1 h-10 my-1 flex items-center justify-center rounded-xl hover:bg-[#f0f2f5] dark:hover:bg-white/10 text-slate-500 transition-colors cursor-pointer"
               >
                 <Sparkles className="w-6 h-6" />
-                <span className="pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 absolute top-full mt-1.5 bg-neutral-900/95 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg whitespace-nowrap shadow-lg z-40">
+                <span className="pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 absolute top-full mt-2.5 bg-neutral-900/95 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg whitespace-nowrap shadow-lg z-40">
                   Servicios
                 </span>
               </button>
               <button
                 type="button"
                 aria-label="Rutas"
-                className="group relative flex-1 h-12 flex items-center justify-center rounded-xl hover:bg-[#eaf0e2]/60 text-[#105238] transition-colors cursor-pointer"
+                className="group relative flex-1 h-12 flex items-center justify-center text-[#105238] cursor-default"
               >
                 <RouteIcon className="w-6 h-6" />
-                <span className="absolute bottom-0 inset-x-4 h-[3px] rounded-t-full bg-[#105238]" />
+                <span className="absolute bottom-0 inset-x-3 h-[3px] rounded-t-full bg-[#105238]" />
                 <span className="pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 absolute top-full mt-1.5 bg-neutral-900/95 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg whitespace-nowrap shadow-lg z-40">
                   Rutas
                 </span>
