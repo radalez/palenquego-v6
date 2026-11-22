@@ -5,6 +5,7 @@ import {
   Play,
   Eye,
   Video,
+  ChevronLeft,
   ChevronRight,
   ChevronUp,
   ChevronDown,
@@ -291,14 +292,24 @@ export function MomentosGoCarousel({
             })}
           </div>
           {momentos.length > 3 && (
-            <button
-              type="button"
-              onClick={() => scrollRef.current?.scrollBy({ left: 260, behavior: "smooth" })}
-              className="hidden sm:flex absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/95 border border-border shadow-md items-center justify-center text-foreground hover:bg-[#eaf0e2] cursor-pointer"
-              aria-label="Siguiente"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => scrollRef.current?.scrollBy({ left: -260, behavior: "smooth" })}
+                className="hidden sm:flex absolute left-1 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/95 border border-border shadow-md items-center justify-center text-foreground hover:bg-[#eaf0e2] cursor-pointer z-10"
+                aria-label="Anterior"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollRef.current?.scrollBy({ left: 260, behavior: "smooth" })}
+                className="hidden sm:flex absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/95 border border-border shadow-md items-center justify-center text-foreground hover:bg-[#eaf0e2] cursor-pointer z-10"
+                aria-label="Siguiente"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </>
           )}
         </div>
       )}
