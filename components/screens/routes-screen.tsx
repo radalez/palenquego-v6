@@ -1388,8 +1388,9 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
               </button>
             </div>
 
-            {/* Search & Categories Sticky Bar (sigue contigo al hacer scroll) */}
-            <div className="sticky top-2 z-20 bg-white/95 dark:bg-card/95 backdrop-blur-md border border-border/80 rounded-3xl p-3 shadow-sm space-y-2.5">
+            {/* Search & Categories Sticky Bar (pegado arriba sin rendija transparente) */}
+            <div className="sticky top-0 z-20 bg-[#f5f6f3] dark:bg-background pt-2 pb-1 -mx-1 px-1">
+              <div className="bg-white dark:bg-card border border-border/80 rounded-3xl p-3 shadow-sm space-y-2.5">
               <div className="flex items-center gap-2">
                 <div className="relative flex-1 min-w-0">
                   <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -1487,6 +1488,7 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
+              </div>
               </div>
             </div>
 
