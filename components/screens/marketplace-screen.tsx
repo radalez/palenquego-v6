@@ -574,7 +574,7 @@ interface SmartReelStep {
   isActionCard?: boolean
 }
 
-interface SmartReelDefinition {
+export interface SmartReelDefinition {
   id: string
   badge: string
   heading: string
@@ -585,7 +585,7 @@ interface SmartReelDefinition {
   onAction: () => void
 }
 
-function SmartAppReelStrip({ reel }: { reel: SmartReelDefinition }) {
+export function SmartAppReelStrip({ reel }: { reel: SmartReelDefinition }) {
   const trackRef = useRef<HTMLDivElement | null>(null)
   const ReelIcon = reel.icon
 

@@ -31,8 +31,18 @@ import {
   ShieldCheck,
   Route as RouteIcon,
   LayoutGrid,
+  Shuffle,
+  Sparkles,
+  ChevronLeft,
+  Bus,
 } from "lucide-react"
-import { REACTIONS, ReactionBadgeIcon, type ReactionKey } from "./marketplace-screen"
+import {
+  REACTIONS,
+  ReactionBadgeIcon,
+  type ReactionKey,
+  SmartAppReelStrip,
+  type SmartReelDefinition,
+} from "./marketplace-screen"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -125,7 +135,10 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
   const [serviceView, setServiceView] = useState<ServiceViewState | null>(null)
   const [ticketPurchase, setTicketPurchase] = useState<TicketPurchaseState | null>(null)
   const [ticketModalOpen, setTicketModalOpen] = useState(false)
-  const [activeFilter, setActiveFilter] = useState<"ALL" | "MY_ROUTES" | "GPS" | "TOURS">("ALL")
+  const [activeFilter, setActiveFilter] = useState<"ALL" | "INTERURBANO" | "URBANO" | "TOURS" | "GPS" | "MY_ROUTES">("ALL")
+  const [visibleCount, setVisibleCount] = useState(5)
+  const [routeSeed, setRouteSeed] = useState(1)
+  const loadMoreRef = useRef<HTMLDivElement | null>(null)
   const [adRotationIndex, setAdRotationIndex] = useState(0)
   const [isHoveringSidebar, setIsHoveringSidebar] = useState(false)
   const [toastText, setToastText] = useState<string | null>(null)
@@ -254,18 +267,162 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
 
   const filteredRoutes = useMemo(() => {
     const query = (routeSearchQuery || "").toLowerCase()
-    return allRoutes.filter((route: any) => {
+    const base = allRoutes.filter((route: any) => {
       const matchesSearch =
         !query ||
         (route.name || "").toLowerCase().includes(query) ||
         (route.stops || []).some((stop: any) => (stop.name || "").toLowerCase().includes(query))
       if (!matchesSearch) return false
+      const rType = String(route.route_type || route.category?.name || "").toUpperCase()
       if (activeFilter === "MY_ROUTES") return Boolean(route.user_has_ticket)
       if (activeFilter === "GPS") return Boolean(route.is_active && route.unit_lat && route.unit_lng)
-      if (activeFilter === "TOURS") return route.route_type === "TOUR"
+      if (activeFilter === "TOURS") return rType === "TOUR" || rType.includes("TOUR")
+      if (activeFilter === "INTERURBANO") return rType === "INTERURBANO" || rType.includes("INTER")
+      if (activeFilter === "URBANO") return rType === "URBANO" || (!rType.includes("TOUR") && !rType.includes("INTER"))
       return true
     })
-  }, [allRoutes, routeSearchQuery, activeFilter])
+
+    // Ordenamiento inteligente estilo Experiencias: Mi Ruta -> GPS en vivo -> mezcla determinística por routeSeed
+    return [...base].sort((a: any, b: any) => {
+      const aTicket = a.user_has_ticket ? 0 : 1
+      const bTicket = b.user_has_ticket ? 0 : 1
+      if (aTicket !== bTicket) return aTicket - bTicket
+
+      const aGps = a.is_active && a.unit_lat && a.unit_lng ? 0 : 1
+      const bGps = b.is_active && b.unit_lat && b.unit_lng ? 0 : 1
+      if (aGps !== bGps) return aGps - bGps
+
+      const scoreA = ((Number(a.id) || 1) * 2654435761 + routeSeed * 37) % 1000
+      const scoreB = ((Number(b.id) || 1) * 2654435761 + routeSeed * 37) % 1000
+      return scoreA - scoreB
+    })
+  }, [allRoutes, routeSearchQuery, activeFilter, routeSeed])
+
+  // Reiniciar lote visible al cambiar filtro, búsqueda o barajar
+  useEffect(() => {
+    setVisibleCount(5)
+  }, [activeFilter, routeSearchQuery, routeSeed])
+
+  const visibleRoutes = useMemo(
+    () => filteredRoutes.slice(0, visibleCount),
+    [filteredRoutes, visibleCount]
+  )
+
+  // Scroll infinito progresivo (+5 rutas por lote)
+  useEffect(() => {
+    const el = loadMoreRef.current
+    if (!el || visibleCount >= filteredRoutes.length) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setVisibleCount((prev) => Math.min(prev + 5, filteredRoutes.length))
+        }
+      },
+      { rootMargin: "240px" }
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [visibleCount, filteredRoutes.length])
+
+  // Reels inteligentes intercalados para Modo Rutas (sin mostrar "Tours en mapa", priorizando Chofer, Alianzas y Pools)
+  const routeSmartReels = useMemo<SmartReelDefinition[]>(() => {
+    const pickRouteImg = (idx: number, fallback: string) => {
+      const r = allRoutes[idx % Math.max(1, allRoutes.length)]
+      return r ? getRouteImageUrl(r) : fallback
+    }
+    return [
+      {
+        id: "routes-modo-chofer",
+        badge: "REEL MOVILIDAD · MODO CHOFER",
+        heading: "Genera ingresos con tu unidad en rutas y traslados",
+        subtitle: "Pasajeros verificados, control de asientos y GPS en vivo",
+        ctaLabel: "Panel de Chofer",
+        icon: Bus,
+        onAction: () => onNavigate?.(currentUser?.tipo === "CHOFER" ? "conductor" : "profile"),
+        steps: [
+          {
+            stepBadge: "Paso 1 · Tu Unidad",
+            title: "Conecta tu vehículo, microbús o shuttle turístico",
+            description: "Atiende rutas turísticas, traslados al aeropuerto y viajes grupales dentro de PalenqueGo.",
+            image: pickRouteImg(0, "https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=600&q=80"),
+          },
+          {
+            stepBadge: "Paso 2 · Control QR y GPS",
+            title: "Valida boletos QR al abordar y muestra tu ruta en vivo",
+            description: "Tus pasajeros ven la ubicación de tu unidad en tiempo real y tú controlas las plazas.",
+            image: pickRouteImg(1, "https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=600&q=80"),
+          },
+          {
+            stepBadge: "Paso 3 · Actívate",
+            title: "Configura tu perfil de Chofer y empieza a rodar",
+            description: "Entra a tu consola de conductor o activa tu interés de Chofer en Mi Perfil.",
+            image: pickRouteImg(2, "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=600&q=80"),
+            isActionCard: true,
+          },
+        ],
+      },
+      {
+        id: "routes-alianzas-b2b",
+        badge: "REEL ALIANZAS B2B · SOCIO COMERCIAL",
+        heading: "¿Te gustaría colaborar con otros negocios?",
+        subtitle: "Conecta tu ruta con hoteles, restaurantes y tours aliados",
+        ctaLabel: "Explorar Servicios",
+        icon: Store,
+        onAction: () => onNavigate?.("marketplace"),
+        steps: [
+          {
+            stepBadge: "Paso 1 · Alianza B2B",
+            title: "Conecta tu transporte con hoteles y experiencias",
+            description: "Un transportista puede aliarse con hoteles o restaurantes para ofrecer paquetes combinados.",
+            image: pickRouteImg(3, "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=600&q=80"),
+          },
+          {
+            stepBadge: "Paso 2 · Ganancia Mutua",
+            title: "Compartan porcentajes llevando viajeros entre sí",
+            description: "Acuerden comisiones por referido entre negocios aliados y crezcan juntos en toda la red.",
+            image: pickRouteImg(4, "https://images.unsplash.com/photo-1521791136064-7986c2920216?w=600&q=80"),
+          },
+          {
+            stepBadge: "Paso 3 · Ver Comercios",
+            title: "Descubre hoteles y experiencias para conectar",
+            description: "Explora el catálogo de Servicios Aliados y arma rutas con paradas recomendadas.",
+            image: pickRouteImg(5, "https://images.unsplash.com/photo-1582719508461-905c673771fd?w=600&q=80"),
+            isActionCard: true,
+          },
+        ],
+      },
+      {
+        id: "routes-pools-grupo",
+        badge: "REEL GRUPOS · POOLS DE AHORRO",
+        heading: "Viaja en grupo y ahorra hasta 20% en tu ruta",
+        subtitle: "Únete a un Pool activo o arma tu propio recorrido grupal",
+        ctaLabel: "Ver Pools",
+        icon: Users,
+        onAction: () => onNavigate?.("pool"),
+        steps: [
+          {
+            stepBadge: "Paso 1 · Elige Ruta",
+            title: "Selecciona tu destino o tour favorito",
+            description: "Las rutas participantes muestran descuento grupal automático al completar cupos.",
+            image: pickRouteImg(6, "https://images.unsplash.com/photo-1501555088652-021faa106b9b?w=600&q=80"),
+          },
+          {
+            stepBadge: "Paso 2 · Comparte",
+            title: "Invita a tus amigos o únete a viajeros en la misma ruta",
+            description: "Cada integrante paga su parte de forma segura y recibe su boleto QR individual.",
+            image: pickRouteImg(7, "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=600&q=80"),
+          },
+          {
+            stepBadge: "Paso 3 · Ir a Mis Viajes",
+            title: "Revisa los Pools activos ahora mismo",
+            description: "Consulta horarios de salida y cupos disponibles en la sección Mis Viajes.",
+            image: pickRouteImg(8, "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=600&q=80"),
+            isActionCard: true,
+          },
+        ],
+      },
+    ]
+  }, [allRoutes, currentUser?.tipo, onNavigate])
 
   useEffect(() => {
     fetchRoutes()
@@ -1233,10 +1390,12 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
                 )}
               </div>
 
-              {/* Filter Pills + Back to Map button */}
+              {/* Filter Pills + Shuffle + Back to Map button */}
               <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-0.5">
                 {[
                   { id: "ALL", label: "Todas" },
+                  { id: "INTERURBANO", label: "Interurbano" },
+                  { id: "URBANO", label: "Urbano" },
                   { id: "TOURS", label: "Tours" },
                   { id: "GPS", label: "GPS en vivo" },
                   ...(allRoutes.some((r: any) => r.user_has_ticket)
@@ -1257,6 +1416,18 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
                     {f.label}
                   </button>
                 ))}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRouteSeed((s) => s + 1)
+                    showQuickToast("Feed de rutas actualizado")
+                  }}
+                  className="px-2.5 py-1.5 rounded-full text-xs font-bold bg-[#f0f2f5] hover:bg-[#eaf0e2] text-foreground/80 hover:text-[#105238] transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                  title="Mezclar orden de rutas"
+                >
+                  <Shuffle className="w-3.5 h-3.5" />
+                </button>
 
                 <button
                   type="button"
@@ -1291,46 +1462,163 @@ export function RoutesScreen({ onNavigate }: RoutesScreenProps) {
               />
             )}
 
-            {/* FEED CARDS */}
-            {filteredRoutes.map((route) => (
-              <RouteFeedCard
-                key={route.id}
-                route={route}
-                userReaction={userReactions[route.id] || null}
-                isJustReacted={justReactedRouteId === route.id}
-                isReactionPickerOpen={openReactionPickerId === route.id}
-                isCommentsOpen={openCommentsRouteId === route.id}
-                isShareOpen={openShareId === route.id}
-                isCopied={copiedRouteId === route.id}
-                comments={routeComments[route.id] || []}
-                currentUser={currentUser}
-                onReactionMouseEnter={() => handleReactionMouseEnter(route.id)}
-                onReactionMouseLeave={handleReactionMouseLeave}
-                onTogglePicker={() =>
-                  setOpenReactionPickerId((prev) => (prev === route.id ? null : route.id))
-                }
-                onSelectReaction={(r) => toggleRouteReaction(route.id, r)}
-                onToggleComments={() =>
-                  setOpenCommentsRouteId((prev) => (prev === route.id ? null : route.id))
-                }
-                onCloseComments={() => setOpenCommentsRouteId(null)}
-                onToggleShare={() =>
-                  setOpenShareId((prev) => (prev === route.id ? null : route.id))
-                }
-                onCloseShare={() => setOpenShareId(null)}
-                onCopyShare={async (url) => {
-                  await navigator.clipboard.writeText(url)
-                  setCopiedRouteId(route.id)
-                  showQuickToast("Enlace de ruta copiado al portapapeles")
-                  setTimeout(() => setCopiedRouteId(null), 1500)
-                  setOpenShareId(null)
-                }}
-                onAddComment={(text, rating) => addRouteComment(route.id, text, rating)}
-                onTrack={() => handleStartTracking(route)}
-                onServices={() => handleViewServices(route)}
-                onBuy={() => handleBuyTicket(route)}
-              />
-            ))}
+            {/* FEED CARDS PROGRESIVO + REELS INTELIGENTES INTERCALADOS */}
+            {visibleRoutes.map((route, idx) => {
+              const shouldShowExperienciasStrip = idx === 3 && (services || []).length > 0
+              const reelToShow =
+                idx === 1
+                  ? routeSmartReels[0]
+                  : idx === 5
+                    ? routeSmartReels[1]
+                    : idx === 7
+                      ? routeSmartReels[2]
+                      : idx > 7 && (idx + 1) % 4 === 0
+                        ? routeSmartReels[Math.floor((idx + 1) / 4) % routeSmartReels.length]
+                        : null
+
+              return (
+                <div key={route.id} className="space-y-4">
+                  <RouteFeedCard
+                    route={route}
+                    userReaction={userReactions[route.id] || null}
+                    isJustReacted={justReactedRouteId === route.id}
+                    isReactionPickerOpen={openReactionPickerId === route.id}
+                    isCommentsOpen={openCommentsRouteId === route.id}
+                    isShareOpen={openShareId === route.id}
+                    isCopied={copiedRouteId === route.id}
+                    comments={routeComments[route.id] || []}
+                    currentUser={currentUser}
+                    onReactionMouseEnter={() => handleReactionMouseEnter(route.id)}
+                    onReactionMouseLeave={handleReactionMouseLeave}
+                    onTogglePicker={() =>
+                      setOpenReactionPickerId((prev) => (prev === route.id ? null : route.id))
+                    }
+                    onSelectReaction={(r) => toggleRouteReaction(route.id, r)}
+                    onToggleComments={() =>
+                      setOpenCommentsRouteId((prev) => (prev === route.id ? null : route.id))
+                    }
+                    onCloseComments={() => setOpenCommentsRouteId(null)}
+                    onToggleShare={() =>
+                      setOpenShareId((prev) => (prev === route.id ? null : route.id))
+                    }
+                    onCloseShare={() => setOpenShareId(null)}
+                    onCopyShare={async (url) => {
+                      await navigator.clipboard.writeText(url)
+                      setCopiedRouteId(route.id)
+                      showQuickToast("Enlace de ruta copiado al portapapeles")
+                      setTimeout(() => setCopiedRouteId(null), 1500)
+                      setOpenShareId(null)
+                    }}
+                    onAddComment={(text, rating) => addRouteComment(route.id, text, rating)}
+                    onTrack={() => handleStartTracking(route)}
+                    onServices={() => handleViewServices(route)}
+                    onBuy={() => handleBuyTicket(route)}
+                  />
+
+                  {/* Reel inteligente intercalado (Modo Chofer, Alianzas B2B, Pools) */}
+                  {reelToShow && <SmartAppReelStrip reel={reelToShow} />}
+
+                  {/* Carrusel cruzado de Experiencias & Servicios (en lugar de Tours en mapa) */}
+                  {shouldShowExperienciasStrip && (
+                    <div className="bg-card border border-border rounded-3xl p-4 shadow-2xs space-y-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="w-8 h-8 rounded-full bg-[#105238] text-[#8ee01a] flex items-center justify-center shrink-0">
+                            <Sparkles className="w-4 h-4" />
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-black uppercase tracking-wider text-[#105238]">
+                              Experiencias en tu ruta
+                            </p>
+                            <h4 className="text-sm font-extrabold text-foreground truncate">
+                              Hoteles, cafés y lugares para visitar
+                            </h4>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => onNavigate?.("marketplace")}
+                          className="text-xs font-bold bg-[#105238] text-white px-3.5 py-1.5 rounded-full hover:bg-[#0c3e2b] transition-colors shrink-0 cursor-pointer"
+                        >
+                          Ver Servicios
+                        </button>
+                      </div>
+                      <div className="flex items-stretch gap-3 overflow-x-auto scrollbar-hide py-1">
+                        {(services || []).slice(0, 8).map((svc) => (
+                          <button
+                            key={svc.id}
+                            type="button"
+                            onClick={() => onNavigate?.("marketplace")}
+                            className="w-[140px] shrink-0 text-left rounded-2xl border border-border/70 bg-white dark:bg-card overflow-hidden hover:shadow-md transition-all cursor-pointer group"
+                          >
+                            <div className="relative h-24 w-full bg-muted overflow-hidden">
+                              <img
+                                src={getProxyImage(svc.image || "") || DEFAULT_STORE_COVER}
+                                alt={svc.name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                onError={(e) => {
+                                  e.currentTarget.src = DEFAULT_STORE_COVER
+                                }}
+                              />
+                              <span className="absolute bottom-1.5 left-1.5 bg-black/70 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                ${svc.price} /p
+                              </span>
+                            </div>
+                            <div className="p-2">
+                              <p className="text-xs font-bold text-foreground line-clamp-1">{svc.name}</p>
+                              <p className="text-[10px] text-muted-foreground truncate">
+                                {svc.category || "Experiencia"}
+                              </p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+
+            {/* Sentinel de carga progresiva al hacer scroll */}
+            {visibleCount < filteredRoutes.length && (
+              <div ref={loadMoreRef} className="flex flex-col items-center py-4 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount((prev) => Math.min(prev + 5, filteredRoutes.length))}
+                  className="px-5 py-2.5 rounded-full bg-white dark:bg-card border border-border text-xs font-bold text-[#105238] hover:bg-[#eaf0e2] shadow-2xs transition-colors cursor-pointer"
+                >
+                  Cargar más rutas ({filteredRoutes.length - visibleCount} restantes)
+                </button>
+              </div>
+            )}
+
+            {/* Tarjeta de cierre del ciclo cuando ya vio todas las rutas */}
+            {filteredRoutes.length > 0 && visibleCount >= filteredRoutes.length && (
+              <div className="bg-white dark:bg-card border border-border rounded-3xl p-5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h4 className="font-extrabold text-sm text-foreground flex items-center gap-1.5">
+                    <Compass className="w-4 h-4 text-[#105238]" />
+                    ¿Quieres explorar otro orden de rutas?
+                  </h4>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Mezcla el feed o cambia a otra categoría para descubrir nuevos recorridos.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setRouteSeed((s) => s + 1)
+                    window.scrollTo({ top: 0, behavior: "smooth" })
+                  }}
+                  className="h-9 px-4 rounded-full border-[#aeb6a1] text-[#105238] hover:bg-[#eaf0e2] font-bold text-xs gap-1.5 shrink-0 cursor-pointer"
+                >
+                  <Shuffle className="w-3.5 h-3.5" />
+                  <span>Nuevo orden</span>
+                </Button>
+              </div>
+            )}
 
             {filteredRoutes.length === 0 && (
               <div className="bg-white dark:bg-card border border-border rounded-3xl text-center py-12 px-6 shadow-2xs">
